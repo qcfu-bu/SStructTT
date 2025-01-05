@@ -36,7 +36,11 @@ infixl:56 " !>> " => funcomp
 infixl:56 " >> " => scomp
 infixr:55 " .: " => scons
 notation:max s:2 ".[" σ:2 "]" => subst σ s
-notation:max s:2 ".[" t:2 "/]" => subst (t .: ids) s
+syntax:max term:2 ".[" (term:2),+ "/]" : term
+macro_rules
+| `($m:term .[ $[$ns:term],* /]) => do
+  let σ <- ns.foldrM (fun n acc => `($n .: $acc)) (<-`(ids))
+  `(subst $σ $m)
 
 def ren [Ids T] (ξ : Var -> Var) : Var -> T :=
   ξ !>> ids
