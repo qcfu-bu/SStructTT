@@ -1,8 +1,10 @@
 import SStructTT.Static.Step
+open ARS
 
 namespace Static
 variable {Srt : Type}
 
+@[aesop safe [constructors]]
 inductive PStep : Tm Srt -> Tm Srt -> Prop where
   | var {x} :
     PStep (.var x) (.var x)
@@ -45,18 +47,18 @@ inductive PStep : Tm Srt -> Tm Srt -> Prop where
   | bool : PStep .bool .bool
   | tt : PStep .tt .tt
   | ff : PStep .ff .ff
-  | ifte {A A' m m' n1 n1' n2 n2'} :
+  | ite {A A' m m' n1 n1' n2 n2'} :
     PStep A A' ->
     PStep m m' ->
     PStep n1 n1' ->
     PStep n2 n2' ->
-    PStep (.ifte A m n1 n2) (.ifte A' m' n1' n2')
-  | ifteT {A n1 n1' n2} :
+    PStep (.ite A m n1 n2) (.ite A' m' n1' n2')
+  | iteT {A n1 n1' n2} :
     PStep n1 n1' ->
-    PStep (.ifte A .tt n1 n2) n1'
-  | ifteF {A n1 n2 n2'} :
+    PStep (.ite A .tt n1 n2) n1'
+  | iteF {A n1 n2 n2'} :
     PStep n2 n2' ->
-    PStep (.ifte A .ff n1 n2) n2'
+    PStep (.ite A .ff n1 n2) n2'
   | id {A A' m m' n n'} :
     PStep A A' ->
     PStep m m' ->
@@ -80,27 +82,55 @@ def SRed (σ τ : Nat -> Tm Srt) := ∀ x, (σ x) ~>* (τ x)
 
 lemma Step.subst (m n : Tm Srt) σ : m ~> n -> m.[σ] ~> n.[σ] := by
   intro st
-  induction st generalizing σ with
-  | piA st ih => asimp; constructor; apply ih
-  | piB st ih => asimp; constructor; apply ih
-  | lamA st ih => asimp; constructor; apply ih
-  | lamM st ih => asimp; constructor; apply ih
-  | appM st ih => asimp; constructor; apply ih
-  | appN st ih => asimp; constructor; apply ih
-  | @beta A m n r s  =>
-    asimp
-    have h := @Step.beta _ A.[σ] m.[up σ] n.[σ] r s
-    asimp at h
-    assumption
-  | sigA st ih => asimp; constructor; apply ih
-  | sigB st ih => asimp; constructor; apply ih
-  | pairM st ih => asimp; constructor; apply ih
-  | pairN st ih => asimp; constructor; apply ih
-  | projA st ih => asimp; constructor; apply ih
-  | projM st ih => asimp; constructor; apply ih
-  | projN st ih => asimp; constructor; apply ih
-  | @projE A m1 m2 n r s =>
-    asimp
-    have h := @Step.projE _ A.[up σ] m1.[σ] m2.[σ] n.[up $ up σ] r s
-    asimp at h
-    assumption
+  induction st generalizing σ
+  all_goals try asimp; aesop
+  case beta A m n r s  =>
+    have : m.[n/].[σ] = m.[up σ].[n.[σ]/] := by asimp
+    rw[this]; constructor
+  case projE A m1 m2 n r s =>
+    have : n.[m2,m1/].[σ] = n.[upn 2 σ].[m2.[σ],m1.[σ]/] := by asimp
+    rw[this]; constructor
+
+lemma Red.pi (A A' B B' : Tm Srt) r s :
+    A ~>* A' -> B ~>* B' -> .pi A B r s ~>* .pi A' B' r s := by
+  intro rA rB
+  apply (@Star.trans _ _ (Tm.pi A' B r s))
+  apply Star.hom _ _ rA; aesop
+  apply Star.hom _ _ rB; aesop
+
+lemma Red.lam (A A' m m' : Tm Srt) r s :
+    A ~>* A' -> m ~>* m' -> .lam A m r s ~>* .lam A' m' r s := by
+  intro rA rM
+  apply (@Star.trans _ _ (Tm.lam A' m r s))
+  apply Star.hom _ _ rA; aesop
+  apply Star.hom _ _ rM; aesop
+
+lemma Red.app (m m' n n' : Tm Srt) :
+    m ~>* m' -> n ~>* n' -> .app m n ~>* .app m' n' := by
+  intro rM rN
+  apply (@Star.trans _ _ (Tm.app m' n))
+  apply Star.hom _ _ rM; aesop
+  apply Star.hom _ _ rN; aesop
+
+lemma Red.sig (A A' B B' : Tm Srt) r s :
+    A ~>* A' -> B ~>* B' -> .sig A B r s ~>* .sig A' B' r s := by
+  intro rA rB
+  apply (@Star.trans _ _ (Tm.sig A' B r s))
+  apply Star.hom _ _ rA; aesop
+  apply Star.hom _ _ rB; aesop
+
+lemma Red.pair (m m' n n' : Tm Srt) r s :
+    m ~>* m' -> n ~>* n' -> .pair m n r s ~>* .pair m' n' r s := by
+  intro rM rN
+  apply (@Star.trans _ _ (Tm.pair m' n r s))
+  apply Star.hom _ _ rM; aesop
+  apply Star.hom _ _ rN; aesop
+
+lemma Red.proj (A A' m m' n n' : Tm Srt) :
+    A ~>* A' -> m ~>* m' -> n ~>* n' -> .proj A m n ~>* .proj A' m' n' := by
+  intro rA rM rN
+  apply (@Star.trans _ _ (Tm.proj A' m n))
+  apply Star.hom _ _ rA; aesop
+  apply (@Star.trans _ _ (Tm.proj A' m' n))
+  apply Star.hom _ _ rM; aesop
+  apply Star.hom _ _ rN; aesop

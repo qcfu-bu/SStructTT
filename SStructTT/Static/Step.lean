@@ -5,6 +5,7 @@ open ARS
 namespace Static
 variable {Srt : Type}
 
+@[aesop safe [constructors]]
 inductive Step : Tm Srt -> Tm Srt -> Prop where
   | piA {A A' B r s} :
     Step A A' ->
@@ -49,22 +50,22 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
     Step (.proj A m n) (.proj A m n')
   | projE {A m1 m2 n r s} :
     Step (.proj A (.pair m1 m2 r s) n) n.[m2,m1/]
-  | ifteA {A A' m n1 n2} :
+  | iteA {A A' m n1 n2} :
     Step A A' ->
-    Step (.ifte A m n1 n2) (.ifte A' m n1 n2)
-  | ifteM {A m m' n1 n2} :
+    Step (.ite A m n1 n2) (.ite A' m n1 n2)
+  | iteM {A m m' n1 n2} :
     Step m m' ->
-    Step (.ifte A m n1 n2) (.ifte A m' n1 n2)
-  | ifteN1 {A m n1 n1' n2} :
+    Step (.ite A m n1 n2) (.ite A m' n1 n2)
+  | iteN1 {A m n1 n1' n2} :
     Step n1 n1' ->
-    Step (.ifte A m n1 n2) (.ifte A m n1' n2)
-  | ifteN2 {A m n1 n2 n2'} :
+    Step (.ite A m n1 n2) (.ite A m n1' n2)
+  | iteN2 {A m n1 n2 n2'} :
     Step n2 n2' ->
-    Step (.ifte A m n1 n2) (.ifte A m n1 n2')
-  | ifteT {A n1 n2} :
-    Step (.ifte A .tt n1 n2) n1
-  | ifteF {A n1 n2} :
-    Step (.ifte A .ff n1 n2) n2
+    Step (.ite A m n1 n2) (.ite A m n1 n2')
+  | iteT {A n1 n2} :
+    Step (.ite A .tt n1 n2) n1
+  | iteF {A n1 n2} :
+    Step (.ite A .ff n1 n2) n2
   | idA {A A' m n} :
     Step A A' ->
     Step (.id A m n) (.id A' m n)
