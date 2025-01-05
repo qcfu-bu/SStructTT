@@ -1,7 +1,7 @@
 import Mathlib.Tactic
 import Mathlib.Order.Defs.PartialOrder
 
-class SStruct (S : Type) [PartialOrder S] where
+class SStruct (S : Type) extends PartialOrder S where
   s0 : S
   weaken : LowerSet S
   contra : LowerSet S
@@ -12,10 +12,10 @@ class SStruct (S : Type) [PartialOrder S] where
 namespace TL4
 
 inductive Srt where
-  | U : Srt
-  | R : Srt
-  | A : Srt
-  | L : Srt
+  | U -- unbound
+  | R -- relevant
+  | A -- affine
+  | L -- linear
 
 inductive Srt.le : Srt -> Srt -> Prop where
   | le_refl s : le s s
