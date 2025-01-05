@@ -1,4 +1,4 @@
-import SStructTT.Subst
+import SStructTT.Defs.Subst
 
 section Defs
 variable (Srt : Type)

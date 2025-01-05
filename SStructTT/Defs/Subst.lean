@@ -1,5 +1,5 @@
 import Mathlib.Tactic
-import SStructTT.Attr
+import SStructTT.Attr.Register
 
 -------------------------------------------------------------------------------------------------
 
