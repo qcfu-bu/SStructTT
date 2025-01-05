@@ -26,21 +26,56 @@ def scons (s : T) (σ : Var -> T) : Var -> T
   | 0 => s
   | x+1 => σ x
 
-@[asimp]def funcomp {A B C} (f : A -> B) (g : B -> C) : A -> C :=
+@[asimp]def fcomp {A B C} (f : A -> B) (g : B -> C) : A -> C :=
   fun x => g (f x)
 
 def scomp [Subst T] (f g : Var -> T) : Var -> T :=
-  funcomp f (subst g)
+  fcomp f (subst g)
 
-infixl:56 " !>> " => funcomp
-infixl:56 " >> " => scomp
-infixr:55 " .: " => scons
-notation:max s:2 ".[" σ:2 "]" => subst σ s
+section Notations
+open Lean PrettyPrinter
+
+syntax:56 term:56 " !>> " term:55 : term
+syntax:55 term:54 " .: " term:55 : term
+syntax:max term:2 ".[" term:2 "]" : term
 syntax:max term:2 ".[" (term:2),+ "/]" : term
 macro_rules
-| `($m:term .[ $[$ns:term],* /]) => do
-  let σ <- ns.foldrM (fun n acc => `($n .: $acc)) (<-`(ids))
-  `(subst $σ $m)
+  | `($f:term !>> $g:term) => `(fcomp $f $g)
+  | `($σ:term >> $τ:term) => `(scomp $σ $τ)
+  | `($m:term .: $σ:term) => `(scons $m $σ)
+  | `($m:term .[ $σ:term ]) => `(subst $σ $m)
+  | `($m:term .[ $[$ns:term],* /]) => do
+    let σ <- ns.foldrM (fun n acc => `($n .: $acc)) (<-`(ids))
+    `(subst $σ $m)
+
+@[app_unexpander fcomp]
+def unexpandFComp : Unexpander
+  | `($(_) $f:term $g:term) =>  `($f !>> $g)
+  | _ => throw ()
+
+@[app_unexpander scomp]
+def unexpandSComp : Unexpander
+  | `($(_) $σ:term $τ:term) =>  `($σ >> $τ)
+  | _ => throw ()
+
+@[app_unexpander scons]
+def unexpandSCons : Unexpander
+  | `($(_) $m:term $σ:term) =>  `($m .: $σ)
+  | _ => throw ()
+
+@[app_unexpander subst]
+partial def unexpandSubst : Unexpander
+  | `($(_) $σ:term $m:term) =>
+    let rec gather : TSyntax `term -> Option (List (TSyntax `term))
+      | `($n:term .: ids) => [n]
+      | `($n:term .: $σ:term) => do
+        return (n :: (<-gather σ))
+      | _ => none
+    match gather σ with
+    | some ns => let ns := ns.toArray; `($m.[$ns,*/])
+    | _ => `($m.[$σ])
+  | _ => throw ()
+end Notations
 
 def ren [Ids T] (ξ : Var -> Var) : Var -> T :=
   ξ !>> ids
@@ -126,7 +161,7 @@ variable {T : Type} [Ids T] [Rename T] [Subst T] [lemmas: SubstLemmas T]
   funext x
   cases x with
   | zero => simp[asimp]
-  | succ => simp[scons, ren, funcomp]
+  | succ => simp[scons, ren, fcomp]
 
 @[asimp]lemma shift_scomp (m : T) (σ : Var -> T) : ren .succ >> (m .: σ) = σ := by
   funext x
@@ -141,17 +176,17 @@ variable {T : Type} [Ids T] [Rename T] [Subst T] [lemmas: SubstLemmas T]
 
 @[asimp]lemma comp_ids (σ : Var -> T) : σ >> ids = σ := by
   funext x
-  simp[scomp, funcomp, asimp]
+  simp[scomp, fcomp, asimp]
 
 @[asimp]lemma scons_scomp m (σ τ : Var -> T) : (m .: σ) >> τ = m.[τ] .: σ >> τ := by
   funext x
   cases x with
-  | zero => simp[scomp, funcomp, scons]
-  | succ => simp[scomp, funcomp, scons]
+  | zero => simp[scomp, fcomp, scons]
+  | succ => simp[scomp, fcomp, scons]
 
 @[asimp]lemma scomp_assoc (σ τ θ : Var -> T) : (σ >> τ) >> θ = σ >> (τ >> θ) := by
   funext x
-  simp[scomp, funcomp, asimp]
+  simp[scomp, fcomp, asimp]
 
 open Lean Parser Tactic in
 syntax "asimp"

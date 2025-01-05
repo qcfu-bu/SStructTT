@@ -21,6 +21,9 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
   | appM {m m' n} :
     Step m m' ->
     Step (.app m n) (.app m' n)
+  | appN {m n n'} :
+    Step n n' ->
+    Step (.app m n) (.app m n')
   | beta {A m n r s} :
     Step (.app (.lam A m r s) n) m.[n/]
   | sigA {A A' B r s} :

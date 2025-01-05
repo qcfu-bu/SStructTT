@@ -73,3 +73,34 @@ inductive PStep : Tm Srt -> Tm Srt -> Prop where
   | rwE {A m m' n} :
     PStep m m' ->
     PStep (.rw A m (.rfl n)) m'
+
+infix:50 " ≈> " => PStep
+
+def SRed (σ τ : Nat -> Tm Srt) := ∀ x, (σ x) ~>* (τ x)
+
+lemma Step.subst (m n : Tm Srt) σ : m ~> n -> m.[σ] ~> n.[σ] := by
+  intro st
+  induction st generalizing σ with
+  | piA st ih => asimp; constructor; apply ih
+  | piB st ih => asimp; constructor; apply ih
+  | lamA st ih => asimp; constructor; apply ih
+  | lamM st ih => asimp; constructor; apply ih
+  | appM st ih => asimp; constructor; apply ih
+  | appN st ih => asimp; constructor; apply ih
+  | @beta A m n r s  =>
+    asimp
+    have h := @Step.beta _ A.[σ] m.[up σ] n.[σ] r s
+    asimp at h
+    assumption
+  | sigA st ih => asimp; constructor; apply ih
+  | sigB st ih => asimp; constructor; apply ih
+  | pairM st ih => asimp; constructor; apply ih
+  | pairN st ih => asimp; constructor; apply ih
+  | projA st ih => asimp; constructor; apply ih
+  | projM st ih => asimp; constructor; apply ih
+  | projN st ih => asimp; constructor; apply ih
+  | @projE A m1 m2 n r s =>
+    asimp
+    have h := @Step.projE _ A.[up σ] m1.[σ] m2.[σ] n.[up $ up σ] r s
+    asimp at h
+    assumption
