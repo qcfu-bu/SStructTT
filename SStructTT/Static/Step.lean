@@ -1,5 +1,8 @@
+import SStructTT.Defs.ARS
 import SStructTT.Defs.Syntax
+open ARS
 
+namespace Static
 variable {Srt : Type}
 
 inductive Step : Tm Srt -> Tm Srt -> Prop where
@@ -82,3 +85,9 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
     Step (.rw A m n) (.rw A m n')
   | rwE {A m n} :
     Step (.rw A m (.rfl n)) n
+
+@[reducible]def StarStep := Star (@Step Srt)
+@[reducible]def ConvStep := Conv (@Step Srt)
+infix:50 " ~> " => Step
+infix:50 " ~>* " => StarStep
+infix:50 " === " => ConvStep
