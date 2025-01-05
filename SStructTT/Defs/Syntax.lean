@@ -1,6 +1,7 @@
 import SStructTT.Defs.Subst
 
 section Defs
+-- Sorts
 variable (Srt : Type)
 
 -- Computational Relevancy
@@ -18,7 +19,7 @@ inductive Tm where
   | pair (m n : Tm) (r : Rlv) (s : Srt)
   | proj (A m n : Tm)
   | bool | tt | ff
-  | ite (A m n1 n2 : Tm)
+  | ite  (A m n1 n2 : Tm)
   | id   (A m n : Tm)
   | rfl  (m : Tm)
   | rw   (A h p : Tm)
