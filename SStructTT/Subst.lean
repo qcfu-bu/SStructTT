@@ -4,7 +4,6 @@ import SStructTT.Attr
 -------------------------------------------------------------------------------------------------
 
 section Definitions
-
 abbrev Var := Nat
 @[reducible]def Binder (T : Type) : Type := T
 
@@ -83,7 +82,6 @@ def upn [Ids T] [Rename T] (n : Var) : (Var -> T) -> Var -> T :=
 @[asimp]lemma lift0 : (.+0) = id := by rfl
 @[asimp]lemma lift_scons x (f : Var -> T) (n : Var) : (.+n.succ) !>> (x .: f) = (.+n) !>> f := by
   funext x0; simp[scons, asimp]
-
 section Definitions
 
 -------------------------------------------------------------------------------------------------
@@ -95,7 +93,6 @@ class SubstLemmas (T : Type) [Ids T] [Rename T] [Subst T] where
   subst_comp (σ τ : Var -> T) (s : T) : s.[σ].[τ] = s.[σ >> τ]
 
 namespace Lemmas
-
 set_option linter.unusedSectionVars false
 variable {T : Type} [Ids T] [Rename T] [Subst T] [lemmas: SubstLemmas T]
 
@@ -161,5 +158,4 @@ macro_rules
   `(tactic| simp[asimp] $[$loc]?; repeat rw [<-up_shift] $[$loc]?)
 | `(tactic| asimp[$xs,*] $[$loc]?) =>
   `(tactic| simp[$xs,*, asimp] $[$loc]?; repeat rw [<-up_shift] $[$loc]?)
-
 end Lemmas

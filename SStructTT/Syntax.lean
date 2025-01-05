@@ -23,7 +23,6 @@ inductive Tm where
   | rw   (A h p : Tm)
 
 namespace Tm
-
 instance : Ids (Tm Srt) where
   ids := var
 
@@ -111,7 +110,17 @@ variable (σ : Var -> Tm Srt) (A B m n n1 n2 : Tm Srt) (x i : Nat) (r : Rlv) (s 
 @[asimp]lemma subst_rw   : subst σ (rw A m n) = rw (subst (up $ up σ) A) (subst σ m) (subst σ n) := by rfl
 end SubstEqns
 
+section Lemmas
+theorem up_upren (ξ : Var -> Var) :
+  @up (Tm Srt) _ _ (ren ξ) = ren (upren ξ) := by
+  funext x; cases x <;> asimp
 
 
+
+
+
+
+
+end Lemmas
 
 end Tm

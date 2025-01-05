@@ -9,8 +9,7 @@ class SStruct (S : Type) extends PartialOrder S where
   s0_weaken : s0 ∈ weaken
   s0_contra : s0 ∈ contra
 
-namespace TL4
-
+namespace TL4 -- 4 Sorted TLL
 inductive Srt where
   | U -- unbound
   | R -- relevant
@@ -154,5 +153,4 @@ instance : SStruct Srt where
   s0_min := Srt.le_U_min
   s0_weaken := Srt.weaken.U
   s0_contra := Srt.contra.U
-
 end TL4

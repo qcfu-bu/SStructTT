@@ -1,7 +1,6 @@
 import Mathlib.Tactic
 
 namespace ARS
-
 section Definitions
 set_option quotPrecheck false
 notation:70 e1:70 " <=2 " e2:70 => (∀ {x y}, e1 x y -> e2 x y)
@@ -35,7 +34,6 @@ def NF (x y : T) := Star e x y ∧ Normal e y
 
 inductive SN : T -> Prop where
   | intro x : (∀ y, e x y -> SN y) -> SN x
-
 end Definitions
 
 section Lemmas
@@ -233,5 +231,4 @@ lemma CR.conv_normal {x y} (cr : CR e) : Conv e x y -> Normal e x -> Normal e y 
   have ⟨z, rxz, ryz⟩ := cr cxy
   rw[Normal.star rxz nx]
   rw[Normal.star ryz ny]
-
 end Lemmas
