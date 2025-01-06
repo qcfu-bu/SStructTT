@@ -939,3 +939,107 @@ lemma Red.rfl_inv {m x : Tm Srt} :
       constructor
       . apply Star.SE <;> assumption
       . rfl
+
+namespace Tactic
+open Lean Elab Meta
+
+-- Eliminate an `Exists` proof `m` using `elim`.
+def existsElim (m : Expr) (elim : Expr -> Expr -> MetaM Expr) : MetaM Expr := do
+  let mType <- whnf $ <-inferType m
+  match mType.getAppFnArgs with
+  | (``Exists, #[a, p]) =>
+    withLocalDecl `x BinderInfo.default a fun x =>
+    withLocalDecl `y BinderInfo.default (.app p x) fun y => do
+      let body <- mkLambdaFVars #[x, y] (<-elim x y)
+      mkAppOptM ``Exists.elim #[none, none, none, m, body]
+  | _ => throwError "existsElim {mType}"
+
+-- Eliminate an `And` proof `m` using `elim`.
+def andElim (m : Expr) (elim : Expr -> Expr -> MetaM Expr) : MetaM Expr := do
+  let mType <- whnf $ <-inferType m
+  match mType.and? with
+  | some (a, b) =>
+    withLocalDecl `x BinderInfo.default a fun x =>
+    withLocalDecl `y BinderInfo.default b fun y => do
+      let body <- mkLambdaFVars #[x, y] (<-elim x y)
+      mkAppM ``And.elim #[body, m]
+  | none => throwError f!"andElim {mType}"
+
+-- Given a proposition consisting of `Exists` and `And`, find all `Eq`s among the conjuncts.
+partial def projEqs (m : Expr) (elim : Array Expr -> MetaM Expr) : MetaM Expr := do
+  let mType <- whnf $ <-inferType m
+  match mType.getAppFn.constName? with
+  | some ``Exists =>
+    existsElim m fun x y => do
+      projEqs x fun eqs1 =>
+      projEqs y fun eqs2 =>
+      elim (eqs1 ++ eqs2)
+  | some ``And =>
+    andElim m fun x y =>
+      projEqs x fun eqs1 =>
+      projEqs y fun eqs2 =>
+      elim (eqs1 ++ eqs2)
+  | some ``Eq => elim #[m]
+  | _ => elim #[]
+
+-- Assuming `id : a === b`, get the associated expression of `id` and the inversion lemmas of `a` and `b`.
+def getConv (goal : MVarId) (id : Name) : MetaM (Expr × Expr × Expr) := do
+  goal.withContext do
+    let lctx <- getLCtx
+    match lctx.findFromUserName? id with
+    | some ldecl =>
+      let declExpr := ldecl.toExpr
+      let declType <- inferType declExpr
+      match declType.app3? ``ConvStep with
+      | some (_, a, b) => return (declExpr, a, b)
+      | _ => throwTacticEx `getConv goal
+    | none => throwTacticEx `getConv goal
+
+-- Apply `church_rosser` theorem to refute impossible conversion.
+def applyCR (goal : MVarId) (m l1 l2 : Expr) : MetaM Expr := do
+  let cr <- mkAppM ``Step.cr #[m]
+  existsElim cr fun _ h =>
+  andElim h fun h1 h2 => do
+    let h1 <- mkAppM' l1 #[h1]
+    let h2 <- mkAppM' l2 #[h2]
+    projEqs h1 fun es1 =>
+    projEqs h2 fun es2 => do
+      let e1 <- mkAppM ``Eq.symm #[es1[0]!]
+      let e2 <- mkAppM ``Eq.trans #[e1, es2[0]!]
+      mkAppOptM ``Tm.noConfusion #[none, <-goal.getType, none, none, e2]
+
+/-
+  Get the associated inversion lemma for `m`. For more complex languages, the
+  list of inversion lemmas need to be extended. -/
+def getInvLemma (m : Expr) : MetaM Expr := do
+  match m.getAppFn.constName! with
+  | ``Tm.var  => return .const ``Red.var_inv  []
+  | ``Tm.srt  => return .const ``Red.srt_inv  []
+  | ``Tm.pi   => return .const ``Red.pi_inv   []
+  | ``Tm.lam  => return .const ``Red.lam_inv  []
+  | ``Tm.sig  => return .const ``Red.sig_inv  []
+  | ``Tm.pair => return .const ``Red.pair_inv []
+  | ``Tm.bool => return .const ``Red.bool_inv []
+  | ``Tm.tt   => return .const ``Red.tt_inv   []
+  | ``Tm.ff   => return .const ``Red.ff_inv   []
+  | ``Tm.id   => return .const ``Red.id_inv   []
+  | ``Tm.rfl  => return .const ``Red.rfl_inv  []
+  | _ => throwError `getInvLemma
+
+open Lean Elab Tactic in
+/--
+  `false_conv h` refutes impossible conversion proof `h`.  -/
+elab "false_conv" h:ident : tactic =>
+  withMainContext do
+    let goal <- getMainGoal
+    let (m, a, b) <- getConv goal h.getId
+    let lemma_a <- getInvLemma a
+    let lemma_b <- getInvLemma b
+    let pf <- applyCR goal m lemma_a lemma_b
+    closeMainGoal `false_conv pf
+end Tactic
+
+example (a b : Tm Srt) r s i :
+    Tm.lam a b r s === Tm.srt s i -> False := by
+  intro h;
+  false_conv h
