@@ -5,7 +5,7 @@ open ARS
 namespace Static
 variable {Srt : Type}
 
-@[aesop safe [constructors]]
+@[scoped aesop safe [constructors]]
 inductive Step : Tm Srt -> Tm Srt -> Prop where
   | piA {A A'} B r s :
     Step A A' ->

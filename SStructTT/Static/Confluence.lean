@@ -4,7 +4,7 @@ open ARS
 namespace Static
 variable {Srt : Type}
 
-@[aesop safe [constructors]]
+@[scoped aesop safe [constructors]]
 inductive PStep : Tm Srt -> Tm Srt -> Prop where
   | var {x} :
     PStep (.var x) (.var x)
@@ -395,12 +395,13 @@ lemma Conv.subst1 m {n1 n2 : Tm Srt} : n1 === n2 -> m.[n1/] === m.[n2/] := by
   | zero => asimp; assumption
   | succ => asimp; constructor
 
-@[aesop safe]
+@[scoped aesop safe]
 lemma PStep.refl {m : Tm Srt} : m ≈> m := by
   induction m
   all_goals try constructor <;> assumption
 
 lemma Step.toPStep {m m' : Tm Srt} : m ~> m' -> m ≈> m' := by
+  open PStep in
   intro st
   induction st <;> aesop
 
