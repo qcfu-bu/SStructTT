@@ -544,8 +544,8 @@ lemma PStep.compat {m n : Tm Srt} {σ τ}:
   | rwE => asimp; aesop
 
 lemma PSStep.compat {m n : Tm Srt} {σ τ} :
-    PSStep σ τ -> m ≈> n -> PSStep (m .: σ) (n .: τ) := by
-  intros pss ps x
+    m ≈> n -> PSStep σ τ -> PSStep (m .: σ) (n .: τ) := by
+  intros ps pss x
   cases x with
   | zero => assumption
   | succ n => apply pss
@@ -553,58 +553,40 @@ lemma PSStep.compat {m n : Tm Srt} {σ τ} :
 lemma PStep.subst1 m {n n' : Tm Srt} : n ≈> n' -> m.[n/] ≈> m.[n'/] := by
   intro ps
   apply PStep.compat PStep.refl
-  apply PSStep.compat PSStep.refl ps
+  apply PSStep.compat ps PSStep.refl
 
 lemma PStep.compat_subst1 {m m' n n' : Tm Srt} :
     m ≈> m' -> n ≈> n' -> m.[n/] ≈> m'.[n'/] := by
   intro ps1 ps2
   apply PStep.compat
   . assumption
-  . apply PSStep.compat PSStep.refl ps2
+  . apply PSStep.compat ps2 PSStep.refl
 
 lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
   intros m m1 m2 ps
   induction ps generalizing m2 with
-  | var =>
-    intro ps; exists m2
-    constructor
-    . assumption
-    . exact PStep.refl
-  | srt i =>
-    intro ps; exists m2
-    constructor
-    . assumption
-    . exact PStep.refl
+  | var => intro ps; exists m2; aesop
+  | srt i => intro ps; exists m2; aesop
   | pi r s _ _ ihA ihB =>
-    intro
+    intro ps; cases ps with
     | pi _ _ psA psB =>
       have ⟨A, psA1, psA2⟩ := ihA psA
       have ⟨B, psB1, psB2⟩ := ihB psB
-      exists .pi A B r s
-      constructor
-      . constructor <;> assumption
-      . constructor <;> assumption
+      exists .pi A B r s; aesop
   | lam r s _ _ ihA ihm =>
-    intro
+    intro ps; cases ps with
     | lam _ _ psA psm =>
       have ⟨A, psA1, psA2⟩ := ihA psA
       have ⟨m, psm1, psm2⟩ := ihm psm
-      exists .lam A m r s
-      constructor
-      . constructor <;> assumption
-      . constructor <;> assumption
+      exists .lam A m r s; aesop
   | app psm psn ihm ihn =>
-    intro ps
-    cases ps with
+    intro ps; cases ps with
     | app psm psn =>
       have ⟨m, psm1, psm2⟩ := ihm psm
       have ⟨n, psn1, psn2⟩ := ihn psn
-      exists .app m n
-      constructor
-      . constructor <;> assumption
-      . constructor <;> assumption
+      exists .app m n; aesop
     | beta A r s psm' psn' =>
-      cases psm; case lam _ _ psa psm  =>
+      cases psm; case lam _ _ _ psm =>
       have ⟨_, psm1, psm2⟩ := ihm (PStep.lam r s PStep.refl psm')
       have ⟨n, psn1, psn2⟩ := ihn psn'
       cases psm1; case lam m _ psm1 =>
@@ -614,8 +596,7 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
       . apply PStep.beta <;> assumption
       . apply PStep.compat_subst1 <;> assumption
   | beta _ r s _ _ ihm ihn =>
-    intro ps
-    cases ps with
+    intro ps; cases ps with
     | app psm psn =>
       cases psm; case lam _ psm =>
       have ⟨m, psm1, psm2⟩ := ihm psm
@@ -631,4 +612,40 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
       constructor
       . apply PStep.compat_subst1 <;> assumption
       . apply PStep.compat_subst1 <;> assumption
+  | sig r s _ _ ihA ihB =>
+    intro ps; cases ps with
+    | sig _ _ psA psB =>
+      have ⟨A, psA1, psA2⟩ := ihA psA
+      have ⟨B, psB1, psB2⟩ := ihB psB
+      exists .sig A B r s; aesop
+  | pair r s _ _ ihm ihn =>
+    intro ps; cases ps with
+    | pair _ _ psm psn =>
+      have ⟨m, psm1, psm2⟩ := ihm psm
+      have ⟨n, psn1, psn2⟩ := ihn psn
+      exists .pair m n r s; aesop
+  | proj psA psm psn ihA ihm ihn =>
+    intro ps; cases ps with
+    | proj psA psm psn =>
+      have ⟨A, psA1, psA2⟩ := ihA psA
+      have ⟨m, psm1, psm2⟩ := ihm psm
+      have ⟨n, psn1, psn2⟩ := ihn psn
+      exists .proj A m n; aesop
+    | projE _ r s psm1 psm2 psn =>
+      cases psm; case pair _ _ _ _ =>
+      have ⟨_, psm1, psm2⟩ := ihm (PStep.pair r s psm1 psm2)
+      have ⟨n, psn1, psn2⟩ := ihn psn
+      cases psm1; case pair m1 m2 _ _ =>
+      cases psm2; case pair _ _ psm1 psm2 =>
+      exists n.[m2,m1/]
+      constructor
+      . apply PStep.projE <;> assumption
+      . apply PStep.compat psn2
+        apply PSStep.compat psm2
+        apply PSStep.compat psm1
+        apply PSStep.refl
+  | projE A r s _ _ _ ihm1 ihm2 ihn =>
+    intro ps; cases ps with
+    | proj => sorry
+    | projE => sorry
   | _ => sorry
