@@ -6,7 +6,7 @@ defaultTargets = ["SStructTT"]
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
 autoImplicit = false
-maxHeartbeats = 0
+maxHeartbeats = 400000
 
 
 [[require]]
