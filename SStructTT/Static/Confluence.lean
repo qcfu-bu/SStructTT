@@ -1028,7 +1028,7 @@ def getInvLemma (m : Expr) : MetaM Expr := do
 
 open Lean Elab Tactic in
 /--
-  `false_conv h` refutes impossible conversion proof `h`.  -/
+  `false_conv h` refutes impossible conversion proof `h`. -/
 elab "false_conv" h:ident : tactic =>
   withMainContext do
     let goal <- getMainGoal
