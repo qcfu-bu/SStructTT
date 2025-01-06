@@ -238,8 +238,7 @@ lemma Red.compat {m : Tm Srt} {σ τ}: SRed σ τ -> m.[σ] ~>* m.[τ] := by
     . apply ihA
       have := SRed.upn 2 h
       asimp at this; assumption
-    . aesop
-    . aesop
+    all_goals aesop
 
 def SConv (σ τ : Nat -> Tm Srt) := ∀ x, σ x === τ x
 
@@ -387,8 +386,7 @@ lemma Conv.compat (m : Tm Srt) {σ τ}: SConv σ τ -> m.[σ] === m.[τ] := by
     . apply ihA
       have := SConv.upn 2 h
       asimp at this; assumption
-    . aesop
-    . aesop
+    all_goals aesop
 
 lemma Conv.subst1 m {n1 n2 : Tm Srt} : n1 === n2 -> m.[n1/] === m.[n2/] := by
   intro h; apply Conv.compat
@@ -542,8 +540,7 @@ lemma PStep.compat {m n : Tm Srt} {σ τ}:
       have := PSStep.upn 2 h
       asimp at this
       assumption
-    . aesop
-    . aesop
+    all_goals aesop
   | rwE => asimp; aesop
 
 lemma PSStep.compat {m n : Tm Srt} {σ τ} :
@@ -564,3 +561,74 @@ lemma PStep.compat_subst1 {m m' n n' : Tm Srt} :
   apply PStep.compat
   . assumption
   . apply PSStep.compat PSStep.refl ps2
+
+lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
+  intros m m1 m2 ps
+  induction ps generalizing m2 with
+  | var =>
+    intro ps; exists m2
+    constructor
+    . assumption
+    . exact PStep.refl
+  | srt i =>
+    intro ps; exists m2
+    constructor
+    . assumption
+    . exact PStep.refl
+  | pi r s _ _ ihA ihB =>
+    intro
+    | pi _ _ psA psB =>
+      have ⟨A, psA1, psA2⟩ := ihA psA
+      have ⟨B, psB1, psB2⟩ := ihB psB
+      exists .pi A B r s
+      constructor
+      . constructor <;> assumption
+      . constructor <;> assumption
+  | lam r s _ _ ihA ihm =>
+    intro
+    | lam _ _ psA psm =>
+      have ⟨A, psA1, psA2⟩ := ihA psA
+      have ⟨m, psm1, psm2⟩ := ihm psm
+      exists .lam A m r s
+      constructor
+      . constructor <;> assumption
+      . constructor <;> assumption
+  | app psm psn ihm ihn =>
+    intro ps
+    cases ps with
+    | app psm psn =>
+      have ⟨m, psm1, psm2⟩ := ihm psm
+      have ⟨n, psn1, psn2⟩ := ihn psn
+      exists .app m n
+      constructor
+      . constructor <;> assumption
+      . constructor <;> assumption
+    | beta A r s psm' psn' =>
+      cases psm; case lam _ _ psa psm  =>
+      have ⟨_, psm1, psm2⟩ := ihm (PStep.lam r s PStep.refl psm')
+      have ⟨n, psn1, psn2⟩ := ihn psn'
+      cases psm1; case lam m _ psm1 =>
+      cases psm2; case lam _ psm2 =>
+      exists m.[n/]
+      constructor
+      . apply PStep.beta <;> assumption
+      . apply PStep.compat_subst1 <;> assumption
+  | beta _ r s _ _ ihm ihn =>
+    intro ps
+    cases ps with
+    | app psm psn =>
+      cases psm; case lam _ psm =>
+      have ⟨m, psm1, psm2⟩ := ihm psm
+      have ⟨n, psn1, psn2⟩ := ihn psn
+      exists m.[n/]
+      constructor
+      . apply PStep.compat_subst1 <;> assumption
+      . apply PStep.beta <;> assumption
+    | beta _ _ _ psm psn =>
+      have ⟨m, psm1, psm2⟩ := ihm psm
+      have ⟨n, psn1, psn2⟩ := ihn psn
+      exists m.[n/]
+      constructor
+      . apply PStep.compat_subst1 <;> assumption
+      . apply PStep.compat_subst1 <;> assumption
+  | _ => sorry

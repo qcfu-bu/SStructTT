@@ -156,13 +156,13 @@ lemma Confluent.cr : Confluent e <-> CR e := by
       exists x
       constructor <;> constructor
     | @SE y z _ r ih =>
-      rcases ih with ⟨u, h2, h3⟩
-      rcases h1 h3 (Star.one r) with ⟨v, h4, h5⟩
+      have ⟨u, h2, h3⟩ := ih
+      have ⟨v, h4, h5⟩ := h1 h3 (Star.one r)
       exists v; constructor
       . apply Star.trans h2 h4
       . apply h5
     | @SEi y z _ r ih =>
-      rcases ih with ⟨u, h2, h3⟩
+      have ⟨u, h2, h3⟩ := ih
       exists u; constructor
       . apply h2
       . apply Star.ES r h3

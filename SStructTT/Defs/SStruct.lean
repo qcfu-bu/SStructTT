@@ -90,11 +90,12 @@ instance : PartialOrder Srt where
   le_antisymm := Srt.le_antisymm
 
 lemma Srt.le_U_min : ∀ (s : Srt), U ≤ s := by
-  intro s; cases s
-  . apply Srt.le.le_refl
-  . apply Srt.le.le_UR
-  . apply Srt.le.le_UA
-  . apply le_trans
+  intro
+  | U => apply Srt.le.le_refl
+  | R => apply Srt.le.le_UR
+  | A => apply Srt.le.le_UA
+  | L =>
+    apply le_trans
     apply Srt.le.le_UR
     apply Srt.le.le_RL
 

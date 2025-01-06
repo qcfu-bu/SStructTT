@@ -216,11 +216,9 @@ lemma subst_ren_comp σ ξ (m : Tm Srt) : m.[σ].[ren ξ] = m.[σ !>> rename ξ]
   | rw A m n ihA ihm ihn => asimp[up_upren, up_comp_ren, ihA, ihm, ihn]
 
 lemma up_comp (σ τ : Var -> Tm Srt) :  up σ >> up τ = up (σ >> τ) := by
-  apply funext
-  intro x
+  funext x
   cases x with
-  | zero =>
-    asimp
+  | zero => asimp
   | succ n =>
     asimp[rename_subst]
     have h1 := subst_ren_comp τ .succ (σ n)
