@@ -646,6 +646,296 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
         apply PSStep.refl
   | projE A r s _ _ _ ihm1 ihm2 ihn =>
     intro ps; cases ps with
-    | proj => sorry
-    | projE => sorry
-  | _ => sorry
+    | proj _ psm psn =>
+      cases psm; case pair _ _ psm1 psm2 =>
+      have ⟨m1, psm1, _⟩ := ihm1 psm1
+      have ⟨m2, psm2, _⟩ := ihm2 psm2
+      have ⟨n, psn, _⟩ := ihn psn
+      exists n.[m2,m1/]
+      constructor
+      . apply PStep.compat psn
+        apply PSStep.compat psm2
+        apply PSStep.compat psm1
+        apply PSStep.refl
+      . apply PStep.projE <;> assumption
+    | projE _ _ _ psm1 psm2 psn =>
+      have ⟨m1, psm11, psm12⟩ := ihm1 psm1
+      have ⟨m2, psm21, psm22⟩ := ihm2 psm2
+      have ⟨n, psn1, psn2⟩ := ihn psn
+      exists n.[m2,m1/]
+      constructor
+      . apply PStep.compat psn1
+        apply PSStep.compat psm21
+        apply PSStep.compat psm11
+        apply PSStep.refl
+      . apply PStep.compat psn2
+        apply PSStep.compat psm22
+        apply PSStep.compat psm12
+        apply PSStep.refl
+  | bool => intro ps; exists m2; aesop
+  | tt => intro ps; exists m2; aesop
+  | ff => intro ps; exists m2; aesop
+  | ite _ psm _ _ ihA ihm ihn1 ihn2 =>
+    intro ps; cases ps with
+    | ite psA psm psn1 psn2 =>
+      have ⟨A, psA1, psA2⟩ := ihA psA
+      have ⟨m, psm1, psm2⟩ := ihm psm
+      have ⟨n1, psn11, psn12⟩ := ihn1 psn1
+      have ⟨n2, psn21, psn22⟩ := ihn2 psn2
+      exists .ite A m n1 n2; aesop
+    | iteT _ _ psn =>
+      have ⟨n, psn11, psn12⟩ := ihn1 psn
+      cases psm; exists n; aesop
+    | iteF _ _ psn =>
+      have ⟨n, psn21, psn22⟩ := ihn2 psn
+      cases psm; exists n; aesop
+  | iteT _ _ _ ihn =>
+    intro ps; cases ps with
+    | ite _ psm psn _ =>
+      have ⟨n, _, _⟩ := ihn psn
+      exists n; cases psm; aesop
+    | iteT _ _ psn =>
+      have ⟨n, _, _⟩ := ihn psn
+      exists n
+  | iteF _ _ _ ihn =>
+    intro ps; cases ps with
+    | ite _ psm _ psn =>
+      have ⟨n, _, _⟩ := ihn psn
+      exists n; cases psm; aesop
+    | iteF _ _ psn =>
+      have ⟨n, _, _⟩ := ihn psn
+      exists n
+  | id _ _ _ ihA ihm ihn =>
+    intro ps; cases ps with
+    | id psA psm psn =>
+      have ⟨A, psA1, psA2⟩ := ihA psA
+      have ⟨m, psm1, psm2⟩ := ihm psm
+      have ⟨n, psn1, psn2⟩ := ihn psn
+      exists .id A m n; aesop
+  | rfl _ ih =>
+    intro ps; cases ps with
+    | rfl ps =>
+      have ⟨m, _, _⟩ := ih ps
+      exists .rfl m; aesop
+  | rw _ _ psn ihA ihm ihn =>
+    intro ps; cases ps with
+    | rw psA psm psn =>
+      have ⟨A, psA1, psA2⟩ := ihA psA
+      have ⟨m, psm1, psm2⟩ := ihm psm
+      have ⟨n, psn1, psn2⟩ := ihn psn
+      exists .rw A m n; aesop
+    | rwE _ _ psm =>
+      have ⟨m, _, _⟩ := ihm psm
+      exists m; cases psn; aesop
+  | rwE _ _ _ ih =>
+    intro ps; cases ps with
+    | rw _ psm psn =>
+      have ⟨m, psm1, psm2⟩ := ih psm
+      exists m; cases psn; aesop
+    | rwE _ _ psm =>
+      have ⟨m, psm1, psm2⟩ := ih psm
+      exists m
+
+lemma PStep.strip {m m1 m2 : Tm Srt} :
+    m ≈> m1 -> m ~>* m2 -> ∃ n, m1 ~>* n ∧ m2 ≈> n := by
+  intros p r
+  induction r generalizing m1 p with
+  | R =>
+    exists m1; constructor
+    . apply Star.R
+    . assumption
+  | SE _ s1 ih =>
+    have ⟨m2, r, s2⟩ := ih p
+    have ⟨m3, p1, p2⟩ := PStep.diamond s1.toPStep s2
+    exists m3; constructor
+    . apply Star.trans r p2.toRed
+    . assumption
+
+theorem Step.confluent : @Confluent (Tm Srt) Step := by
+  intros x y z r
+  induction r generalizing z with
+  | R =>
+    intro h; exists z
+    constructor
+    assumption
+    constructor
+  | SE _ s ih =>
+    intro h
+    have ⟨z1, s1, s2⟩ := ih h
+    have ⟨z2, s3, s4⟩ := PStep.strip s.toPStep s1
+    exists z2; constructor
+    . assumption
+    . apply Star.trans s2 s4.toRed
+
+theorem Step.cr : @CR (Tm Srt) Step := by
+  rw[<-Confluent.cr]
+  apply Step.confluent
+
+lemma Red.var_inv {x : Var} {y : Tm Srt} : .var x ~>* y -> y = .var x := by
+  intro r
+  induction r with
+  | R => rfl
+  | SE _ st e => subst e; cases st
+
+lemma Red.srt_inv {s i} {x : Tm Srt} : .srt s i ~>* x -> x = .srt s i := by
+  intro r
+  induction r with
+  | R => rfl
+  | SE _ st e => subst e; cases st
+
+lemma Red.pi_inv {A B x : Tm Srt} {r s} :
+    .pi A B r s ~>* x ->
+    ∃ A' B', A ~>* A' ∧ B ~>* B' ∧ x = .pi A' B' r s := by
+  intro rd
+  induction rd with
+  | R => exists A, B; aesop
+  | SE rd st ih =>
+    have ⟨A1, B1, rA1, rB1, e⟩ := ih
+    subst e
+    cases st with
+    | @piA _ A2 _ _ _ rA2 =>
+      exists A2, B1
+      repeat' apply And.intro
+      . apply Star.SE <;> assumption
+      . apply rB1
+      . rfl
+    | @piB _ _ B2 _ _ rB2 =>
+      exists A1, B2
+      repeat' apply And.intro
+      . apply rA1
+      . apply Star.SE <;> assumption
+      . rfl
+
+lemma Red.lam_inv {A m x : Tm Srt} {r s} :
+    .lam A m r s ~>* x ->
+    ∃ A' m', A ~>* A' ∧ m ~>* m' ∧ x = .lam A' m' r s := by
+  intro rd
+  induction rd with
+  | R => exists A, m; aesop
+  | SE rd st ih =>
+    have ⟨A1, m1, rA1, rm1, e⟩ := ih
+    subst e
+    cases st with
+    | @lamA _ A2 _ _ _ rA2 =>
+      exists A2, m1
+      repeat' apply And.intro
+      . apply Star.SE <;> assumption
+      . apply rm1
+      . rfl
+    | @lamM _ _ m2 _ _ rm2 =>
+      exists A1, m2
+      repeat' apply And.intro
+      . apply rA1
+      . apply Star.SE <;> assumption
+      . rfl
+
+lemma Red.sig_inv {A B x : Tm Srt} {r s} :
+    .sig A B r s ~>* x ->
+    ∃ A' B', A ~>* A' ∧ B ~>* B' ∧ x = .sig A' B' r s := by
+  intro rd
+  induction rd with
+  | R => exists A, B; aesop
+  | SE rd st ih =>
+    have ⟨A1, B1, rA1, rB1, e⟩ := ih
+    subst e
+    cases st with
+    | @sigA _ A2 _ _ _ rA2 =>
+      exists A2, B1
+      repeat' apply And.intro
+      . apply Star.SE <;> assumption
+      . apply rB1
+      . rfl
+    | @sigB _ _ B2 _ _ rB2 =>
+      exists A1, B2
+      repeat' apply And.intro
+      . apply rA1
+      . apply Star.SE <;> assumption
+      . rfl
+
+lemma Red.pair_inv {m n x : Tm Srt} {r s} :
+    .pair m n r s ~>* x ->
+    ∃ m' n', m ~>* m' ∧ n ~>* n' ∧ x = .pair m' n' r s := by
+  intro rd
+  induction rd with
+  | R => exists m, n; aesop
+  | SE rd st ih =>
+    have ⟨m1, n1, rm1, rn1, e⟩ := ih
+    subst e
+    cases st with
+    | @pairM _ m2 _ _ _ rm2 =>
+      exists m2, n1
+      repeat' apply And.intro
+      . apply Star.SE <;> assumption
+      . apply rn1
+      . rfl
+    | @pairN _ _ n2 _ _ rn2 =>
+      exists m1, n2
+      repeat' apply And.intro
+      . apply rm1
+      . apply Star.SE <;> assumption
+      . rfl
+
+lemma Red.bool_inv {x : Tm Srt} : .bool ~>* x -> x = .bool := by
+  intro rd
+  induction rd with
+  | R => rfl
+  | SE _ st e => subst e; cases st
+
+lemma Red.tt_inv {x : Tm Srt} : .tt ~>* x -> x = .tt := by
+  intro rd
+  induction rd with
+  | R => rfl
+  | SE _ st e => subst e; cases st
+
+lemma Red.ff_inv {x : Tm Srt} : .ff ~>* x -> x = .ff := by
+  intro rd
+  induction rd with
+  | R => rfl
+  | SE _ st e => subst e; cases st
+
+lemma Red.id_inv {A m n x : Tm Srt} :
+    .id A m n ~>* x ->
+    ∃ A' m' n', A ~>* A' ∧ m ~>* m' ∧ n ~>* n' ∧ x = .id A' m' n' := by
+  intro rd
+  induction rd with
+  | R => exists A, m, n; aesop
+  | SE rd st ih =>
+    have ⟨A1, m1, n1, rA1, rm1, rn1, e⟩ := ih
+    subst e
+    cases st with
+    | @idA _ A2 _ _ rA2 =>
+      exists A2, m1, n1
+      repeat' apply And.intro
+      . apply Star.SE <;> assumption
+      . assumption
+      . assumption
+      . rfl
+    | @idM _ _ m2 _ rm2 =>
+      exists A1, m2, n1
+      repeat' apply And.intro
+      . assumption
+      . apply Star.SE <;> assumption
+      . assumption
+      . rfl
+    | @idN _ _ _ n2 rn2 =>
+      exists A1, m1, n2
+      repeat' apply And.intro
+      . assumption
+      . assumption
+      . apply Star.SE <;> assumption
+      . rfl
+
+lemma Red.rfl_inv {m x : Tm Srt} :
+    .rfl m ~>* x -> ∃ m', m ~>* m' ∧ x = .rfl m' := by
+  intro rd
+  induction rd with
+  | R => exists m; aesop
+  | SE rd st ih =>
+    have ⟨m1, rm1, e⟩ := ih
+    subst e
+    cases st with
+    | @rflM _ m2 rm2 =>
+      exists m2
+      constructor
+      . apply Star.SE <;> assumption
+      . rfl
