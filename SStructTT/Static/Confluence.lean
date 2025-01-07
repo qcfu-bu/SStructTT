@@ -4,7 +4,7 @@ open ARS
 namespace Static
 variable {Srt : Type}
 
-@[aesop safe (rule_sets := [pstep]) [constructors] ]
+@[aesop safe (rule_sets := [pstep]) [constructors]]
 inductive PStep : Tm Srt -> Tm Srt -> Prop where
   | var {x} :
     PStep (.var x) (.var x)

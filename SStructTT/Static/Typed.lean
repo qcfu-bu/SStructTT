@@ -32,7 +32,7 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
     Typed (A :: Γ) B (.srt sB iB) ->
     Typed Γ (.sig A B r s) (.srt s (max iA iB))
   | pair {Γ A B m n r s i} :
-    Typed Γ (.pi A B r s) (.srt s i) ->
+    Typed Γ (.sig A B r s) (.srt s i) ->
     Typed Γ m A ->
     Typed Γ n B.[m/] ->
     Typed Γ (.pair m n r s) (.sig A B r s)

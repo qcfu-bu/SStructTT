@@ -133,14 +133,11 @@ class SubstLemmas (T : Type) [Ids T] [Rename T] [Subst T] where
   id_subst (σ : Var -> T) (x : Var) : (ids x).[σ] = σ x
   subst_comp (σ τ : Var -> T) (s : T) : s.[σ].[τ] = s.[σ >> τ]
 
-namespace Lemmas
+namespace SubstLemmas
 set_option linter.unusedSectionVars false
-variable {T : Type} [Ids T] [Rename T] [Subst T] [lemmas: SubstLemmas T]
+variable {T : Type} [Ids T] [Rename T] [Subst T] [SubstLemmas T]
 
-@[asimp]def rename_subst := lemmas.rename_subst
-@[asimp]def subst_id     := lemmas.subst_id
-@[asimp]def id_subst     := lemmas.id_subst
-@[asimp]def subst_comp   := lemmas.subst_comp
+attribute [asimp] rename_subst subst_id id_subst subst_comp
 
 @[asimp]lemma up_shift (σ : Var -> T) : up σ = ids 0 .: (σ >> shift 1) := by
   simp[up, asimp]
@@ -190,7 +187,8 @@ variable {T : Type} [Ids T] [Rename T] [Subst T] [lemmas: SubstLemmas T]
   funext x
   simp[scomp, fcomp, asimp]
 
-open Lean Parser Tactic in
+section Tactics
+open Lean Parser Tactic
 syntax "asimp"
   (" [" withoutPosition((simpStar <|> simpErase <|> simpLemma),*,?) "]")? (location)? : tactic
 
@@ -199,4 +197,14 @@ macro_rules
   `(tactic| simp[asimp] $[$loc]?; repeat rw [<-up_shift] $[$loc]?)
 | `(tactic| asimp[$xs,*] $[$loc]?) =>
   `(tactic| simp[$xs,*, asimp] $[$loc]?; repeat rw [<-up_shift] $[$loc]?)
-end Lemmas
+
+syntax "asimp?"
+  (" [" withoutPosition((simpStar <|> simpErase <|> simpLemma),*,?) "]")? (location)? : tactic
+
+macro_rules
+| `(tactic| asimp? $[$loc]?) =>
+  `(tactic| simp?[asimp] $[$loc]?; repeat rw [<-up_shift] $[$loc]?)
+| `(tactic| asimp?[$xs,*] $[$loc]?) =>
+  `(tactic| simp?[$xs,*, asimp] $[$loc]?; repeat rw [<-up_shift] $[$loc]?)
+end Tactics
+end SubstLemmas
