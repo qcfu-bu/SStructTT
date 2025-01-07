@@ -90,8 +90,8 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
   | rwE A m n :
     Step (.rw A m (.rfl n)) m
 
-@[reducible]def StarStep := Star (@Step Srt)
-@[reducible]def ConvStep := Conv (@Step Srt)
+abbrev StarStep := Star (@Step Srt)
+abbrev ConvStep := Conv (@Step Srt)
 infix:50 " ~> " => Step
 infix:50 " ~>* " => StarStep
 infix:50 " === " => ConvStep

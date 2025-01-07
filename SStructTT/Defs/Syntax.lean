@@ -6,8 +6,8 @@ variable (Srt : Type)
 
 -- Computational Relevancy
 inductive Rlv where
-  | I -- implicit
-  | E -- explicit
+  | im -- implicit
+  | ex -- explicit
 
 inductive Tm where
   | var  (x : Var)
@@ -194,7 +194,7 @@ lemma up_comp_ren (σ : Var -> Tm Srt) (ξ : Var -> Var) :
   | succ n =>
     asimp[rename_subst]
     have h1 := ren_subst_comp .succ (ren (upren ξ)) (σ n); asimp at h1
-    have h2 := ren_subst_comp ξ (ren .succ) (σ n); asimp at h2
+    have h2 := ren_subst_comp ξ (shift 1) (σ n); asimp at h2
     rw[h1, h2]; rfl
 
 lemma subst_ren_comp σ ξ (m : Tm Srt) : m.[σ].[ren ξ] = m.[σ !>> rename ξ] := by

@@ -5,7 +5,7 @@ import SStructTT.Attr.Register
 
 section Definitions
 abbrev Var := Nat
-@[reducible]def Binder (T : Type) : Type := T
+abbrev Binder (T : Type) : Type := T
 
 class Ids (T : Type) where
   ids : Var -> T
@@ -89,6 +89,8 @@ def up [Ids T] [Rename T] (σ : Var -> T) : Var -> T :=
 def upn [Ids T] [Rename T] (n : Var) : (Var -> T) -> Var -> T :=
   n.repeat up
 
+abbrev shift [Ids T] n := @ren T _ (. + n)
+
 @[asimp]lemma scomp_0 [Subst T] (f g : Var -> T) (x : Var) :
   (f >> g) x = (f x).[g] := by rfl
 
@@ -140,7 +142,7 @@ variable {T : Type} [Ids T] [Rename T] [Subst T] [lemmas: SubstLemmas T]
 @[asimp]def id_subst     := lemmas.id_subst
 @[asimp]def subst_comp   := lemmas.subst_comp
 
-@[asimp]lemma up_shift (σ : Var -> T) : up σ = ids 0 .: (σ >> ren .succ) := by
+@[asimp]lemma up_shift (σ : Var -> T) : up σ = ids 0 .: (σ >> shift 1) := by
   simp[up, asimp]
   funext x
   cases x with
@@ -157,17 +159,17 @@ variable {T : Type} [Ids T] [Rename T] [Subst T] [lemmas: SubstLemmas T]
   funext x
   simp[scomp, asimp]
 
-@[asimp]lemma ids_shift : (@ids T _ 0) .: ren .succ = ids := by
+@[asimp]lemma ids_shift : (@ids T _ 0) .: shift 1 = ids := by
   funext x
   cases x with
   | zero => simp[asimp]
   | succ => simp[scons, ren, fcomp]
 
-@[asimp]lemma shift_scomp (m : T) (σ : Var -> T) : ren .succ >> (m .: σ) = σ := by
+@[asimp]lemma shift_scomp (m : T) (σ : Var -> T) : shift 1 >> (m .: σ) = σ := by
   funext x
   simp[scomp, ren, asimp]
 
-@[asimp]lemma ids0_scons (σ : Var -> T) : (ids 0).[σ] .: (ren .succ >> σ) = σ := by
+@[asimp]lemma ids0_scons (σ : Var -> T) : (ids 0).[σ] .: (shift 1 >> σ) = σ := by
   funext x
   simp[scons]
   cases x with

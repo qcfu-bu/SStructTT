@@ -5,9 +5,8 @@ section Definitions
 set_option quotPrecheck false
 notation:70 e1:70 " <=2 " e2:70 => (∀ {x y}, e1 x y -> e2 x y)
 
-def Pred (T : Type) := T -> Prop
-def Rel (T : Type) := T -> Pred T
-attribute [reducible] Pred Rel
+abbrev Pred (T : Type) := T -> Prop
+abbrev Rel (T : Type) := T -> Pred T
 
 variable {T : Type} (e : Rel T)
 

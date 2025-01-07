@@ -3,11 +3,14 @@ import Mathlib.Order.Defs.PartialOrder
 
 class SStruct (S : Type) extends PartialOrder S where
   s0 : S
-  weaken : LowerSet S
-  contra : LowerSet S
   s0_min : ∀ (x : S), s0 ≤ x
-  s0_weaken : s0 ∈ weaken
-  s0_contra : s0 ∈ contra
+  weaken_set : LowerSet S
+  contra_set : LowerSet S
+  s0_weaken : s0 ∈ weaken_set
+  s0_contra : s0 ∈ contra_set
+
+export SStruct
+  (s0 s0_min weaken_set contra_set s0_weaken s0_contra)
 
 namespace TL4 -- 4 Sorted TLL
 inductive Srt where
@@ -148,9 +151,9 @@ lemma Srt.contra_lower : IsLowerSet contra := by
 
 instance : SStruct Srt where
   s0 := Srt.U
-  weaken := ⟨_, Srt.weaken_lower⟩
-  contra := ⟨_, Srt.contra_lower⟩
   s0_min := Srt.le_U_min
+  weaken_set := ⟨_, Srt.weaken_lower⟩
+  contra_set := ⟨_, Srt.contra_lower⟩
   s0_weaken := Srt.weaken.U
   s0_contra := Srt.contra.U
 end TL4
