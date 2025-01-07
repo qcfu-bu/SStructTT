@@ -81,10 +81,10 @@ def ren [Ids T] (ξ : Var -> Var) : Var -> T :=
   ξ !>> ids
 
 def upren (ξ : Var -> Var) : Var -> Var :=
-  0 .: ξ !>> .succ
+  0 .: ξ !>> (.+1)
 
 def up [Ids T] [Rename T] (σ : Var -> T) : Var -> T :=
-  ids 0 .: (σ !>> rename .succ)
+  ids 0 .: (σ !>> rename (.+1))
 
 def upn [Ids T] [Rename T] (n : Var) : (Var -> T) -> Var -> T :=
   n.repeat up
@@ -95,13 +95,13 @@ abbrev shift [Ids T] n := @ren T _ (. + n)
   (f >> g) x = (f x).[g] := by rfl
 
 @[asimp]lemma scons_0 (s : T) (σ : Var -> T) : (s .: σ) 0 = s := by rfl
-@[asimp]lemma scons_1 (s : T) (σ : Var -> T) (x : Var) : (s .: σ) x.succ = σ x := by rfl
+@[asimp]lemma scons_1 (s : T) (σ : Var -> T) (x : Var) : (s .: σ) (x + 1) = σ x := by rfl
 
 @[asimp]lemma ren_x  [Ids T] (x : Var) (ξ : Var -> Var) : ren ξ x = @ids T _ (ξ x) := by rfl
 @[asimp]lemma ren_id [Ids T] : ren id = @ids T _ := by rfl
 
 @[asimp]lemma upren_0 (ξ : Var -> Var) : upren ξ 0 = 0 := by rfl
-@[asimp]lemma upren_1 (ξ : Var -> Var) n : upren ξ (n.succ) = (ξ !>> .succ) n := by simp[upren, scons]
+@[asimp]lemma upren_1 (ξ : Var -> Var) n : upren ξ (n+1) = (ξ !>> (.+1)) n := by simp[upren, scons]
 @[asimp]lemma upren_id : upren id = id := by
   funext x
   cases x with
@@ -109,10 +109,10 @@ abbrev shift [Ids T] n := @ren T _ (. + n)
   | succ => simp[asimp]
 
 @[asimp]lemma up0 [Ids T] [Rename T] (σ : Var -> T) : up σ 0 = ids 0 := by rfl
-@[asimp]lemma up1 [Ids T] [Rename T] (σ : Var -> T) n : up σ (n.succ) = rename .succ (σ n) := by rfl
+@[asimp]lemma up1 [Ids T] [Rename T] (σ : Var -> T) n : up σ (n + 1) = rename (.+1) (σ n) := by rfl
 
 @[asimp]lemma upn0 {T} [Ids T] [Rename T] (σ : Var -> T) : upn 0 σ = σ := by rfl
-@[asimp]lemma upn1 {T} [Ids T] [Rename T] (n : Var) σ : @upn T _ _ (n.succ) σ = up (upn n σ) := by
+@[asimp]lemma upn1 {T} [Ids T] [Rename T] (n : Var) σ : @upn T _ _ (n + 1) σ = up (upn n σ) := by
   simp[upn, Nat.repeat]
 
 @[asimp]lemma id_comp {A B} (f : A -> B) : id !>> f = f := by rfl
@@ -121,7 +121,7 @@ abbrev shift [Ids T] n := @ren T _ (. + n)
   (f !>> g) !>> h = f !>> (g !>> h) := by rfl
 
 @[asimp]lemma lift0 : (.+0) = id := by rfl
-@[asimp]lemma lift_scons x (f : Var -> T) (n : Var) : (.+n.succ) !>> (x .: f) = (.+n) !>> f := by
+@[asimp]lemma lift_scons x (f : Var -> T) (n : Var) : (.+(n + 1)) !>> (x .: f) = (.+n) !>> f := by
   funext x0; simp[scons, asimp]
 section Definitions
 

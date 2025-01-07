@@ -193,7 +193,7 @@ lemma up_comp_ren (σ : Var -> Tm Srt) (ξ : Var -> Var) :
   | zero => asimp
   | succ n =>
     asimp[rename_subst]
-    have h1 := ren_subst_comp .succ (ren (upren ξ)) (σ n); asimp at h1
+    have h1 := ren_subst_comp (.+1) (ren (upren ξ)) (σ n); asimp at h1
     have h2 := ren_subst_comp ξ (shift 1) (σ n); asimp at h2
     rw[h1, h2]; rfl
 
@@ -221,8 +221,8 @@ lemma up_comp (σ τ : Var -> Tm Srt) :  up σ >> up τ = up (σ >> τ) := by
   | zero => asimp
   | succ n =>
     asimp[rename_subst]
-    have h1 := subst_ren_comp τ .succ (σ n)
-    have h2 := ren_subst_comp .succ (up τ) (σ n)
+    have h1 := subst_ren_comp τ (.+1) (σ n)
+    have h2 := ren_subst_comp (.+1) (up τ) (σ n)
     rw[h1, h2]
     rfl
 
