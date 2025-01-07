@@ -35,8 +35,8 @@ def scomp [Subst T] (f g : Var -> T) : Var -> T :=
 section Notations
 open Lean PrettyPrinter
 
-syntax:56 term:56 " !>> " term:55 : term
-syntax:55 term:54 " .: " term:55 : term
+syntax:60 term:60 " !>> " term:61 : term
+syntax:60 term:61 " .: " term:60 : term
 syntax:max term:2 ".[" term:2 "]" : term
 syntax:max term:2 ".[" (term:2),+ "/]" : term
 macro_rules

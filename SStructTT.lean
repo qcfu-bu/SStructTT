@@ -4,3 +4,7 @@ import SStructTT.Defs.ARS
 import SStructTT.Defs.Subst
 import SStructTT.Defs.SStruct
 import SStructTT.Defs.Syntax
+import SStructTT.Defs.Context
+
+import SStructTT.Static.Step
+import SStructTT.Static.Confluence
