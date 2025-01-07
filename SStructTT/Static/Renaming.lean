@@ -195,3 +195,48 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     . intros
       exists s, i
       apply ih; assumption
+
+lemma Wf.has_typed {Γ : Ctx Srt} {A x} :
+    Wf Γ -> Has Γ x A -> ∃ s i, Typed Γ A (.srt s i) := by
+  intro wf
+  induction wf
+  generalizing x A
+  all_goals try trivial
+  case nil => intro h; cases h
+  case cons s i ty wf _ ih =>
+    intro h
+    cases h with
+    | zero =>
+      exists s, i
+      apply ty.renaming
+      constructor
+      . assumption
+      . exact AgreeRen.refl wf
+    | succ _ _ _ _ hs =>
+      have ⟨s, i, ty⟩ := ih hs
+      exists s, i
+      apply ty.renaming
+      constructor
+      . assumption
+      . exact AgreeRen.refl wf
+
+lemma Typed.weaken {Γ : Ctx Srt} {A B m s i} :
+    Typed Γ m A ->
+    Typed Γ B (.srt s i) ->
+    Typed (B :: Γ) m.[shift 1] A.[shift 1] := by
+  intro tym tyb
+  apply tym.renaming
+  constructor
+  . assumption
+  . exact AgreeRen.refl tym.toWf
+
+lemma Typed.eweaken {Γ Γ' : Ctx Srt} {A A' B m m' s i} :
+    Γ' = (B :: Γ) ->
+    m' = m.[ren .succ] ->
+    A' = A.[ren .succ] ->
+    Typed Γ m A ->
+    Typed Γ B (.srt s i) ->
+    Typed Γ' m' A' := by
+  intros
+  subst_vars
+  apply Typed.weaken <;> assumption
