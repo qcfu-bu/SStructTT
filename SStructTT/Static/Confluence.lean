@@ -206,21 +206,6 @@ lemma Red.compat {m : Tm Srt} {σ τ}: SRed σ τ -> m.[σ] ~>* m.[τ] := by
   open SRed in
   induction m generalizing σ τ
   all_goals asimp; try solve| aesop (rule_sets := [red])
-  case proj _ _ _ ihA _ ihn =>
-    intro h
-    apply Red.proj
-    . apply ihA; apply SRed.up; aesop
-    . aesop
-    . apply ihn
-      have := SRed.upn 2 h
-      asimp at this; assumption
-  case rw _ _ _ ihA _ _ =>
-    intro h
-    apply Red.rw
-    . apply ihA
-      have := SRed.upn 2 h
-      asimp at this; assumption
-    all_goals aesop
 
 def SConv (σ τ : Nat -> Tm Srt) := ∀ x, σ x === τ x
 
@@ -335,21 +320,6 @@ lemma SConv.upn n {σ τ : Var -> Tm Srt} :
 lemma Conv.compat (m : Tm Srt) {σ τ}: SConv σ τ -> m.[σ] === m.[τ] := by
   induction m generalizing σ τ
   all_goals asimp; try solve| aesop (rule_sets := [conv])
-  case proj _ _ _ ihA _ ihn =>
-    intro h
-    apply Conv.proj
-    . apply ihA; apply SConv.up; aesop
-    . aesop
-    . apply ihn
-      have := SConv.upn 2 h
-      asimp at this; assumption
-  case rw _ _ _ ihA _ _ =>
-    intro h
-    apply Conv.rw
-    . apply ihA
-      have := SConv.upn 2 h
-      asimp at this; assumption
-    all_goals aesop
 
 lemma Conv.subst1 m {n1 n2 : Tm Srt} : n1 === n2 -> m.[n1/] === m.[n2/] := by
   intro h; apply Conv.compat
@@ -444,15 +414,6 @@ lemma PStep.compat {m n : Tm Srt} {σ τ}:
     intro h
     have := PStep.beta A.[σ] r s (ihm (h.up)) (ihn h)
     asimp at this; assumption
-  case proj _ _ _ ihA _ ihn =>
-    intro h
-    constructor
-    . apply ihA; apply PSStep.up; aesop
-    . aesop
-    . apply ihn
-      have := PSStep.upn 2 h
-      asimp at this
-      assumption
   case projE A _ _ _ _ _ _ r s _ _ _ ihm1 ihm2 ihn =>
     intro h
     specialize ihm1 h
@@ -460,14 +421,6 @@ lemma PStep.compat {m n : Tm Srt} {σ τ}:
     specialize ihn (h.upn 2)
     have := PStep.projE A.[up σ] r s ihm1 ihm2 ihn
     asimp at this; assumption
-  case rw _ _ _ ihA _ _ =>
-    intro h
-    constructor
-    . apply ihA
-      have := PSStep.upn 2 h
-      asimp at this
-      assumption
-    all_goals aesop
 
 @[aesop safe (rule_sets := [pstep])]
 lemma PSStep.compat {m n : Tm Srt} {σ τ} :

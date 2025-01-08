@@ -130,8 +130,7 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     asimp at ihC
     asimp at ihm
     have : C.[.pair (.var 1) (.var 0) r s .: shift 2].[ren (upren $ upren ξ)]
-         = C.[up (ren ξ)].[.pair (.var 1) (.var 0) r s .: shift 2] := by
-      asimp; rfl
+         = C.[up (ren ξ)].[.pair (.var 1) (.var 0) r s .: shift 2] := by asimp
     rw[this] at ihn
     rw[SubstLemmas.upren_up] at ihn
     replace := Typed.proj ihC ihm ihn
@@ -174,8 +173,7 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     replace ihn := ihn agr; asimp at ihn
     simp[<-SubstLemmas.subst_comp] at ihB
     have : B.[a.[ren ξ].rfl .: a.[ren ξ] .: ren ξ]
-         = B.[ids 0 .: ids 1 .: ren ξ >> shift 1 >> shift 1]
-            .[.rfl a.[ren ξ],a.[ren ξ]/] := by asimp
+         = B.[upn 2 (ren ξ)].[.rfl a.[ren ξ],a.[ren ξ]/] := by asimp
     rw[this] at ihm
     have := Typed.rw ihB ihm ihn
     asimp at this; assumption

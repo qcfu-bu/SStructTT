@@ -195,9 +195,8 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     apply ih; assumption
   | @rw _ _ B _ n _ b _ _ tyB _ _ ihB ihm ihn =>
     intro agr; asimp
-    have e1 : B.[n.[σ] .: b.[σ] .: σ] = B.[up (up σ)].[n.[σ],b.[σ]/] := by asimp
-    have e2 : B.[ids 0 .: ids 1 .: σ >> shift 1 >> shift 1] = B.[upn 2 σ] := by asimp
-    rw[e1, e2]
+    have : B.[n.[σ] .: b.[σ] .: σ] = B.[upn 2 σ].[n.[σ],b.[σ]/] := by asimp
+    rw[this]
     cases tyB.toWf; case cons _ tyI =>
     cases tyI.toWf; case cons _ tyA =>
     replace ihB := ihB ((agr.cons tyA).cons tyI); asimp at ihB

@@ -187,24 +187,61 @@ attribute [asimp] rename_subst subst_id id_subst subst_comp
   funext x
   simp[scomp, fcomp, asimp]
 
+@[asimp]lemma shift0 : @shift T _ 0 = ids := by rfl
+@[asimp]lemma shift2 (n : Var) : @shift T _ (n + 2) = shift 1 >> shift 1 >> shift n := by
+  funext x
+  simp[asimp]
+  congr 1; ring
+
 section Tactics
 open Lean Parser Tactic
-syntax "asimp"
-  (" [" withoutPosition((simpStar <|> simpErase <|> simpLemma),*,?) "]")? (location)? : tactic
 
+@[fold_up]lemma ids_n_shift (σ : Var -> T) n :
+    ids (n + 1) .: σ >> shift 1 = ((ids n .: σ) >> shift 1) := by
+  simp[asimp]
+
+@[fold_up]lemma shift_upn1 (σ : Var -> T) : ids 0 .: (σ >> shift 1) = upn 1 σ := by
+  simp[up, asimp]
+  funext x
+  cases x with
+  | zero => simp[asimp]
+  | succ => simp[scomp, asimp]
+
+@[fold_up]lemma upn_comp (σ : Var -> T) m n : upn m (upn n σ) = upn (m + n) σ := by
+  induction m generalizing σ n with
+  | zero => simp[asimp]
+  | succ m ih =>
+    simp[asimp]
+    rw[ih,<-up_shift,<-upn1]
+    have : m + n + 1 = m + 1 + n := by ring
+    rw[this]
+
+lemma upn1_up (σ : Var -> T) : upn 1 σ = up σ := by rfl
+
+lemma shift_comp (m n : Var) : @shift T _ m >> shift n = shift (m + n) := by
+  funext x
+  simp[asimp]
+  congr 1; ring
+
+syntax "fold_up" (location)? : tactic
 macro_rules
-| `(tactic| asimp $[$loc]?) =>
-  `(tactic| simp[asimp] $[$loc]?; repeat rw [<-up_shift] $[$loc]?)
-| `(tactic| asimp[$xs,*] $[$loc]?) =>
-  `(tactic| simp[$xs,*, asimp] $[$loc]?; repeat rw [<-up_shift] $[$loc]?)
+  | `(tactic| fold_up $[$loc]?) => do
+    let fold1 <- `(tactic| try simp[<-scomp_assoc,fold_up] $[$loc]?)
+    let fold2 <- `(tactic| try simp[scomp_assoc,upn1_up,shift_comp] $[$loc]?)
+    `(tactic| $fold1; $fold2)
 
-syntax "asimp?"
-  (" [" withoutPosition((simpStar <|> simpErase <|> simpLemma),*,?) "]")? (location)? : tactic
-
+syntax "fsimp" (" [" withoutPosition((simpStar <|> simpErase <|> simpLemma),*,?) "]")? (location)? : tactic
 macro_rules
-| `(tactic| asimp? $[$loc]?) =>
-  `(tactic| simp?[asimp] $[$loc]?; repeat rw [<-up_shift] $[$loc]?)
-| `(tactic| asimp?[$xs,*] $[$loc]?) =>
-  `(tactic| simp?[$xs,*, asimp] $[$loc]?; repeat rw [<-up_shift] $[$loc]?)
+  | `(tactic| fsimp $[$loc]?) =>
+    `(tactic| simp[asimp] $[$loc]?)
+  | `(tactic| fsimp[$xs,*] $[$loc]?) =>
+    `(tactic| simp[$xs,*, asimp] $[$loc]?)
+
+syntax "asimp" (" [" withoutPosition((simpStar <|> simpErase <|> simpLemma),*,?) "]")? (location)? : tactic
+macro_rules
+  | `(tactic| asimp $[$loc]?) =>
+    `(tactic| fsimp $[$loc]?; fold_up $[$loc]?)
+  | `(tactic| asimp[$xs,*] $[$loc]?) =>
+    `(tactic| fsimp[$xs,*] $[$loc]?; fold_up $[$loc]?)
 end Tactics
 end SubstLemmas
