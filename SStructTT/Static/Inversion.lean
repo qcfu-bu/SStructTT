@@ -4,9 +4,9 @@ open ARS
 namespace Static
 variable {Srt : Type} [inst : SStruct Srt]
 
-lemma Typed.pi_inv {Γ : Ctx Srt} {A B C r s} :
-    Γ ⊢ .pi A B r s : C ->
-    ∃ sB iB i, A :: Γ ⊢ B : .srt sB iB ∧ C === .srt s i := by
+lemma Typed.pi_inv {Γ : Ctx Srt} {A B T r s} :
+    Γ ⊢ .pi A B r s : T ->
+    ∃ sB iB i, A :: Γ ⊢ B : .srt sB iB ∧ T === .srt s i := by
   generalize e: Tm.pi A B r s = x
   intro ty; induction ty generalizing A B r s
   all_goals try trivial
@@ -15,7 +15,7 @@ lemma Typed.pi_inv {Γ : Ctx Srt} {A B C r s} :
     exists sB, iB, (max iA iB)
     aesop
   case conv eq1 _ _ ih _ =>
-    have ⟨sB, iB, i, tyB, eq2⟩ := ih e
+    have ⟨sB, iB, i, _, eq2⟩ := ih e
     exists sB, iB, i
     constructor
     . assumption
@@ -23,9 +23,9 @@ lemma Typed.pi_inv {Γ : Ctx Srt} {A B C r s} :
       apply Conv.sym eq1
       apply eq2
 
-lemma Typed.sig_inv {Γ : Ctx Srt} {A B C r s} :
-    Γ ⊢ .sig A B r s : C ->
-    ∃ sB iB i, A :: Γ ⊢ B : .srt sB iB ∧ C === .srt s i := by
+lemma Typed.sig_inv {Γ : Ctx Srt} {A B T r s} :
+    Γ ⊢ .sig A B r s : T ->
+    ∃ sB iB i, A :: Γ ⊢ B : .srt sB iB ∧ T === .srt s i := by
   generalize e: Tm.sig A B r s = x
   intro ty; induction ty generalizing A B r s
   all_goals try trivial
@@ -34,7 +34,7 @@ lemma Typed.sig_inv {Γ : Ctx Srt} {A B C r s} :
     exists sB, iB, (max iA iB)
     aesop
   case conv eq1 _ _ ih _ =>
-    have ⟨sB, iB, i, tyB, eq2⟩ := ih e
+    have ⟨sB, iB, i, _, eq2⟩ := ih e
     exists sB, iB, i
     constructor
     . assumption
@@ -42,9 +42,9 @@ lemma Typed.sig_inv {Γ : Ctx Srt} {A B C r s} :
       apply Conv.sym eq1
       apply eq2
 
-lemma Typed.id_inv {Γ : Ctx Srt} {A B m n} :
-    Γ ⊢ .id A m n : B ->
-    ∃ i, Γ ⊢ m : A ∧ Γ ⊢ n : A ∧ B === .srt s0 i := by
+lemma Typed.id_inv {Γ : Ctx Srt} {A T m n} :
+    Γ ⊢ .id A m n : T ->
+    ∃ i, Γ ⊢ m : A ∧ Γ ⊢ n : A ∧ T === .srt s0 i := by
   generalize e: Tm.id A m n = x
   intro ty; induction ty generalizing A m n
   all_goals try trivial
@@ -53,10 +53,62 @@ lemma Typed.id_inv {Γ : Ctx Srt} {A B m n} :
     exists iA
     aesop
   case conv eq1 _ _ ih _ =>
-    have ⟨i, tym, tyn, eq2⟩ := ih e
+    have ⟨i, _, _, eq2⟩ := ih e
     exists i
     and_intros
     . assumption
+    . assumption
+    . apply Conv.trans
+      apply Conv.sym eq1
+      apply eq2
+
+lemma Typed.lam_inv {Γ : Ctx Srt} {A T m r s} :
+    Γ ⊢ .lam A m r s : T ->
+    ∃ B, A :: Γ ⊢ m : B ∧ T === .pi A B r s := by
+  generalize e: Tm.lam A m r s = x
+  intro ty; induction ty generalizing A m r s
+  all_goals try trivial
+  case lam B _ _ _ _ _ _ _ _ _ =>
+    cases e; exists B; aesop
+  case conv eq1 _ _ ih _ =>
+    have ⟨B, _, eq2⟩ := ih e
+    exists B
+    constructor
+    . assumption
+    . apply Conv.trans
+      apply Conv.sym eq1
+      apply eq2
+
+lemma Typed.pair_inv {Γ : Ctx Srt} {T m n r s} :
+    Γ ⊢ .pair m n r s : T ->
+    ∃ A B, Γ ⊢ m : A ∧ Γ ⊢ n : B.[m/] ∧ T === .sig A B r s := by
+  generalize e: Tm.pair m n r s = x
+  intro ty; induction ty generalizing m n r s
+  all_goals try trivial
+  case pair A B _ _ _ _ _ _ _ _ _ _ _ =>
+    cases e; exists A, B; aesop
+  case conv eq1 _ _ ih _ =>
+    have ⟨A, B, _, _, eq2⟩ := ih e
+    exists A, B
+    and_intros
+    . assumption
+    . assumption
+    . apply Conv.trans
+      apply Conv.sym eq1
+      apply eq2
+
+lemma Typed.rfl_inv {Γ : Ctx Srt} {T m} :
+    Γ ⊢ .rfl m : T ->
+    ∃ A, Γ ⊢ m : A ∧ T === .id A m m := by
+  generalize e: Tm.rfl m = x
+  intro ty; induction ty generalizing m
+  all_goals try trivial
+  case rfl A _ _ _ =>
+    exists A; cases e; aesop
+  case conv eq1 _ _ ih _ =>
+    have ⟨A, _, eq2⟩ := ih e
+    exists A
+    constructor
     . assumption
     . apply Conv.trans
       apply Conv.sym eq1
