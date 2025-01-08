@@ -50,17 +50,17 @@ macro_rules
 
 @[app_unexpander fcomp]
 def unexpandFComp : Unexpander
-  | `($(_) $f:term $g:term) =>  `($f !>> $g)
+  | `($(_) $f:term $g:term) => `($f !>> $g)
   | _ => throw ()
 
 @[app_unexpander scomp]
 def unexpandSComp : Unexpander
-  | `($(_) $σ:term $τ:term) =>  `($σ >> $τ)
+  | `($(_) $σ:term $τ:term) => `($σ >> $τ)
   | _ => throw ()
 
 @[app_unexpander scons]
 def unexpandSCons : Unexpander
-  | `($(_) $m:term $σ:term) =>  `($m .: $σ)
+  | `($(_) $m:term $σ:term) => `($m .: $σ)
   | _ => throw ()
 
 @[app_unexpander subst]
