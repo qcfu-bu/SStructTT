@@ -105,7 +105,7 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
   induction ty
   using @Typed.rec _ inst (motive_2 := fun Γ _ => ∀ Γ' σ, AgreeSubst σ Γ Γ' -> Γ' ⊢)
   generalizing Γ' σ with
-  | srt i wf ih =>
+  | srt _ _ _ ih =>
     intro agr; asimp
     constructor
     apply ih; assumption

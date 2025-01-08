@@ -82,10 +82,10 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
   induction ty
   using @Typed.rec _ inst (motive_2 := fun Γ _ => ∀ Γ' ξ, AgreeRen ξ Γ Γ' -> Γ' ⊢)
   generalizing Γ' ξ with
-  | srt _ wf ih =>
+  | srt _ _ _ ih =>
     intro; asimp; constructor
     apply ih; assumption
-  | var wf hs ih =>
+  | var _ _ ih =>
     intro; asimp; constructor
     . apply ih; assumption
     . apply AgreeRen.has <;> assumption

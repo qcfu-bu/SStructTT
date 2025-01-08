@@ -8,9 +8,9 @@ variable {Srt : Type} [SStruct Srt]
 
 mutual
 inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
-  | srt {Γ} i :
+  | srt {Γ} s i :
     Wf Γ ->
-    Typed Γ (.srt s0 i) (.srt s0 (i + 1))
+    Typed Γ (.srt s i) (.srt s0 (i + 1))
   | var {Γ x A} :
     Wf Γ ->
     Has Γ x A ->
