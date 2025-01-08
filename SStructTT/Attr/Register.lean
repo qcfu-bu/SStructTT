@@ -2,7 +2,8 @@ import Lean.Meta.Tactic.Simp
 import Aesop
 
 -- Simplify de Bruijn index substitutions.
-register_simp_attr fold_up
+register_simp_attr fold1
+register_simp_attr fold2
 register_simp_attr asimp
 
 -- Rule sets for Aesop solver.

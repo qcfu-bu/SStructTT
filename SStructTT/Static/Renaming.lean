@@ -36,10 +36,10 @@ lemma AgreeRen.has {Γ Γ' : Ctx Srt} {A x ξ} :
     intro h
     cases h <;> asimp
     case zero =>
-      have : A.[ren ξ >> shift 1] = A.[ren ξ].[shift 1] := by asimp
+      have : A.[ren ξ !> shift 1] = A.[ren ξ].[shift 1] := by asimp
       rw[this]; constructor
     case succ A x hs =>
-      have : A.[ren ξ >> shift 1] = A.[ren ξ].[shift 1] := by asimp
+      have : A.[ren ξ !> shift 1] = A.[ren ξ].[shift 1] := by asimp
       rw[this]; constructor
       apply ih; assumption
   | @wk _ _ A _ _ ξ _ _ ih =>

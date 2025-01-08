@@ -215,7 +215,7 @@ lemma subst_ren_comp σ ξ (m : Tm Srt) : m.[σ].[ren ξ] = m.[σ !>> rename ξ]
   | rfl m ihm => asimp[ihm]
   | rw A m n ihA ihm ihn => asimp[up_upren, up_comp_ren, ihA, ihm, ihn]
 
-lemma up_comp (σ τ : Var -> Tm Srt) :  up σ >> up τ = up (σ >> τ) := by
+lemma up_comp (σ τ : Var -> Tm Srt) :  up σ !> up τ = up (σ !> τ) := by
   funext x
   cases x with
   | zero => asimp
@@ -226,7 +226,7 @@ lemma up_comp (σ τ : Var -> Tm Srt) :  up σ >> up τ = up (σ >> τ) := by
     rw[h1, h2]
     rfl
 
-lemma subst_comp (σ τ : Var -> Tm Srt) m : m.[σ].[τ] = m.[σ >> τ] := by
+lemma subst_comp (σ τ : Var -> Tm Srt) m : m.[σ].[τ] = m.[σ !> τ] := by
   induction m generalizing σ τ with
   | var => asimp
   | srt => asimp

@@ -47,11 +47,11 @@ lemma AgreeSubst.has {Γ Γ' : Ctx Srt} {A x σ} :
       asimp
       constructor
       . constructor <;> assumption
-      . have : A.[σ >> shift 1] = A.[σ].[shift 1] := by asimp
+      . have : A.[σ !> shift 1] = A.[σ].[shift 1] := by asimp
         rw[this]; constructor
     | @succ _ A _ _ hs =>
       asimp
-      have : A.[σ >> shift 1] = A.[σ].[shift 1] := by asimp
+      have : A.[σ !> shift 1] = A.[σ].[shift 1] := by asimp
       rw[this]; clear this
       apply Typed.eweaken <;> try first | rfl | assumption
       apply ih <;> assumption
