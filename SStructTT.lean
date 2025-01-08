@@ -9,3 +9,4 @@ import SStructTT.Static.Context
 import SStructTT.Static.Step
 import SStructTT.Static.Confluence
 import SStructTT.Static.Typed
+import SStructTT.Static.Renaming
