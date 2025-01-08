@@ -8,16 +8,16 @@ inductive AgreeRen : (Var -> Var) -> Ctx Srt -> Ctx Srt -> Prop where
   | nil {ξ} :
     AgreeRen ξ  [] []
   | cons {Γ Γ' A s i ξ} :
-    Typed Γ A (.srt s i) ->
+    Γ ⊢ A : .srt s i ->
     AgreeRen ξ Γ Γ' ->
     AgreeRen (upren ξ) (A :: Γ) (A.[ren ξ] :: Γ')
   | wk {Γ Γ' A s i ξ} :
-    Typed Γ' A (.srt s i) ->
+    Γ' ⊢ A : .srt s i ->
     AgreeRen ξ Γ Γ' ->
     AgreeRen (ξ !>> (.+1)) Γ (A :: Γ')
 
 @[aesop safe (rule_sets := [rename])]
-lemma AgreeRen.refl {Γ : Ctx Srt} : Wf Γ -> AgreeRen id Γ Γ := by
+lemma AgreeRen.refl {Γ : Ctx Srt} : Γ ⊢ -> AgreeRen id Γ Γ := by
   intro wf
   induction wf
   all_goals try trivial
@@ -48,7 +48,7 @@ lemma AgreeRen.has {Γ Γ' : Ctx Srt} {A x ξ} :
     rw[this]; constructor
     apply ih; assumption
 
-lemma AgreeRen.wf_nil {Γ' : Ctx Srt} {ξ} : AgreeRen ξ [] Γ' -> Wf Γ' := by
+lemma AgreeRen.wf_nil {Γ' : Ctx Srt} {ξ} : AgreeRen ξ [] Γ' -> Γ' ⊢ := by
   intro agr
   cases agr with
   | nil => constructor
@@ -58,10 +58,10 @@ lemma AgreeRen.wf_nil {Γ' : Ctx Srt} {ξ} : AgreeRen ξ [] Γ' -> Wf Γ' := by
     . apply ty.toWf
 
 lemma AgreeRen.wf_cons {Γ Γ' : Ctx Srt} {A ξ} :
-    AgreeRen ξ (A :: Γ) Γ' -> Wf Γ ->
-    (∀ Γ' ξ, AgreeRen ξ Γ Γ' → Wf Γ') ->
-    (∀ Γ' ξ, AgreeRen ξ Γ Γ' → ∃ s i, Typed Γ' A.[ren ξ] (.srt s i)) ->
-    Wf Γ' := by
+    AgreeRen ξ (A :: Γ) Γ' -> Γ ⊢ ->
+    (∀ Γ' ξ, AgreeRen ξ Γ Γ' → Γ' ⊢) ->
+    (∀ Γ' ξ, AgreeRen ξ Γ Γ' → ∃ s i, Γ' ⊢ A.[ren ξ] : .srt s i) ->
+    Γ' ⊢ := by
   intro agr
   cases agr with
   | cons ty agr =>
@@ -77,10 +77,10 @@ lemma AgreeRen.wf_cons {Γ Γ' : Ctx Srt} {A ξ} :
     . exact ty.toWf
 
 lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
-    Typed Γ m A -> AgreeRen ξ Γ Γ' -> Typed Γ' m.[ren ξ] A.[ren ξ] := by
+    Γ ⊢ m : A -> AgreeRen ξ Γ Γ' -> Γ' ⊢ m.[ren ξ] : A.[ren ξ] := by
   intro ty
   induction ty
-  using @Typed.rec _ inst (motive_2 := fun Γ _ => ∀ Γ' ξ, AgreeRen ξ Γ Γ' -> Wf Γ')
+  using @Typed.rec _ inst (motive_2 := fun Γ _ => ∀ Γ' ξ, AgreeRen ξ Γ Γ' -> Γ' ⊢)
   generalizing Γ' ξ with
   | srt _ wf ih =>
     intro; asimp; constructor
@@ -195,7 +195,7 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
       apply ih; assumption
 
 lemma Wf.has_typed {Γ : Ctx Srt} {A x} :
-    Wf Γ -> Has Γ x A -> ∃ s i, Typed Γ A (.srt s i) := by
+    Γ ⊢ -> Has Γ x A -> ∃ s i, Γ ⊢ A : .srt s i := by
   intro wf
   induction wf
   generalizing x A
@@ -219,9 +219,9 @@ lemma Wf.has_typed {Γ : Ctx Srt} {A x} :
       . exact AgreeRen.refl wf
 
 lemma Typed.weaken {Γ : Ctx Srt} {A B m s i} :
-    Typed Γ m A ->
-    Typed Γ B (.srt s i) ->
-    Typed (B :: Γ) m.[shift 1] A.[shift 1] := by
+    Γ ⊢ m : A ->
+    Γ ⊢ B : .srt s i ->
+    B :: Γ ⊢ m.[shift 1] : A.[shift 1] := by
   intro tym tyb
   apply tym.renaming
   constructor
@@ -232,9 +232,9 @@ lemma Typed.eweaken {Γ Γ' : Ctx Srt} {A A' B m m' s i} :
     Γ' = (B :: Γ) ->
     m' = m.[ren .succ] ->
     A' = A.[ren .succ] ->
-    Typed Γ m A ->
-    Typed Γ B (.srt s i) ->
-    Typed Γ' m' A' := by
+    Γ ⊢ m : A ->
+    Γ ⊢ B : .srt s i ->
+    Γ' ⊢ m' : A' := by
   intros
   subst_vars
   apply Typed.weaken <;> assumption

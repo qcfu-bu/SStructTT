@@ -8,22 +8,22 @@ inductive AgreeSubst : (Var -> Tm Srt) -> Ctx Srt -> Ctx Srt -> Prop where
   | nil {σ} :
     AgreeSubst σ [] []
   | cons {Γ Γ' A s i σ} :
-    Typed Γ A (.srt s i) ->
+    Γ ⊢ A : .srt s i ->
     AgreeSubst σ Γ Γ' ->
     AgreeSubst (up σ) (A :: Γ) (A.[σ] :: Γ')
   | wk {Γ Γ' A m σ} :
-    Typed Γ' m  A.[σ] ->
+    Γ' ⊢ m : A.[σ] ->
     AgreeSubst σ Γ Γ' ->
     AgreeSubst (m .: σ) (A :: Γ) Γ'
   | conv {Γ Γ' A B s i σ} :
     A === B ->
-    Typed Γ B (.srt s i) ->
-    Typed Γ' B.[ren .succ].[σ] (.srt s i) ->
+    Γ ⊢ B : .srt s i ->
+    Γ' ⊢ B.[ren .succ].[σ] : .srt s i ->
     AgreeSubst σ (A :: Γ) Γ' ->
     AgreeSubst σ (B :: Γ) Γ'
 
 @[aesop safe (rule_sets := [subst])]
-lemma AgreeSubst.refl {Γ : Ctx Srt} : Wf Γ -> AgreeSubst ids Γ Γ := by
+lemma AgreeSubst.refl {Γ : Ctx Srt} : Γ ⊢ -> AgreeSubst ids Γ Γ := by
   intro wf
   induction wf
   all_goals try trivial
@@ -35,7 +35,7 @@ lemma AgreeSubst.refl {Γ : Ctx Srt} : Wf Γ -> AgreeSubst ids Γ Γ := by
     assumption
 
 lemma AgreeSubst.has {Γ Γ' : Ctx Srt} {A x σ} :
-    AgreeSubst σ Γ Γ' -> Wf Γ' -> Has Γ x A -> Typed Γ' (σ x) A.[σ]  := by
+    AgreeSubst σ Γ Γ' -> Γ' ⊢ -> Has Γ x A -> Γ' ⊢ σ x : A.[σ]  := by
   intro agr
   induction agr generalizing x A with
   | nil => intro _ hs; cases hs
@@ -73,16 +73,16 @@ lemma AgreeSubst.has {Γ Γ' : Ctx Srt} {A x σ} :
       . assumption
       . constructor; assumption
 
-lemma AgreeSubst.wf_nil {Γ : Ctx Srt} {σ} : AgreeSubst σ [] Γ -> Wf Γ := by
+lemma AgreeSubst.wf_nil {Γ : Ctx Srt} {σ} : AgreeSubst σ [] Γ -> Γ ⊢ := by
   intro agr
   cases agr with
   | nil => constructor
 
 lemma AgreeSubst.wf_cons {Γ Γ' : Ctx Srt} {A σ} :
-    AgreeSubst σ (A :: Γ) Γ' -> Wf Γ ->
-    (∀ Γ' σ, AgreeSubst σ Γ Γ' -> Wf Γ') ->
-    (∀ Γ' σ, AgreeSubst σ Γ Γ' -> ∃ s i, Typed Γ' A.[σ] (.srt s i)) ->
-    Wf Γ' := by
+    AgreeSubst σ (A :: Γ) Γ' -> Γ ⊢ ->
+    (∀ Γ' σ, AgreeSubst σ Γ Γ' -> Γ' ⊢) ->
+    (∀ Γ' σ, AgreeSubst σ Γ Γ' -> ∃ s i, Γ' ⊢ A.[σ] : .srt s i) ->
+    Γ' ⊢ := by
   intro agr
   cases agr with
   | cons _ agr =>
@@ -100,10 +100,10 @@ lemma AgreeSubst.wf_cons {Γ Γ' : Ctx Srt} {A σ} :
     apply ty'.toWf
 
 lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
-    Typed Γ m A -> AgreeSubst σ Γ Γ' -> Typed Γ' m.[σ] A.[σ] := by
+    Γ ⊢ m : A -> AgreeSubst σ Γ Γ' -> Γ' ⊢ m.[σ] : A.[σ] := by
   intro ty
   induction ty
-  using @Typed.rec _ inst (motive_2 := fun Γ _ => ∀ Γ' σ, AgreeSubst σ Γ Γ' -> Wf Γ')
+  using @Typed.rec _ inst (motive_2 := fun Γ _ => ∀ Γ' σ, AgreeSubst σ Γ Γ' -> Γ' ⊢)
   generalizing Γ' σ with
   | srt i wf ih =>
     intro agr; asimp
@@ -225,9 +225,9 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
       apply ih1; assumption
 
 lemma Typed.subst {Γ : Ctx Srt} {A B m n} :
-    Typed (A :: Γ) m B ->
-    Typed Γ n A ->
-    Typed Γ m.[n/] B.[n/] := by
+    A :: Γ ⊢ m : B ->
+    Γ ⊢ n : A ->
+    Γ ⊢ m.[n/] : B.[n/] := by
   intro tym tyn
   apply Typed.substitution
   . assumption
@@ -238,20 +238,20 @@ lemma Typed.subst {Γ : Ctx Srt} {A B m n} :
 lemma Typed.esubst {Γ : Ctx Srt} {A B B' m m' n} :
     m' = m.[n/] ->
     B' = B.[n/] ->
-    Typed (A :: Γ) m B ->
-    Typed Γ n A ->
-    Typed Γ m' B' := by
+    A :: Γ ⊢ m : B ->
+    Γ ⊢ n : A ->
+    Γ ⊢ m' : B' := by
   intros
   subst_vars
   apply Typed.subst <;> assumption
 
 lemma Typed.conv_ctx {Γ : Ctx Srt} {A B C m s i} :
     B === A ->
-    Typed Γ B (.srt s i) ->
-    Typed (A :: Γ) m C ->
-    Typed (B :: Γ) m C := by
+    Γ ⊢ B : .srt s i ->
+    A :: Γ ⊢ m : C ->
+    B :: Γ ⊢ m : C := by
   intro eq tyb tym
-  replace tym : Typed (B :: Γ) m.[ids] C.[ids] := by
+  replace tym : B :: Γ ⊢ m.[ids] : C.[ids] := by
     have wf := tym.toWf
     cases wf; case cons wf tya =>
     apply Typed.substitution
