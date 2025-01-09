@@ -155,7 +155,7 @@ lemma Red.ite {A A' m m' n1 n1' n2 n2' : Tm Srt} :
   apply Star.hom _ _ rn2; aesop
 
 @[aesop safe (rule_sets := [red])]
-lemma Red.id {A A' m m' n n' : Tm Srt} :
+lemma Red.idn {A A' m m' n n' : Tm Srt} :
     A ~>* A' -> m ~>* m' -> n ~>* n' -> .idn A m n ~>* .idn A' m' n' := by
   intro rA rm rn
   apply (@Star.trans _ _ (.idn A' m n))
@@ -273,7 +273,7 @@ lemma Conv.ite {A A' m m' n1 n1' n2 n2' : Tm Srt} :
   apply Conv.hom _ _ rn2; aesop
 
 @[aesop safe (rule_sets := [conv])]
-lemma Conv.id {A A' m m' n n' : Tm Srt} :
+lemma Conv.idn {A A' m m' n n' : Tm Srt} :
     A === A' -> m === m' -> n === n' -> .idn A m n === .idn A' m' n' := by
   intro rA rm rn
   apply (@Conv.trans _ _ (.idn A' m n))
