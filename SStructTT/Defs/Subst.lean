@@ -198,11 +198,11 @@ attribute [asimp] rename_subst subst_id id_subst subst_comp
 section Tactics
 open Lean Parser Tactic
 
-@[fold1]lemma ids_n_shift (σ : Var -> T) n :
+@[asimp,fold1]lemma ids_n_shift (σ : Var -> T) n :
     ids (n + 1) .: σ !> shift 1 = ((ids n .: σ) !> shift 1) := by
   simp[asimp]
 
-@[fold1]lemma shift_upn1 (σ : Var -> T) : ids 0 .: (σ !> shift 1) = upn 1 σ := by
+@[fold1]lemma shift_upn1 (σ : Var -> T) : ids 0 .: σ !> shift 1 = upn 1 σ := by
   simp[up, asimp]
   funext x
   cases x with
@@ -234,16 +234,14 @@ macro_rules
 
 syntax "fsimp" (" [" withoutPosition((simpStar <|> simpErase <|> simpLemma),*,?) "]")? (location)? : tactic
 macro_rules
-  | `(tactic| fsimp $[$loc]?) =>
-    `(tactic| simp[asimp] $[$loc]?)
-  | `(tactic| fsimp[$xs,*] $[$loc]?) =>
-    `(tactic| simp[$xs,*, asimp] $[$loc]?)
+  | `(tactic| fsimp $[[$args,*]]? $[$loc]?) =>
+    match args with
+    | some args => `(tactic| simp[$args,*, asimp] $[$loc]?)
+    | none => `(tactic| simp[asimp] $[$loc]?)
 
 syntax "asimp" (" [" withoutPosition((simpStar <|> simpErase <|> simpLemma),*,?) "]")? (location)? : tactic
 macro_rules
-  | `(tactic| asimp $[$loc]?) =>
-    `(tactic| fsimp $[$loc]?; fold_up $[$loc]?)
-  | `(tactic| asimp[$xs,*] $[$loc]?) =>
-    `(tactic| fsimp[$xs,*] $[$loc]?; fold_up $[$loc]?)
+  | `(tactic| asimp $[[$args,*]]? $[$loc]?) =>
+    `(tactic| (try fsimp $[[$args,*]]? $[$loc]?); fold_up $[$loc]?)
 end Tactics
 end SubstLemmas

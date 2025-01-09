@@ -116,6 +116,7 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     . assumption
   | pi _ _ _ _ ihA ihB =>
     intro agr; asimp
+    asimp
     constructor
     . apply ihA; assumption
     . apply ihB; constructor <;> assumption

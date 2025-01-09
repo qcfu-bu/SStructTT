@@ -1,10 +1,11 @@
 import SStructTT.Static.Inversion
+import Init.Prelude
 open ARS
 
 namespace Static
 variable {Srt : Type} [inst : SStruct Srt]
 
-theorem preservation {Γ : Ctx Srt} {A m n} :
+theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
     Γ ⊢ m : A -> m ~> n -> Γ ⊢ n : A := by
   intro ty
   induction ty generalizing n
@@ -60,17 +61,10 @@ theorem preservation {Γ : Ctx Srt} {A m n} :
         apply ihn st
       . apply tyB.subst tyn
     case beta =>
-      replace ⟨B, tym, eq⟩ := tym.lam_inv
-      have ⟨_, _, eqA, eqB⟩ := Conv.pi_inj eq
-      subst_vars
+      replace ⟨tym, _, _⟩ := tym.lam_inv; subst_vars
       have ⟨_, _, _, tyA⟩ := tym.ctx_inv
       replace tyB := tyB.subst tyn; asimp at tyB
-      replace tyn := Typed.conv eqA tyn tyA
-      replace tym := tym.subst tyn
-      apply Typed.conv
-      . apply Conv.subst _ eqB.sym
-      . assumption
-      . assumption
+      apply tym.subst tyn
   case sig ihA ihB =>
     intro st; cases st
     case sigA st =>
@@ -102,59 +96,67 @@ theorem preservation {Γ : Ctx Srt} {A m n} :
       . assumption
       . assumption
       . apply ihn st
-  case proj Γ A B _ _ _ r s sC iC  tyC tym tyn ihC ihm ihn =>
-    have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
-    have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
+  case proj Γ A B C _ _ r s sC iC tyC tym tyn ihC ihm ihn =>
+    have ⟨s, _, wf, tyS⟩ := tyC.ctx_inv
+    have ⟨_, _, _, tyB, eq⟩ := tyS.sig_inv
     have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
+    have ⟨_, _⟩ := Conv.srt_inj eq
+    subst_vars; clear eq
     intro st; cases st
     case projA C' st =>
       replace ihC := ihC st
+      have wf := tyn.toWf
       have tyC' : (.sig A B r s).[shift 2] :: B :: A :: Γ ⊢ C'.[ren (upren (.+2))] :
                   (.srt sC iC).[ren (upren (.+2))] := by
         apply Typed.renaming
         . assumption
         . apply AgreeRen.cons
           assumption
-          replace (.+2) with ((id !>> (.+1)) !>> (.+1)) := by funext x; rfl
+          rewrite (.+2) to ((id !>> (.+1)) !>> (.+1)) := by funext; rfl
           aesop (rule_sets := [rename])
       have typ : B :: A :: Γ ⊢ .pair (.var 1) (.var 0) r s : (.sig A B r s).[shift 2] := by
         asimp; apply Typed.pair
-        sorry
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        . rewrite Tm.sig A.[shift 2] B.[up (shift 2)] r s
+               to (Tm.sig A B r s).[shift 1].[shift 1] := by asimp
+          have := (tyS.weaken tyA).weaken tyB
+          assumption
+        . rewrite A.[shift 2] to A.[shift 1].[shift 1] := by asimp
+          constructor <;> aesop
+        . asimp; constructor <;> aesop
+      replace tyC' := tyC'.subst typ; asimp at tyC'; clear typ
       apply Typed.conv
       . apply Conv.subst
         apply Conv.onei st
-      . constructor
-        apply ihC st
-        assumption
-
+      . apply Typed.proj ihC tym
         apply Typed.conv
         apply Conv.subst
         apply Conv.one st
         assumption
-
-
-
-
-
-
-
-      sorry
-    case projM => sorry
-    case projN => sorry
-    case projE => sorry
+        assumption
+      . apply tyC.subst tym
+    case projM st =>
+      apply Typed.conv
+      . apply Conv.subst1
+        apply Conv.onei st
+      . apply Typed.proj tyC (ihm st) tyn
+      . apply tyC.subst tym
+    case projN => constructor <;> aesop
+    case projE m1 m2 r s =>
+      have ⟨tym1, tym2, _, _⟩ := tym.pair_inv; subst_vars
+      rewrite C.[.pair m1 m2 r s/]
+           to C.[.pair (.var 1) (.var 0) r s .: shift 2].[m2,m1/] := by asimp
+      apply tyn.substitution
+      apply AgreeSubst.wk tym2
+      constructor; asimp; assumption
+      apply AgreeSubst.refl wf
+  case bool => intro st; cases st
+  case tt => intro st; cases st
+  case ff => intro st; cases st
+  case ite => sorry
+  case id => sorry
+  case rfl => sorry
+  case rw => sorry
+  case conv eq _ tyB ihm _ =>
+    intro st
+    have tym := ihm st
+    apply Typed.conv eq tym tyB

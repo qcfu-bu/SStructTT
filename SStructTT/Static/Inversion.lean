@@ -62,7 +62,7 @@ lemma Typed.id_inv {Γ : Ctx Srt} {A T m n} :
       apply Conv.sym eq1
       apply eq2
 
-lemma Typed.lam_inv {Γ : Ctx Srt} {A T m r s} :
+lemma Typed.lam_inv' {Γ : Ctx Srt} {A T m r s} :
     Γ ⊢ .lam A m r s : T ->
     ∃ B, A :: Γ ⊢ m : B ∧ T === .pi A B r s := by
   generalize e: Tm.lam A m r s = x
@@ -79,7 +79,7 @@ lemma Typed.lam_inv {Γ : Ctx Srt} {A T m r s} :
       apply Conv.sym eq1
       apply eq2
 
-lemma Typed.pair_inv {Γ : Ctx Srt} {T m n r s} :
+lemma Typed.pair_inv' {Γ : Ctx Srt} {T m n r s} :
     Γ ⊢ .pair m n r s : T ->
     ∃ A B, Γ ⊢ m : A ∧ Γ ⊢ n : B.[m/] ∧ T === .sig A B r s := by
   generalize e: Tm.pair m n r s = x
@@ -97,7 +97,7 @@ lemma Typed.pair_inv {Γ : Ctx Srt} {T m n r s} :
       apply Conv.sym eq1
       apply eq2
 
-lemma Typed.rfl_inv {Γ : Ctx Srt} {T m} :
+lemma Typed.rfl_inv' {Γ : Ctx Srt} {T m} :
     Γ ⊢ .rfl m : T ->
     ∃ A, Γ ⊢ m : A ∧ T === .id A m m := by
   generalize e: Tm.rfl m = x
@@ -178,3 +178,50 @@ theorem Typed.validity {Γ : Ctx Srt} {A m} :
       apply AgreeSubst.refl
       apply tya.toWf
   case conv => aesop
+
+lemma Typed.lam_inv {Γ : Ctx Srt} {A A' B m r r' s s'} :
+    Γ ⊢ .lam A m r s : .pi A' B r' s' ->
+    A' :: Γ ⊢ m : B ∧ r = r' ∧ s = s' := by
+  intro ty
+  have ⟨B', tym, eq⟩ := ty.lam_inv'
+  have ⟨_, _, eqA, eqB⟩ := Conv.pi_inj eq
+  subst_vars; simp
+  have ⟨s, i, tyP⟩ := ty.validity
+  have ⟨_, _, _, tyB, _⟩ := tyP.pi_inv
+  have ⟨_, _, _, tyA'⟩ := tyB.ctx_inv
+  have ⟨_, _, _, tyA⟩ := tym.ctx_inv
+  replace tyB := Typed.conv_ctx eqA.sym tyA tyB
+  apply Typed.conv_ctx eqA tyA'
+  apply Typed.conv eqB.sym tym tyB
+
+lemma Typed.pair_inv {Γ : Ctx Srt} {A B m n r r' s s'} :
+    Γ ⊢ .pair m n r s : .sig A B r' s' ->
+    Γ ⊢ m : A ∧ Γ ⊢ n : B.[m/] ∧ r = r' ∧ s = s' := by
+  intro ty
+  have ⟨A', B', tym, tyn, eq⟩ := ty.pair_inv'
+  have ⟨_, _, eqA, eqB⟩ := Conv.sig_inj eq
+  subst_vars; simp
+  have ⟨s, i, tyS⟩ := ty.validity
+  have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
+  have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
+  replace tym := Typed.conv eqA.sym tym tyA
+  replace tyB := tyB.subst tym; asimp at tyB
+  constructor
+  . assumption
+  . apply Typed.conv
+    apply Conv.subst _ eqB.sym
+    assumption
+    assumption
+
+lemma Typed.rfl_inv {Γ : Ctx Srt} {A m a b} :
+    Γ ⊢ .rfl m : .id A a b -> Γ ⊢ m : A ∧ m === a ∧ m === b := by
+  intro ty
+  have ⟨A', tym, eq⟩ := ty.rfl_inv'
+  have ⟨eqA, eqa, eqb⟩ := Conv.id_inj eq
+  have ⟨s, i, tyI⟩ := ty.validity
+  have ⟨_, tya, _, _⟩ := tyI.id_inv
+  have ⟨_, _, tyA⟩ := tya.validity
+  and_intros
+  . apply Typed.conv eqA.sym tym tyA
+  . apply eqa.sym
+  . apply eqb.sym
