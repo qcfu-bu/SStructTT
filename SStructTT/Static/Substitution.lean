@@ -47,12 +47,11 @@ lemma AgreeSubst.has {Γ Γ' : Ctx Srt} {A x σ} :
       asimp
       constructor
       . constructor <;> assumption
-      . have : A.[σ !> shift 1] = A.[σ].[shift 1] := by asimp
-        rw[this]; constructor
+      . rewrite A.[σ !> shift 1] to A.[σ].[shift 1] := by asimp
+        constructor
     | @succ _ A _ _ hs =>
       asimp
-      have : A.[σ !> shift 1] = A.[σ].[shift 1] := by asimp
-      rw[this]; clear this
+      rewrite A.[σ !> shift 1] to A.[σ].[shift 1] := by asimp
       apply Typed.eweaken <;> try first | rfl | assumption
       apply ih <;> assumption
   | wk _ _ ih  =>
@@ -147,11 +146,10 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
       asimp; assumption
   | @proj _ _ _ C m _ _ _ _ _ tyC _ tyn ihC ihm ihn =>
     intro agr; asimp
-    have : C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] := by asimp
-    rw[this]
-    cases tyC.toWf; case cons _ tyS =>
-    cases tyn.toWf; case cons wf tyB =>
-    cases wf; case cons _ tyA =>
+    rewrite C.[m.[σ] .: σ] to C.[up σ].[m.[σ]/] := by asimp
+    have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
+    have ⟨_, _, _, tyB⟩ := tyn.ctx_inv
+    have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
     replace ihC := ihC (agr.cons tyS); asimp at ihC
     replace ihm := ihm agr; asimp at ihm
     replace ihn := ihn ((agr.cons tyA).cons tyB); asimp at ihn
@@ -173,9 +171,8 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     apply ih; assumption
   | @ite _ A m _ _ _ _ tyA _ _ _ ihA ihm ihn1 ihn2 =>
     intro agr; asimp
-    have : A.[m.[σ] .: σ] = A.[up σ].[m.[σ]/] := by asimp
-    rw[this]
-    cases tyA.toWf; case cons _ tyb =>
+    rewrite A.[m.[σ] .: σ] to A.[up σ].[m.[σ]/] := by asimp
+    have ⟨_, _, _, tyb⟩ := tyA.ctx_inv
     replace ihn1 := ihn1 agr; asimp at ihn1
     replace ihn2 := ihn2 agr; asimp at ihn2
     constructor
@@ -195,10 +192,9 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     apply ih; assumption
   | @rw _ _ B _ n _ b _ _ tyB _ _ ihB ihm ihn =>
     intro agr; asimp
-    have : B.[n.[σ] .: b.[σ] .: σ] = B.[upn 2 σ].[n.[σ],b.[σ]/] := by asimp
-    rw[this]
-    cases tyB.toWf; case cons _ tyI =>
-    cases tyI.toWf; case cons _ tyA =>
+    rewrite B.[n.[σ] .: b.[σ] .: σ] to B.[upn 2 σ].[n.[σ],b.[σ]/] := by asimp
+    have ⟨_, _, _, tyI⟩ := tyB.ctx_inv
+    have ⟨_, _, _, tyA⟩ := tyI.ctx_inv
     replace ihB := ihB ((agr.cons tyA).cons tyI); asimp at ihB
     replace ihm := ihm agr; asimp at ihm
     replace ihn := ihn agr; asimp at ihn
@@ -252,15 +248,13 @@ lemma Typed.conv_ctx {Γ : Ctx Srt} {A B C m s i} :
     B :: Γ ⊢ m : C := by
   intro eq tyb tym
   replace tym : B :: Γ ⊢ m.[ids] : C.[ids] := by
-    have wf := tym.toWf
-    cases wf; case cons wf tya =>
+    have ⟨_, _, _, tyA⟩ := tym.ctx_inv
     apply Typed.substitution
     . assumption
     . apply AgreeSubst.conv <;> try assumption
       . asimp
         apply Typed.eweaken <;> try first | rfl | assumption
         asimp
-      . apply AgreeSubst.refl; constructor <;>
-        assumption
+      . apply AgreeSubst.refl; constructor <;> assumption
   asimp at tym
   exact tym

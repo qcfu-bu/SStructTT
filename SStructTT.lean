@@ -10,3 +10,6 @@ import SStructTT.Static.Step
 import SStructTT.Static.Confluence
 import SStructTT.Static.Typed
 import SStructTT.Static.Renaming
+import SStructTT.Static.Substitution
+import SStructTT.Static.Inversion
+import SStructTT.Static.Preservation

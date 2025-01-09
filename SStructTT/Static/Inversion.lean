@@ -114,7 +114,7 @@ lemma Typed.rfl_inv {Γ : Ctx Srt} {T m} :
       apply Conv.sym eq1
       apply eq2
 
-theorem Typed.valid {Γ : Ctx Srt} {A m} :
+theorem Typed.validity {Γ : Ctx Srt} {A m} :
     Γ ⊢ m : A -> ∃ s i, Γ ⊢ A : .srt s i := by
   intro ty; induction ty
   all_goals try trivial
@@ -168,8 +168,7 @@ theorem Typed.valid {Γ : Ctx Srt} {A m} :
     have ⟨sI, iI, tyI⟩ := ihI
     have ⟨_, tya, tyb, _⟩ := tyI.id_inv
     exists s, i
-    have : Tm.srt s i = (Tm.srt s i).[n,b/] := by asimp
-    rw[this]
+    rewrite Tm.srt s i to (Tm.srt s i).[n,b/] := by asimp
     apply Typed.substitution
     . assumption
     . constructor

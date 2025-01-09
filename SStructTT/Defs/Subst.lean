@@ -1,5 +1,6 @@
 import Mathlib.Tactic
-import SStructTT.Attr.Register
+import SStructTT.Util.Attr
+import SStructTT.Util.Tactics
 
 -------------------------------------------------------------------------------------------------
 
@@ -214,8 +215,8 @@ open Lean Parser Tactic
   | succ m ih =>
     simp[asimp]
     rw[ih,<-up_shift,<-upn1]
-    have : m + n + 1 = m + 1 + n := by ring
-    rw[this]
+    rewrite m + n + 1 to m + 1 + n := by ring
+    rfl
 
 @[fold2]lemma upn1_up (σ : Var -> T) : upn 1 σ = up σ := by rfl
 

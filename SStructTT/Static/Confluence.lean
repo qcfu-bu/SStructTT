@@ -85,11 +85,11 @@ lemma Step.subst {m n : Tm Srt} σ : m ~> n -> m.[σ] ~> n.[σ] := by
   induction st generalizing σ
   all_goals try asimp; aesop
   case beta A m n r s  =>
-    have : m.[n/].[σ] = m.[up σ].[n.[σ]/] := by asimp
-    rw[this]; constructor
+    rewrite m.[n/].[σ] to m.[up σ].[n.[σ]/] := by asimp
+    constructor
   case projE A m1 m2 n r s =>
-    have : n.[m2,m1/].[σ] = n.[upn 2 σ].[m2.[σ],m1.[σ]/] := by asimp
-    rw[this]; constructor
+    rewrite n.[m2,m1/].[σ] to n.[upn 2 σ].[m2.[σ],m1.[σ]/] := by asimp
+    constructor
 
 @[aesop safe (rule_sets := [red])]
 lemma Red.pi {A A' B B' : Tm Srt} r s :
@@ -850,6 +850,51 @@ lemma Red.rfl_inv {m x : Tm Srt} :
       constructor
       . apply Star.SE <;> assumption
       . rfl
+
+lemma Conv.srt_inj {s1 s2 : Srt} {i j} :
+    .srt s1 i === .srt s2 j -> s1 = s2 ∧ i = j := by
+  intro eq
+  have ⟨_, eq1, eq2⟩ := Step.cr eq
+  have e1 := Red.srt_inv eq1
+  have e2 := Red.srt_inv eq2
+  cases e1; cases e2; trivial
+
+lemma Conv.pi_inj {A1 A2 B1 B2 : Tm Srt} {r1 r2 s1 s2} :
+    .pi A1 B1 r1 s1 === .pi A2 B2 r2 s2 ->
+    r1 = r2 ∧ s1 = s2 ∧ A1 === A2 ∧ B1 === B2 := by
+  intro eq
+  have ⟨x, eq1, eq2⟩ := Step.cr eq
+  have ⟨_, _, _, _, e1⟩ := Red.pi_inv eq1
+  have ⟨_, _, _, _, e2⟩ := Red.pi_inv eq2
+  subst_vars; cases e2
+  and_intros <;> try rfl
+  . apply Conv.join <;> assumption
+  . apply Conv.join <;> assumption
+
+lemma Conv.sig_inj {A1 A2 B1 B2 : Tm Srt} {r1 r2 s1 s2} :
+    .sig A1 B1 r1 s1 === .sig A2 B2 r2 s2 ->
+    r1 = r2 ∧ s1 = s2 ∧ A1 === A2 ∧ B1 === B2 := by
+  intro eq
+  have ⟨_, eq1, eq2⟩ := Step.cr eq
+  have ⟨_, _, _, _, e1⟩ := Red.sig_inv eq1
+  have ⟨_, _, _, _, e2⟩ := Red.sig_inv eq2
+  subst_vars; cases e2
+  and_intros <;> try rfl
+  . apply Conv.join <;> assumption
+  . apply Conv.join <;> assumption
+
+lemma Conv.id_inj {A1 A2 m1 m2 n1 n2 : Tm Srt} :
+    .id A1 m1 n1 === .id A2 m2 n2 ->
+    A1 === A2 ∧ m1 === m2 ∧ n1 === n2 := by
+  intro eq
+  have ⟨x, eq1, eq2⟩ := Step.cr eq
+  have ⟨_, _, _, _, _, _, e1⟩ := Red.id_inv eq1
+  have ⟨_, _, _, _, _, _, e2⟩ := Red.id_inv eq2
+  subst_vars; cases e2
+  and_intros
+  . apply Conv.join <;> assumption
+  . apply Conv.join <;> assumption
+  . apply Conv.join <;> assumption
 
 namespace Tactic
 open Lean Elab Meta

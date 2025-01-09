@@ -36,17 +36,15 @@ lemma AgreeRen.has {Γ Γ' : Ctx Srt} {A x ξ} :
     intro h
     cases h <;> asimp
     case zero =>
-      have : A.[ren ξ !> shift 1] = A.[ren ξ].[shift 1] := by asimp
-      rw[this]; constructor
+      rewrite A.[ren ξ !> shift 1] to A.[ren ξ].[shift 1] := by asimp
+      constructor
     case succ A x hs =>
-      have : A.[ren ξ !> shift 1] = A.[ren ξ].[shift 1] := by asimp
-      rw[this]; constructor
-      apply ih; assumption
+      rewrite A.[ren ξ !> shift 1] to A.[ren ξ].[shift 1] := by asimp
+      constructor; apply ih; assumption
   | @wk _ _ A _ _ ξ _ _ ih =>
     intro h; asimp
-    have : A.[ren (ξ !>> .succ)] = A.[ren ξ].[shift 1] := by asimp; rfl
-    rw[this]; constructor
-    apply ih; assumption
+    rewrite A.[ren (ξ !>> .succ)] to A.[ren ξ].[shift 1] := by asimp; rfl
+    constructor; apply ih; assumption
 
 lemma AgreeRen.wf_nil {Γ' : Ctx Srt} {ξ} : AgreeRen ξ [] Γ' -> Γ' ⊢ := by
   intro agr
@@ -118,9 +116,9 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
       asimp at this; asimp; assumption
   | @proj Γ A B C m n r s sC iC tyC tym tyn ihC ihm ihn =>
     intro agr; asimp
-    cases tyC.toWf; case cons tyS =>
-    cases tyn.toWf; case cons wf _ =>
-    cases wf; case cons =>
+    have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
+    have ⟨_, _, _, tyB⟩ := tyn.ctx_inv
+    have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
     replace ihC := ihC (agr.cons tyS)
     replace ihm := ihm agr
     have agr' : AgreeRen (upren (upren ξ)) (B :: A :: Γ)
@@ -129,9 +127,9 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     replace ihn := ihn agr'
     asimp at ihC
     asimp at ihm
-    have : C.[.pair (.var 1) (.var 0) r s .: shift 2].[ren (upren $ upren ξ)]
-         = C.[up (ren ξ)].[.pair (.var 1) (.var 0) r s .: shift 2] := by asimp
-    rw[this] at ihn
+    rewrite C.[.pair (.var 1) (.var 0) r s .: shift 2].[ren (upren $ upren ξ)]
+         to C.[up (ren ξ)].[.pair (.var 1) (.var 0) r s .: shift 2]
+         at ihn := by asimp
     rw[SubstLemmas.upren_up] at ihn
     replace := Typed.proj ihC ihm ihn
     asimp at this
@@ -147,13 +145,13 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     apply ih; assumption
   | @ite _ A _ _ _ _ _ tyA _ _ _ ihA ihm ihn1 ihn2 =>
     intro agr; asimp
-    cases tyA.toWf; case cons tyb =>
+    have ⟨_, _, _, tyb⟩ := tyA.ctx_inv
     replace ihA := ihA (agr.cons tyb); asimp at ihA
     replace ihm := ihm agr; asimp at ihm
-    have e1 : A.[.tt .: ren ξ] = A.[up (ren ξ)].[.tt/] := by asimp
-    have e2 : A.[.ff .: ren ξ] = A.[up (ren ξ)].[.ff/] := by asimp
-    replace ihn1 := ihn1 agr; asimp at ihn1; rw[e1] at ihn1
-    replace ihn2 := ihn2 agr; asimp at ihn2; rw[e2] at ihn2
+    replace ihn1 := ihn1 agr; asimp at ihn1
+    replace ihn2 := ihn2 agr; asimp at ihn2
+    rewrite A.[.tt .: ren ξ] to A.[up (ren ξ)].[.tt/] at ihn1 := by asimp
+    rewrite A.[.ff .: ren ξ] to A.[up (ren ξ)].[.ff/] at ihn2 := by asimp
     have := Typed.ite ihA ihm ihn1 ihn2
     asimp at this; assumption
   | id tyA tym tyn ihA ihm ihn =>
@@ -166,15 +164,15 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     apply ih; assumption
   | @rw _ A B _ _ a b _ _ tyB tym tyn ihB ihm ihn =>
     intro agr; asimp
-    cases tyB.toWf; case cons wf tyI =>
-    cases wf; case cons tyA =>
+    have ⟨_, _, _, tyI⟩ := tyB.ctx_inv
+    have ⟨_, _, _, tyA⟩ := tyI.ctx_inv
     replace ihB := ihB ((agr.cons tyA).cons tyI); asimp at ihB
     replace ihm := ihm agr; asimp at ihm
     replace ihn := ihn agr; asimp at ihn
     simp[<-SubstLemmas.subst_comp] at ihB
-    have : B.[a.[ren ξ].rfl .: a.[ren ξ] .: ren ξ]
-         = B.[upn 2 (ren ξ)].[.rfl a.[ren ξ],a.[ren ξ]/] := by asimp
-    rw[this] at ihm
+    rewrite B.[a.[ren ξ].rfl .: a.[ren ξ] .: ren ξ]
+         to B.[upn 2 (ren ξ)].[.rfl a.[ren ξ],a.[ren ξ]/]
+         at ihm := by asimp
     have := Typed.rw ihB ihm ihn
     asimp at this; assumption
   | conv eq tym tyB ihm ihB =>
