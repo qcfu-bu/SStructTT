@@ -181,7 +181,7 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     . apply ihm; assumption
     . asimp; assumption
     . asimp; assumption
-  | id _ _ _ ihA ihm ihn =>
+  | idn _ _ _ ihA ihm ihn =>
     intro agr; asimp
     constructor
     . apply ihA; assumption

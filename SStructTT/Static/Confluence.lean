@@ -59,11 +59,11 @@ inductive PStep : Tm Srt -> Tm Srt -> Prop where
   | iteF A n1 {n2 n2'} :
     PStep n2 n2' ->
     PStep (.ite A .ff n1 n2) n2'
-  | id {A A' m m' n n'} :
+  | idn {A A' m m' n n'} :
     PStep A A' ->
     PStep m m' ->
     PStep n n' ->
-    PStep (.id A m n) (.id A' m' n')
+    PStep (.idn A m n) (.idn A' m' n')
   | rfl {m m'} :
     PStep m m' ->
     PStep (.rfl m) (.rfl m')
@@ -95,7 +95,7 @@ lemma Step.subst {m n : Tm Srt} σ : m ~> n -> m.[σ] ~> n.[σ] := by
 lemma Red.pi {A A' B B' : Tm Srt} r s :
     A ~>* A' -> B ~>* B' -> .pi A B r s ~>* .pi A' B' r s := by
   intro rA rB
-  apply (@Star.trans _ _ (Tm.pi A' B r s))
+  apply (@Star.trans _ _ (.pi A' B r s))
   apply Star.hom _ _ rA; aesop
   apply Star.hom _ _ rB; aesop
 
@@ -103,7 +103,7 @@ lemma Red.pi {A A' B B' : Tm Srt} r s :
 lemma Red.lam {A A' m m' : Tm Srt} r s :
     A ~>* A' -> m ~>* m' -> .lam A m r s ~>* .lam A' m' r s := by
   intro rA rm
-  apply (@Star.trans _ _ (Tm.lam A' m r s))
+  apply (@Star.trans _ _ (.lam A' m r s))
   apply Star.hom _ _ rA; aesop
   apply Star.hom _ _ rm; aesop
 
@@ -111,7 +111,7 @@ lemma Red.lam {A A' m m' : Tm Srt} r s :
 lemma Red.app {m m' n n' : Tm Srt} :
     m ~>* m' -> n ~>* n' -> .app m n ~>* .app m' n' := by
   intro rm rn
-  apply (@Star.trans _ _ (Tm.app m' n))
+  apply (@Star.trans _ _ (.app m' n))
   apply Star.hom _ _ rm; aesop
   apply Star.hom _ _ rn; aesop
 
@@ -119,7 +119,7 @@ lemma Red.app {m m' n n' : Tm Srt} :
 lemma Red.sig {A A' B B' : Tm Srt} r s :
     A ~>* A' -> B ~>* B' -> .sig A B r s ~>* .sig A' B' r s := by
   intro rA rB
-  apply (@Star.trans _ _ (Tm.sig A' B r s))
+  apply (@Star.trans _ _ (.sig A' B r s))
   apply Star.hom _ _ rA; aesop
   apply Star.hom _ _ rB; aesop
 
@@ -127,7 +127,7 @@ lemma Red.sig {A A' B B' : Tm Srt} r s :
 lemma Red.pair {m m' n n' : Tm Srt} r s :
     m ~>* m' -> n ~>* n' -> .pair m n r s ~>* .pair m' n' r s := by
   intro rm rn
-  apply (@Star.trans _ _ (Tm.pair m' n r s))
+  apply (@Star.trans _ _ (.pair m' n r s))
   apply Star.hom _ _ rm; aesop
   apply Star.hom _ _ rn; aesop
 
@@ -135,9 +135,9 @@ lemma Red.pair {m m' n n' : Tm Srt} r s :
 lemma Red.proj {A A' m m' n n' : Tm Srt} :
     A ~>* A' -> m ~>* m' -> n ~>* n' -> .proj A m n ~>* .proj A' m' n' := by
   intro rA rm rn
-  apply (@Star.trans _ _ (Tm.proj A' m n))
+  apply (@Star.trans _ _ (.proj A' m n))
   apply Star.hom _ _ rA; aesop
-  apply (@Star.trans _ _ (Tm.proj A' m' n))
+  apply (@Star.trans _ _ (.proj A' m' n))
   apply Star.hom _ _ rm; aesop
   apply Star.hom _ _ rn; aesop
 
@@ -146,21 +146,21 @@ lemma Red.ite {A A' m m' n1 n1' n2 n2' : Tm Srt} :
     A ~>* A' -> m ~>* m' -> n1 ~>* n1' -> n2 ~>* n2' ->
     .ite A m n1 n2 ~>* .ite A' m' n1' n2' := by
   intro rA rm rn1 rn2
-  apply (@Star.trans _ _ (Tm.ite A' m n1 n2))
+  apply (@Star.trans _ _ (.ite A' m n1 n2))
   apply Star.hom _ _ rA; aesop
-  apply (@Star.trans _ _ (Tm.ite A' m' n1 n2))
+  apply (@Star.trans _ _ (.ite A' m' n1 n2))
   apply Star.hom _ _ rm; aesop
-  apply (@Star.trans _ _ (Tm.ite A' m' n1' n2))
+  apply (@Star.trans _ _ (.ite A' m' n1' n2))
   apply Star.hom _ _ rn1; aesop
   apply Star.hom _ _ rn2; aesop
 
 @[aesop safe (rule_sets := [red])]
 lemma Red.id {A A' m m' n n' : Tm Srt} :
-    A ~>* A' -> m ~>* m' -> n ~>* n' -> .id A m n ~>* .id A' m' n' := by
+    A ~>* A' -> m ~>* m' -> n ~>* n' -> .idn A m n ~>* .idn A' m' n' := by
   intro rA rm rn
-  apply (@Star.trans _ _ (Tm.id A' m n))
+  apply (@Star.trans _ _ (.idn A' m n))
   apply Star.hom _ _ rA; aesop
-  apply (@Star.trans _ _ (Tm.id A' m' n))
+  apply (@Star.trans _ _ (.idn A' m' n))
   apply Star.hom _ _ rm; aesop
   apply Star.hom _ _ rn; aesop
 
@@ -172,9 +172,9 @@ lemma Red.rfl {m m' : Tm Srt} : m ~>* m' -> .rfl m ~>* .rfl m' := by
 lemma Red.rw {A A' m m' n n' : Tm Srt} :
     A ~>* A' -> m ~>* m' -> n ~>* n' -> .rw A m n ~>* .rw A' m' n' := by
   intro rA rm rn
-  apply (@Star.trans _ _ (Tm.rw A' m n))
+  apply (@Star.trans _ _ (.rw A' m n))
   apply Star.hom _ _ rA; aesop
-  apply (@Star.trans _ _ (Tm.rw A' m' n))
+  apply (@Star.trans _ _ (.rw A' m' n))
   apply Star.hom _ _ rm; aesop
   apply Star.hom _ _ rn; aesop
 
@@ -213,7 +213,7 @@ def SConv (σ τ : Nat -> Tm Srt) := ∀ x, σ x === τ x
 lemma Conv.pi {A A' B B' : Tm Srt} r s :
     A === A' -> B === B' -> .pi A B r s === .pi A' B' r s := by
   intro rA rB
-  apply (@Conv.trans _ _ (Tm.pi A' B r s))
+  apply (@Conv.trans _ _ (.pi A' B r s))
   apply Conv.hom _ _ rA; aesop
   apply Conv.hom _ _ rB; aesop
 
@@ -221,7 +221,7 @@ lemma Conv.pi {A A' B B' : Tm Srt} r s :
 lemma Conv.lam {A A' m m' : Tm Srt} r s :
     A === A' -> m === m' -> .lam A m r s === .lam A' m' r s := by
   intro rA rm
-  apply (@Conv.trans _ _ (Tm.lam A' m r s))
+  apply (@Conv.trans _ _ (.lam A' m r s))
   apply Conv.hom _ _ rA; aesop
   apply Conv.hom _ _ rm; aesop
 
@@ -229,7 +229,7 @@ lemma Conv.lam {A A' m m' : Tm Srt} r s :
 lemma Conv.app {m m' n n' : Tm Srt} :
     m === m' -> n === n' -> .app m n === .app m' n' := by
   intro rm rn
-  apply (@Conv.trans _ _ (Tm.app m' n))
+  apply (@Conv.trans _ _ (.app m' n))
   apply Conv.hom _ _ rm; aesop
   apply Conv.hom _ _ rn; aesop
 
@@ -237,7 +237,7 @@ lemma Conv.app {m m' n n' : Tm Srt} :
 lemma Conv.sig {A A' B B' : Tm Srt} r s :
     A === A' -> B === B' -> .sig A B r s === .sig A' B' r s := by
   intro rA rB
-  apply (@Conv.trans _ _ (Tm.sig A' B r s))
+  apply (@Conv.trans _ _ (.sig A' B r s))
   apply Conv.hom _ _ rA; aesop
   apply Conv.hom _ _ rB; aesop
 
@@ -245,7 +245,7 @@ lemma Conv.sig {A A' B B' : Tm Srt} r s :
 lemma Conv.pair {m m' n n' : Tm Srt} r s :
     m === m' -> n === n' -> .pair m n r s === .pair m' n' r s := by
   intro rm rn
-  apply (@Conv.trans _ _ (Tm.pair m' n r s))
+  apply (@Conv.trans _ _ (.pair m' n r s))
   apply Conv.hom _ _ rm; aesop
   apply Conv.hom _ _ rn; aesop
 
@@ -253,9 +253,9 @@ lemma Conv.pair {m m' n n' : Tm Srt} r s :
 lemma Conv.proj {A A' m m' n n' : Tm Srt} :
     A === A' -> m === m' -> n === n' -> .proj A m n === .proj A' m' n' := by
   intro rA rm rn
-  apply (@Conv.trans _ _ (Tm.proj A' m n))
+  apply (@Conv.trans _ _ (.proj A' m n))
   apply Conv.hom _ _ rA; aesop
-  apply (@Conv.trans _ _ (Tm.proj A' m' n))
+  apply (@Conv.trans _ _ (.proj A' m' n))
   apply Conv.hom _ _ rm; aesop
   apply Conv.hom _ _ rn; aesop
 
@@ -264,21 +264,21 @@ lemma Conv.ite {A A' m m' n1 n1' n2 n2' : Tm Srt} :
     A === A' -> m === m' -> n1 === n1' -> n2 === n2' ->
     .ite A m n1 n2 === .ite A' m' n1' n2' := by
   intro rA rm rn1 rn2
-  apply (@Conv.trans _ _ (Tm.ite A' m n1 n2))
+  apply (@Conv.trans _ _ (.ite A' m n1 n2))
   apply Conv.hom _ _ rA; aesop
-  apply (@Conv.trans _ _ (Tm.ite A' m' n1 n2))
+  apply (@Conv.trans _ _ (.ite A' m' n1 n2))
   apply Conv.hom _ _ rm; aesop
-  apply (@Conv.trans _ _ (Tm.ite A' m' n1' n2))
+  apply (@Conv.trans _ _ (.ite A' m' n1' n2))
   apply Conv.hom _ _ rn1; aesop
   apply Conv.hom _ _ rn2; aesop
 
 @[aesop safe (rule_sets := [conv])]
 lemma Conv.id {A A' m m' n n' : Tm Srt} :
-    A === A' -> m === m' -> n === n' -> .id A m n === .id A' m' n' := by
+    A === A' -> m === m' -> n === n' -> .idn A m n === .idn A' m' n' := by
   intro rA rm rn
-  apply (@Conv.trans _ _ (Tm.id A' m n))
+  apply (@Conv.trans _ _ (.idn A' m n))
   apply Conv.hom _ _ rA; aesop
-  apply (@Conv.trans _ _ (Tm.id A' m' n))
+  apply (@Conv.trans _ _ (.idn A' m' n))
   apply Conv.hom _ _ rm; aesop
   apply Conv.hom _ _ rn; aesop
 
@@ -290,9 +290,9 @@ lemma Conv.rfl {m m' : Tm Srt} : m === m' -> .rfl m === .rfl m' := by
 lemma Conv.rw {A A' m m' n n' : Tm Srt} :
     A === A' -> m === m' -> n === n' -> .rw A m n === .rw A' m' n' := by
   intro rA rm rn
-  apply (@Conv.trans _ _ (Tm.rw A' m n))
+  apply (@Conv.trans _ _ (.rw A' m n))
   apply Conv.hom _ _ rA; aesop
-  apply (@Conv.trans _ _ (Tm.rw A' m' n))
+  apply (@Conv.trans _ _ (.rw A' m' n))
   apply Conv.hom _ _ rm; aesop
   apply Conv.hom _ _ rn; aesop
 
@@ -606,15 +606,15 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
     | iteF _ _ psn =>
       have ⟨n, _, _⟩ := ihn psn
       exists n
-  | id _ _ _ ihA ihm ihn =>
+  | idn _ _ _ ihA ihm ihn =>
     intro ps; cases ps with
-    | id psA psm psn =>
+    | idn psA psm psn =>
       have ⟨A, psA1, psA2⟩ := ihA psA
       have ⟨m, psm1, psm2⟩ := ihm psm
       have ⟨n, psn1, psn2⟩ := ihn psn
-      exists .id A m n; constructor
-      . apply PStep.id psA1 psm1 psn1
-      . apply PStep.id psA2 psm2 psn2
+      exists .idn A m n; constructor
+      . apply PStep.idn psA1 psm1 psn1
+      . apply PStep.idn psA2 psm2 psn2
   | rfl _ ih =>
     intro ps; cases ps with
     | rfl ps =>
@@ -804,9 +804,9 @@ lemma Red.ff_inv {x : Tm Srt} : .ff ~>* x -> x = .ff := by
   | R => rfl
   | SE _ st e => subst e; cases st
 
-lemma Red.id_inv {A m n x : Tm Srt} :
-    .id A m n ~>* x ->
-    ∃ A' m' n', A ~>* A' ∧ m ~>* m' ∧ n ~>* n' ∧ x = .id A' m' n' := by
+lemma Red.idn_inv {A m n x : Tm Srt} :
+    .idn A m n ~>* x ->
+    ∃ A' m' n', A ~>* A' ∧ m ~>* m' ∧ n ~>* n' ∧ x = .idn A' m' n' := by
   intro rd
   induction rd with
   | R => aesop
@@ -814,21 +814,21 @@ lemma Red.id_inv {A m n x : Tm Srt} :
     have ⟨A1, m1, n1, rA1, rm1, rn1, e⟩ := ih
     subst e
     cases st with
-    | @idA _ A2 _ _ rA2 =>
+    | @idnA _ A2 _ _ rA2 =>
       exists A2, m1, n1
       repeat' apply And.intro
       . apply Star.SE <;> assumption
       . assumption
       . assumption
       . rfl
-    | @idM _ _ m2 _ rm2 =>
+    | @idnM _ _ m2 _ rm2 =>
       exists A1, m2, n1
       repeat' apply And.intro
       . assumption
       . apply Star.SE <;> assumption
       . assumption
       . rfl
-    | @idN _ _ _ n2 rn2 =>
+    | @idnN _ _ _ n2 rn2 =>
       exists A1, m1, n2
       repeat' apply And.intro
       . assumption
@@ -883,13 +883,13 @@ lemma Conv.sig_inj {A1 A2 B1 B2 : Tm Srt} {r1 r2 s1 s2} :
   . apply Conv.join <;> assumption
   . apply Conv.join <;> assumption
 
-lemma Conv.id_inj {A1 A2 m1 m2 n1 n2 : Tm Srt} :
-    .id A1 m1 n1 === .id A2 m2 n2 ->
+lemma Conv.idn_inj {A1 A2 m1 m2 n1 n2 : Tm Srt} :
+    .idn A1 m1 n1 === .idn A2 m2 n2 ->
     A1 === A2 ∧ m1 === m2 ∧ n1 === n2 := by
   intro eq
   have ⟨x, eq1, eq2⟩ := Step.cr eq
-  have ⟨_, _, _, _, _, _, e1⟩ := Red.id_inv eq1
-  have ⟨_, _, _, _, _, _, e2⟩ := Red.id_inv eq2
+  have ⟨_, _, _, _, _, _, e1⟩ := Red.idn_inv eq1
+  have ⟨_, _, _, _, _, _, e2⟩ := Red.idn_inv eq2
   subst_vars; cases e2
   and_intros
   . apply Conv.join <;> assumption
@@ -978,7 +978,7 @@ def getInvLemma (m : Expr) : MetaM Expr := do
   | ``Tm.bool => return .const ``Red.bool_inv []
   | ``Tm.tt   => return .const ``Red.tt_inv   []
   | ``Tm.ff   => return .const ``Red.ff_inv   []
-  | ``Tm.id   => return .const ``Red.id_inv   []
+  | ``Tm.idn  => return .const ``Red.idn_inv  []
   | ``Tm.rfl  => return .const ``Red.rfl_inv  []
   | _ => throwError `getInvLemma
 

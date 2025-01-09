@@ -42,13 +42,13 @@ lemma Typed.sig_inv {Γ : Ctx Srt} {A B T r s} :
       apply Conv.sym eq1
       apply eq2
 
-lemma Typed.id_inv {Γ : Ctx Srt} {A T m n} :
-    Γ ⊢ .id A m n : T ->
+lemma Typed.idn_inv {Γ : Ctx Srt} {A T m n} :
+    Γ ⊢ .idn A m n : T ->
     ∃ i, Γ ⊢ m : A ∧ Γ ⊢ n : A ∧ T === .srt s0 i := by
-  generalize e: Tm.id A m n = x
+  generalize e: Tm.idn A m n = x
   intro ty; induction ty generalizing A m n
   all_goals try trivial
-  case id _ iA _ _ _ _ _ _ =>
+  case idn _ iA _ _ _ _ _ _ =>
     cases e
     exists iA
     aesop
@@ -99,7 +99,7 @@ lemma Typed.pair_inv' {Γ : Ctx Srt} {T m n r s} :
 
 lemma Typed.rfl_inv' {Γ : Ctx Srt} {T m} :
     Γ ⊢ .rfl m : T ->
-    ∃ A, Γ ⊢ m : A ∧ T === .id A m m := by
+    ∃ A, Γ ⊢ m : A ∧ T === .idn A m m := by
   generalize e: Tm.rfl m = x
   intro ty; induction ty generalizing m
   all_goals try trivial
@@ -158,7 +158,7 @@ theorem Typed.validity {Γ : Ctx Srt} {A m} :
     exists s, i
     apply Typed.esubst <;> try first | rfl | assumption
     asimp
-  case id i tyA _ _ _ _ _ =>
+  case idn i tyA _ _ _ _ _ =>
     exists s0, i+1; constructor; apply tyA.toWf
   case rfl ih =>
     have ⟨s, i, ty⟩ := ih
@@ -166,7 +166,7 @@ theorem Typed.validity {Γ : Ctx Srt} {A m} :
     constructor <;> assumption
   case rw m n a b s i _ _ _ _ _ ihI =>
     have ⟨sI, iI, tyI⟩ := ihI
-    have ⟨_, tya, tyb, _⟩ := tyI.id_inv
+    have ⟨_, tya, tyb, _⟩ := tyI.idn_inv
     exists s, i
     rewrite Tm.srt s i to (Tm.srt s i).[n,b/] := by asimp
     apply Typed.substitution
@@ -214,12 +214,12 @@ lemma Typed.pair_inv {Γ : Ctx Srt} {A B m n r r' s s'} :
     assumption
 
 lemma Typed.rfl_inv {Γ : Ctx Srt} {A m a b} :
-    Γ ⊢ .rfl m : .id A a b -> Γ ⊢ m : A ∧ m === a ∧ m === b := by
+    Γ ⊢ .rfl m : .idn A a b -> Γ ⊢ m : A ∧ m === a ∧ m === b := by
   intro ty
   have ⟨A', tym, eq⟩ := ty.rfl_inv'
-  have ⟨eqA, eqa, eqb⟩ := Conv.id_inj eq
+  have ⟨eqA, eqa, eqb⟩ := Conv.idn_inj eq
   have ⟨s, i, tyI⟩ := ty.validity
-  have ⟨_, tya, _, _⟩ := tyI.id_inv
+  have ⟨_, tya, _, _⟩ := tyI.idn_inv
   have ⟨_, _, tyA⟩ := tya.validity
   and_intros
   . apply Typed.conv eqA.sym tym tyA

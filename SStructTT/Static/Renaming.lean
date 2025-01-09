@@ -154,7 +154,7 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     rewrite A.[.ff .: ren ξ] to A.[up (ren ξ)].[.ff/] at ihn2 := by asimp
     have := Typed.ite ihA ihm ihn1 ihn2
     asimp at this; assumption
-  | id tyA tym tyn ihA ihm ihn =>
+  | idn tyA tym tyn ihA ihm ihn =>
     intro; asimp; constructor
     . apply ihA; assumption
     . apply ihm; assumption

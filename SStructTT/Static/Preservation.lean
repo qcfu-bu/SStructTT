@@ -153,7 +153,7 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
   case tt => intro st; cases st
   case ff => intro st; cases st
   case ite => sorry
-  case id => sorry
+  case idn => sorry
   case rfl => sorry
   case rw => sorry
   case conv eq _ tyB ihm _ =>

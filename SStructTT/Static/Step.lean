@@ -66,15 +66,15 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
     Step (.ite A .tt n1 n2) n1
   | iteF A n1 n2 :
     Step (.ite A .ff n1 n2) n2
-  | idA {A A'} m n :
+  | idnA {A A'} m n :
     Step A A' ->
-    Step (.id A m n) (.id A' m n)
-  | idM A {m m'} n :
+    Step (.idn A m n) (.idn A' m n)
+  | idnM A {m m'} n :
     Step m m' ->
-    Step (.id A m n) (.id A m' n)
-  | idN A m {n n'} :
+    Step (.idn A m n) (.idn A m' n)
+  | idnN A m {n n'} :
     Step n n' ->
-    Step (.id A m n) (.id A m n')
+    Step (.idn A m n) (.idn A m n')
   | rflM {m m'} :
     Step m m' ->
     Step (.rfl m) (.rfl m')
