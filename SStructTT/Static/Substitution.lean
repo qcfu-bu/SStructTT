@@ -191,15 +191,15 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     intro; asimp
     constructor
     apply ih; assumption
-  | @rw _ _ B _ n _ b _ _ tyB _ _ ihB ihm ihn =>
+  | @rw _ A _ _ n _ b _ _ tyA _ _ ihA ihm ihn =>
     intro agr; asimp
-    rw[show B.[n.[σ] .: b.[σ] .: σ] = B.[upn 2 σ].[n.[σ],b.[σ]/] by asimp]
-    have ⟨_, _, _, tyI⟩ := tyB.ctx_inv
+    rw[show A.[n.[σ] .: b.[σ] .: σ] = A.[upn 2 σ].[n.[σ],b.[σ]/] by asimp]
+    have ⟨_, _, _, tyI⟩ := tyA.ctx_inv
     have ⟨_, _, _, tyA⟩ := tyI.ctx_inv
-    replace ihB := ihB ((agr.cons tyA).cons tyI); asimp at ihB
+    replace ihA := ihA ((agr.cons tyA).cons tyI); asimp at ihA
     replace ihm := ihm agr; asimp at ihm
     replace ihn := ihn agr; asimp at ihn
-    simp[<-SubstLemmas.subst_comp] at ihB
+    simp[<-SubstLemmas.subst_comp] at ihA
     constructor
     . asimp; assumption
     . asimp; assumption

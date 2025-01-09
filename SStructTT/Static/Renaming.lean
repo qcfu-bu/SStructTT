@@ -162,18 +162,18 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
   | rfl _ ih =>
     intro; asimp; constructor
     apply ih; assumption
-  | @rw _ A B _ _ a b _ _ tyB tym tyn ihB ihm ihn =>
+  | @rw _ A B _ _ a b _ _ tyA tym tyn ihA ihm ihn =>
     intro agr; asimp
-    have ⟨_, _, _, tyI⟩ := tyB.ctx_inv
-    have ⟨_, _, _, tyA⟩ := tyI.ctx_inv
-    replace ihB := ihB ((agr.cons tyA).cons tyI); asimp at ihB
+    have ⟨_, _, _, tyI⟩ := tyA.ctx_inv
+    have ⟨_, _, _, tyB⟩ := tyI.ctx_inv
+    replace ihA := ihA ((agr.cons tyB).cons tyI); asimp at ihA
     replace ihm := ihm agr; asimp at ihm
     replace ihn := ihn agr; asimp at ihn
-    simp[<-SubstLemmas.subst_comp] at ihB
-    rw[show B.[a.[ren ξ].rfl .: a.[ren ξ] .: ren ξ]
-          = B.[upn 2 (ren ξ)].[.rfl a.[ren ξ],a.[ren ξ]/]
+    simp[<-SubstLemmas.subst_comp] at ihA
+    rw[show A.[a.[ren ξ].rfl .: a.[ren ξ] .: ren ξ]
+          = A.[upn 2 (ren ξ)].[.rfl a.[ren ξ],a.[ren ξ]/]
          by asimp] at ihm
-    have := Typed.rw ihB ihm ihn
+    have := Typed.rw ihA ihm ihn
     asimp at this; assumption
   | conv eq tym tyB ihm ihB =>
     intro agr

@@ -152,10 +152,104 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
   case bool => intro st; cases st
   case tt => intro st; cases st
   case ff => intro st; cases st
-  case ite => sorry
-  case idn => sorry
-  case rfl => sorry
-  case rw => sorry
+  case ite tyA tym tyn1 tyn2 ihA ihm ihn1 ihn2 =>
+    intro st; cases st
+    case iteA st =>
+      have wf := tym.toWf
+      replace ihA := ihA st
+      have tyAm := ihA.subst tym; asimp at tyAm
+      have tyA1 := ihA.subst (Typed.tt wf); asimp at tyA1
+      have tyA2 := ihA.subst (Typed.ff wf); asimp at tyA2
+      apply Typed.conv
+      . apply Conv.subst
+        apply Conv.onei st
+      . constructor <;> try assumption
+        . apply Typed.conv <;> try assumption
+          apply Conv.subst
+          apply Conv.one st
+        . apply Typed.conv <;> try assumption
+          apply Conv.subst
+          apply Conv.one st
+      . apply tyA.subst tym
+    case iteM st =>
+      apply Typed.conv
+      . apply Conv.subst1
+        apply Conv.onei st
+      . constructor <;> try assumption
+        apply ihm st
+      . apply tyA.subst tym
+    case iteN1 st =>
+      constructor <;> try assumption
+      apply ihn1 st
+    case iteN2 st =>
+      constructor <;> try assumption
+      apply ihn2 st
+    case iteT => assumption
+    case iteF => assumption
+  case idn ihA ihm ihn =>
+    intro st; cases st
+    case idnA st =>
+      replace ihA := ihA st
+      constructor
+      . assumption
+      . apply Typed.conv <;> try assumption
+        apply Conv.one st
+      . apply Typed.conv <;> try assumption
+        apply Conv.one st
+    case idnM => constructor <;> aesop
+    case idnN => constructor <;> aesop
+  case rfl tym ihm =>
+    have ⟨_, _, _⟩ := tym.validity
+    intro st; cases st
+    case rflM st =>
+      apply Typed.conv
+      . apply Conv.idn
+        constructor
+        apply Conv.onei st
+        apply Conv.onei st
+      . constructor
+        apply ihm st
+      . constructor <;> assumption
+  case rw Γ A B m n a b s i tyA tym tyn ihA ihm ihn =>
+    intro st; cases st
+    case rwA A' st =>
+      have wf := tym.toWf
+      have ⟨_, _, tyI⟩ := tyn.validity
+      have ⟨_, tya, _, _⟩ := tyI.idn_inv
+      have ⟨_, _, _⟩ := tya.validity
+      have : Γ ⊢ A'.[.rfl a, a/] : .srt s i := by
+        rw[show .srt s i = (.srt s i).[.rfl a,a/] by asimp]
+        apply Typed.substitution
+        . apply ihA st
+        . apply AgreeSubst.wk
+          asimp; constructor; assumption
+          apply AgreeSubst.wk
+          asimp; assumption
+          apply AgreeSubst.refl; assumption
+      have : Γ ⊢ A.[n,b/] : .srt s i := by
+        rw[show .srt s i = (.srt s i).[n,b/] by asimp]
+        apply Typed.substitution
+        . assumption
+        . apply AgreeSubst.wk
+          asimp; assumption
+          apply AgreeSubst.wk
+          asimp; assumption
+          apply AgreeSubst.refl; assumption
+      apply Typed.conv
+      . apply Conv.subst
+        apply Conv.onei st
+      . constructor
+        apply ihA st
+        apply tym.conv
+        apply Conv.subst
+        apply Conv.one st
+        assumption
+        assumption
+      . assumption
+    case rwM =>
+      sorry
+    case rwN => sorry
+    case rwE => sorry
   case conv eq _ tyB ihm _ =>
     intro st
     have tym := ihm st

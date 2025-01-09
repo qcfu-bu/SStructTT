@@ -65,10 +65,10 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
     Typed Γ m A ->
     Typed Γ (.rfl m) (.idn A m m)
   | rw {Γ A B m n a b s i} :
-    Typed (.idn A.[shift 1] a.[shift 1] (.var 0) :: A :: Γ) B (.srt s i) ->
-    Typed Γ m B.[.rfl a,a/] ->
-    Typed Γ n (.idn A a b) ->
-    Typed Γ (.rw B m n) B.[n,b/]
+    Typed (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A (.srt s i) ->
+    Typed Γ m A.[.rfl a,a/] ->
+    Typed Γ n (.idn B a b) ->
+    Typed Γ (.rw A m n) A.[n,b/]
   | conv {Γ A B m s i} :
     A === B ->
     Typed Γ m A ->
