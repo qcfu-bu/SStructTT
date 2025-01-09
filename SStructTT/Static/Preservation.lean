@@ -112,15 +112,15 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
         . assumption
         . apply AgreeRen.cons
           assumption
-          rewrite (.+2) to ((id !>> (.+1)) !>> (.+1)) := by funext; rfl
+          rw[show (.+2) = (id !>> (.+1)) !>> (.+1) by funext; rfl]
           aesop (rule_sets := [rename])
       have typ : B :: A :: Γ ⊢ .pair (.var 1) (.var 0) r s : (.sig A B r s).[shift 2] := by
         asimp; apply Typed.pair
-        . rewrite Tm.sig A.[shift 2] B.[up (shift 2)] r s
-               to (Tm.sig A B r s).[shift 1].[shift 1] := by asimp
+        . rw[show Tm.sig A.[shift 2] B.[up (shift 2)] r s
+                = (Tm.sig A B r s).[shift 1].[shift 1] by asimp]
           have := (tyS.weaken tyA).weaken tyB
           assumption
-        . rewrite A.[shift 2] to A.[shift 1].[shift 1] := by asimp
+        . rw[show A.[shift 2] = A.[shift 1].[shift 1] by asimp]
           constructor <;> aesop
         . asimp; constructor <;> aesop
       replace tyC' := tyC'.subst typ; asimp at tyC'; clear typ
@@ -143,8 +143,8 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
     case projN => constructor <;> aesop
     case projE m1 m2 r s =>
       have ⟨tym1, tym2, _, _⟩ := tym.pair_inv; subst_vars
-      rewrite C.[.pair m1 m2 r s/]
-           to C.[.pair (.var 1) (.var 0) r s .: shift 2].[m2,m1/] := by asimp
+      rw[show C.[.pair m1 m2 r s/]
+            = C.[.pair (.var 1) (.var 0) r s .: shift 2].[m2,m1/] by asimp]
       apply tyn.substitution
       apply AgreeSubst.wk tym2
       constructor; asimp; assumption

@@ -85,10 +85,10 @@ lemma Step.subst {m n : Tm Srt} σ : m ~> n -> m.[σ] ~> n.[σ] := by
   induction st generalizing σ
   all_goals try asimp; aesop
   case beta A m n r s  =>
-    rewrite m.[n/].[σ] to m.[up σ].[n.[σ]/] := by asimp
+    rw[show m.[n/].[σ] = m.[up σ].[n.[σ]/] by asimp]
     constructor
   case projE A m1 m2 n r s =>
-    rewrite n.[m2,m1/].[σ] to n.[upn 2 σ].[m2.[σ],m1.[σ]/] := by asimp
+    rw[show n.[m2,m1/].[σ] = n.[upn 2 σ].[m2.[σ],m1.[σ]/] by asimp]
     constructor
 
 @[aesop safe (rule_sets := [red])]

@@ -168,7 +168,7 @@ theorem Typed.validity {Γ : Ctx Srt} {A m} :
     have ⟨sI, iI, tyI⟩ := ihI
     have ⟨_, tya, tyb, _⟩ := tyI.idn_inv
     exists s, i
-    rewrite Tm.srt s i to (Tm.srt s i).[n,b/] := by asimp
+    rw[show Tm.srt s i = (Tm.srt s i).[n,b/] by asimp]
     apply Typed.substitution
     . assumption
     . constructor

@@ -30,7 +30,7 @@ variable {Srt : Type}
 instance : Ids (Tm Srt) where
   ids := var
 
-@[asimp]theorem ids_var x : @var Srt x = ids x := by rfl
+@[asimp]lemma ids_var x : @var Srt x = ids x := by rfl
 
 def rename_rec (ξ : Var -> Var) (m : Tm Srt) : Tm Srt :=
   match m with
