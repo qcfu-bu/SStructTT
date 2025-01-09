@@ -211,12 +211,12 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
         apply ihm st
       . constructor <;> assumption
   case rw Γ A B m n a b s i tyA tym tyn ihA ihm ihn =>
+    have wf := tym.toWf
+    have ⟨_, _, tyI⟩ := tyn.validity
+    have ⟨_, tya, _, _⟩ := tyI.idn_inv
+    have ⟨_, _, _⟩ := tya.validity
     intro st; cases st
     case rwA A' st =>
-      have wf := tym.toWf
-      have ⟨_, _, tyI⟩ := tyn.validity
-      have ⟨_, tya, _, _⟩ := tyI.idn_inv
-      have ⟨_, _, _⟩ := tya.validity
       have : Γ ⊢ A'.[.rfl a, a/] : .srt s i := by
         rw[show .srt s i = (.srt s i).[.rfl a,a/] by asimp]
         apply Typed.substitution
@@ -246,10 +246,29 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
         assumption
         assumption
       . assumption
-    case rwM =>
+    case rwM st => constructor <;> aesop
+    case rwN n' st =>
+      have : SConv (n' .: b .: ids) (n .: b .: ids) := by
+        intro x; cases x with
+        | zero => asimp; apply Conv.onei st
+        | succ => asimp; constructor
+      have : Γ ⊢ A.[n,b/] : .srt s i := by
+        rw[show .srt s i = (.srt s i).[n,b/] by asimp]
+        apply Typed.substitution
+        . assumption
+        . apply AgreeSubst.wk
+          asimp; assumption
+          apply AgreeSubst.wk
+          asimp; assumption
+          apply AgreeSubst.refl; assumption
+      apply Typed.conv
+      . apply Conv.compat
+        assumption
+      . constructor <;> try assumption
+        apply ihn st
+      . assumption
+    case rwE =>
       sorry
-    case rwN => sorry
-    case rwE => sorry
   case conv eq _ tyB ihm _ =>
     intro st
     have tym := ihm st
