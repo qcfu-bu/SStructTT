@@ -267,8 +267,27 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
       . constructor <;> try assumption
         apply ihn st
       . assumption
-    case rwE =>
-      sorry
+    case rwE c =>
+      have ⟨_, eq1, eq2⟩ := tyn.rfl_inv
+      have : SConv (.rfl a .: a .: ids) (.rfl c .: b .: ids) := by
+        intro x; match x with
+        | .zero => asimp; apply Conv.rfl (eq1.sym)
+        | .succ .zero => asimp; apply Conv.trans (eq1.sym) eq2
+        | .succ (.succ _) => asimp; constructor
+      have : Γ ⊢ A.[.rfl c,b/] : .srt s i := by
+        rw[show .srt s i = (.srt s i).[.rfl c,b/] by asimp]
+        apply Typed.substitution
+        . assumption
+        . apply AgreeSubst.wk
+          asimp; assumption
+          apply AgreeSubst.wk
+          asimp; assumption
+          apply AgreeSubst.refl
+          apply tyn.toWf
+      apply Typed.conv
+      . apply Conv.compat; assumption
+      . assumption
+      . assumption
   case conv eq _ tyB ihm _ =>
     intro st
     have tym := ihm st
