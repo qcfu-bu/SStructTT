@@ -14,9 +14,7 @@ inductive HeadSim : Tm Srt -> Tm Srt -> Prop where
     HeadSim (.pi A1 B1 r s) (.pi A2 B2 r s)
   | lam {A m r s} : HeadSim (.lam A m r s) (.lam A m r s)
   | app {m n} : HeadSim (.app m n) (.app m n)
-  | sig {A1 A2 B1 B2} r s :
-    HeadSim A1 A2 ->
-    HeadSim B1 B2 ->
+  | sig {A1 A2 B1 B2 r s} :
     HeadSim (.sig A1 B1 r s) (.sig A2 B2 r s)
   | pair {m n r s} : HeadSim (.pair m n r s) (.pair m n r s)
   | proj {A m n} : HeadSim (.proj A m n) (.proj A m n)
@@ -83,22 +81,19 @@ lemma Sim.subst {x y : Tm Srt} σ : Sim x y -> Sim x.[σ] y.[σ] := by
 
 lemma Sim.srt_inj {s1 s2 : Srt} {i1 i2} :
     Sim (.srt s1 i1) (.srt s2 i2) -> s1 = s2 := by
-  generalize e1: Tm.srt s1 i1 = x
-  generalize e2: Tm.srt s2 i2 = y
   intro sm; have ⟨_, h, _⟩ := sm
-  induction h generalizing s1 s2 i1 i2
-  all_goals subst_vars
+  cases h
   case var eq => false_conv eq
   case srt eq1 eq2 =>
     have ⟨_, _⟩ := Conv.srt_inj eq1
     have ⟨_, _⟩ := Conv.srt_inj eq2
     subst_vars; rfl
-  case pi eq _ _ => false_conv eq
+  case pi eq => false_conv eq
   case lam eq => false_conv eq
   case app eq1 eq2 =>
     have ⟨_, _⟩ := Conv.srt_inj (Conv.trans eq1 eq2)
     assumption
-  case sig eq _ _ => false_conv eq
+  case sig eq => false_conv eq
   case pair eq => false_conv eq
   case proj eq1 eq2 =>
     have ⟨_, _⟩ := Conv.srt_inj (Conv.trans eq1 eq2)
@@ -114,3 +109,333 @@ lemma Sim.srt_inj {s1 s2 : Srt} {i1 i2} :
   case rw eq1 eq2 =>
     have ⟨_, _⟩ := Conv.srt_inj (Conv.trans eq1 eq2)
     assumption
+
+lemma Sim.pi_inj {A1 A2 B1 B2 : Tm Srt} {r1 r2 s1 s2} :
+    Sim (.pi A1 B1 r1 s1) (.pi A2 B2 r2 s2) ->
+    Sim A1 A2 ∧ Sim B1 B2 ∧ r1 = r2 ∧ s1 = s2 := by
+  intro sm; have ⟨_, h, _⟩ := sm
+  cases h
+  case var eq => false_conv eq
+  case srt eq => false_conv eq
+  case pi eq1 eq2 =>
+    have ⟨_, _, eqA1, eqB1⟩ := Conv.pi_inj eq1
+    have ⟨_, _, eqA2, eqB2⟩ := Conv.pi_inj eq2
+    subst_vars; simp; and_intros
+    . constructor <;> assumption
+    . constructor <;> assumption
+  case lam eq => false_conv eq
+  case app eq1 eq2 =>
+    have ⟨_, _, _, _⟩ := Conv.pi_inj (Conv.trans eq1 eq2)
+    subst_vars; simp; and_intros
+    . aesop (rule_sets := [unique])
+    . aesop (rule_sets := [unique])
+  case sig eq => false_conv eq
+  case pair eq => false_conv eq
+  case proj eq1 eq2 =>
+    have ⟨_, _, _, _⟩ := Conv.pi_inj (Conv.trans eq1 eq2)
+    subst_vars; simp; and_intros
+    . aesop (rule_sets := [unique])
+    . aesop (rule_sets := [unique])
+  case bool eq => false_conv eq
+  case tt eq => false_conv eq
+  case ff eq => false_conv eq
+  case ite eq1 eq2 =>
+    have ⟨_, _, _, _⟩ := Conv.pi_inj (Conv.trans eq1 eq2)
+    subst_vars; simp; and_intros
+    . aesop (rule_sets := [unique])
+    . aesop (rule_sets := [unique])
+  case idn eq => false_conv eq
+  case rfl eq => false_conv eq
+  case rw eq1 eq2 =>
+    have ⟨_, _, _, _⟩ := Conv.pi_inj (Conv.trans eq1 eq2)
+    subst_vars; simp; and_intros
+    . aesop (rule_sets := [unique])
+    . aesop (rule_sets := [unique])
+
+lemma Sim.idn_inj {A1 A2 m1 m2 n1 n2 : Tm Srt} :
+    Sim (.idn A1 m1 n1) (.idn A2 m2 n2) ->
+    Sim A1 A2 ∧ m1 === m2 ∧ n1 === n2 := by
+  intro sm; have ⟨_, h, _⟩ := sm
+  cases h
+  case var eq => false_conv eq
+  case srt eq => false_conv eq
+  case pi eq => false_conv eq
+  case lam eq => false_conv eq
+  case app eq1 eq2 =>
+    have ⟨_, _, _⟩ := Conv.idn_inj (Conv.trans eq1 eq2)
+    and_intros
+    . aesop (rule_sets := [unique])
+    . aesop (rule_sets := [unique])
+    . aesop (rule_sets := [unique])
+  case sig eq => false_conv eq
+  case pair eq => false_conv eq
+  case proj eq1 eq2 =>
+    have ⟨_, _, _⟩ := Conv.idn_inj (Conv.trans eq1 eq2)
+    and_intros
+    . aesop (rule_sets := [unique])
+    . aesop (rule_sets := [unique])
+    . aesop (rule_sets := [unique])
+  case bool eq => false_conv eq
+  case tt eq => false_conv eq
+  case ff eq => false_conv eq
+  case ite eq1 eq2 =>
+    have ⟨_, _, _⟩ := Conv.idn_inj (Conv.trans eq1 eq2)
+    and_intros
+    . aesop (rule_sets := [unique])
+    . aesop (rule_sets := [unique])
+    . aesop (rule_sets := [unique])
+  case idn eq1 eq2 =>
+    have ⟨_, _, _⟩ := Conv.idn_inj eq1
+    have ⟨_, _, _⟩ := Conv.idn_inj eq2
+    and_intros
+    . aesop (rule_sets := [unique])
+    . apply Conv.trans <;> assumption
+    . apply Conv.trans <;> assumption
+  case rfl eq => false_conv eq
+  case rw eq1 eq2 =>
+    have ⟨_, _, _⟩ := Conv.idn_inj (Conv.trans eq1 eq2)
+    and_intros
+    . aesop (rule_sets := [unique])
+    . aesop (rule_sets := [unique])
+    . aesop (rule_sets := [unique])
+
+lemma Has.inj {Γ : Ctx Srt} {x A B} :
+    Has Γ x A -> Has Γ x B -> A = B := by
+  intro hs; induction hs generalizing B
+  case zero =>
+    intro hs; cases hs; rfl
+  case succ ih =>
+    intro
+    | succ _ _ _ _ hs => rw[ih hs]
+
+variable [inst : SStruct Srt]
+
+lemma Typed.srt_unique {Γ : Ctx Srt} {s i1 i2 A} :
+    Γ ⊢ .srt s i1 : A -> Sim (.srt s0 i2) A := by
+  generalize e: Tm.srt s i1 = m
+  intro ty; induction ty generalizing s i1
+  all_goals try trivial
+  case srt => cases e; apply HeadSim.toSim; constructor
+  case conv ihm _ =>
+    subst_vars
+    have := ihm (Eq.refl _)
+    apply Sim.trans_left <;> assumption
+
+lemma Typed.var_unqiue {Γ : Ctx Srt} {A B x} :
+    Γ ⊢ .var x : B -> Has Γ x A -> Sim A B := by
+  generalize e: Tm.var x = m
+  intro ty; induction ty generalizing x
+  all_goals try trivial
+  case var h1 _ =>
+    cases e; intro h2; rw[Has.inj h1 h2]; apply Sim.refl
+  case conv ihm _ =>
+    subst_vars; intro hs
+    have := ihm (Eq.refl _) hs
+    apply Sim.trans_left <;> assumption
+
+lemma Typed.pi_unique {Γ : Ctx Srt} {A B C r s i} :
+    Γ ⊢ .pi A B r s : C -> Sim (.srt s i) C := by
+  generalize e: Tm.pi A B r s = m
+  intro ty; induction ty generalizing A B r s
+  all_goals try trivial
+  case pi => cases e; apply HeadSim.toSim; constructor
+  case conv ihm _ =>
+    subst_vars
+    have := ihm (Eq.refl _)
+    apply Sim.trans_left <;> assumption
+
+lemma Typed.lam_unique {Γ : Ctx Srt} {A B C m r s} :
+    Γ ⊢ .lam A m r s : C ->
+    (∀ {C}, A :: Γ ⊢ m : C -> Sim B C) -> Sim (.pi A B r s) C := by
+  generalize e: Tm.lam A m r s = n
+  intro ty; induction ty generalizing A m r s
+  all_goals try trivial
+  case lam tyA tym ihA ihm =>
+    cases e; intro h
+    have ⟨eq1, h, eq2⟩ :=h tym
+    constructor
+    . apply Conv.pi _ _ Conv.R eq1
+    . apply HeadSim.pi _ _ HeadSim.refl h
+    . apply Conv.pi _ _ Conv.R eq2
+  case conv ihm _ =>
+    subst_vars; intro h
+    have := ihm (Eq.refl _) h
+    apply Sim.trans_left <;> assumption
+
+lemma Typed.app_unique {Γ : Ctx Srt} {A B C m n r s} :
+    Γ ⊢ .app m n : C ->
+    (∀ {C}, Γ ⊢ m : C -> Sim (.pi A B r s) C) -> Sim B.[n/] C := by
+  generalize e: Tm.app m n = x
+  intro ty; induction ty generalizing m n
+  all_goals try trivial
+  case app tym _ _ _ =>
+    cases e; intro h
+    have ⟨_, _, _, _⟩ := (h tym).pi_inj
+    apply Sim.subst; assumption
+  case conv ihm _ =>
+    subst_vars; intro h
+    have := ihm (Eq.refl _) h
+    apply Sim.trans_left <;> assumption
+
+lemma Typed.sig_unique {Γ : Ctx Srt} {A B C r s i} :
+    Γ ⊢ .sig A B r s : C -> Sim (.srt s i) C := by
+  generalize e: Tm.sig A B r s = m
+  intro ty; induction ty generalizing A B r s
+  all_goals try trivial
+  case sig => cases e; apply HeadSim.toSim; constructor
+  case conv ihm _ =>
+    subst_vars
+    have := ihm (Eq.refl _)
+    apply Sim.trans_left <;> assumption
+
+lemma Typed.pair_unique {Γ : Ctx Srt} {A B C m n r s} :
+    Γ ⊢ .pair m n r s : C ->
+    (∀ {X Y}, Γ ⊢ m : X -> Γ ⊢ n : Y -> Sim A X ∧ Sim B.[m/] Y) ->
+    Sim (.sig A B r s) C := by
+  generalize e: Tm.pair m n r s = x
+  intro ty; induction ty generalizing m n r s
+  all_goals try trivial
+  case pair tym tyn ihm ihn =>
+    aesop (rule_sets := [unique])
+  case conv ihm _ =>
+    subst_vars; intro h
+    have := ihm (Eq.refl _) h
+    apply Sim.trans_left <;> assumption
+
+@[aesop safe (rule_sets := [unique])]
+lemma Typed.proj_unique {Γ : Ctx Srt} {A B m n} :
+    Γ ⊢ .proj A m n : B -> Sim A.[m/] B := by
+  generalize e: Tm.proj A m n = x
+  intro ty; induction ty generalizing A m n
+  all_goals try trivial
+  case proj ihA ihm ihn => cases e; apply Sim.refl
+  case conv ihm _ =>
+    subst_vars
+    have := ihm (Eq.refl _)
+    apply Sim.trans_left <;> assumption
+
+lemma Typed.bool_unique {Γ : Ctx Srt} {A} :
+    Γ ⊢ .bool : A -> Sim (.srt s0 0) A := by
+  generalize e: Tm.bool = m
+  intro ty; induction ty
+  all_goals try trivial
+  case bool => apply Sim.refl
+  case conv ihm _ =>
+    subst_vars
+    have := ihm (Eq.refl _)
+    apply Sim.trans_left <;> assumption
+
+lemma Typed.tt_unique {Γ : Ctx Srt} {A} :
+    Γ ⊢ .tt : A -> Sim .bool A := by
+  generalize e: Tm.tt = m
+  intro ty; induction ty
+  all_goals try trivial
+  case tt => apply Sim.refl
+  case conv ihm _ =>
+    subst_vars
+    have := ihm (Eq.refl _)
+    apply Sim.trans_left <;> assumption
+
+lemma Typed.ff_unique {Γ : Ctx Srt} {A} :
+    Γ ⊢ .ff : A -> Sim .bool A := by
+  generalize e: Tm.ff = m
+  intro ty; induction ty
+  all_goals try trivial
+  case ff => apply Sim.refl
+  case conv ihm _ =>
+    subst_vars
+    have := ihm (Eq.refl _)
+    apply Sim.trans_left <;> assumption
+
+lemma Typed.ite_unique {Γ : Ctx Srt} {A B m n1 n2} :
+    Γ ⊢ .ite A m n1 n2 : B -> Sim A.[m/] B := by
+  generalize e: Tm.ite A m n1 n2 = x
+  intro ty; induction ty generalizing A m n1 n2
+  all_goals try trivial
+  case ite => cases e; apply Sim.refl
+  case conv ihm _ =>
+    subst_vars
+    have := ihm (Eq.refl _)
+    apply Sim.trans_left <;> assumption
+
+lemma Typed.idn_unique {Γ : Ctx Srt} {A B m n i} :
+    Γ ⊢ .idn A m n : B -> Sim (.srt s0 i) B := by
+  generalize e: Tm.idn A m n = x
+  intro ty; induction ty generalizing A m n
+  all_goals try trivial
+  case idn => cases e; apply HeadSim.toSim; constructor
+  case conv ihm _ =>
+    subst_vars
+    have := ihm (Eq.refl _)
+    apply Sim.trans_left <;> assumption
+
+lemma Typed.rfl_unique {Γ : Ctx Srt} {A B m} :
+    Γ ⊢ .rfl m : B ->
+    (∀ {X}, Γ ⊢ m : X -> Sim A X) -> Sim (.idn A m m) B := by
+  generalize e: Tm.rfl m = x
+  intro ty; induction ty generalizing m
+  all_goals try trivial
+  case rfl tym ihm =>
+    cases e; intro h
+    have ⟨eq1, h, eq2⟩ := h tym
+    constructor
+    . apply Conv.idn eq1 Conv.R Conv.R
+    . apply HeadSim.idn _ _ h
+    . apply Conv.idn eq2 Conv.R Conv.R
+  case conv ihm _ =>
+    subst_vars; intro h
+    have := ihm (Eq.refl _) h
+    apply Sim.trans_left <;> assumption
+
+lemma Typed.rw_unique {Γ : Ctx Srt} {A B C m n a b} :
+    Γ ⊢ .rw A m n : C ->
+    (∀ {X}, Γ ⊢ n : X -> Sim (.idn B a b) X) -> Sim A.[n,b/] C := by
+  generalize e: Tm.rw A m n = x
+  intro ty; induction ty generalizing A m n
+  all_goals try trivial
+  case rw n _ b' _ _ _ _ tyn _ _ _ =>
+    cases e; intro h
+    have ⟨sm, eq1, eq2⟩ := (h tyn).idn_inj
+    have sc : SConv (n .: b .: ids) (n .: b' .: ids) := by
+      intro
+      | .zero => asimp; constructor
+      | .succ .zero => asimp; assumption
+      | .succ (.succ _) => asimp; constructor
+    constructor
+    apply Conv.compat _ sc
+    all_goals aesop (rule_sets := [unique])
+  case conv ihm _ =>
+    subst_vars; intro h
+    have := ihm (Eq.refl _) h
+    apply Sim.trans_left <;> assumption
+
+lemma Typed.unique' {Γ : Ctx Srt} {A B m} :
+    Γ ⊢ m : A -> Γ ⊢ m : B -> Sim A B := by
+  intro ty; induction ty generalizing B
+  all_goals try trivial
+  case srt => intro; apply Typed.srt_unique <;> aesop
+  case var => intro; apply Typed.var_unqiue <;> aesop
+  case pi => intro; apply Typed.pi_unique <;> aesop
+  case lam => intro; apply Typed.lam_unique <;> aesop
+  case app => intro; apply Typed.app_unique <;> aesop
+  case sig => intro; apply Typed.sig_unique <;> aesop
+  case pair => intro; apply Typed.pair_unique <;> aesop
+  case proj => intro; apply Typed.proj_unique <;> aesop
+  case bool => intro; apply Typed.bool_unique <;> aesop
+  case tt => intro; apply Typed.tt_unique <;> aesop
+  case ff => intro; apply Typed.ff_unique <;> aesop
+  case ite => intro; apply Typed.ite_unique <;> aesop
+  case idn => intro; apply Typed.idn_unique <;> aesop
+  case rfl => intro; apply Typed.rfl_unique <;> aesop
+  case rw => intro; apply Typed.rw_unique <;> aesop
+  case conv ihm _ =>
+    intro ty
+    apply Sim.trans_right
+    apply ihm ty
+    apply Conv.sym; assumption
+
+theorem Typed.unique {Γ : Ctx Srt} {m s1 s2 i1 i2} :
+    Γ ⊢ m : .srt s1 i1 -> Γ ⊢ m : .srt s2 i2 -> s1 = s2 := by
+  intro ty1 ty2
+  apply Sim.srt_inj
+  apply Typed.unique' ty1 ty2
