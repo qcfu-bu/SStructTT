@@ -59,3 +59,58 @@ lemma Sim.sym {m n : Tm Srt} : Sim m n -> Sim n m := by
   . apply Conv.sym; assumption
   . apply HeadSim.sym; assumption
   . apply Conv.sym; assumption
+
+lemma Sim.trans_left {x y z : Tm Srt} : Sim x y -> y === z -> Sim x z := by
+  intro sm eq; cases sm
+  constructor
+  . assumption
+  . assumption
+  . apply Conv.trans <;> assumption
+
+lemma Sim.trans_right {x y z : Tm Srt} : Sim x y -> z === x -> Sim z y := by
+  intro sm eq; cases sm
+  constructor
+  . apply Conv.trans <;> assumption
+  . assumption
+  . assumption
+
+lemma Sim.subst {x y : Tm Srt} σ : Sim x y -> Sim x.[σ] y.[σ] := by
+  intro sm; cases sm
+  constructor
+  . apply Conv.subst; assumption
+  . apply HeadSim.subst; assumption
+  . apply Conv.subst; assumption
+
+lemma Sim.srt_inj {s1 s2 : Srt} {i1 i2} :
+    Sim (.srt s1 i1) (.srt s2 i2) -> s1 = s2 := by
+  generalize e1: Tm.srt s1 i1 = x
+  generalize e2: Tm.srt s2 i2 = y
+  intro sm; have ⟨_, h, _⟩ := sm
+  induction h generalizing s1 s2 i1 i2
+  all_goals subst_vars
+  case var eq => false_conv eq
+  case srt eq1 eq2 =>
+    have ⟨_, _⟩ := Conv.srt_inj eq1
+    have ⟨_, _⟩ := Conv.srt_inj eq2
+    subst_vars; rfl
+  case pi eq _ _ => false_conv eq
+  case lam eq => false_conv eq
+  case app eq1 eq2 =>
+    have ⟨_, _⟩ := Conv.srt_inj (Conv.trans eq1 eq2)
+    assumption
+  case sig eq _ _ => false_conv eq
+  case pair eq => false_conv eq
+  case proj eq1 eq2 =>
+    have ⟨_, _⟩ := Conv.srt_inj (Conv.trans eq1 eq2)
+    assumption
+  case bool eq => false_conv eq
+  case tt eq => false_conv eq
+  case ff eq => false_conv eq
+  case ite eq1 eq2 =>
+    have ⟨_, _⟩ := Conv.srt_inj (Conv.trans eq1 eq2)
+    assumption
+  case idn eq _ => false_conv eq
+  case rfl eq _ => false_conv eq
+  case rw eq1 eq2 =>
+    have ⟨_, _⟩ := Conv.srt_inj (Conv.trans eq1 eq2)
+    assumption
