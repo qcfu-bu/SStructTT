@@ -12,4 +12,5 @@ import SStructTT.Static.Typed
 import SStructTT.Static.Renaming
 import SStructTT.Static.Substitution
 import SStructTT.Static.Inversion
+import SStructTT.Static.Unique
 import SStructTT.Static.Preservation
