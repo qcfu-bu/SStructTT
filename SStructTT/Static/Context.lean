@@ -1,4 +1,3 @@
-import Aesop
 import SStructTT.Defs.Syntax
 
 namespace Static

@@ -14,3 +14,4 @@ import SStructTT.Static.Substitution
 import SStructTT.Static.Inversion
 import SStructTT.Static.Unique
 import SStructTT.Static.Preservation
+import SStructTT.Static.Progress
