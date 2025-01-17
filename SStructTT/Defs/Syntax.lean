@@ -4,19 +4,18 @@ section Defs
 -- Sorts
 variable (Srt : Type)
 
--- Computational Relevancy
-inductive Rlv where
-  | im -- implicit
-  | ex -- explicit
-
 inductive Tm where
   | var  (x : Var)
   | srt  (s : Srt) (i : Nat)
-  | pi   (A B : Tm) (r : Rlv) (s : Srt)
-  | lam  (A m : Tm) (r : Rlv) (s : Srt)
+  | pi0  (A B : Tm) (s : Srt)
+  | pi1  (A B : Tm) (s : Srt)
+  | lam0 (A m : Tm) (s : Srt)
+  | lam1 (A m : Tm) (s : Srt)
   | app  (m n : Tm)
-  | sig  (A B : Tm) (r : Rlv) (s : Srt)
-  | pair (m n : Tm) (r : Rlv) (s : Srt)
+  | sig0 (A B : Tm) (s : Srt)
+  | sig1 (A B : Tm) (s : Srt)
+  | tup0 (m n : Tm) (s : Srt)
+  | tup1 (m n : Tm) (s : Srt)
   | proj (A m n : Tm)
   | bool | tt | ff
   | ite  (A m n1 n2 : Tm)
@@ -36,11 +35,15 @@ def rename_rec (ξ : Var -> Var) (m : Tm Srt) : Tm Srt :=
   match m with
   | var x => var (ξ x)
   | srt s i => srt s i
-  | pi A B r s => pi (rename_rec ξ A) (rename_rec (upren ξ) B) r s
-  | lam A m r s => lam (rename_rec ξ A) (rename_rec (upren ξ) m) r s
+  | pi0 A B s => pi0 (rename_rec ξ A) (rename_rec (upren ξ) B) s
+  | pi1 A B s => pi1 (rename_rec ξ A) (rename_rec (upren ξ) B) s
+  | lam0 A m s => lam0 (rename_rec ξ A) (rename_rec (upren ξ) m) s
+  | lam1 A m s => lam1 (rename_rec ξ A) (rename_rec (upren ξ) m) s
   | app m n => app (rename_rec ξ m) (rename_rec ξ n)
-  | sig A B r s => sig (rename_rec ξ A) (rename_rec (upren ξ) B) r s
-  | pair m n r s => pair (rename_rec ξ m) (rename_rec ξ n) r s
+  | sig0 A B s => sig0 (rename_rec ξ A) (rename_rec (upren ξ) B) s
+  | sig1 A B s => sig1 (rename_rec ξ A) (rename_rec (upren ξ) B) s
+  | tup0 m n s => tup0 (rename_rec ξ m) (rename_rec ξ n) s
+  | tup1 m n s => tup1 (rename_rec ξ m) (rename_rec ξ n) s
   | proj A m n => proj (rename_rec (upren ξ) A) (rename_rec ξ m) (rename_rec (upren $ upren ξ) n)
   | bool => bool
   | tt => tt
@@ -54,15 +57,19 @@ instance : Rename (Tm Srt) where
   rename := rename_rec
 
 namespace Rename
-variable (ξ : Var -> Var) (A B m n n1 n2 : Tm Srt) (x i : Nat) (r : Rlv) (s : Srt)
+variable (ξ : Var -> Var) (A B m n n1 n2 : Tm Srt) (x i : Nat) (s : Srt)
 
 @[asimp]lemma ids  : rename ξ (ids x) = @ids (Tm Srt) _ (ξ x) := by rfl
 @[asimp]lemma srt  : rename ξ (srt s i) = srt s i := by rfl
-@[asimp]lemma pi   : rename ξ (pi A B r s) = pi (rename ξ A) (rename (upren ξ) B) r s := by rfl
-@[asimp]lemma lam  : rename ξ (lam A m r s) = lam (rename ξ A) (rename (upren ξ) m) r s := by rfl
+@[asimp]lemma pi0  : rename ξ (pi0 A B s) = pi0 (rename ξ A) (rename (upren ξ) B) s := by rfl
+@[asimp]lemma pi1  : rename ξ (pi1 A B s) = pi1 (rename ξ A) (rename (upren ξ) B) s := by rfl
+@[asimp]lemma lam0 : rename ξ (lam0 A m s) = lam0 (rename ξ A) (rename (upren ξ) m) s := by rfl
+@[asimp]lemma lam1 : rename ξ (lam1 A m s) = lam1 (rename ξ A) (rename (upren ξ) m) s := by rfl
 @[asimp]lemma app  : rename ξ (app m n) = app (rename ξ m) (rename ξ n) := by rfl
-@[asimp]lemma sig  : rename ξ (sig A B r s) = sig (rename ξ A) (rename (upren ξ) B) r s := by rfl
-@[asimp]lemma pair : rename ξ (pair m n r s) = pair (rename ξ m) (rename ξ n) r s := by rfl
+@[asimp]lemma sig0 : rename ξ (sig0 A B s) = sig0 (rename ξ A) (rename (upren ξ) B) s := by rfl
+@[asimp]lemma sig1 : rename ξ (sig1 A B s) = sig1 (rename ξ A) (rename (upren ξ) B) s := by rfl
+@[asimp]lemma tup0 : rename ξ (tup0 m n s) = tup0 (rename ξ m) (rename ξ n) s := by rfl
+@[asimp]lemma tup1 : rename ξ (tup1 m n s) = tup1 (rename ξ m) (rename ξ n) s := by rfl
 @[asimp]lemma proj : rename ξ (proj A m n) = proj (rename (upren ξ) A) (rename ξ m) (rename (upren $ upren ξ) n) := by rfl
 @[asimp]lemma bool : rename ξ (@bool Srt) = bool := by rfl
 @[asimp]lemma tt   : rename ξ (@tt Srt) = tt := by rfl
@@ -77,11 +84,15 @@ def subst_rec (σ : Var -> Tm Srt) (m : Tm Srt) : Tm Srt :=
   match m with
   | var x => σ x
   | srt s i => srt s i
-  | pi A B r s => pi (subst_rec σ A) (subst_rec (up σ) B) r s
-  | lam A m r s => lam (subst_rec σ A) (subst_rec (up σ) m) r s
+  | pi0 A B s => pi0 (subst_rec σ A) (subst_rec (up σ) B) s
+  | pi1 A B s => pi1 (subst_rec σ A) (subst_rec (up σ) B) s
+  | lam0 A m s => lam0 (subst_rec σ A) (subst_rec (up σ) m) s
+  | lam1 A m s => lam1 (subst_rec σ A) (subst_rec (up σ) m) s
   | app m n => app (subst_rec σ m) (subst_rec σ n)
-  | sig A B r s => sig (subst_rec σ A) (subst_rec (up σ) B) r s
-  | pair m n r s => pair (subst_rec σ m) (subst_rec σ n) r s
+  | sig0 A B s => sig0 (subst_rec σ A) (subst_rec (up σ) B) s
+  | sig1 A B s => sig1 (subst_rec σ A) (subst_rec (up σ) B) s
+  | tup0 m n s => tup0 (subst_rec σ m) (subst_rec σ n) s
+  | tup1 m n s => tup1 (subst_rec σ m) (subst_rec σ n) s
   | proj A m n => proj (subst_rec (up σ) A) (subst_rec σ m) (subst_rec (upn 2 σ) n)
   | bool => bool
   | tt => tt
@@ -95,15 +106,19 @@ instance : Subst (Tm Srt) where
   subst := subst_rec
 
 namespace Subst
-variable (σ : Var -> Tm Srt) (A B m n n1 n2 : Tm Srt) (x i : Nat) (r : Rlv) (s : Srt)
+variable (σ : Var -> Tm Srt) (A B m n n1 n2 : Tm Srt) (x i : Nat) (s : Srt)
 
 @[asimp]lemma ids  : subst σ (ids x) = σ x := by rfl
 @[asimp]lemma srt  : subst σ (srt s i) = srt s i := by rfl
-@[asimp]lemma pi   : subst σ (pi A B r s) = pi (subst σ A) (subst (up σ) B) r s := by rfl
-@[asimp]lemma lam  : subst σ (lam A m r s) = lam (subst σ A) (subst (up σ) m) r s := by rfl
+@[asimp]lemma pi0  : subst σ (pi0 A B s) = pi0 (subst σ A) (subst (up σ) B) s := by rfl
+@[asimp]lemma pi1  : subst σ (pi1 A B s) = pi1 (subst σ A) (subst (up σ) B) s := by rfl
+@[asimp]lemma lam0 : subst σ (lam0 A m s) = lam0 (subst σ A) (subst (up σ) m) s := by rfl
+@[asimp]lemma lam1 : subst σ (lam1 A m s) = lam1 (subst σ A) (subst (up σ) m) s := by rfl
 @[asimp]lemma app  : subst σ (app m n) = app (subst σ m) (subst σ n) := by rfl
-@[asimp]lemma sig  : subst σ (sig A B r s) = sig (subst σ A) (subst (up σ) B) r s := by rfl
-@[asimp]lemma pair : subst σ (pair m n r s) = pair (subst σ m) (subst σ n) r s := by rfl
+@[asimp]lemma sig0 : subst σ (sig0 A B s) = sig0 (subst σ A) (subst (up σ) B) s := by rfl
+@[asimp]lemma sig1 : subst σ (sig1 A B s) = sig1 (subst σ A) (subst (up σ) B) s := by rfl
+@[asimp]lemma tup0 : subst σ (tup0 m n s) = tup0 (subst σ m) (subst σ n) s := by rfl
+@[asimp]lemma tup1 : subst σ (tup1 m n s) = tup1 (subst σ m) (subst σ n) s := by rfl
 @[asimp]lemma proj : subst σ (proj A m n) = proj (subst (up σ) A) (subst σ m) (subst (upn 2 σ) n) := by rfl
 @[asimp]lemma bool : subst σ (@bool Srt) = bool := by rfl
 @[asimp]lemma tt   : subst σ (@tt Srt) = tt := by rfl
@@ -123,11 +138,15 @@ lemma rename_subst ξ (m : Tm Srt) : rename ξ m = m.[ren ξ] := by
   induction m generalizing ξ with
   | var => asimp
   | srt => asimp
-  | pi A B r s ihA ihB => asimp[up_upren, ihA, ihB]
-  | lam A m r s ihA ihm => asimp[up_upren, ihA, ihm]
+  | pi0 A B s ihA ihB => asimp[up_upren, ihA, ihB]
+  | pi1 A B s ihA ihB => asimp[up_upren, ihA, ihB]
+  | lam0 A m s ihA ihm => asimp[up_upren, ihA, ihm]
+  | lam1 A m s ihA ihm => asimp[up_upren, ihA, ihm]
   | app m n ihm ihn => asimp[ihm, ihn]
-  | sig A B r s ihA ihB => asimp[up_upren, ihA, ihB]
-  | pair m n r s ihm ihn => asimp[ihm, ihn]
+  | sig0 A B s ihA ihB => asimp[up_upren, ihA, ihB]
+  | sig1 A B s ihA ihB => asimp[up_upren, ihA, ihB]
+  | tup0 m n s ihm ihn => asimp[ihm, ihn]
+  | tup1 m n s ihm ihn => asimp[ihm, ihn]
   | proj A m n ihA ihm ihn => asimp[up_upren, ihm, ihA, ihn]
   | bool => asimp
   | tt => asimp
@@ -147,11 +166,15 @@ lemma subst_id (m : Tm Srt) : m.[ids] = m := by
   induction m with
   | var => asimp
   | srt => asimp
-  | pi A B r s ihA ihB => asimp[up_ids, ihA, ihB]
-  | lam A m r s ihA ihm => asimp[up_ids, ihA, ihm]
+  | pi0 A B s ihA ihB => asimp[up_ids, ihA, ihB]
+  | pi1 A B s ihA ihB => asimp[up_ids, ihA, ihB]
+  | lam0 A m s ihA ihm => asimp[up_ids, ihA, ihm]
+  | lam1 A m s ihA ihm => asimp[up_ids, ihA, ihm]
   | app m n ihm ihn => asimp[ihm, ihn]
-  | sig A B r s ihA ihB => asimp[up_ids, ihA, ihB]
-  | pair m n r s ihm ihn => asimp[ihm, ihn]
+  | sig0 A B s ihA ihB => asimp[up_ids, ihA, ihB]
+  | sig1 A B s ihA ihB => asimp[up_ids, ihA, ihB]
+  | tup0 m n s ihm ihn => asimp[ihm, ihn]
+  | tup1 m n s ihm ihn => asimp[ihm, ihn]
   | proj A m n ihA ihm ihn => asimp[up_ids, ihm, ihA, ihn]
   | bool => asimp
   | tt => asimp
@@ -172,11 +195,15 @@ lemma ren_subst_comp ξ σ (m : Tm Srt) : m.[ren ξ].[σ] = m.[ξ !>> σ] := by
   induction m generalizing ξ σ with
   | var => asimp
   | srt => asimp
-  | pi A B r s ihA ihB => asimp[up_upren, up_comp_upren, ihA, ihB]
-  | lam A m r s ihA ihm => asimp[up_upren, up_comp_upren, ihA, ihm]
+  | pi0 A B s ihA ihB => asimp[up_upren, up_comp_upren, ihA, ihB]
+  | pi1 A B s ihA ihB => asimp[up_upren, up_comp_upren, ihA, ihB]
+  | lam0 A m s ihA ihm => asimp[up_upren, up_comp_upren, ihA, ihm]
+  | lam1 A m s ihA ihm => asimp[up_upren, up_comp_upren, ihA, ihm]
   | app m n ihm ihn => asimp[ihm, ihn]
-  | sig A B r s ihA ihB => asimp[up_upren, up_comp_upren, ihA, ihB]
-  | pair m n r s ihm ihn => asimp[ihm, ihn]
+  | sig0 A B s ihA ihB => asimp[up_upren, up_comp_upren, ihA, ihB]
+  | sig1 A B s ihA ihB => asimp[up_upren, up_comp_upren, ihA, ihB]
+  | tup0 m n s ihm ihn => asimp[ihm, ihn]
+  | tup1 m n s ihm ihn => asimp[ihm, ihn]
   | proj A m n ihA ihm ihn => asimp[up_upren, up_comp_upren, ihm, ihA, ihn]
   | bool => asimp
   | tt => asimp
@@ -201,11 +228,15 @@ lemma subst_ren_comp σ ξ (m : Tm Srt) : m.[σ].[ren ξ] = m.[σ !>> rename ξ]
   induction m generalizing σ ξ with
   | var => asimp[rename_subst]
   | srt => asimp
-  | pi A B r s ihA ihB => asimp[up_upren, up_comp_ren, ihA, ihB]
-  | lam A m r s ihA ihm => asimp[up_upren, up_comp_ren, ihA, ihm]
+  | pi0 A B s ihA ihB => asimp[up_upren, up_comp_ren, ihA, ihB]
+  | pi1 A B s ihA ihB => asimp[up_upren, up_comp_ren, ihA, ihB]
+  | lam0 A m s ihA ihm => asimp[up_upren, up_comp_ren, ihA, ihm]
+  | lam1 A m s ihA ihm => asimp[up_upren, up_comp_ren, ihA, ihm]
   | app m n ihm ihn => asimp[ihm, ihn]
-  | sig A B r s ihA ihB => asimp[up_upren, up_comp_ren, ihA, ihB]
-  | pair m n r s ihm ihn => asimp[ihm, ihn]
+  | sig0 A B s ihA ihB => asimp[up_upren, up_comp_ren, ihA, ihB]
+  | sig1 A B s ihA ihB => asimp[up_upren, up_comp_ren, ihA, ihB]
+  | tup0 m n s ihm ihn => asimp[ihm, ihn]
+  | tup1 m n s ihm ihn => asimp[ihm, ihn]
   | proj A m n ihA ihm ihn => asimp[up_upren, up_comp_ren, ihm, ihA, ihn]
   | bool => asimp
   | tt => asimp
@@ -230,11 +261,15 @@ lemma subst_comp (σ τ : Var -> Tm Srt) m : m.[σ].[τ] = m.[σ !> τ] := by
   induction m generalizing σ τ with
   | var => asimp
   | srt => asimp
-  | pi A B r s ihA ihB => asimp[up_comp, ihA, ihB]
-  | lam A m r s ihA ihm => asimp[up_comp, ihA, ihm]
+  | pi0 A B s ihA ihB => asimp[up_comp, ihA, ihB]
+  | pi1 A B s ihA ihB => asimp[up_comp, ihA, ihB]
+  | lam0 A m s ihA ihm => asimp[up_comp, ihA, ihm]
+  | lam1 A m s ihA ihm => asimp[up_comp, ihA, ihm]
   | app m n ihm ihn => asimp[ihm, ihn]
-  | sig A B r s ihA ihB => asimp[up_comp, ihA, ihB]
-  | pair m n r s ihm ihn => asimp[ihm, ihn]
+  | sig0 A B s ihA ihB => asimp[up_comp, ihA, ihB]
+  | sig1 A B s ihA ihB => asimp[up_comp, ihA, ihB]
+  | tup0 m n s ihm ihn => asimp[ihm, ihn]
+  | tup1 m n s ihm ihn => asimp[ihm, ihn]
   | proj A m n ihA ihm ihn => asimp[up_comp, ihm, ihA, ihn]
   | bool => asimp
   | tt => asimp

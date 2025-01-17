@@ -114,30 +114,53 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     . assumption
     . apply ih; assumption
     . assumption
-  | pi _ _ _ _ ihA ihB =>
+  | pi0 _ _ _ ihA ihB =>
     intro agr; asimp
     asimp
     constructor
     . apply ihA; assumption
     . apply ihB; constructor <;> assumption
-  | lam _ _ _ _ ihA ihm =>
+  | pi1 _ _ _ ihA ihB =>
+    intro agr; asimp
+    asimp
+    constructor
+    . apply ihA; assumption
+    . apply ihB; constructor <;> assumption
+  | lam0 _ _ _ ihA ihm =>
     intro agr; asimp
     constructor
     . apply ihA; assumption
     . apply ihm; constructor <;> assumption
-  | app _ _ ihm ihn =>
+  | lam1 _ _ _ ihA ihm =>
+    intro agr; asimp
+    constructor
+    . apply ihA; assumption
+    . apply ihm; constructor <;> assumption
+  | app0 _ _ ihm ihn =>
     intro agr; asimp
     replace ihm := ihm agr; asimp at ihm
     replace ihn := ihn agr
-    have ty := Typed.app ihm ihn
+    have ty := Typed.app0 ihm ihn
     asimp at ty
     assumption
-  | sig _ _ _ _ ihA ihB =>
+  | app1 _ _ ihm ihn =>
+    intro agr; asimp
+    replace ihm := ihm agr; asimp at ihm
+    replace ihn := ihn agr
+    have ty := Typed.app1 ihm ihn
+    asimp at ty
+    assumption
+  | sig0 _ _ _ ihA ihB =>
     intro agr; asimp
     constructor
     . apply ihA; assumption
     . apply ihB; constructor <;> assumption
-  | pair _ _ _ ihS ihm ihn =>
+  | sig1 _ _ _ ihA ihB =>
+    intro agr; asimp
+    constructor
+    . apply ihA; assumption
+    . apply ihB; constructor <;> assumption
+  | tup0 _ _ _ ihS ihm ihn =>
     intro agr; asimp
     constructor
     . replace ihS := ihS agr; asimp at ihS
@@ -145,7 +168,15 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     . apply ihm; assumption
     . replace ihn := ihn agr; asimp at ihn
       asimp; assumption
-  | @proj _ _ _ C m _ _ _ _ _ tyC _ tyn ihC ihm ihn =>
+  | tup1 _ _ _ ihS ihm ihn =>
+    intro agr; asimp
+    constructor
+    . replace ihS := ihS agr; asimp at ihS
+      assumption
+    . apply ihm; assumption
+    . replace ihn := ihn agr; asimp at ihn
+      asimp; assumption
+  | @proj0 _ _ _ C m _ _ _ _ tyC _ tyn ihC ihm ihn =>
     intro agr; asimp
     rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
@@ -154,7 +185,20 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     replace ihC := ihC (agr.cons tyS); asimp at ihC
     replace ihm := ihm agr; asimp at ihm
     replace ihn := ihn ((agr.cons tyA).cons tyB); asimp at ihn
-    constructor
+    apply Typed.proj0
+    . assumption
+    . assumption
+    . asimp; assumption
+  | @proj1 _ _ _ C m _ _ _ _ tyC _ tyn ihC ihm ihn =>
+    intro agr; asimp
+    rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
+    have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
+    have ⟨_, _, _, tyB⟩ := tyn.ctx_inv
+    have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
+    replace ihC := ihC (agr.cons tyS); asimp at ihC
+    replace ihm := ihm agr; asimp at ihm
+    replace ihn := ihn ((agr.cons tyA).cons tyB); asimp at ihn
+    apply Typed.proj1
     . assumption
     . assumption
     . asimp; assumption
@@ -247,15 +291,13 @@ lemma Typed.conv_ctx {Γ : Ctx Srt} {A B C m s i} :
     Γ ⊢ B : .srt s i ->
     A :: Γ ⊢ m : C ->
     B :: Γ ⊢ m : C := by
-  intro eq tyb tym
+  intro eq tyB tym
   replace tym : B :: Γ ⊢ m.[ids] : C.[ids] := by
     have ⟨_, _, _, tyA⟩ := tym.ctx_inv
     apply Typed.substitution
     . assumption
     . apply AgreeSubst.conv <;> try assumption
-      . asimp
-        apply Typed.eweaken <;> try first | rfl | assumption
-        asimp
+      . asimp; apply tyA.weaken tyB
       . apply AgreeSubst.refl; constructor <;> assumption
   asimp at tym
   exact tym

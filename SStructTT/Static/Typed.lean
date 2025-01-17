@@ -15,31 +15,57 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
     Wf Γ ->
     Has Γ x A ->
     Typed Γ (.var x) A
-  | pi {Γ A B} r s {sA sB iA iB} :
+  | pi0 {Γ A B} s {sA sB iA iB} :
     Typed Γ A (.srt sA iA) ->
     Typed (A :: Γ) B (.srt sB iB) ->
-    Typed Γ (.pi A B r s) (.srt s (max iA iB))
-  | lam {Γ A B m} r s {sA iA} :
+    Typed Γ (.pi0 A B s) (.srt s (max iA iB))
+  | pi1 {Γ A B} s {sA sB iA iB} :
+    Typed Γ A (.srt sA iA) ->
+    Typed (A :: Γ) B (.srt sB iB) ->
+    Typed Γ (.pi1 A B s) (.srt s (max iA iB))
+  | lam0 {Γ A B m} s {sA iA} :
     Typed Γ A (.srt sA iA) ->
     Typed (A :: Γ) m B ->
-    Typed Γ (.lam A m r s) (.pi A B r s)
-  | app {Γ A B m n r s} :
-    Typed Γ m (.pi A B r s) ->
+    Typed Γ (.lam0 A m s) (.pi0 A B s)
+  | lam1 {Γ A B m} s {sA iA} :
+    Typed Γ A (.srt sA iA) ->
+    Typed (A :: Γ) m B ->
+    Typed Γ (.lam1 A m s) (.pi1 A B s)
+  | app0 {Γ A B m n s} :
+    Typed Γ m (.pi0 A B s) ->
     Typed Γ n A ->
     Typed Γ (.app m n) B.[n/]
-  | sig {Γ A B} r s {sA sB iA iB} :
+  | app1 {Γ A B m n s} :
+    Typed Γ m (.pi1 A B s) ->
+    Typed Γ n A ->
+    Typed Γ (.app m n) B.[n/]
+  | sig0 {Γ A B} s {sA sB iA iB} :
     Typed Γ A (.srt sA iA) ->
     Typed (A :: Γ) B (.srt sB iB) ->
-    Typed Γ (.sig A B r s) (.srt s (max iA iB))
-  | pair {Γ A B m n r s i} :
-    Typed Γ (.sig A B r s) (.srt s i) ->
+    Typed Γ (.sig0 A B s) (.srt s (max iA iB))
+  | sig1 {Γ A B} s {sA sB iA iB} :
+    Typed Γ A (.srt sA iA) ->
+    Typed (A :: Γ) B (.srt sB iB) ->
+    Typed Γ (.sig1 A B s) (.srt s (max iA iB))
+  | tup0 {Γ A B m n s i} :
+    Typed Γ (.sig0 A B s) (.srt s i) ->
     Typed Γ m A ->
     Typed Γ n B.[m/] ->
-    Typed Γ (.pair m n r s) (.sig A B r s)
-  | proj {Γ A B C m n r s sC iC} :
-    Typed (.sig A B r s :: Γ) C (.srt sC iC) ->
-    Typed Γ m (.sig A B r s) ->
-    Typed (B :: A :: Γ) n C.[.pair (.var 1) (.var 0) r s .: shift 2] ->
+    Typed Γ (.tup0 m n s) (.sig0 A B s)
+  | tup1 {Γ A B m n s i} :
+    Typed Γ (.sig1 A B s) (.srt s i) ->
+    Typed Γ m A ->
+    Typed Γ n B.[m/] ->
+    Typed Γ (.tup1 m n s) (.sig1 A B s)
+  | proj0 {Γ A B C m n s sC iC} :
+    Typed (.sig0 A B s :: Γ) C (.srt sC iC) ->
+    Typed Γ m (.sig0 A B s) ->
+    Typed (B :: A :: Γ) n C.[.tup0 (.var 1) (.var 0) s .: shift 2] ->
+    Typed Γ (.proj C m n) C.[m/]
+  | proj1 {Γ A B C m n s sC iC} :
+    Typed (.sig1 A B s :: Γ) C (.srt sC iC) ->
+    Typed Γ m (.sig1 A B s) ->
+    Typed (B :: A :: Γ) n C.[.tup1 (.var 1) (.var 0) s .: shift 2] ->
     Typed Γ (.proj C m n) C.[m/]
   | bool {Γ} :
     Wf Γ ->
