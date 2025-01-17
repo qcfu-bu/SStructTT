@@ -11,9 +11,7 @@ lemma Typed.pi0_inv {Γ : Ctx Srt} {A B T s} :
   intro ty; induction ty generalizing A B s
   all_goals try trivial
   case pi0 sB iA iB _ _ _ _ =>
-    cases e
-    exists sB, iB, (max iA iB)
-    aesop
+    cases e; exists sB, iB, (max iA iB); aesop
   case conv eq1 _ _ ih _ =>
     have ⟨sB, iB, i, _, eq2⟩ := ih e
     exists sB, iB, i
@@ -30,9 +28,7 @@ lemma Typed.pi1_inv {Γ : Ctx Srt} {A B T s} :
   intro ty; induction ty generalizing A B s
   all_goals try trivial
   case pi1 sB iA iB _ _ _ _ =>
-    cases e
-    exists sB, iB, (max iA iB)
-    aesop
+    cases e; exists sB, iB, (max iA iB); aesop
   case conv eq1 _ _ ih _ =>
     have ⟨sB, iB, i, _, eq2⟩ := ih e
     exists sB, iB, i
@@ -48,10 +44,8 @@ lemma Typed.sig0_inv {Γ : Ctx Srt} {A B T s} :
   generalize e: Tm.sig0 A B s = x
   intro ty; induction ty generalizing A B s
   all_goals try trivial
-  case sig0 sB iA iB _ _ _ _ =>
-    cases e
-    exists sB, iB, (max iA iB)
-    aesop
+  case sig0 _ sB iA iB _ _ _ _ _ =>
+    cases e; exists sB, iB, (max iA iB); aesop
   case conv eq1 _ _ ih _ =>
     have ⟨sB, iB, i, _, eq2⟩ := ih e
     exists sB, iB, i
@@ -67,10 +61,8 @@ lemma Typed.sig1_inv {Γ : Ctx Srt} {A B T s} :
   generalize e: Tm.sig1 A B s = x
   intro ty; induction ty generalizing A B s
   all_goals try trivial
-  case sig1 sB iA iB _ _ _ _ =>
-    cases e
-    exists sB, iB, (max iA iB)
-    aesop
+  case sig1 _ sB iA iB _ _ _ _ _ _ =>
+    cases e; exists sB, iB, (max iA iB); aesop
   case conv eq1 _ _ ih _ =>
     have ⟨sB, iB, i, _, eq2⟩ := ih e
     exists sB, iB, i
@@ -230,11 +222,11 @@ theorem Typed.validity {Γ : Ctx Srt} {A m} :
     exists s, i
     apply Typed.esubst <;> try first | rfl | assumption
     asimp
-  case sig0 s _ _ iA iB tyA _ _ _ =>
+  case sig0 s _ _ iA iB _ tyA _ _ _ =>
     exists s0, (max iA iB + 1)
     constructor
     apply tyA.toWf
-  case sig1 s _ _ iA iB tyA _ _ _ =>
+  case sig1 s _ _ iA iB _ _ tyA _ _ _ =>
     exists s0, (max iA iB + 1)
     constructor
     apply tyA.toWf
@@ -364,7 +356,7 @@ lemma Typed.lam0_pi1_false {Γ : Ctx Srt} {A1 A2 B C m s1 s2} :
   generalize e: Tm.lam0 A1 m s1 = n
   intro ty; induction ty generalizing A1 m s1
   all_goals try trivial
-  case lam0 => intro eq; false_conv eq
+  case lam0 => intro; false_conv
   case conv ihm _ =>
     intro eq; subst_vars
     apply ihm; rfl
@@ -375,7 +367,7 @@ lemma Typed.lam1_pi0_false {Γ : Ctx Srt} {A1 A2 B C m s1 s2} :
   generalize e: Tm.lam1 A1 m s1 = n
   intro ty; induction ty generalizing A1 m s1
   all_goals try trivial
-  case lam1 => intro eq; false_conv eq
+  case lam1 => intro; false_conv
   case conv ihm _ =>
     intro eq; subst_vars
     apply ihm; rfl
@@ -386,7 +378,7 @@ lemma Typed.tup0_sig1_false {Γ : Ctx Srt} {A B C m1 m2 s1 s2} :
   generalize e: Tm.tup0 m1 m2 s1 = n
   intro ty; induction ty generalizing m1 m2 s1
   all_goals try trivial
-  case tup0 => intro eq; false_conv eq
+  case tup0 => intro; false_conv
   case conv ihm _ =>
     intro eq; subst_vars
     apply ihm; rfl
@@ -397,7 +389,7 @@ lemma Typed.tup1_sig0_false {Γ : Ctx Srt} {A B C m1 m2 s1 s2} :
   generalize e: Tm.tup1 m1 m2 s1 = n
   intro ty; induction ty generalizing m1 m2 s1
   all_goals try trivial
-  case tup1 => intro eq; false_conv eq
+  case tup1 => intro; false_conv
   case conv ihm _ =>
     intro eq; subst_vars
     apply ihm; rfl

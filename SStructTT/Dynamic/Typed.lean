@@ -38,18 +38,18 @@ inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop 
     Typed Γ Δ1 m A ->
     Typed Γ Δ2 n B.[m/] ->
     Typed Γ Δ (.tup1 m n s) (.sig1 A B s)
-  | proj0 Γ Δ1 Δ2 Δ A B C m n s1 s2 s3 i :
+  | proj0 Γ Δ1 Δ2 Δ A B C m n s sA sC iC :
     Merge Δ1 Δ2 Δ ->
-    (.sig A B t :: Γ) ⊢ C : Sort s l ->
-    Typed Γ Δ1 m (.sig A B .im t) ->
-    Typed (B :: A :: Γ) (_: A :⟨r⟩ Δ2) n C.[Pair0 (Var 1) (Var 0) t .: shift 2] ->
+    (.sig0 A B s :: Γ) ⊢ C : .srt sC iC ->
+    Typed Γ Δ1 m (.sig0 A B s) ->
+    Typed (B :: A :: Γ) (_: A :⟨sA⟩ Δ2) n C.[.tup0 (.var 1) (.var 0) s .: shift 2] ->
     Typed Γ Δ (.proj C m n) C.[m/]
-  | dyn_letin1 Γ Δ1 Δ2 Δ A B C m n s r1 r2 t l :
-    Δ1 ∘ Δ2 => Δ ->
-    (Sig1 A B t :: Γ) ⊢ C : Sort s l ->
-    Γ ; Δ1 ⊢ m : Sig1 A B t ->
-    (B :: A :: Γ) ; B .{r2} A .{r1} Δ2 ⊢ n : C.[Pair1 (Var 1) (Var 0) t .: ren (+2)] ->
-    Γ ; Δ ⊢ LetIn C m n : C.[m/]
+  | proj1 Γ Δ1 Δ2 Δ A B C m n s sA sB sC iC :
+    Merge Δ1 Δ2 Δ ->
+    (.sig1 A B s :: Γ) ⊢ C : .srt sC iC ->
+    Typed Γ Δ1 m (.sig1 A B s) ->
+    Typed (B :: A :: Γ) (B :⟨sB⟩ A :⟨sA⟩ Δ2) n C.[.tup1 (.var 1) (.var 0) s .: shift 2] ->
+    Typed Γ Δ (.proj C m n) C.[m/]
 
 inductive Wf : Static.Ctx Srt -> Dynamic.Ctx Srt -> Prop where
   | nil : Wf [] []

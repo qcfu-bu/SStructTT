@@ -31,214 +31,133 @@ lemma Typed.pi0_canonical {A B C m : Tm Srt} {s} :
     ∃ A n, m = .lam0 A n s := by
   generalize e: [] = Γ
   intro ty; induction ty generalizing A B s
-  all_goals try trivial
-  case srt => intro eq; false_conv eq
+  all_goals try (intro eq vl; false_conv)
   case var hs _ => subst_vars; cases hs
-  case pi0 => intro eq; false_conv eq
-  case pi1 => intro eq; false_conv eq
   case lam0 _ A0 B0 m _ _ _ _ _ _ _ =>
-    intro eq _
     have ⟨_, _, _⟩ := Conv.pi0_inj eq
     subst_vars; exists A0, m
-  case lam1 => intro eq; false_conv eq
-  case app0 => intro _ vl; cases vl
-  case app1 => intro _ vl; cases vl
-  case sig0 => intro eq; false_conv eq
-  case sig1 => intro eq; false_conv eq
-  case tup0 => intro eq; false_conv eq
-  case tup1 => intro eq; false_conv eq
-  case proj0 => intro _ vl; cases vl
-  case proj1 => intro _ vl; cases vl
-  case bool => intro eq; false_conv eq
-  case tt => intro eq; false_conv eq
-  case ff => intro eq; false_conv eq
-  case ite => intro _ vl; cases vl
-  case idn => intro eq; false_conv eq
-  case rfl => intro eq; false_conv eq
-  case rw => intro _ vl; cases vl
+  case app0 => cases vl
+  case app1 => cases vl
+  case proj0 => cases vl
+  case proj1 => cases vl
+  case ite => cases vl
+  case rw => cases vl
   case conv ihm _ =>
-    intro eq vl
     apply ihm
     . assumption
     . apply Conv.trans <;> assumption
     . assumption
+  all_goals trivial
 
 lemma Typed.pi1_canonical {A B C m : Tm Srt} {s} :
     [] ⊢ m : C -> C === .pi1 A B s -> Value m ->
     ∃ A n, m = .lam1 A n s := by
   generalize e: [] = Γ
   intro ty; induction ty generalizing A B s
-  all_goals try trivial
-  case srt => intro eq; false_conv eq
+  all_goals try (intro eq vl; false_conv)
   case var hs _ => subst_vars; cases hs
-  case pi0 => intro eq; false_conv eq
-  case pi1 => intro eq; false_conv eq
-  case lam0 => intro eq; false_conv eq
   case lam1 _ A0 B0 m _ _ _ _ _ _ _ =>
-    intro eq _
     have ⟨_, _, _⟩ := Conv.pi1_inj eq
     subst_vars; exists A0, m
-  case app0 => intro _ vl; cases vl
-  case app1 => intro _ vl; cases vl
-  case sig0 => intro eq; false_conv eq
-  case sig1 => intro eq; false_conv eq
-  case tup0 => intro eq; false_conv eq
-  case tup1 => intro eq; false_conv eq
-  case proj0 => intro _ vl; cases vl
-  case proj1 => intro _ vl; cases vl
-  case bool => intro eq; false_conv eq
-  case tt => intro eq; false_conv eq
-  case ff => intro eq; false_conv eq
-  case ite => intro _ vl; cases vl
-  case idn => intro eq; false_conv eq
-  case rfl => intro eq; false_conv eq
-  case rw => intro _ vl; cases vl
+  case app0 => cases vl
+  case app1 => cases vl
+  case proj0 => cases vl
+  case proj1 => cases vl
+  case ite => cases vl
+  case rw => cases vl
   case conv ihm _ =>
-    intro eq vl
     apply ihm
     . assumption
     . apply Conv.trans <;> assumption
     . assumption
+  all_goals trivial
 
 lemma Typed.sig0_canonical {A B C m : Tm Srt} {s} :
     [] ⊢ m : C -> C === .sig0 A B s -> Value m ->
     ∃ m1 m2, m = .tup0 m1 m2 s := by
   generalize e: [] = Γ
   intro ty; induction ty generalizing A B s
-  all_goals try trivial
-  case srt => intro eq; false_conv eq
+  all_goals try (intro eq vl; false_conv)
   case var hs _ => subst_vars; cases hs
-  case pi0 => intro eq; false_conv eq
-  case pi1 => intro eq; false_conv eq
-  case lam0 => intro eq; false_conv eq
-  case lam1 => intro eq; false_conv eq
-  case app0 => intro _ vl; cases vl
-  case app1 => intro _ vl; cases vl
-  case sig0 => intro eq; false_conv eq
-  case sig1 => intro eq; false_conv eq
+  case app0 => cases vl
+  case app1 => cases vl
   case tup0 _ A0 B0 m n _ _ _ _ _ _ _ _ =>
-    intro eq _
     have ⟨_, _, _⟩ := Conv.sig0_inj eq
     subst_vars; exists m, n
-  case tup1 => intro eq; false_conv eq
-  case proj0 => intro _ vl; cases vl
-  case proj1 => intro _ vl; cases vl
-  case bool => intro eq; false_conv eq
-  case tt => intro eq; false_conv eq
-  case ff => intro eq; false_conv eq
-  case ite => intro _ vl; cases vl
-  case idn => intro eq; false_conv eq
-  case rfl => intro eq; false_conv eq
-  case rw => intro _ vl; cases vl
+  case proj0 => cases vl
+  case proj1 => cases vl
+  case ite => cases vl
+  case rw => cases vl
   case conv ihm _ =>
-    intro eq vl
     apply ihm
     . assumption
     . apply Conv.trans <;> assumption
     . assumption
+  all_goals trivial
 
 lemma Typed.sig1_canonical {A B C m : Tm Srt} {s} :
     [] ⊢ m : C -> C === .sig1 A B s -> Value m ->
     ∃ m1 m2, m = .tup1 m1 m2 s := by
   generalize e: [] = Γ
   intro ty; induction ty generalizing A B s
-  all_goals try trivial
-  case srt => intro eq; false_conv eq
+  all_goals try (intro eq vl; false_conv)
   case var hs _ => subst_vars; cases hs
-  case pi0 => intro eq; false_conv eq
-  case pi1 => intro eq; false_conv eq
-  case lam0 => intro eq; false_conv eq
-  case lam1 => intro eq; false_conv eq
-  case app0 => intro _ vl; cases vl
-  case app1 => intro _ vl; cases vl
-  case sig0 => intro eq; false_conv eq
-  case sig1 => intro eq; false_conv eq
-  case tup0 => intro eq; false_conv eq
+  case app0 => cases vl
+  case app1 => cases vl
   case tup1 _ A0 B0 m n _ _ _ _ _ _ _ _ =>
-    intro eq _
     have ⟨_, _, _⟩ := Conv.sig1_inj eq
     subst_vars; exists m, n
-  case proj0 => intro _ vl; cases vl
-  case proj1 => intro _ vl; cases vl
-  case bool => intro eq; false_conv eq
-  case tt => intro eq; false_conv eq
-  case ff => intro eq; false_conv eq
-  case ite => intro _ vl; cases vl
-  case idn => intro eq; false_conv eq
-  case rfl => intro eq; false_conv eq
-  case rw => intro _ vl; cases vl
+  case proj0 => cases vl
+  case proj1 => cases vl
+  case ite => cases vl
+  case rw => cases vl
   case conv ihm _ =>
-    intro eq vl
     apply ihm
     . assumption
     . apply Conv.trans <;> assumption
     . assumption
+  all_goals trivial
 
 lemma Typed.bool_canonical {C m : Tm Srt} :
     [] ⊢ m : C -> C === .bool -> Value m -> m = .tt ∨ m = .ff := by
   generalize e: [] = Γ
   intro ty; induction ty
-  all_goals try trivial
-  case srt => intro eq; false_conv eq
+  all_goals try (intro eq vl; false_conv)
   case var hs _ => subst_vars; cases hs
-  case pi0 => intro eq; false_conv eq
-  case pi1 => intro eq; false_conv eq
-  case lam0 => intro eq; false_conv eq
-  case lam1 => intro eq; false_conv eq
-  case app0 => intro _ vl; cases vl
-  case app1 => intro _ vl; cases vl
-  case sig0 => intro eq; false_conv eq
-  case sig1 => intro eq; false_conv eq
-  case tup0 => intro eq; false_conv eq
-  case tup1 => intro eq; false_conv eq
-  case proj0 => intro _ vl; cases vl
-  case proj1 => intro _ vl; cases vl
-  case bool => intro eq; false_conv eq
-  case tt => intros; left; rfl
-  case ff => intros; right; rfl
-  case ite => intro _ vl; cases vl
-  case idn => intro eq; false_conv eq
-  case rfl => intro eq; false_conv eq
-  case rw => intro _ vl; cases vl
+  case app0 => cases vl
+  case app1 => cases vl
+  case proj0 => cases vl
+  case proj1 => cases vl
+  case tt => left; rfl
+  case ff => right; rfl
+  case ite => cases vl
+  case rw => cases vl
   case conv ihm _ =>
-    intro eq vl
     apply ihm
     . assumption
     . apply Conv.trans <;> assumption
     . assumption
+  all_goals trivial
 
 lemma Typed.idn_canonical {A C m a b : Tm Srt} :
     [] ⊢ m : C -> C === .idn A a b -> Value m -> ∃ n, m = .rfl n := by
   generalize e: [] = Γ
   intro ty; induction ty
-  all_goals try trivial
-  case srt => intro eq; false_conv eq
+  all_goals try (intro eq vl; false_conv)
   case var hs _ => subst_vars; cases hs
-  case pi0 => intro eq; false_conv eq
-  case pi1 => intro eq; false_conv eq
-  case lam0 => intro eq; false_conv eq
-  case lam1 => intro eq; false_conv eq
-  case app0 => intro _ vl; cases vl
-  case app1 => intro _ vl; cases vl
-  case sig0 => intro eq; false_conv eq
-  case sig1 => intro eq; false_conv eq
-  case tup0 => intro eq; false_conv eq
-  case tup1 => intro eq; false_conv eq
-  case proj0 => intro _ vl; cases vl
-  case proj1 => intro _ vl; cases vl
-  case bool => intro eq; false_conv eq
-  case tt => intro eq; false_conv eq
-  case ff => intro eq; false_conv eq
-  case ite => intro _ vl; cases vl
-  case idn => intro eq; false_conv eq
-  case rfl m _ _ => intros; exists m
-  case rw => intro _ vl; cases vl
+  case app0 => cases vl
+  case app1 => cases vl
+  case proj0 => cases vl
+  case proj1 => cases vl
+  case ite => cases vl
+  case rfl m _ _ => exists m
+  case rw => cases vl
   case conv ihm _ =>
-    intro eq vl
     apply ihm
     . assumption
     . apply Conv.trans <;> assumption
     . assumption
+  all_goals trivial
 
 theorem Typed.progress {m A : Tm Srt} :
     [] ⊢ m : A -> (∃ n, m ~> n) ∨ Value m := by

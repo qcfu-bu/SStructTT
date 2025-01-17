@@ -150,14 +150,17 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     have ty := Typed.app1 ihm ihn
     asimp at ty
     assumption
-  | sig0 _ _ _ ihA ihB =>
+  | sig0 _ _ _ _ ihA ihB =>
     intro agr; asimp
     constructor
+    . assumption
     . apply ihA; assumption
     . apply ihB; constructor <;> assumption
-  | sig1 _ _ _ ihA ihB =>
+  | sig1 _ leA leB _ _ ihA ihB =>
     intro agr; asimp
     constructor
+    . apply leA
+    . apply leB
     . apply ihA; assumption
     . apply ihB; constructor <;> assumption
   | tup0 _ _ _ ihS ihm ihn =>

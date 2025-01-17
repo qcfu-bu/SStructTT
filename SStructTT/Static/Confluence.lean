@@ -1218,7 +1218,7 @@ lemma Conv.idn_inj {A1 A2 m1 m2 n1 n2 : Tm Srt} :
   . apply Conv.join <;> assumption
 
 namespace Tactic
-open Lean Elab Meta
+open Lean Elab Tactic Meta
 
 -- Eliminate an `Exists` proof `m` using `elim`.
 def existsElim (m : Expr) (elim : Expr -> Expr -> MetaM Expr) : MetaM Expr := do
@@ -1260,17 +1260,18 @@ partial def projEqs (m : Expr) (elim : Array Expr -> MetaM Expr) : MetaM Expr :=
   | _ => elim #[]
 
 -- Assuming `id : a === b`, get the associated expression of `id` and the inversion lemmas of `a` and `b`.
-def getConv (goal : MVarId) (id : Name) : MetaM (Expr × Expr × Expr) := do
+def getConvs (goal : MVarId) : MetaM (Array (Expr × Expr × Expr)) := do
   goal.withContext do
     let lctx <- getLCtx
-    match lctx.findFromUserName? id with
-    | some ldecl =>
+    let mut acc := #[]
+    for ldecl in lctx do
       let declExpr := ldecl.toExpr
-      let declType <- inferType declExpr
-      match declType.app3? ``ConvStep with
-      | some (_, a, b) => return (declExpr, a, b)
-      | _ => throwTacticEx `getConv goal
-    | none => throwTacticEx `getConv goal
+      let declType <- whnf $ <-inferType declExpr
+      match declType.app4? ``Conv with
+      | some (_, _, a, b) =>
+        acc := acc.push (declExpr, a, b)
+      | _ => pure ()
+    return acc
 
 -- Apply `church_rosser` theorem to refute impossible conversion.
 def applyCR (goal : MVarId) (m l1 l2 : Expr) : MetaM Expr := do
@@ -1292,12 +1293,12 @@ def getInvLemma (m : Expr) : MetaM Expr := do
   match m.getAppFn.constName! with
   | ``Tm.var  => return .const ``Red.var_inv  []
   | ``Tm.srt  => return .const ``Red.srt_inv  []
-  | ``Tm.pi0  => return .const ``Red.pi0_inv   []
-  | ``Tm.pi1  => return .const ``Red.pi1_inv   []
-  | ``Tm.lam0 => return .const ``Red.lam0_inv  []
-  | ``Tm.lam1 => return .const ``Red.lam1_inv  []
-  | ``Tm.sig0 => return .const ``Red.sig0_inv  []
-  | ``Tm.sig1 => return .const ``Red.sig1_inv  []
+  | ``Tm.pi0  => return .const ``Red.pi0_inv  []
+  | ``Tm.pi1  => return .const ``Red.pi1_inv  []
+  | ``Tm.lam0 => return .const ``Red.lam0_inv []
+  | ``Tm.lam1 => return .const ``Red.lam1_inv []
+  | ``Tm.sig0 => return .const ``Red.sig0_inv []
+  | ``Tm.sig1 => return .const ``Red.sig1_inv []
   | ``Tm.tup0 => return .const ``Red.tup0_inv []
   | ``Tm.tup1 => return .const ``Red.tup1_inv []
   | ``Tm.bool => return .const ``Red.bool_inv []
@@ -1307,20 +1308,26 @@ def getInvLemma (m : Expr) : MetaM Expr := do
   | ``Tm.rfl  => return .const ``Red.rfl_inv  []
   | _ => throwError `getInvLemma
 
-open Lean Elab Tactic in
 /--
-  `false_conv h` refutes impossible conversion proof `h`. -/
-elab "false_conv" h:ident : tactic =>
+  `false_conv` refutes impossible conversion proofs. -/
+elab "false_conv" : tactic =>
   withMainContext do
     let goal <- getMainGoal
-    let (m, a, b) <- getConv goal h.getId
-    let lemma_a <- getInvLemma a
-    let lemma_b <- getInvLemma b
-    let pf <- applyCR goal m lemma_a lemma_b
-    closeMainGoal `false_conv pf
+    let goalType <- getMainTarget
+    for (m, a, b) in <-getConvs goal do
+      let s <- saveState
+      try
+        let lemma_a <- getInvLemma a
+        let lemma_b <- getInvLemma b
+        let pf <- applyCR goal m lemma_a lemma_b
+        if <-isDefEq goalType (<-inferType pf) then
+          closeMainGoal `false_conv pf
+      catch _ => restoreState s
 end Tactic
 
-example (a b : Tm Srt) s i :
-    Tm.lam0 a b s === Tm.srt s i -> False := by
-  intro h;
-  false_conv h
+example (a b : Tm Srt) (s : Srt) i :
+    Conv Step (Tm.srt s i) (Tm.srt s i) ->
+    (Tm.lam0 a b s) === (Tm.srt s i) ->
+    False := by
+  intro h1 h2;
+  false_conv

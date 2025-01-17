@@ -25,6 +25,8 @@ inductive Merge : Ctx Srt -> Ctx Srt -> Ctx Srt -> Prop where
     Merge Δ1 Δ2 Δ ->
     Merge (_: Δ1) (_: Δ2) (_: Δ)
 
+notation Δ1 " ∪ " Δ2 " => " Δ => Merge Δ1 Δ2 Δ
+
 @[scoped aesop safe [constructors]]
 inductive Lower : Ctx Srt -> Srt -> Prop where
   | nil s : Lower [] s
@@ -35,6 +37,8 @@ inductive Lower : Ctx Srt -> Srt -> Prop where
   | im {Δ s} :
     Lower Δ s ->
     Lower (_: Δ) s
+
+notation Δ " ◃ " s => Lower Δ s
 
 @[scoped aesop safe [constructors]]
 inductive Weak : Ctx Srt -> Prop where

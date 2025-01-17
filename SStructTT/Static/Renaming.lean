@@ -119,13 +119,16 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     replace tyn := ihn agr; asimp at tyn
     have ty := Typed.app1 tym tyn; asimp at ty
     assumption
-  | sig0 _ tyA tyB ihA ihB =>
+  | sig0 _ _ tyA tyB ihA ihB =>
     intro agr; asimp; constructor
+    . assumption
     . apply ihA; assumption
     . have := ihB (agr.cons tyA)
       asimp at this; assumption
-  | sig1 _ tyA tyB ihA ihB =>
+  | sig1 _ leA leB tyA tyB ihA ihB =>
     intro agr; asimp; constructor
+    . apply leA
+    . apply leB
     . apply ihA; assumption
     . have := ihB (agr.cons tyA)
       asimp at this; assumption

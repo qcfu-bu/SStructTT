@@ -126,6 +126,7 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
     intro st; cases st
     case sig0_A st =>
       constructor
+      . assumption
       . apply ihA st
       . apply Typed.conv_ctx
         apply Conv.onei st
@@ -134,11 +135,14 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
     case sig0_B st =>
       constructor
       . assumption
+      . assumption
       . apply ihB st
-  case sig1 ihA ihB =>
+  case sig1 leA leB _ _ ihA ihB =>
     intro st; cases st
     case sig1_A st =>
       constructor
+      . apply leA
+      . apply leB
       . apply ihA st
       . apply Typed.conv_ctx
         apply Conv.onei st
@@ -146,6 +150,8 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
         assumption
     case sig1_B st =>
       constructor
+      . apply leA
+      . apply leB
       . assumption
       . apply ihB st
   case tup0 tyS _ _ _ ihm ihn =>

@@ -40,10 +40,13 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
     Typed Γ n A ->
     Typed Γ (.app m n) B.[n/]
   | sig0 {Γ A B} s {sA sB iA iB} :
+    sA ≤ s ->
     Typed Γ A (.srt sA iA) ->
     Typed (A :: Γ) B (.srt sB iB) ->
     Typed Γ (.sig0 A B s) (.srt s (max iA iB))
   | sig1 {Γ A B} s {sA sB iA iB} :
+    sA ≤ s ->
+    sB ≤ s ->
     Typed Γ A (.srt sA iA) ->
     Typed (A :: Γ) B (.srt sB iB) ->
     Typed Γ (.sig1 A B s) (.srt s (max iA iB))
