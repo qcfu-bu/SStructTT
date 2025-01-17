@@ -10,12 +10,14 @@ inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop 
     Wf Γ Δ ->
     Has Δ x s A ->
     Typed Γ Δ (.var x) A
-  | lam0 {Γ Δ A B m} s :
+  | lam0 {Γ Δ A B m} s {sA iA} :
     Δ !≤ s ->
+    Γ ⊢ A : .srt sA iA ->
     Typed (A :: Γ) (_: Δ) m B ->
     Typed Γ Δ (.lam0 A m s) (.pi0 A B s)
-  | lam1 {Γ Δ A B m} s :
+  | lam1 {Γ Δ A B m} s {sA iA} :
     Δ !≤ s ->
+    Γ ⊢ A : .srt sA iA ->
     Typed (A :: Γ) (A :⟨s⟩ Δ) m B ->
     Typed Γ Δ (.lam1 A m s) (.pi1 A B s)
   | app0 Γ Δ A B m n s :

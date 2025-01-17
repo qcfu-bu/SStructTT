@@ -5,7 +5,6 @@ namespace Static
 variable {Srt : Type} [inst : SStruct Srt]
 
 inductive Value : Tm Srt -> Prop where
-  | var x : Value (.var x)
   | srt s i : Value (.srt s i)
   | pi0 A B s : Value (.pi0 A B s)
   | pi1 A B s : Value (.pi1 A B s)
@@ -165,7 +164,7 @@ theorem Typed.progress {m A : Tm Srt} :
   intro ty; induction ty
   all_goals try trivial
   case srt => right; constructor
-  case var => right; constructor
+  case var hs _ => subst_vars; cases hs
   case pi0 => right; constructor
   case pi1 => right; constructor
   case lam0 => right; constructor
