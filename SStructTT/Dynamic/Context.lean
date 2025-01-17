@@ -5,8 +5,8 @@ namespace Dynamic
 variable {Srt : Type} [inst : SStruct Srt]
 
 abbrev Ctx Srt := List (Option (Tm Srt × Srt))
-notation m " :⟨" s "⟩ " Δ => some (m, s) :: Δ
-notation "_:" Δ => none :: Δ
+notation:max m " :⟨" s "⟩ " Δ:81 => some (m, s) :: Δ
+notation:max "_:" Δ:81 => none :: Δ
 
 @[scoped aesop safe [constructors]]
 inductive Merge : Ctx Srt -> Ctx Srt -> Ctx Srt -> Prop where
@@ -25,7 +25,7 @@ inductive Merge : Ctx Srt -> Ctx Srt -> Ctx Srt -> Prop where
     Merge Δ1 Δ2 Δ ->
     Merge (_: Δ1) (_: Δ2) (_: Δ)
 
-notation Δ1 " ∪ " Δ2 " => " Δ => Merge Δ1 Δ2 Δ
+notation:80 Δ1:81 " ∪ " Δ2:81 " => " Δ:81 => Merge Δ1 Δ2 Δ
 
 @[scoped aesop safe [constructors]]
 inductive Lower : Ctx Srt -> Srt -> Prop where
@@ -38,7 +38,7 @@ inductive Lower : Ctx Srt -> Srt -> Prop where
     Lower Δ s ->
     Lower (_: Δ) s
 
-notation Δ " ◃ " s => Lower Δ s
+notation Δ:60 " !≤ " s:60 => Lower Δ s
 
 @[scoped aesop safe [constructors]]
 inductive Weak : Ctx Srt -> Prop where
