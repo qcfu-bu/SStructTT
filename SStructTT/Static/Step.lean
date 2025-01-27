@@ -7,77 +7,49 @@ variable {Srt : Type}
 
 @[scoped aesop safe [constructors]]
 inductive Step : Tm Srt -> Tm Srt -> Prop where
-  | pi0_A {A A'} B s :
+  | pi_A {A A'} B r s :
     Step A A' ->
-    Step (.pi0 A B s) (.pi0 A' B s)
-  | pi0_B A {B B'} s :
+    Step (.pi A B r s) (.pi A' B r s)
+  | pi_B A {B B'} r s :
     Step B B' ->
-    Step (.pi0 A B s) (.pi0 A B' s)
-  | pi1_A {A A'} B s :
+    Step (.pi A B r s) (.pi A B' r s)
+  | lam_A {A A'} m r s :
     Step A A' ->
-    Step (.pi1 A B s) (.pi1 A' B s)
-  | pi1_B A {B B'} s :
+    Step (.lam A m r s) (.lam A' m r s)
+  | lam_M A {m m'} r s :
+    Step m m' ->
+    Step (.lam A m r s) (.lam A m' r s)
+  | app_M {m m'} n r :
+    Step m m' ->
+    Step (.app m n r) (.app m' n r)
+  | app_N m {n n'} r :
+    Step n n' ->
+    Step (.app m n r) (.app m n' r)
+  | beta A m n r s :
+    Step (.app (.lam A m r s) n r) m.[n/]
+  | sig_A {A A'} B r s :
+    Step A A' ->
+    Step (.sig A B r s) (.sig A' B r s)
+  | sig_B A {B B'} r s :
     Step B B' ->
-    Step (.pi1 A B s) (.pi1 A B' s)
-  | lam0_A {A A'} m s :
-    Step A A' ->
-    Step (.lam0 A m s) (.lam0 A' m s)
-  | lam0_M A {m m'} s :
+    Step (.sig A B r s) (.sig A B' r s)
+  | tup_M {m m'} n r s :
     Step m m' ->
-    Step (.lam0 A m s) (.lam0 A m' s)
-  | lam1_A {A A'} m s :
-    Step A A' ->
-    Step (.lam1 A m s) (.lam1 A' m s)
-  | lam1_M A {m m'} s :
-    Step m m' ->
-    Step (.lam1 A m s) (.lam1 A m' s)
-  | app_M {m m'} n :
-    Step m m' ->
-    Step (.app m n) (.app m' n)
-  | app_N m {n n'} :
+    Step (.tup m n r s) (.tup m' n r s)
+  | tup_N m {n n'} r s :
     Step n n' ->
-    Step (.app m n) (.app m n')
-  | beta0 A m n s :
-    Step (.app (.lam0 A m s) n) m.[n/]
-  | beta1 A m n s :
-    Step (.app (.lam1 A m s) n) m.[n/]
-  | sig0_A {A A'} B s :
+    Step (.tup m n r s) (.tup m n' r s)
+  | proj_A {A A'} m n r :
     Step A A' ->
-    Step (.sig0 A B s) (.sig0 A' B s)
-  | sig0_B A {B B'} s :
-    Step B B' ->
-    Step (.sig0 A B s) (.sig0 A B' s)
-  | sig1_A {A A'} B s :
-    Step A A' ->
-    Step (.sig1 A B s) (.sig1 A' B s)
-  | sig1_B A {B B'} s :
-    Step B B' ->
-    Step (.sig1 A B s) (.sig1 A B' s)
-  | tup0_M {m m'} n s :
+    Step (.proj A m n r) (.proj A' m n r)
+  | proj_M A {m m'} n r :
     Step m m' ->
-    Step (.tup0 m n s) (.tup0 m' n s)
-  | tup0_N m {n n'} s :
+    Step (.proj A m n r) (.proj A m' n r)
+  | proj_N A m {n n'} r :
     Step n n' ->
-    Step (.tup0 m n s) (.tup0 m n' s)
-  | tup1_M {m m'} n s :
-    Step m m' ->
-    Step (.tup1 m n s) (.tup1 m' n s)
-  | tup1_N m {n n'} s :
-    Step n n' ->
-    Step (.tup1 m n s) (.tup1 m n' s)
-  | proj_A {A A'} m n :
-    Step A A' ->
-    Step (.proj A m n) (.proj A' m n)
-  | proj_M A {m m'} n :
-    Step m m' ->
-    Step (.proj A m n) (.proj A m' n)
-  | proj_N A m {n n'} :
-    Step n n' ->
-    Step (.proj A m n) (.proj A m n')
-  | proj0 A m1 m2 n s :
-    Step (.proj A (.tup0 m1 m2 s) n) n.[m2,m1/]
-  | proj1 A m1 m2 n s :
-    Step (.proj A (.tup1 m1 m2 s) n) n.[m2,m1/]
+    Step (.proj A m n r) (.proj A m n' r)
+  | proj_elim A m1 m2 n r s :
+    Step (.proj A (.tup m1 m2 r s) n r) n.[m2,m1/]
   | ite_A {A A'} m n1 n2 :
     Step A A' ->
     Step (.ite A m n1 n2) (.ite A' m n1 n2)

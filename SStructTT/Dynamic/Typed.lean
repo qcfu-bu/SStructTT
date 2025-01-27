@@ -52,6 +52,14 @@ inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop 
     Typed Γ Δ1 m (.sig1 A B s) ->
     Typed (B :: A :: Γ) (B :⟨sB⟩ A :⟨sA⟩ Δ2) n C.[.tup1 (.var 1) (.var 0) s .: shift 2] ->
     Typed Γ Δ (.proj C m n) C.[m/]
+  | tt Γ Δ :
+    Wf Γ Δ ->
+    Weak Δ ->
+    Typed Γ Δ .tt .bool
+  | ff Γ Δ :
+    Wf Γ Δ ->
+    Weak Δ ->
+    Typed Γ Δ .ff .bool
 
 inductive Wf : Static.Ctx Srt -> Dynamic.Ctx Srt -> Prop where
   | nil : Wf [] []

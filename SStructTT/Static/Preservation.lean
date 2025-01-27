@@ -12,38 +12,25 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
   all_goals try trivial
   case srt => intro st; cases st
   case var => intro st; cases st
-  case pi0 ihA ihB =>
+  case pi ihA ihB =>
     intro st; cases st
-    case pi0_A st =>
+    case pi_A st =>
       constructor
       . apply ihA st
       . apply Typed.conv_ctx
         apply Conv.onei st
         apply ihA st
         assumption
-    case pi0_B st =>
+    case pi_B st =>
       constructor
       . assumption
       . apply ihB st
-  case pi1 ihA ihB =>
-    intro st; cases st
-    case pi1_A st =>
-      constructor
-      . apply ihA st
-      . apply Typed.conv_ctx
-        apply Conv.onei st
-        apply ihA st
-        assumption
-    case pi1_B st =>
-      constructor
-      . assumption
-      . apply ihB st
-  case lam0 tym ihA ihm =>
+  case lam tym ihA ihm =>
     have ⟨_, _, _⟩ := tym.validity
     intro st; cases st
-    case lam0_A st =>
+    case lam_A st =>
       apply Typed.conv
-      . apply Conv.pi0
+      . apply Conv.pi
         apply Conv.onei st
         constructor
       . constructor
@@ -53,112 +40,53 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
         apply ihA st
         assumption
       . constructor <;> assumption
-    case lam0_M st =>
+    case lam_M st =>
       constructor
       . assumption
       . apply ihm st
-  case lam1 tym ihA ihm =>
-    have ⟨_, _, _⟩ := tym.validity
-    intro st; cases st
-    case lam1_A st =>
-      apply Typed.conv
-      . apply Conv.pi1
-        apply Conv.onei st
-        constructor
-      . constructor
-        apply ihA st
-        apply Typed.conv_ctx
-        apply Conv.onei st
-        apply ihA st
-        assumption
-      . constructor <;> assumption
-    case lam1_M st =>
-      constructor
-      . assumption
-      . apply ihm st
-  case app0 tym tyn ihm ihn =>
+  case app tym tyn ihm ihn =>
     have ⟨_, _, tyP⟩ := tym.validity
     have ⟨_, _, _, tyB, _⟩ := tyP.pi0_inv
     intro st; cases st
     case app_M st =>
-      apply Typed.app0
+      apply Typed.app
       . apply ihm st
       . assumption
     case app_N st =>
       apply Typed.conv
       . apply Conv.subst1
         apply Conv.onei st
-      . apply Typed.app0
+      . apply Typed.app
         assumption
         apply ihn st
       . apply tyB.subst tyn
-    case beta0 =>
-      replace ⟨tym, _⟩ := tym.lam0_inv; subst_vars
+    case beta =>
+      replace ⟨tym, _⟩ := tym.lam_inv; subst_vars
       have ⟨_, _, _, tyA⟩ := tym.ctx_inv
       replace tyB := tyB.subst tyn; asimp at tyB
       apply tym.subst tyn
-    case beta1 =>
-      exfalso; apply tym.lam1_pi0_false; constructor
-  case app1 tym tyn ihm ihn =>
-    have ⟨_, _, tyP⟩ := tym.validity
-    have ⟨_, _, _, tyB, _⟩ := tyP.pi1_inv
+  case sig ihA ihB =>
     intro st; cases st
-    case app_M st =>
-      apply Typed.app1
-      . apply ihm st
-      . assumption
-    case app_N st =>
-      apply Typed.conv
-      . apply Conv.subst1
-        apply Conv.onei st
-      . apply Typed.app1
-        assumption
-        apply ihn st
-      . apply tyB.subst tyn
-    case beta0 =>
-      exfalso; apply tym.lam0_pi1_false; constructor
-    case beta1 =>
-      replace ⟨tym, _⟩ := tym.lam1_inv; subst_vars
-      have ⟨_, _, _, tyA⟩ := tym.ctx_inv
-      replace tyB := tyB.subst tyn; asimp at tyB
-      apply tym.subst tyn
-  case sig0 ihA ihB =>
-    intro st; cases st
-    case sig0_A st =>
+    case sig_A st =>
       constructor
+      . assumption
       . assumption
       . apply ihA st
       . apply Typed.conv_ctx
         apply Conv.onei st
         apply ihA st
         assumption
-    case sig0_B st =>
+    case sig_B st =>
       constructor
       . assumption
       . assumption
-      . apply ihB st
-  case sig1 leA leB _ _ ihA ihB =>
-    intro st; cases st
-    case sig1_A st =>
-      constructor
-      . apply leA
-      . apply leB
-      . apply ihA st
-      . apply Typed.conv_ctx
-        apply Conv.onei st
-        apply ihA st
-        assumption
-    case sig1_B st =>
-      constructor
-      . apply leA
-      . apply leB
       . assumption
       . apply ihB st
-  case tup0 tyS _ _ _ ihm ihn =>
+  case tup tyS _ _ _ ihm ihn =>
     intro st; cases st
-    case tup0_M st =>
+    case tup_M st =>
       replace ihm := ihm st
-      have ⟨_, _, _, tyB, _⟩ := tyS.sig0_inv
+      have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
       constructor
       . assumption
       . assumption
@@ -167,32 +95,14 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
         apply Conv.one st
         assumption
         apply tyB.subst ihm
-    case tup0_N st =>
+    case tup_N st =>
       constructor
       . assumption
       . assumption
       . apply ihn st
-  case tup1 tyS _ _ _ ihm ihn =>
-    intro st; cases st
-    case tup1_M st =>
-      replace ihm := ihm st
-      have ⟨_, _, _, tyB, _⟩ := tyS.sig1_inv
-      constructor
-      . assumption
-      . assumption
-      . apply Typed.conv
-        apply Conv.subst1
-        apply Conv.one st
-        assumption
-        apply tyB.subst ihm
-    case tup1_N st =>
-      constructor
-      . assumption
-      . assumption
-      . apply ihn st
-  case proj0 Γ A B C _ _ s sC iC tyC tym tyn ihC ihm ihn =>
+  case proj Γ A B C _ _ r s sC iC tyC tym tyn ihC ihm ihn =>
     have ⟨s, _, wf, tyS⟩ := tyC.ctx_inv
-    have ⟨_, _, _, tyB, eq⟩ := tyS.sig0_inv
+    have ⟨_, _, _, tyB, eq⟩ := tyS.sig_inv
     have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
     have ⟨_, _⟩ := Conv.srt_inj eq
     subst_vars; clear eq
@@ -200,7 +110,7 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
     case proj_A C' st =>
       replace ihC := ihC st
       have wf := tyn.toWf
-      have tyC' : (.sig0 A B s).[shift 2] :: B :: A :: Γ ⊢ C'.[ren (upren (.+2))] :
+      have tyC' : (.sig A B r s).[shift 2] :: B :: A :: Γ ⊢ C'.[ren (upren (.+2))] :
                   (.srt sC iC).[ren (upren (.+2))] := by
         apply Typed.renaming
         . assumption
@@ -208,10 +118,10 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
           assumption
           rw[show (.+2) = (id !>> (.+1)) !>> (.+1) by funext; rfl]
           aesop (rule_sets := [rename])
-      have typ : B :: A :: Γ ⊢ .tup0 (.var 1) (.var 0) s : (.sig0 A B s).[shift 2] := by
-        asimp; apply Typed.tup0
-        . rw[show Tm.sig0 A.[shift 2] B.[up (shift 2)] s
-                = (Tm.sig0 A B s).[shift 1].[shift 1] by asimp]
+      have typ : B :: A :: Γ ⊢ .tup (.var 1) (.var 0) r s : (.sig A B r s).[shift 2] := by
+        asimp; apply Typed.tup
+        . rw[show Tm.sig A.[shift 2] B.[up (shift 2)] r s
+                = (Tm.sig A B r s).[shift 1].[shift 1] by asimp]
           have := (tyS.weaken tyA).weaken tyB
           assumption
         . rw[show A.[shift 2] = A.[shift 1].[shift 1] by asimp]
@@ -221,7 +131,7 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
       apply Typed.conv
       . apply Conv.subst
         apply Conv.onei st
-      . apply Typed.proj0 ihC tym
+      . apply Typed.proj ihC tym
         apply Typed.conv
         apply Conv.subst
         apply Conv.one st
@@ -232,70 +142,13 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
       apply Typed.conv
       . apply Conv.subst1
         apply Conv.onei st
-      . apply Typed.proj0 tyC (ihm st) tyn
+      . apply Typed.proj tyC (ihm st) tyn
       . apply tyC.subst tym
-    case proj_N => apply Typed.proj0 <;> aesop
-    case proj0 m1 m2 s =>
-      have ⟨tym1, tym2, _⟩ := tym.tup0_inv; subst_vars
-      rw[show C.[.tup0 m1 m2 s/]
-            = C.[.tup0 (.var 1) (.var 0) s .: shift 2].[m2,m1/] by asimp]
-      apply tyn.substitution
-      apply AgreeSubst.wk tym2
-      constructor; asimp; assumption
-      apply AgreeSubst.refl wf
-    case proj1 =>
-      exfalso; apply tym.tup1_sig0_false; constructor
-  case proj1 Γ A B C _ _ s sC iC tyC tym tyn ihC ihm ihn =>
-    have ⟨s, _, wf, tyS⟩ := tyC.ctx_inv
-    have ⟨_, _, _, tyB, eq⟩ := tyS.sig1_inv
-    have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
-    have ⟨_, _⟩ := Conv.srt_inj eq
-    subst_vars; clear eq
-    intro st; cases st
-    case proj_A C' st =>
-      replace ihC := ihC st
-      have wf := tyn.toWf
-      have tyC' : (.sig1 A B s).[shift 2] :: B :: A :: Γ ⊢ C'.[ren (upren (.+2))] :
-                  (.srt sC iC).[ren (upren (.+2))] := by
-        apply Typed.renaming
-        . assumption
-        . apply AgreeRen.cons
-          assumption
-          rw[show (.+2) = (id !>> (.+1)) !>> (.+1) by funext; rfl]
-          aesop (rule_sets := [rename])
-      have typ : B :: A :: Γ ⊢ .tup1 (.var 1) (.var 0) s : (.sig1 A B s).[shift 2] := by
-        asimp; apply Typed.tup1
-        . rw[show Tm.sig1 A.[shift 2] B.[up (shift 2)] s
-                = (Tm.sig1 A B s).[shift 1].[shift 1] by asimp]
-          have := (tyS.weaken tyA).weaken tyB
-          assumption
-        . rw[show A.[shift 2] = A.[shift 1].[shift 1] by asimp]
-          constructor <;> aesop
-        . asimp; constructor <;> aesop
-      replace tyC' := tyC'.subst typ; asimp at tyC'; clear typ
-      apply Typed.conv
-      . apply Conv.subst
-        apply Conv.onei st
-      . apply Typed.proj1 ihC tym
-        apply Typed.conv
-        apply Conv.subst
-        apply Conv.one st
-        assumption
-        assumption
-      . apply tyC.subst tym
-    case proj_M st =>
-      apply Typed.conv
-      . apply Conv.subst1
-        apply Conv.onei st
-      . apply Typed.proj1 tyC (ihm st) tyn
-      . apply tyC.subst tym
-    case proj_N => apply Typed.proj1 <;> aesop
-    case proj0 =>
-      exfalso; apply tym.tup0_sig1_false; constructor
-    case proj1 m1 m2 s =>
-      have ⟨tym1, tym2, _⟩ := tym.tup1_inv; subst_vars
-      rw[show C.[.tup1 m1 m2 s/]
-            = C.[.tup1 (.var 1) (.var 0) s .: shift 2].[m2,m1/] by asimp]
+    case proj_N => apply Typed.proj <;> aesop
+    case proj_elim m1 m2 s =>
+      have ⟨tym1, tym2, _, _⟩ := tym.tup_inv; subst_vars
+      rw[show C.[.tup m1 m2 r s/]
+            = C.[.tup (.var 1) (.var 0) r s .: shift 2].[m2,m1/] by asimp]
       apply tyn.substitution
       apply AgreeSubst.wk tym2
       constructor; asimp; assumption

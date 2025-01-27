@@ -4,9 +4,8 @@ import SStructTT.Defs.Syntax
 namespace Dynamic
 variable {Srt : Type} [inst : SStruct Srt]
 
-abbrev Ctx Srt := List (Option (Tm Srt × Srt))
-notation:max m " :⟨" s "⟩ " Δ:81 => some (m, s) :: Δ
-notation:max "_:" Δ:81 => none :: Δ
+abbrev Ctx Srt := List (Tm Srt × Rlv × Srt)
+notation:max m " :⟨" r ", " s "⟩ " Δ:81 => (m, r, s) :: Δ
 
 @[scoped aesop safe [constructors]]
 inductive Merge : Ctx Srt -> Ctx Srt -> Ctx Srt -> Prop where
@@ -14,16 +13,16 @@ inductive Merge : Ctx Srt -> Ctx Srt -> Ctx Srt -> Prop where
   | contra {Δ1 Δ2 Δ} A s :
     s ∈ contra_set ->
     Merge Δ1 Δ2 Δ ->
-    Merge (A :⟨s⟩ Δ1) (A :⟨s⟩ Δ2) (A :⟨s⟩ Δ)
+    Merge (A :⟨.ex, s⟩ Δ1) (A :⟨.ex, s⟩ Δ2) (A :⟨.ex, s⟩ Δ)
   | left {Δ1 Δ2 Δ} A s :
     Merge Δ1 Δ2 Δ ->
-    Merge (A :⟨s⟩ Δ1) (_: Δ2) (A :⟨s⟩ Δ)
+    Merge (A :⟨.ex, s⟩ Δ1) (A :⟨.im, s⟩ Δ2) (A :⟨.ex, s⟩ Δ)
   | right {Δ1 Δ2 Δ} A s :
     Merge Δ1 Δ2 Δ ->
-    Merge (_: Δ1) (A :⟨s⟩ Δ2) (A :⟨s⟩ Δ)
-  | im {Δ1 Δ2 Δ} :
+    Merge (A :⟨.im, s⟩ Δ1) (A :⟨.ex, s⟩ Δ2) (A :⟨.ex, s⟩ Δ)
+  | im {Δ1 Δ2 Δ} A s :
     Merge Δ1 Δ2 Δ ->
-    Merge (_: Δ1) (_: Δ2) (_: Δ)
+    Merge (A :⟨.im, s⟩ Δ1) (A :⟨.im, s⟩ Δ2) (A :⟨.im, s⟩ Δ)
 
 notation:80 Δ1:81 " ∪ " Δ2:81 " => " Δ:81 => Merge Δ1 Δ2 Δ
 
@@ -33,23 +32,12 @@ inductive Lower : Ctx Srt -> Srt -> Prop where
   | ex {Δ A s s'} :
     s' ≤ s ->
     Lower Δ s ->
-    Lower (A :⟨s'⟩ Δ) s
-  | im {Δ s} :
+    Lower (A :⟨.ex, s'⟩ Δ) s
+  | im {Δ A s s'} :
     Lower Δ s ->
-    Lower (_: Δ) s
+    Lower (A :⟨.im, s'⟩ Δ) s
 
 notation Δ:60 " !≤ " s:60 => Lower Δ s
-
-@[scoped aesop safe [constructors]]
-inductive Weak : Ctx Srt -> Prop where
-  | zero : Weak []
-  | ex {Δ A s} :
-    s ∈ weaken_set ->
-    Weak Δ ->
-    Weak (A :⟨s⟩ Δ)
-  | im {Δ} :
-    Weak Δ ->
-    Weak (_: Δ)
 
 @[scoped aesop safe [constructors]]
 inductive Has : Ctx Srt -> Var -> Srt -> Tm Srt -> Prop where

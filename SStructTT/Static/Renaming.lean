@@ -87,64 +87,36 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     intro; asimp; constructor
     . apply ih; assumption
     . apply AgreeRen.has <;> assumption
-  | pi0 _ tyA _ ihA ihB =>
+  | pi _ _ tyA _ ihA ihB =>
     intro agr; asimp; constructor
     . apply ihA; assumption
     . have := ihB (agr.cons tyA)
       asimp at this; assumption
-  | pi1 _ tyA _ ihA ihB =>
-    intro agr; asimp; constructor
-    . apply ihA; assumption
-    . have := ihB (agr.cons tyA)
-      asimp at this; assumption
-  | lam0 _ tyA _ ihA ihm =>
+  | lam _ _ tyA _ ihA ihm =>
     intro agr; asimp; constructor
     . apply ihA; assumption
     . have := ihm (agr.cons tyA)
       asimp at this; assumption
-  | lam1 _ tyA _ ihA ihm =>
-    intro agr; asimp; constructor
-    . apply ihA; assumption
-    . have := ihm (agr.cons tyA)
-      asimp at this; assumption
-  | app0 tym tyn ihm ihn =>
+  | app tym tyn ihm ihn =>
     intro agr; asimp
     replace tym := ihm agr; asimp at tym
     replace tyn := ihn agr; asimp at tyn
-    have ty := Typed.app0 tym tyn; asimp at ty
+    have ty := Typed.app tym tyn; asimp at ty
     assumption
-  | app1 tym tyn ihm ihn =>
-    intro agr; asimp
-    replace tym := ihm agr; asimp at tym
-    replace tyn := ihn agr; asimp at tyn
-    have ty := Typed.app1 tym tyn; asimp at ty
-    assumption
-  | sig0 _ _ tyA tyB ihA ihB =>
+  | sig _ _ _ _ tyA tyB ihA ihB =>
     intro agr; asimp; constructor
+    . assumption
     . assumption
     . apply ihA; assumption
     . have := ihB (agr.cons tyA)
       asimp at this; assumption
-  | sig1 _ leA leB tyA tyB ihA ihB =>
-    intro agr; asimp; constructor
-    . apply leA
-    . apply leB
-    . apply ihA; assumption
-    . have := ihB (agr.cons tyA)
-      asimp at this; assumption
-  | tup0 _ _ _ ihT ihm ihn =>
+  | tup _ _ _ ihT ihm ihn =>
     intro agr; asimp; constructor
     . apply ihT; assumption
     . apply ihm; assumption
     . have := ihn agr
       asimp at this; asimp; assumption
-  | tup1 _ _ _ ihT ihm ihn =>
-    intro agr; asimp; constructor
-    . apply ihT; assumption
-    . apply ihm; assumption
-    . have := ihn agr
-      asimp at this; asimp; assumption
-  | @proj0 Γ A B C m n s sC iC tyC tym tyn ihC ihm ihn =>
+  | @proj Γ A B C m n r s sC iC tyC tym tyn ihC ihm ihn =>
     intro agr; asimp
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
     have ⟨_, _, _, tyB⟩ := tyn.ctx_inv
@@ -157,31 +129,11 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     replace ihn := ihn agr'
     asimp at ihC
     asimp at ihm
-    rw [show C.[.tup0 (.var 1) (.var 0) s .: shift 2].[ren (upren $ upren ξ)]
-           = C.[up (ren ξ)].[.tup0 (.var 1) (.var 0) s .: shift 2]
+    rw [show C.[.tup (.var 1) (.var 0) r s .: shift 2].[ren (upren $ upren ξ)]
+           = C.[up (ren ξ)].[.tup (.var 1) (.var 0) r s .: shift 2]
           by asimp] at ihn
     rw[SubstLemmas.upren_up] at ihn
-    replace := Typed.proj0 ihC ihm ihn
-    asimp at this
-    assumption
-  | @proj1 Γ A B C m n s sC iC tyC tym tyn ihC ihm ihn =>
-    intro agr; asimp
-    have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
-    have ⟨_, _, _, tyB⟩ := tyn.ctx_inv
-    have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
-    replace ihC := ihC (agr.cons tyS)
-    replace ihm := ihm agr
-    have agr' : AgreeRen (upren (upren ξ)) (B :: A :: Γ)
-      (B.[ren (upren ξ)] :: A.[ren ξ] :: Γ') := by
-      aesop (rule_sets := [rename])
-    replace ihn := ihn agr'
-    asimp at ihC
-    asimp at ihm
-    rw [show C.[.tup1 (.var 1) (.var 0) s .: shift 2].[ren (upren $ upren ξ)]
-           = C.[up (ren ξ)].[.tup1 (.var 1) (.var 0) s .: shift 2]
-          by asimp] at ihn
-    rw[SubstLemmas.upren_up] at ihn
-    replace := Typed.proj1 ihC ihm ihn
+    replace := Typed.proj ihC ihm ihn
     asimp at this
     assumption
   | bool _ ih =>
