@@ -41,16 +41,12 @@ notation Δ:60 " !≤ " s:60 => Lower Δ s
 
 @[scoped aesop safe [constructors]]
 inductive Has : Ctx Srt -> Var -> Srt -> Tm Srt -> Prop where
-  | zero {Δ A s} :
-    Weak Δ ->
-    Has (A :⟨s⟩ Δ) 0 s A.[shift 1]
-  | ex {Δ A B x s s'} :
-    s' ∈ weaken_set ->
-    Has Δ x s A ->
-    Has (B :⟨s'⟩ Δ) (x + 1) s A.[shift 1]
-  | im {Δ A x s} :
-    Has Δ x s A ->
-    Has (_: Δ) (x + 1) s A.[shift 1]
+  | nil {Δ A s} :
+    Δ.Forall (fun (_, r, _) => r = Rlv.im) ->
+    Has (A :⟨.ex, s⟩ Δ) 0 s A.[shift 1]
+  | cons {Δ A B x s s'} :
+    Has Δ x s B ->
+    Has (B :⟨.im, s'⟩ Δ) (x + 1) s A.[shift 1]
 
 lemma Lower.split_s0 {Δ : Ctx Srt} :
     Lower Δ s0 -> ∃ Δ1 Δ2, Lower Δ1 s0 ∧ Lower Δ2 s0 ∧ Merge Δ1 Δ2 Δ := by
@@ -64,17 +60,17 @@ lemma Lower.split_s0 {Δ : Ctx Srt} :
     have := inst.le_antisymm _ _ h (inst.s0_min s')
     subst_vars
     have ⟨Δ1, Δ2, l1, l2, mrg⟩ := ih rfl
-    exists A :⟨s0⟩ Δ1, A :⟨s0⟩ Δ2
+    exists A :⟨.ex, s0⟩ Δ1, A :⟨.ex, s0⟩ Δ2
     and_intros
     . constructor <;> assumption
     . constructor <;> assumption
     . constructor
       apply inst.s0_contra
       assumption
-  case im ih =>
+  case im A _ s' _ ih =>
     subst_vars
     have ⟨Δ1, Δ2, l1, l2, mrg⟩ := ih rfl
-    exists _: Δ1, _: Δ2
+    exists A :⟨.im, s'⟩ Δ1, A :⟨.im, s'⟩ Δ2
     and_intros
     . constructor; assumption
     . constructor; assumption
