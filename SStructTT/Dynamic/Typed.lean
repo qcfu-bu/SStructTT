@@ -107,8 +107,8 @@ inductive Wf : Static.Ctx Srt -> Dynamic.Ctx Srt -> Prop where
     Wf (A :: Γ) (_: Δ)
 end
 
-notation:50 Γ:50 "; " Δ:51 " ⊢ " m:51 " : " A:51 => Typed Γ Δ m A
-notation:50 Γ:50 "; " Δ:51 " ⊢ " => Wf Γ Δ
+notation:50 Γ:50 " ;; " Δ:51 " ⊢ " m:51 " : " A:51 => Typed Γ Δ m A
+notation:50 Γ:50 " ;; " Δ:51 " ⊢ " => Wf Γ Δ
 
 -- Register non-mutual recursor as default.
 @[induction_eliminator]
@@ -121,61 +121,33 @@ def Wf.rec_non_mutual {motive : ∀ Γ Δ, @Wf Srt _ Γ Δ -> Prop} :=
   Wf.rec (motive_1 := fun _ _ _ _ _ => True) (motive_2 := motive)
 
 lemma Wf.size {Γ : Static.Ctx Srt} {Δ : Dynamic.Ctx Srt} :
-    Γ ; Δ ⊢ -> Γ.length = Δ.length := by
+    Wf Γ Δ -> Γ.length = Δ.length := by
   intro wf
   induction wf
   all_goals aesop
 
 lemma Wf.merge {Γ : Static.Ctx Srt} {Δ Δ1 Δ2 : Dynamic.Ctx Srt} :
-    Merge Δ1 Δ2 Δ -> Γ ; Δ1 ⊢ -> Γ ; Δ2 ⊢ -> Γ ; Δ ⊢ := by
-  intro mrg wf1
+    Merge Δ1 Δ2 Δ -> Γ ;; Δ1 ⊢ -> Γ ;; Δ2 ⊢ -> Γ ;; Δ ⊢ := by
+  intro mrg wf1 wf2
   induction mrg generalizing Γ
-  case nil =>
-    cases wf1
-    aesop
-  case contra ih =>
-    intro wf2
-    cases wf1
-    cases wf2
-    aesop (add safe Wf)
-  case left ih =>
-    intro wf2
-    cases wf1
-    cases wf2
-    aesop (add safe Wf)
-  case right ih =>
-    intro wf2
-    cases wf1
-    cases wf2
-    aesop (add safe Wf)
-  case im ih =>
-    intro wf2
-    cases wf1
-    cases wf2
-    aesop (add safe Wf)
+  case nil       => cases wf1; aesop
+  case contra ih => cases wf1; cases wf2; aesop (add safe Wf)
+  case left ih   => cases wf1; cases wf2; aesop (add safe Wf)
+  case right ih  => cases wf1; cases wf2; aesop (add safe Wf)
+  case im ih     => cases wf1; cases wf2; aesop (add safe Wf)
 
 lemma Wf.split {Γ : Static.Ctx Srt} {Δ Δ1 Δ2 : Dynamic.Ctx Srt} :
-    Merge Δ1 Δ2 Δ -> Γ ; Δ ⊢ -> Γ ; Δ1 ⊢ ∧ Γ ; Δ2 ⊢ := by
+    Merge Δ1 Δ2 Δ -> Γ ;; Δ ⊢ -> Γ ;; Δ1 ⊢ ∧ Γ ;; Δ2 ⊢ := by
   intro mrg wf
   induction mrg generalizing Γ
-  case nil =>
-    cases wf
-    aesop (add safe Wf)
-  case contra ih =>
-    cases wf
-    aesop (add safe Wf)
-  case left ih =>
-    cases wf
-    aesop (add safe Wf)
-  case right ih =>
-    cases wf
-    aesop (add safe Wf)
-  case im ih =>
-    cases wf
-    aesop (add safe Wf)
+  case nil       => cases wf; aesop (add safe Wf)
+  case contra ih => cases wf; aesop (add safe Wf)
+  case left ih   => cases wf; aesop (add safe Wf)
+  case right ih  => cases wf; aesop (add safe Wf)
+  case im ih     => cases wf; aesop (add safe Wf)
 
 lemma Typed.toWf {Γ : Static.Ctx Srt} {Δ : Dynamic.Ctx Srt} {A m} :
-    Γ ; Δ ⊢ m : A -> Γ ; Δ ⊢ := by
+    Γ ;; Δ ⊢ m : A -> Γ ;; Δ ⊢ := by
   intro ty
   induction ty <;> try (solve | aesop)
   case lam_im ih =>

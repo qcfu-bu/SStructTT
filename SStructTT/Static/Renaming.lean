@@ -75,47 +75,47 @@ lemma AgreeRen.wf_cons {Γ Γ' : Ctx Srt} {A ξ} :
 
 lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     Γ ⊢ m : A -> AgreeRen ξ Γ Γ' -> Γ' ⊢ m.[ren ξ] : A.[ren ξ] := by
-  intro ty; induction ty
-  using @Typed.rec _ inst (motive_2 := fun Γ _ => ∀ Γ' ξ, AgreeRen ξ Γ Γ' -> Γ' ⊢)
-  generalizing Γ' ξ with
-  | srt _ _ _ ih =>
-    intro; asimp; constructor
+  intro ty agr; induction ty
+  using
+    @Typed.rec _ inst
+      (motive_2 := fun Γ _ => ∀ Γ' ξ, AgreeRen ξ Γ Γ' -> Γ' ⊢)
+  generalizing Γ' ξ <;> asimp
+  case srt ih =>
+    constructor
     apply ih; assumption
-  | var _ _ ih =>
-    intro; asimp; constructor
+  case var ih =>
+    constructor
     . apply ih; assumption
     . apply AgreeRen.has <;> assumption
-  | pi tyA _ ihA ihB =>
-    intro agr; asimp; constructor
+  case pi tyA _ ihA ihB =>
+    constructor
     . apply ihA; assumption
     . have := ihB (agr.cons tyA)
       asimp at this; assumption
-  | lam tyA _ ihA ihm =>
-    intro agr; asimp; constructor
+  case lam tyA _ ihA ihm =>
+    constructor
     . apply ihA; assumption
     . have := ihm (agr.cons tyA)
       asimp at this; assumption
-  | app tym tyn ihm ihn =>
-    intro agr; asimp
+  case app tym tyn ihm ihn =>
     replace tym := ihm agr; asimp at tym
     replace tyn := ihn agr; asimp at tyn
     have ty := Typed.app tym tyn; asimp at ty
     assumption
-  | sig _ _ tyA tyB ihA ihB =>
-    intro agr; asimp; constructor
+  case sig tyA tyB ihA ihB =>
+    constructor
     . assumption
     . assumption
     . apply ihA; assumption
     . have := ihB (agr.cons tyA)
       asimp at this; assumption
-  | tup _ _ _ ihT ihm ihn =>
-    intro agr; asimp; constructor
+  case tup ihT ihm ihn =>
+    constructor
     . apply ihT; assumption
     . apply ihm; assumption
     . have := ihn agr
       asimp at this; asimp; assumption
-  | @proj Γ A B C m n r s sC iC tyC tym tyn ihC ihm ihn =>
-    intro agr; asimp
+  case proj Γ A B C m n r s sC iC tyC tym tyn ihC ihm ihn =>
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
     have ⟨_, _, _, tyB⟩ := tyn.ctx_inv
     have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
@@ -134,17 +134,16 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     replace := Typed.proj ihC ihm ihn
     asimp at this
     assumption
-  | bool _ ih =>
-    intro; asimp; constructor;
+  case bool ih =>
+    constructor;
     apply ih; assumption
-  | tt _ ih =>
-    intro; asimp; constructor;
+  case tt ih =>
+    constructor;
     apply ih; assumption
-  | ff _ ih =>
-    intro; asimp; constructor;
+  case ff ih =>
+    constructor;
     apply ih; assumption
-  | @ite _ A _ _ _ _ _ tyA _ _ _ ihA ihm ihn1 ihn2 =>
-    intro agr; asimp
+  case ite A _ _ _ _ _ tyA _ _ _ ihA ihm ihn1 ihn2 =>
     have ⟨_, _, _, tyb⟩ := tyA.ctx_inv
     replace ihA := ihA (agr.cons tyb); asimp at ihA
     replace ihm := ihm agr; asimp at ihm
@@ -154,16 +153,15 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     rw[show A.[.ff .: ren ξ] = A.[up (ren ξ)].[.ff/] by asimp] at ihn2
     have := Typed.ite ihA ihm ihn1 ihn2
     asimp at this; assumption
-  | idn tyA tym tyn ihA ihm ihn =>
-    intro; asimp; constructor
+  case idn tyA tym tyn ihA ihm ihn =>
+    constructor
     . apply ihA; assumption
     . apply ihm; assumption
     . apply ihn; assumption
-  | rfl _ ih =>
-    intro; asimp; constructor
+  case rfl ih =>
+    constructor
     apply ih; assumption
-  | @rw _ A B _ _ a b _ _ tyA tym tyn ihA ihm ihn =>
-    intro agr; asimp
+  case rw A B _ _ a b _ _ tyA tym tyn ihA ihm ihn =>
     have ⟨_, _, _, tyI⟩ := tyA.ctx_inv
     have ⟨_, _, _, tyB⟩ := tyI.ctx_inv
     replace ihA := ihA ((agr.cons tyB).cons tyI); asimp at ihA
@@ -175,16 +173,15 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
          by asimp] at ihm
     have := Typed.rw ihA ihm ihn
     asimp at this; assumption
-  | conv eq tym tyB ihm ihB =>
-    intro agr
-    replace ihB := ihB agr; asimp at ihB
+  case conv eq tym tyB ihm ihB =>
+    replace ihB := ihB agr
     replace ihm := ihm agr
     apply Typed.conv
     . apply Conv.subst _ eq
     . assumption
     . assumption
-  | nil Γ' ξ agr => exact agr.wf_nil
-  | @cons _ _ s i _ _ ih _ _ _ agr =>
+  case nil Γ' ξ agr => exact agr.wf_nil
+  case cons s i _ _ ih _ _ _ agr =>
     apply agr.wf_cons
     . assumption
     . assumption
