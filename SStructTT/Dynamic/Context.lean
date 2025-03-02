@@ -8,14 +8,12 @@ abbrev Ctx Srt := List (Option (Tm Srt × Srt))
 notation:max m " :⟨" s "⟩ " Δ:81 => some (m, s) :: Δ
 notation:max "_:" Δ:81 => none :: Δ
 
-inductive Ext : Tm Srt -> Rlv -> Srt -> Ctx Srt -> Ctx Srt -> Prop where
+inductive Ext : Tm Srt -> Srt -> Ctx Srt -> Ctx Srt -> Prop where
   | ex A s Δ :
-    Ext A .ex s Δ (some (A, s) :: Δ)
+    Ext A s Δ (some (A, s) :: Δ)
   | wk A s Δ :
     s ∈ weaken_set ->
-    Ext A .ex s Δ (none :: Δ)
-  | im A s Δ :
-    Ext A .im s Δ (none :: Δ)
+    Ext A s Δ (none :: Δ)
 
 @[scoped aesop safe [constructors]]
 inductive Merge : Ctx Srt -> Ctx Srt -> Ctx Srt -> Prop where
