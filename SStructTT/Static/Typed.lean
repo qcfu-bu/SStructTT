@@ -17,12 +17,12 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
     Has Γ x A ->
     Typed Γ (.var x) A
 
-  | pi {Γ A B} r s {sA sB iA iB} :
+  | pi {Γ A B r s sA sB iA iB} :
     Typed Γ A (.srt sA iA) ->
     Typed (A :: Γ) B (.srt sB iB) ->
     Typed Γ (.pi A B r s) (.srt s (max iA iB))
 
-  | lam {Γ A B m} r s {sA iA} :
+  | lam {Γ A B m r s sA iA} :
     Typed Γ A (.srt sA iA) ->
     Typed (A :: Γ) m B ->
     Typed Γ (.lam A m r s) (.pi A B r s)
@@ -32,7 +32,7 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
     Typed Γ n A ->
     Typed Γ (.app m n r) B.[n/]
 
-  | sig {Γ A B} r s {sA sB iA iB} :
+  | sig {Γ A B r s sA sB iA iB} :
     sA ≤ s ->
     (r = .ex -> sB ≤ s) ->
     Typed Γ A (.srt sA iA) ->
@@ -105,7 +105,7 @@ notation:50 Γ:50 " ⊢ " => Wf Γ
 
 -- Register non-mutual recursor as default.
 @[induction_eliminator]
-def Typed.rec_non_mutual {motive : ∀ Γ m a, @Typed Srt _ Γ m a -> Prop} :=
+def Typed.rec_non_mutual {motive : ∀ Γ m A, @Typed Srt _ Γ m A -> Prop} :=
   Typed.rec (motive_1 := motive) (motive_2 := fun _ _ => True)
 
 -- Register non-mutual recursor as default.

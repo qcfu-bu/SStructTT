@@ -87,12 +87,12 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     intro; asimp; constructor
     . apply ih; assumption
     . apply AgreeRen.has <;> assumption
-  | pi _ _ tyA _ ihA ihB =>
+  | pi tyA _ ihA ihB =>
     intro agr; asimp; constructor
     . apply ihA; assumption
     . have := ihB (agr.cons tyA)
       asimp at this; assumption
-  | lam _ _ tyA _ ihA ihm =>
+  | lam tyA _ ihA ihm =>
     intro agr; asimp; constructor
     . apply ihA; assumption
     . have := ihm (agr.cons tyA)
@@ -103,7 +103,7 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     replace tyn := ihn agr; asimp at tyn
     have ty := Typed.app tym tyn; asimp at ty
     assumption
-  | sig _ _ _ _ tyA tyB ihA ihB =>
+  | sig _ _ tyA tyB ihA ihB =>
     intro agr; asimp; constructor
     . assumption
     . assumption

@@ -114,12 +114,12 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     . assumption
     . apply ih; assumption
     . assumption
-  | pi _ _ _ _ ihA ihB =>
+  | pi _ _ ihA ihB =>
     intro agr; asimp
     constructor
     . apply ihA; assumption
     . apply ihB; constructor <;> assumption
-  | lam _ _ _ _ ihA ihm =>
+  | lam _ _ ihA ihm =>
     intro agr; asimp
     constructor
     . apply ihA; assumption
@@ -131,7 +131,7 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     have ty := Typed.app ihm ihn
     asimp at ty
     assumption
-  | sig _ _ _ _ _ _ ihA ihB =>
+  | sig _ _ _ _ ihA ihB =>
     intro agr; asimp
     constructor
     . assumption
