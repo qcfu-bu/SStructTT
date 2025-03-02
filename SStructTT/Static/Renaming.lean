@@ -217,19 +217,18 @@ lemma Typed.weaken {Γ : Ctx Srt} {A B m s i} :
     Γ ⊢ m : A ->
     Γ ⊢ B : .srt s i ->
     B :: Γ ⊢ m.[shift 1] : A.[shift 1] := by
-  intro tym tyb
+  intro tym tyB
   apply tym.renaming
   constructor
   . assumption
   . exact AgreeRen.refl tym.toWf
 
 lemma Typed.eweaken {Γ Γ' : Ctx Srt} {A A' B m m' s i} :
-    Γ' = (B :: Γ) ->
-    m' = m.[ren .succ] ->
-    A' = A.[ren .succ] ->
+    Γ' = B :: Γ ->
+    m' = m.[shift 1] ->
+    A' = A.[shift 1] ->
     Γ ⊢ m : A ->
     Γ ⊢ B : .srt s i ->
     Γ' ⊢ m' : A' := by
-  intros
-  subst_vars
+  intros; subst_vars
   apply Typed.weaken <;> assumption

@@ -120,13 +120,13 @@ def Typed.rec_non_mutual {motive : ∀ Γ Δ m A, @Typed Srt _ Γ Δ m A -> Prop
 def Wf.rec_non_mutual {motive : ∀ Γ Δ, @Wf Srt _ Γ Δ -> Prop} :=
   Wf.rec (motive_1 := fun _ _ _ _ _ => True) (motive_2 := motive)
 
-lemma Wf.size {Γ : Static.Ctx Srt} {Δ : Dynamic.Ctx Srt} :
+lemma Wf.size {Γ} {Δ : Ctx Srt} :
     Wf Γ Δ -> Γ.length = Δ.length := by
   intro wf
   induction wf
   all_goals aesop
 
-lemma Wf.merge {Γ : Static.Ctx Srt} {Δ Δ1 Δ2 : Dynamic.Ctx Srt} :
+lemma Wf.merge {Γ} {Δ Δ1 Δ2 : Ctx Srt} :
     Merge Δ1 Δ2 Δ -> Γ ;; Δ1 ⊢ -> Γ ;; Δ2 ⊢ -> Γ ;; Δ ⊢ := by
   intro mrg wf1 wf2
   induction mrg generalizing Γ
@@ -136,7 +136,7 @@ lemma Wf.merge {Γ : Static.Ctx Srt} {Δ Δ1 Δ2 : Dynamic.Ctx Srt} :
   case right ih  => cases wf1; cases wf2; aesop (add safe Wf)
   case im ih     => cases wf1; cases wf2; aesop (add safe Wf)
 
-lemma Wf.split {Γ : Static.Ctx Srt} {Δ Δ1 Δ2 : Dynamic.Ctx Srt} :
+lemma Wf.split {Γ} {Δ Δ1 Δ2 : Ctx Srt} :
     Merge Δ1 Δ2 Δ -> Γ ;; Δ ⊢ -> Γ ;; Δ1 ⊢ ∧ Γ ;; Δ2 ⊢ := by
   intro mrg wf
   induction mrg generalizing Γ
@@ -146,7 +146,7 @@ lemma Wf.split {Γ : Static.Ctx Srt} {Δ Δ1 Δ2 : Dynamic.Ctx Srt} :
   case right ih  => cases wf; aesop (add safe Wf)
   case im ih     => cases wf; aesop (add safe Wf)
 
-lemma Typed.toWf {Γ : Static.Ctx Srt} {Δ : Dynamic.Ctx Srt} {A m} :
+lemma Typed.toWf {Γ} {Δ : Ctx Srt} {A m} :
     Γ ;; Δ ⊢ m : A -> Γ ;; Δ ⊢ := by
   intro ty
   induction ty <;> try (solve | aesop)
@@ -199,3 +199,35 @@ lemma Typed.toWf {Γ : Static.Ctx Srt} {Δ : Dynamic.Ctx Srt} {A m} :
         apply Wf.merge mrg ih1 ih2
   case ite mrg _ _ _ _ ih1 ih2 _ =>
     apply Wf.merge mrg ih1 ih2
+
+lemma Wf.toStatic {Γ} {Δ : Ctx Srt} : Γ ;; Δ ⊢ -> Γ ⊢ := by
+  intro wf; induction wf
+  all_goals aesop (add safe Static.Wf)
+
+lemma Wf.hasStatic {Γ} {Δ : Ctx Srt} {A x s} :
+    Γ ;; Δ ⊢ -> Dynamic.Has Δ x s A -> Static.Has Γ x A := by
+  intro wf hs; induction wf generalizing x s A <;> try trivial
+  case ex => cases hs; constructor
+  case im ih => cases hs; constructor; aesop
+
+lemma Typed.toStatic {Γ} {Δ : Ctx Srt} {m A} :
+    Γ ;; Δ ⊢ m : A -> Γ ⊢ m : A := by
+  intro ty; induction ty
+  case var wf hs _ =>
+    constructor
+    . apply wf.toStatic
+    . apply wf.hasStatic hs
+  case lam_im => constructor <;> aesop
+  case lam_ex => constructor <;> aesop
+  case app_im => constructor <;> aesop
+  case app_ex => constructor <;> aesop
+  case tup_im => constructor <;> aesop
+  case tup_ex => constructor <;> aesop
+  case proj_im => constructor <;> aesop
+  case proj_ex => constructor <;> aesop
+  case tt wf _ _ => constructor; apply wf.toStatic
+  case ff wf _ _ => constructor; apply wf.toStatic
+  case ite => constructor <;> aesop
+  case rw => constructor <;> aesop
+  case conv => constructor <;> assumption
+  all_goals trivial

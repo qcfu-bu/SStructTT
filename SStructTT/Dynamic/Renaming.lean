@@ -26,13 +26,13 @@ where
     AgreeRen ξ Γ Δ Γ' Δ' ->
     AgreeRen (ξ !>> (.+1)) Γ Δ (A :: Γ') (_: Δ')
 
-lemma AgreeRen.toStatic {Γ Γ' : Static.Ctx Srt} {Δ Δ' : Dynamic.Ctx Srt} {ξ} :
+lemma AgreeRen.toStatic {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ} :
     Dynamic.AgreeRen ξ Γ Δ Γ' Δ' -> Static.AgreeRen ξ Γ Γ' := by
   intro agr
   induction agr <;> aesop (rule_sets := [rename])
 
 @[aesop safe (rule_sets := [rename])]
-lemma AgreeRen.refl {Γ : Static.Ctx Srt} {Δ : Dynamic.Ctx Srt} :
+lemma AgreeRen.refl {Γ} {Δ : Ctx Srt} :
     Γ ;; Δ ⊢ -> AgreeRen id Γ Δ Γ Δ := by
   intro wf; induction wf <;> try aesop (rule_sets := [rename])
   case ex ty _ agr =>
@@ -45,12 +45,12 @@ lemma AgreeRen.refl {Γ : Static.Ctx Srt} {Δ : Dynamic.Ctx Srt} :
     assumption
 
 @[aesop safe (rule_sets := [rename])]
-lemma AgreeRen.none {Γ Γ' : Static.Ctx Srt} {Δ Δ' : Dynamic.Ctx Srt} {ξ} :
+lemma AgreeRen.none {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ} :
     AgreeRen ξ Γ Δ Γ' Δ' -> Δ.Forall (. = none) -> Δ'.Forall (. = none) := by
   intro agr; induction agr <;> aesop
 
 @[aesop safe (rule_sets := [rename])]
-lemma AgreeRen.lower {Γ Γ' : Static.Ctx Srt} {Δ Δ' : Dynamic.Ctx Srt} {ξ s} :
+lemma AgreeRen.lower {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ s} :
     AgreeRen ξ Γ Δ Γ' Δ' -> Δ !≤ s -> Δ' !≤ s := by
   intro agr lw; induction agr <;> try (solve| aesop)
   case ex =>
@@ -60,7 +60,7 @@ lemma AgreeRen.lower {Γ Γ' : Static.Ctx Srt} {Δ Δ' : Dynamic.Ctx Srt} {ξ s}
     cases lw
     constructor; aesop
 
-lemma AgreeRen.has {Γ Γ' : Static.Ctx Srt} {Δ Δ' : Dynamic.Ctx Srt} {ξ x s A} :
+lemma AgreeRen.has {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ x s A} :
     AgreeRen ξ Γ Δ Γ' Δ' ->
     Has Δ x s A ->
     Has Δ' (ξ x) s A.[ren ξ] := by
@@ -186,7 +186,7 @@ lemma AgreeRen.split {Γ Γ'} {Δ Δ' Δ1 Δ2 : Ctx Srt} {ξ} :
     . constructor <;> assumption
     . constructor <;> assumption
 
-lemma Typed.renaming {Γ Γ' : Static.Ctx Srt} {Δ Δ' : Dynamic.Ctx Srt} {A m ξ} :
+lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
     Γ ;; Δ ⊢ m : A -> AgreeRen ξ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢ m.[ren ξ] : A.[ren ξ] := by
   intro ty agr; induction ty
   using
@@ -377,3 +377,24 @@ lemma Typed.renaming {Γ Γ' : Static.Ctx Srt} {Δ Δ' : Dynamic.Ctx Srt} {A m �
   case nil agr => apply agr.wf_nil
   case ex agr => apply agr.wf_ex <;> aesop
   case im agr => apply agr.wf_im <;> aesop
+
+lemma Typed.weaken {Γ} {Δ : Ctx Srt} {A B m s i} :
+    Γ ;; Δ ⊢ m : A ->
+    Γ ⊢ B : .srt s i ->
+    B :: Γ ;; _: Δ ⊢ m.[shift 1] : A.[shift 1] := by
+  intro tym tyB
+  apply tym.renaming
+  constructor
+  . assumption
+  . exact AgreeRen.refl tym.toWf
+
+lemma Typed.eweaken {Γ Γ'} {Δ Δ' : Ctx Srt} {A A' B m m' s i} :
+    Γ' = B :: Γ ->
+    Δ' = _: Δ ->
+    m' = m.[shift 1] ->
+    A' = A.[shift 1] ->
+    Γ ;; Δ ⊢ m : A ->
+    Γ ⊢ B : .srt s i ->
+    Γ' ;; Δ' ⊢ m' : A' := by
+  intros; subst_vars
+  apply Typed.weaken <;> assumption

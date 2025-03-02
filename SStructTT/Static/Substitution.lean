@@ -18,7 +18,7 @@ inductive AgreeSubst : (Var -> Tm Srt) -> Ctx Srt -> Ctx Srt -> Prop where
   | conv {Γ Γ' A B s i σ} :
     A === B ->
     Γ ⊢ B : .srt s i ->
-    Γ' ⊢ B.[ren .succ].[σ] : .srt s i ->
+    Γ' ⊢ B.[shift 1].[σ] : .srt s i ->
     AgreeSubst σ (A :: Γ) Γ' ->
     AgreeSubst σ (B :: Γ) Γ'
 
