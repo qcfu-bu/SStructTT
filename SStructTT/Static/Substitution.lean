@@ -24,15 +24,12 @@ inductive AgreeSubst : (Var -> Tm Srt) -> Ctx Srt -> Ctx Srt -> Prop where
 
 @[aesop safe (rule_sets := [subst])]
 lemma AgreeSubst.refl {Γ : Ctx Srt} : Γ ⊢ -> AgreeSubst ids Γ Γ := by
-  intro wf
-  induction wf
+  intro wf; induction wf
   all_goals try trivial
-  case nil =>
-    constructor
+  case nil => constructor
   case cons ty _ _ agr =>
     replace agr := AgreeSubst.cons ty agr
-    asimp at agr
-    assumption
+    asimp at agr; assumption
 
 lemma AgreeSubst.has {Γ Γ' : Ctx Srt} {A x σ} :
     AgreeSubst σ Γ Γ' -> Γ' ⊢ -> Has Γ x A -> Γ' ⊢ σ x : A.[σ]  := by

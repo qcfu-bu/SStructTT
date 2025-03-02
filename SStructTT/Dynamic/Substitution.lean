@@ -54,6 +54,18 @@ lemma AgreeSubst.toStatic {Γ Γ'} {Δ Δ' : Ctx Srt} {σ} :
     . apply tym.toStatic
     . assumption
 
+@[aesop safe (rule_sets := [subst])]
+lemma AgreeSubst.refl {Γ} {Δ : Ctx Srt} : Γ ;; Δ ⊢ -> AgreeSubst ids Γ Δ Γ Δ := by
+  intro wf; induction wf
+  all_goals try trivial
+  case nil => constructor
+  case ex ty wf agr =>
+    replace agr := AgreeSubst.ex ty agr
+    asimp at agr; assumption
+  case im ty wf agr =>
+    replace agr := AgreeSubst.im ty agr
+    asimp at agr; assumption
+
 lemma AgreeSubst.none {Γ Γ'} {Δ Δ' : Ctx Srt} {σ} :
     AgreeSubst σ Γ Δ Γ' Δ' -> Δ.Forall (. = none) -> Δ'.Forall (. = none) := by
   intro agr h; induction agr
