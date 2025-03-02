@@ -11,66 +11,81 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
   | srt {Γ} s i :
     Wf Γ ->
     Typed Γ (.srt s i) (.srt s0 (i + 1))
+
   | var {Γ x A} :
     Wf Γ ->
     Has Γ x A ->
     Typed Γ (.var x) A
+
   | pi {Γ A B} r s {sA sB iA iB} :
     Typed Γ A (.srt sA iA) ->
     Typed (A :: Γ) B (.srt sB iB) ->
     Typed Γ (.pi A B r s) (.srt s (max iA iB))
+
   | lam {Γ A B m} r s {sA iA} :
     Typed Γ A (.srt sA iA) ->
     Typed (A :: Γ) m B ->
     Typed Γ (.lam A m r s) (.pi A B r s)
+
   | app {Γ A B m n r s} :
     Typed Γ m (.pi A B r s) ->
     Typed Γ n A ->
     Typed Γ (.app m n r) B.[n/]
+
   | sig {Γ A B} r s {sA sB iA iB} :
     sA ≤ s ->
     (r = .ex -> sB ≤ s) ->
     Typed Γ A (.srt sA iA) ->
     Typed (A :: Γ) B (.srt sB iB) ->
     Typed Γ (.sig A B r s) (.srt s (max iA iB))
+
   | tup {Γ A B m n r s i} :
     Typed Γ (.sig A B r s) (.srt s i) ->
     Typed Γ m A ->
     Typed Γ n B.[m/] ->
     Typed Γ (.tup m n r s) (.sig A B r s)
+
   | proj {Γ A B C m n r s sC iC} :
     Typed (.sig A B r s :: Γ) C (.srt sC iC) ->
     Typed Γ m (.sig A B r s) ->
     Typed (B :: A :: Γ) n C.[.tup (.var 1) (.var 0) r s .: shift 2] ->
     Typed Γ (.proj C m n r) C.[m/]
+
   | bool {Γ} :
     Wf Γ ->
     Typed Γ .bool (.srt s0 0)
+
   | tt {Γ} :
     Wf Γ ->
     Typed Γ .tt .bool
+
   | ff {Γ} :
     Wf Γ ->
     Typed Γ .ff .bool
+
   | ite {Γ A m n1 n2 s i} :
     Typed (.bool :: Γ) A (.srt s i) ->
     Typed Γ m .bool ->
     Typed Γ n1 A.[.tt/] ->
     Typed Γ n2 A.[.ff/] ->
     Typed Γ (.ite A m n1 n2) A.[m/]
+
   | idn {Γ A m n s i} :
     Typed Γ A (.srt s i) ->
     Typed Γ m A ->
     Typed Γ n A ->
     Typed Γ (.idn A m n) (.srt s0 i)
+
   | rfl {Γ A m} :
     Typed Γ m A ->
     Typed Γ (.rfl m) (.idn A m m)
+
   | rw {Γ A B m n a b s i} :
     Typed (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A (.srt s i) ->
     Typed Γ m A.[.rfl a,a/] ->
     Typed Γ n (.idn B a b) ->
     Typed Γ (.rw A m n) A.[n,b/]
+
   | conv {Γ A B m s i} :
     A === B ->
     Typed Γ m A ->

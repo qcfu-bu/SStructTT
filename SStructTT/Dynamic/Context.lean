@@ -4,8 +4,18 @@ import SStructTT.Defs.Syntax
 namespace Dynamic
 variable {Srt : Type} [inst : SStruct Srt]
 
-abbrev Ctx Srt := List (Tm Srt × Rlv × Srt)
-notation:max m " :⟨" r ", " s "⟩ " Δ:81 => (m, r, s) :: Δ
+abbrev Ctx Srt := List (Option (Tm Srt × Srt))
+notation:max m " :⟨" s "⟩ " Δ:81 => some (m, s) :: Δ
+notation:max "_:" Δ:81 => none :: Δ
+
+inductive Ext : Tm Srt -> Rlv -> Srt -> Ctx Srt -> Ctx Srt -> Prop where
+  | ex A s Δ :
+    Ext A .ex s Δ (some (A, s) :: Δ)
+  | wk A s Δ :
+    s ∈ weaken_set ->
+    Ext A .ex s Δ (none :: Δ)
+  | im A s Δ :
+    Ext A .im s Δ (none :: Δ)
 
 @[scoped aesop safe [constructors]]
 inductive Merge : Ctx Srt -> Ctx Srt -> Ctx Srt -> Prop where
@@ -13,18 +23,16 @@ inductive Merge : Ctx Srt -> Ctx Srt -> Ctx Srt -> Prop where
   | contra {Δ1 Δ2 Δ} A s :
     s ∈ contra_set ->
     Merge Δ1 Δ2 Δ ->
-    Merge (A :⟨.ex, s⟩ Δ1) (A :⟨.ex, s⟩ Δ2) (A :⟨.ex, s⟩ Δ)
+    Merge (A :⟨s⟩ Δ1) (A :⟨s⟩ Δ2) (A :⟨s⟩ Δ)
   | left {Δ1 Δ2 Δ} A s :
     Merge Δ1 Δ2 Δ ->
-    Merge (A :⟨.ex, s⟩ Δ1) (A :⟨.im, s⟩ Δ2) (A :⟨.ex, s⟩ Δ)
+    Merge (A :⟨s⟩ Δ1) (_: Δ2) (A :⟨s⟩ Δ)
   | right {Δ1 Δ2 Δ} A s :
     Merge Δ1 Δ2 Δ ->
-    Merge (A :⟨.im, s⟩ Δ1) (A :⟨.ex, s⟩ Δ2) (A :⟨.ex, s⟩ Δ)
-  | im {Δ1 Δ2 Δ} A s :
+    Merge (_: Δ1) (A :⟨s⟩ Δ2) (A :⟨s⟩ Δ)
+  | im {Δ1 Δ2 Δ} :
     Merge Δ1 Δ2 Δ ->
-    Merge (A :⟨.im, s⟩ Δ1) (A :⟨.im, s⟩ Δ2) (A :⟨.im, s⟩ Δ)
-
-notation:80 Δ1:81 " ∪ " Δ2:81 " => " Δ:81 => Merge Δ1 Δ2 Δ
+    Merge (_: Δ1) (_: Δ2) (_: Δ)
 
 @[scoped aesop safe [constructors]]
 inductive Lower : Ctx Srt -> Srt -> Prop where
@@ -32,21 +40,21 @@ inductive Lower : Ctx Srt -> Srt -> Prop where
   | ex {Δ A s s'} :
     s' ≤ s ->
     Lower Δ s ->
-    Lower (A :⟨.ex, s'⟩ Δ) s
-  | im {Δ A s s'} :
+    Lower (A :⟨s'⟩ Δ) s
+  | im {Δ s} :
     Lower Δ s ->
-    Lower (A :⟨.im, s'⟩ Δ) s
+    Lower (_: Δ) s
 
 notation Δ:60 " !≤ " s:60 => Lower Δ s
 
 @[scoped aesop safe [constructors]]
 inductive Has : Ctx Srt -> Var -> Srt -> Tm Srt -> Prop where
   | nil {Δ A s} :
-    Δ.Forall (fun (_, r, _) => r = Rlv.im) ->
-    Has (A :⟨.ex, s⟩ Δ) 0 s A.[shift 1]
-  | cons {Δ A B x s s'} :
+    Δ.Forall (fun e => e = none) ->
+    Has (A :⟨s⟩ Δ) 0 s A.[shift 1]
+  | cons {Δ A B x s} :
     Has Δ x s B ->
-    Has (B :⟨.im, s'⟩ Δ) (x + 1) s A.[shift 1]
+    Has (_: Δ) (x + 1) s A.[shift 1]
 
 lemma Lower.split_s0 {Δ : Ctx Srt} :
     Lower Δ s0 -> ∃ Δ1 Δ2, Lower Δ1 s0 ∧ Lower Δ2 s0 ∧ Merge Δ1 Δ2 Δ := by
@@ -60,17 +68,17 @@ lemma Lower.split_s0 {Δ : Ctx Srt} :
     have := inst.le_antisymm _ _ h (inst.s0_min s')
     subst_vars
     have ⟨Δ1, Δ2, l1, l2, mrg⟩ := ih rfl
-    exists A :⟨.ex, s0⟩ Δ1, A :⟨.ex, s0⟩ Δ2
+    exists A :⟨s0⟩ Δ1, A :⟨s0⟩ Δ2
     and_intros
     . constructor <;> assumption
     . constructor <;> assumption
     . constructor
       apply inst.s0_contra
       assumption
-  case im A _ s' _ ih =>
+  case im A _ s' ih =>
     subst_vars
     have ⟨Δ1, Δ2, l1, l2, mrg⟩ := ih rfl
-    exists A :⟨.im, s'⟩ Δ1, A :⟨.im, s'⟩ Δ2
+    exists _: Δ1, _: Δ2
     and_intros
     . constructor; assumption
     . constructor; assumption
