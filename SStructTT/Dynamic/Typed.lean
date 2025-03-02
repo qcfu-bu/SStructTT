@@ -67,12 +67,12 @@ inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop 
 
   | tt {Γ Δ} :
     Wf Γ Δ ->
-    Δ.Forall (fun e => e = none) ->
+    Δ.Forall (. = none) ->
     Typed Γ Δ .tt .bool
 
   | ff {Γ Δ} :
     Wf Γ Δ ->
-    Δ.Forall (fun e => e = none) ->
+    Δ.Forall (. = none) ->
     Typed Γ Δ .ff .bool
 
   | ite {Γ Δ1 Δ2 Δ A m n1 n2 s i} :
@@ -112,7 +112,7 @@ notation:50 Γ:50 "; " Δ:51 " ⊢ " => Wf Γ Δ
 
 -- Register non-mutual recursor as default.
 @[induction_eliminator]
-def Typed.rec_non_mutual {motive : ∀ Γ Δ m a, @Typed Srt _ Γ Δ m a -> Prop} :=
+def Typed.rec_non_mutual {motive : ∀ Γ Δ m A, @Typed Srt _ Γ Δ m A -> Prop} :=
   Typed.rec (motive_1 := motive) (motive_2 := fun _ _ _ => True)
 
 -- Register non-mutual recursor as default.

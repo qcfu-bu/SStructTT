@@ -33,8 +33,7 @@ lemma AgreeRen.has {Γ Γ' : Ctx Srt} {A x ξ} :
   induction agr generalizing x A with
   | nil => intro h; cases h
   | @cons _ _ A _ _ ξ _ _ ih =>
-    intro h
-    cases h <;> asimp
+    intro h; cases h <;> asimp
     case zero =>
       rw[show A.[ren ξ !> shift 1] = A.[ren ξ].[shift 1] by asimp]
       constructor

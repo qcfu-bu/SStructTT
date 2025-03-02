@@ -48,10 +48,10 @@ notation Δ:60 " !≤ " s:60 => Lower Δ s
 @[scoped aesop safe [constructors]]
 inductive Has : Ctx Srt -> Var -> Srt -> Tm Srt -> Prop where
   | nil {Δ A s} :
-    Δ.Forall (fun e => e = none) ->
+    Δ.Forall (. = none) ->
     Has (A :⟨s⟩ Δ) 0 s A.[shift 1]
-  | cons {Δ A B x s} :
-    Has Δ x s B ->
+  | cons {Δ A x s} :
+    Has Δ x s A ->
     Has (_: Δ) (x + 1) s A.[shift 1]
 
 lemma Lower.split_s0 {Δ : Ctx Srt} :
