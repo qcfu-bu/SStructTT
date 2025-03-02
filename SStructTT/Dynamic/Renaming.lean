@@ -76,3 +76,55 @@ lemma AgreeRen.has {Γ Γ' : Static.Ctx Srt} {Δ Δ' : Dynamic.Ctx Srt} {ξ x s 
     asimp
     rw[show A.[ren (ξ !>> (.+1))] = A.[ren ξ].[shift 1] by asimp; rfl]
     constructor; assumption
+
+lemma AgreeRen.split {Γ Γ'} {Δ Δ' Δ1 Δ2 : Ctx Srt} ξ :
+    AgreeRen ξ Γ Δ Γ' Δ' -> Merge Δ1 Δ2 Δ ->
+    ∃ Δ1' Δ2',
+      Merge Δ1' Δ2' Δ' ∧
+      AgreeRen ξ Γ Δ1 Γ' Δ1' ∧
+      AgreeRen ξ Γ Δ2 Γ' Δ2' := by
+  intro agr; induction agr generalizing Δ1 Δ2
+  case nil =>
+    intro mrg; cases mrg
+    exists [], []
+    aesop (rule_sets := [rename])
+  case ex Γ Γ' Δ Δ' A s i ξ ty agr ih =>
+    intro mrg; cases mrg with
+    | contra Δ1 Δ2 h mrg =>
+      have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := ih mrg
+      exists A.[ren ξ] :⟨s⟩ Δ1', A.[ren ξ] :⟨s⟩ Δ2'
+      and_intros
+      . constructor <;> assumption
+      . constructor <;> assumption
+      . constructor <;> assumption
+    | @left Δ1 Δ2 _ _ _ mrg =>
+      have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := ih mrg
+      exists A.[ren ξ] :⟨s⟩ Δ1', _: Δ2'
+      and_intros
+      . constructor; assumption
+      . constructor <;> assumption
+      . constructor <;> assumption
+    | @right Δ1 Δ2 _ _ _ mrg =>
+      have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := ih mrg
+      exists _: Δ1', A.[ren ξ] :⟨s⟩ Δ2'
+      and_intros
+      . constructor; assumption
+      . constructor <;> assumption
+      . constructor <;> assumption
+  case im Γ Γ' Δ Δ' A s i ξ ty agr ih =>
+    intro mrg; cases mrg with
+    | @im Δ1 Δ2 _ mrg =>
+      have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := ih mrg
+      exists _: Δ1', _: Δ2'
+      and_intros
+      . constructor; assumption
+      . constructor <;> assumption
+      . constructor <;> assumption
+  case wk Γ Γ' Δ Δ' A s i ξ ty agr ih =>
+    intro mrg
+    have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := ih mrg
+    exists _: Δ1', _: Δ2'
+    and_intros
+    . constructor; assumption
+    . constructor <;> assumption
+    . constructor <;> assumption
