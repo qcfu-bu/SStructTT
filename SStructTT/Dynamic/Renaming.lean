@@ -48,8 +48,18 @@ lemma AgreeRen.none {Γ Γ' : Static.Ctx Srt} {Δ Δ' : Dynamic.Ctx Srt} {ξ} :
     AgreeRen ξ Γ Δ Γ' Δ' -> Δ.Forall (. = none) -> Δ'.Forall (. = none) := by
   intro agr; induction agr <;> aesop
 
+lemma AgreeRen.lower {Γ Γ' : Static.Ctx Srt} {Δ Δ' : Dynamic.Ctx Srt} {ξ s} :
+    AgreeRen ξ Γ Δ Γ' Δ' -> Δ !≤ s -> Δ' !≤ s := by
+  intro agr lw; induction agr <;> try (solve| aesop)
+  case ex =>
+    cases lw
+    constructor <;> aesop
+  case im =>
+    cases lw
+    constructor; aesop
+
 lemma AgreeRen.has {Γ Γ' : Static.Ctx Srt} {Δ Δ' : Dynamic.Ctx Srt} {ξ x s A} :
-    Dynamic.AgreeRen ξ Γ Δ Γ' Δ' ->
+    AgreeRen ξ Γ Δ Γ' Δ' ->
     Has Δ x s A ->
     Has Δ' (ξ x) s A.[ren ξ] := by
   intro agr
@@ -128,3 +138,37 @@ lemma AgreeRen.split {Γ Γ'} {Δ Δ' Δ1 Δ2 : Ctx Srt} ξ :
     . constructor; assumption
     . constructor <;> assumption
     . constructor <;> assumption
+
+lemma Typed.renaming {Γ Γ' : Static.Ctx Srt} {Δ Δ' : Dynamic.Ctx Srt} {A m ξ} :
+    Γ ; Δ ⊢ m : A -> AgreeRen ξ Γ Δ Γ' Δ' -> Γ' ; Δ' ⊢ m.[ren ξ] : A.[ren ξ] := by
+  intro ty agr; induction ty
+  using
+    @Typed.rec _ inst
+      (motive_2 := fun Γ Δ _ => ∀ Γ' Δ' ξ, AgreeRen ξ Γ Δ Γ' Δ' -> Γ' ; Δ' ⊢)
+  generalizing Γ' Δ' ξ
+  case var h _ =>
+    asimp; constructor <;> try aesop
+    apply agr.has h
+  case lam_im Γ Δ A B m s sA i lw tyA tym ih =>
+    asimp; constructor
+    . apply agr.lower lw
+    . apply tyA.renaming agr.toStatic
+    . specialize ih (agr.im tyA)
+      asimp at ih; assumption
+  case lam_ex Γ Δ Δ1 A B m s sA i lw tyA ext tym ih =>
+    asimp; cases ext with
+    | ex =>
+      constructor
+      . apply agr.lower lw
+      . apply tyA.renaming agr.toStatic
+      . apply Ext.ex
+      . specialize ih (agr.ex tyA)
+        asimp at ih; assumption
+    | wk h =>
+      constructor
+      . apply agr.lower lw
+      . apply tyA.renaming agr.toStatic
+      . apply Ext.wk h
+      . specialize ih (agr.im tyA)
+        asimp at ih; assumption
+  case app_im Γ Δ A B m n s tym tyn ih =>
