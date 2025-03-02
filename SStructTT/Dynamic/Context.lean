@@ -106,3 +106,12 @@ lemma Merge.lower {Δ1 Δ2 Δ : Ctx Srt} s :
     intro l1 l2; cases l1; cases l2
     apply Lower.im
     apply ih <;> assumption
+
+lemma Merge.sym {Δ1 Δ2 Δ : Ctx Srt} : Merge Δ1 Δ2 Δ -> Merge Δ2 Δ1 Δ := by
+  intro mrg; induction mrg
+  all_goals aesop (add safe Merge)
+
+lemma Merge.none {Δ1 Δ2 Δ : Ctx Srt} :
+    Merge Δ1 Δ2 Δ -> Δ1.Forall (. = none) -> Δ2 = Δ := by
+  intro mrg h; induction mrg
+  all_goals aesop

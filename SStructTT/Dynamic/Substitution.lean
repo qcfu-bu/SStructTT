@@ -70,16 +70,35 @@ lemma AgreeSubst.has {Γ Γ'} {Δ Δ' : Ctx Srt} {A x s σ} :
   intro agr wf hs; induction agr generalizing x A
   case nil => cases hs
   case ex A s i σ tyA agr ih =>
-    cases hs
+    rcases hs with ⟨h⟩
     asimp
     constructor
     . assumption
     . rw[show A.[σ !> shift 1] = A.[σ].[shift 1] by asimp]
       constructor
-      sorry
+      apply agr.none h
   case im A s i σ tyA agr ih =>
     rcases wf with _ | _ | ⟨_, wf⟩
-    rcases hs with _ | @⟨_, A, s, x, hs⟩; asimp
+    rcases hs with _ | @⟨_, A, x, s, hs⟩; asimp
     rw[show A.[σ !> shift 1] = A.[σ].[shift 1] by asimp]
     apply Typed.eweaken <;> try first | rfl | assumption
     apply ih <;> assumption
+  case wk_im ih =>
+    rcases hs with _ | @⟨_, A, x, s, hs⟩; asimp
+    apply ih <;> assumption
+  case wk_ex mrg _ _ agr ih =>
+    rcases hs with ⟨h⟩; asimp
+    rw[<-mrg.sym.none (agr.none h)]
+    assumption
+  case conv_im σ eq tyB tyB' agr ih =>
+    rcases hs with _ | @⟨_, A, x, s, hs⟩
+    apply ih
+    . assumption
+    . constructor; assumption
+  case conv_ex σ eq tyB tyB' agr ih =>
+    rcases hs with ⟨h⟩
+    apply Typed.conv
+    . open Static in
+      apply Conv.subst _ (Conv.subst _ eq)
+    . apply ih wf; constructor; assumption
+    . assumption

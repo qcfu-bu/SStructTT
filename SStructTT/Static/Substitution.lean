@@ -36,11 +36,10 @@ lemma AgreeSubst.refl {Γ : Ctx Srt} : Γ ⊢ -> AgreeSubst ids Γ Γ := by
 
 lemma AgreeSubst.has {Γ Γ' : Ctx Srt} {A x σ} :
     AgreeSubst σ Γ Γ' -> Γ' ⊢ -> Has Γ x A -> Γ' ⊢ σ x : A.[σ]  := by
-  intro agr
+  intro agr wf hs
   induction agr generalizing x A with
-  | nil => intro _ hs; cases hs
+  | nil => cases hs
   | @cons _ _ A _ _ σ _ _ ih =>
-    intro wf hs
     cases wf; case cons wf ty =>
     cases hs with
     | zero =>
@@ -55,12 +54,10 @@ lemma AgreeSubst.has {Γ Γ' : Ctx Srt} {A x σ} :
       apply Typed.eweaken <;> try first | rfl | assumption
       apply ih <;> assumption
   | wk _ _ ih  =>
-    intro wf hs
     cases hs with
     | zero => asimp; assumption
     | succ => asimp; apply ih <;> assumption
   | @conv _ _ A B _ _ σ eq ty ty' agr ih =>
-    intro wf hs
     cases hs with
     | zero =>
       apply Typed.conv
