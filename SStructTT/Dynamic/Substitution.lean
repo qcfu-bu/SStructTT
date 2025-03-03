@@ -288,8 +288,7 @@ lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
     . assumption
     . apply agr.lower lw
     . apply tyA.substitution agr.toStatic
-    . apply ih
-      cases rs <;> constructor <;> assumption
+    . apply ih; constructor <;> assumption
   case app_im tym tyn ih =>
     replace tym := ih agr; asimp at tym
     replace tyn := tyn.substitution agr.toStatic
