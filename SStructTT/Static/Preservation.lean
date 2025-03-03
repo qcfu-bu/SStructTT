@@ -5,15 +5,12 @@ open ARS
 namespace Static
 variable {Srt : Type} [inst : SStruct Srt]
 
-theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
-    Γ ⊢ m : A -> m ~> n -> Γ ⊢ n : A := by
-  intro ty
-  induction ty generalizing n
+theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
+    Γ ⊢ m : A -> m ~> m' -> Γ ⊢ m' : A := by
+  intro ty st; induction ty generalizing m'
   all_goals try trivial
-  case srt => intro st; cases st
-  case var => intro st; cases st
   case pi ihA ihB =>
-    intro st; cases st
+    cases st
     case pi_A st =>
       constructor
       . apply ihA st
@@ -27,7 +24,7 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
       . apply ihB st
   case lam tym ihA ihm =>
     have ⟨_, _, _⟩ := tym.validity
-    intro st; cases st
+    cases st
     case lam_A st =>
       apply Typed.conv
       . apply Conv.pi
@@ -45,14 +42,14 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
       . assumption
       . apply ihm st
   case app tym tyn ihm ihn =>
-    have ⟨_, _, tyP⟩ := tym.validity
-    have ⟨_, _, _, tyB, _⟩ := tyP.pi_inv
-    intro st; cases st
+    cases st
     case app_M st =>
       apply Typed.app
       . apply ihm st
       . assumption
     case app_N st =>
+      have ⟨_, _, tyP⟩ := tym.validity
+      have ⟨_, _, _, tyB, _⟩ := tyP.pi_inv
       apply Typed.conv
       . apply Conv.subst1
         apply Conv.onei st
@@ -61,12 +58,10 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
         apply ihn st
       . apply tyB.subst tyn
     case beta =>
-      replace ⟨tym, _⟩ := tym.lam_inv; subst_vars
-      have ⟨_, _, _, tyA⟩ := tym.ctx_inv
-      replace tyB := tyB.subst tyn; asimp at tyB
+      replace ⟨tym, _⟩ := tym.lam_inv
       apply tym.subst tyn
   case sig ihA ihB =>
-    intro st; cases st
+    cases st
     case sig_A st =>
       constructor
       . assumption
@@ -83,7 +78,7 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
       . assumption
       . apply ihB st
   case tup tyS _ _ _ ihm ihn =>
-    intro st; cases st
+    cases st
     case tup_M st =>
       replace ihm := ihm st
       have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
@@ -106,7 +101,7 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
     have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
     have ⟨_, _⟩ := Conv.srt_inj eq
     subst_vars; clear eq
-    intro st; cases st
+    cases st
     case proj_A C' st =>
       replace ihC := ihC st
       have wf := tyn.toWf
@@ -153,11 +148,8 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
       apply AgreeSubst.wk tym2
       constructor; asimp; assumption
       apply AgreeSubst.refl wf
-  case bool => intro st; cases st
-  case tt => intro st; cases st
-  case ff => intro st; cases st
   case ite tyA tym tyn1 tyn2 ihA ihm ihn1 ihn2 =>
-    intro st; cases st
+    cases st
     case ite_A st =>
       have wf := tym.toWf
       replace ihA := ihA st
@@ -191,7 +183,7 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
     case ite_true => assumption
     case ite_false => assumption
   case idn ihA ihm ihn =>
-    intro st; cases st
+    cases st
     case idn_A st =>
       replace ihA := ihA st
       constructor
@@ -204,7 +196,7 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
     case idn_N => constructor <;> aesop
   case rfl tym ihm =>
     have ⟨_, _, _⟩ := tym.validity
-    intro st; cases st
+    cases st
     case rfl_M st =>
       apply Typed.conv
       . apply Conv.idn
@@ -219,7 +211,7 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
     have ⟨_, _, tyI⟩ := tyn.validity
     have ⟨_, tya, _, _⟩ := tyI.idn_inv
     have ⟨_, _, _⟩ := tya.validity
-    intro st; cases st
+    cases st
     case rw_A A' st =>
       have : Γ ⊢ A'.[.rfl a, a/] : .srt s i := by
         rw[show .srt s i = (.srt s i).[.rfl a,a/] by asimp]
@@ -293,7 +285,6 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
       . assumption
       . assumption
   case conv eq _ tyB ihm _ =>
-    intro st
     have tym := ihm st
     apply Typed.conv eq tym tyB
 

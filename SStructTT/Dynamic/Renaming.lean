@@ -193,10 +193,8 @@ lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
     constructor <;> (asimp; assumption)
   case proj_im A B C m n rA s sA sB sC iC rs mrg tyC tym tyn ihm ihn =>
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
-    have wf := tyn.toWf
+    obtain ⟨_, _ | ⟨tyA, _⟩, tyB⟩ := tyn.ctx_inv
     have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg
-    rcases wf with _ | ⟨tyB, wf⟩
-    rcases wf with _ | ⟨tyA, _⟩
     replace tyC := tyC.renaming (agr.toStatic.cons tyS); asimp at tyC
     replace tym := ihm agr1; asimp at tym
     replace tyn := ihn ((agr2.cons rA tyA).cons .im tyB)
@@ -208,10 +206,8 @@ lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
     asimp at ty; assumption
   case proj_ex A B C m n rA rB s sA sB sC iC rs1 rs2 mrg tyC tym tyn ihm ihn =>
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
-    have wf := tyn.toWf
+    obtain ⟨_, _ | ⟨tyA, _⟩, tyB⟩ := tyn.ctx_inv
     have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg
-    rcases wf with _ | ⟨tyB, wf⟩
-    rcases wf with _ | ⟨tyA, _⟩
     replace tyC := tyC.renaming (agr.toStatic.cons tyS); asimp at tyC
     replace tym := ihm agr1; asimp at tym
     replace tyn := ihn ((agr2.cons rA tyA).cons rB tyB)

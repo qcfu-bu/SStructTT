@@ -286,9 +286,7 @@ lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
     have ty := Typed.tup_ex mrg tyS tym tyn; assumption
   case proj_im A B C m n rA s sA sB sC iC rs mrg tyC tym tyn ihm ihn =>
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
-    have wf := tyn.toWf
-    rcases wf with _ | ⟨tyB, wf⟩
-    rcases wf with _ | ⟨tyA, _⟩
+    obtain ⟨_, _ | ⟨tyA, _⟩, tyB⟩ := tyn.ctx_inv
     have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
     replace tyC := tyC.substitution (agr.toStatic.cons tyS); asimp at tyC
     replace tym := ihm agr1; asimp at tym
@@ -297,9 +295,7 @@ lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
     apply Typed.proj_im <;> (asimp; assumption)
   case proj_ex C m n rA rB s sA sB sC i rs1 rs2 mrg tyC tym tyn ihm ihn =>
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
-    have wf := tyn.toWf
-    rcases wf with _ | ⟨tyB, wf⟩
-    rcases wf with _ | ⟨tyA, _⟩
+    obtain ⟨_, _ | ⟨tyA, _⟩, tyB⟩ := tyn.ctx_inv
     have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
     replace tyC := tyC.substitution (agr.toStatic.cons tyS); asimp at tyC
     replace tym := ihm agr1; asimp at tym
@@ -352,7 +348,7 @@ lemma Typed.subst_im {Γ} {Δ : Ctx Srt} {A B m n s} :
     Γ ⊢ n : A ->
     Γ ;; Δ ⊢ m.[n/] : B.[n/] := by
   intro tym tyn
-  have wf := tym.toWf; cases wf
+  obtain ⟨_, _, _⟩ := tym.ctx_inv
   apply tym.substitution
   apply AgreeSubst.wk_im
   . asimp; assumption
@@ -364,7 +360,7 @@ lemma Typed.subst_ex {Γ} {Δ1 Δ2 Δ : Ctx Srt} {A B m n s} :
     Γ ;; Δ2 ⊢ n : A ->
     Γ ;; Δ ⊢ m.[n/] : B.[n/] := by
   intro lw mrg tym tyn
-  have wf := tym.toWf; cases wf
+  obtain ⟨_, _, _⟩ := tym.ctx_inv
   apply tym.substitution
   apply AgreeSubst.wk_ex
   . apply mrg.sym
@@ -397,8 +393,7 @@ lemma Typed.conv_ctx {Γ} {Δ : Ctx Srt} {A B C m r s i} :
     A :: Γ ;; A :⟨r, s⟩ Δ ⊢ m : C ->
     B :: Γ ;; B :⟨r, s⟩ Δ ⊢ m : C := by
   intro eq tyB tym
-  have wf := tym.toWf
-  rcases wf with _ | ⟨tyA, wf⟩
+  obtain ⟨_, wf, tyA⟩ := tym.ctx_inv
   replace tym : B :: Γ ;; B :⟨r, s⟩ Δ ⊢ m.[ids] : C.[ids] := by
     apply tym.substitution
     apply AgreeSubst.conv <;> try assumption

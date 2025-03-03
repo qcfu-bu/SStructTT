@@ -56,7 +56,7 @@ lemma Star.ES {y x z} : e x y -> Star e y z -> Star e x z := by
   apply Star.one
   assumption
 
-lemma Star.Conv {x y} : Star e x y -> Conv e x y := by
+lemma Star.conv {x y} : Star e x y -> Conv e x y := by
   intro h
   induction h with
   | R => constructor
@@ -122,9 +122,9 @@ lemma Conv.sym {x y} : Conv e x y -> Conv e y x := by
 lemma Conv.join {y x z} : Star e x y -> Star e z y -> Conv e x z := by
   intro h1 h2
   apply Conv.trans
-  apply Star.Conv h1
+  apply Star.conv h1
   apply Conv.sym
-  apply Star.Conv h2
+  apply Star.conv h2
 
 lemma Conv.img {T1 T2 e1 e2} {f : T1 -> T2} :
     (∀ {x y}, e1 x y -> Conv e2 (f x) (f y)) ->
@@ -166,8 +166,8 @@ lemma Confluent.cr : Confluent e <-> CR e := by
       . apply h2
       . apply Star.ES r h3
   . intro h x y z  h1 h2
-    have h1 := Star.Conv h1
-    have h2 := Star.Conv h2
+    have h1 := Star.conv h1
+    have h2 := Star.conv h2
     apply h
     apply Conv.trans (Conv.sym h1) h2
 

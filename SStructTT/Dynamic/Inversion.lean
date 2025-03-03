@@ -108,7 +108,7 @@ lemma Typed.lam_im_inv {Γ} {Δ : Ctx Srt} {A A' B m s s'} :
   have ⟨s, i, tyP⟩ := ty.toStatic.validity
   have ⟨_, _, _, tyB, _⟩ := tyP.pi_inv
   have ⟨sA', _, _, tyA'⟩ := tyB.ctx_inv
-  rcases tym.toWf with _ | ⟨tyA, _⟩
+  obtain ⟨_, _, tyA⟩ := tym.ctx_inv
   have ⟨x, rd', rd⟩ := Static.Step.cr eqA
   have ty1 := tyA'.preservation' rd'
   have ty2 := tyA.preservation' rd
@@ -127,7 +127,7 @@ lemma Typed.lam_ex_inv {Γ} {Δ : Ctx Srt} {A A' B m s s'} :
   have ⟨s, i, tyP⟩ := ty.toStatic.validity
   have ⟨_, _, _, tyB, _⟩ := tyP.pi_inv
   have ⟨sA', _, _, tyA'⟩ := tyB.ctx_inv
-  rcases tym.toWf with _ | ⟨tyA, _⟩
+  obtain ⟨_, _, tyA⟩ := tym.ctx_inv
   have ⟨x, rd', rd⟩ := Static.Step.cr eqA
   have ty1 := tyA'.preservation' rd'
   have ty2 := tyA.preservation' rd

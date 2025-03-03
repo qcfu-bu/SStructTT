@@ -196,3 +196,10 @@ lemma Typed.toStatic {Γ} {Δ : Ctx Srt} {m A} :
   case rw => constructor <;> aesop
   case conv => constructor <;> assumption
   all_goals trivial
+
+lemma Typed.ctx_inv {Γ} {Δ : Ctx Srt} {A B m r s} :
+    A :: Γ ;; A :⟨r, s⟩ Δ ⊢ m : B -> ∃ i, Γ ;; Δ ⊢ ∧ Γ ⊢ A : .srt s i := by
+  intro ty
+  have wf := ty.toWf
+  rcases wf with _ | ⟨ty, wf⟩
+  constructor <;> aesop
