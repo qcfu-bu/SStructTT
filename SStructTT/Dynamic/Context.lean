@@ -55,7 +55,7 @@ inductive Has : Ctx Srt -> Var -> Srt -> Tm Srt -> Prop where
     Has (_: Δ) (x + 1) s A.[shift 1]
 
 lemma Lower.split_s0 {Δ : Ctx Srt} :
-    Lower Δ s0 -> ∃ Δ1 Δ2, Lower Δ1 s0 ∧ Lower Δ2 s0 ∧ Merge Δ1 Δ2 Δ := by
+    Δ !≤ s0 -> ∃ Δ1 Δ2, Δ1 !≤ s0 ∧ Δ2 !≤ s0 ∧ Merge Δ1 Δ2 Δ := by
   generalize e: inst.s0 = s
   intro l; induction l
   case nil =>
@@ -82,8 +82,20 @@ lemma Lower.split_s0 {Δ : Ctx Srt} :
     . constructor; assumption
     . constructor; assumption
 
+lemma Lower.trans {Δ : Ctx Srt} {s1 s2} :
+    Δ !≤ s1 -> s1 ≤ s2 -> Δ !≤ s2 := by
+  intro lw le2; induction lw generalizing s2
+  case nil => constructor
+  case ex le1 _ ih =>
+    constructor
+    apply le1.trans le2
+    apply ih le2
+  case im ih =>
+    constructor
+    apply ih le2
+
 lemma Merge.lower {Δ1 Δ2 Δ : Ctx Srt} s :
-    Merge Δ1 Δ2 Δ -> Lower Δ1 s -> Lower Δ2 s -> Lower Δ s := by
+    Merge Δ1 Δ2 Δ -> Δ1 !≤ s -> Δ2 !≤ s -> Δ !≤ s := by
   intro mrg; induction mrg
   case nil =>
     intros; constructor

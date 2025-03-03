@@ -80,7 +80,22 @@ lemma AgreeSubst.none {Γ Γ'} {Δ Δ' : Ctx Srt} {σ} :
 
 lemma AgreeSubst.lower {Γ Γ'} {Δ Δ' : Ctx Srt} {s σ} :
     AgreeSubst σ Γ Δ Γ' Δ' -> Δ !≤ s -> Δ' !≤ s := by
-  sorry
+  intro agr lw; induction agr generalizing s
+  case nil => assumption
+  case ex => cases lw; constructor <;> aesop
+  case im => cases lw; constructor; aesop
+  case wk_im => cases lw; aesop
+  case wk_ex mrg _ _ _ _ =>
+    cases lw
+    apply mrg.lower
+    . apply Lower.trans <;> assumption
+    . aesop
+  case conv_im ih =>
+    cases lw; apply ih
+    constructor; assumption
+  case conv_ex ih =>
+    cases lw; apply ih
+    constructor <;> assumption
 
 lemma AgreeSubst.has {Γ Γ'} {Δ Δ' : Ctx Srt} {A x s σ} :
     AgreeSubst σ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢ -> Has Δ x s A -> Γ' ;; Δ' ⊢ (σ x) : A.[σ] := by
