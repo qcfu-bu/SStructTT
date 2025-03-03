@@ -26,8 +26,8 @@ inductive Merge : Ctx Srt -> Ctx Srt -> Ctx Srt -> Prop where
 
 @[scoped aesop safe [constructors]]
 inductive RSrt : Rlv -> Srt -> Prop where
-  | ex {s} : RSrt .ex s
-  | im {s} : s ∈ weaken_set -> RSrt .im s
+  | extend {s} : RSrt .ex s
+  | weaken {s} : s ∈ weaken_set -> RSrt .im s
 
 @[scoped aesop safe [constructors]]
 inductive Lower : Ctx Srt -> Srt -> Prop where

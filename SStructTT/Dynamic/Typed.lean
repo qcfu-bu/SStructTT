@@ -156,37 +156,13 @@ lemma Typed.toWf {Γ} {Δ : Ctx Srt} {A m} :
   case tup_ex mrg _ _ _ ih1 ih2 =>
     apply Wf.merge mrg ih1 ih2
   case proj_im rs mrg _ _ _ ih1 ih2 =>
-    cases rs with
-    | ex =>
-      rcases ih2 with _ | ⟨_, ih2⟩
-      rcases ih2 with _ | ⟨_, ih2⟩
-      apply Wf.merge mrg ih1 ih2
-    | im =>
-      rcases ih2 with _ | ⟨_, ih2⟩
-      rcases ih2 with _ | ⟨_, ih2⟩
-      apply Wf.merge mrg ih1 ih2
+    rcases ih2 with _ | ⟨_, ih2⟩
+    rcases ih2 with _ | ⟨_, ih2⟩
+    apply Wf.merge mrg ih1 ih2
   case proj_ex rs1 rs2 mrg _ _ _ ih1 ih2 =>
-    cases rs1 with
-    | ex =>
-      cases rs2 with
-      | ex =>
-        rcases ih2 with _ | ⟨_, ih2⟩
-        rcases ih2 with _ | ⟨_, ih2⟩
-        apply Wf.merge mrg ih1 ih2
-      | im =>
-        rcases ih2 with _ | ⟨_, ih2⟩
-        rcases ih2 with _ | ⟨_, ih2⟩
-        apply Wf.merge mrg ih1 ih2
-    | im =>
-      cases rs2 with
-      | ex =>
-        rcases ih2 with _ | ⟨_, ih2⟩
-        rcases ih2 with _ | ⟨_, ih2⟩
-        apply Wf.merge mrg ih1 ih2
-      | im =>
-        rcases ih2 with _ | ⟨_, ih2⟩
-        rcases ih2 with _ | ⟨_, ih2⟩
-        apply Wf.merge mrg ih1 ih2
+    rcases ih2 with _ | ⟨_, ih2⟩
+    rcases ih2 with _ | ⟨_, ih2⟩
+    apply Wf.merge mrg ih1 ih2
   case ite mrg _ _ _ _ ih1 ih2 _ =>
     apply Wf.merge mrg ih1 ih2
 
