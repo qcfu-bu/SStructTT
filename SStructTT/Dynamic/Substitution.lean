@@ -77,6 +77,10 @@ lemma AgreeSubst.none {Γ Γ'} {Δ Δ' : Ctx Srt} {σ} :
   case conv_im => simp at h; aesop
   case conv_ex => simp at h
 
+lemma AgreeSubst.lower {Γ Γ'} {Δ Δ' : Ctx Srt} {s σ} :
+    AgreeSubst σ Γ Δ Γ' Δ' -> Δ !≤ s -> Δ' !≤ s := by
+  sorry
+
 lemma AgreeSubst.has {Γ Γ'} {Δ Δ' : Ctx Srt} {A x s σ} :
     AgreeSubst σ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢ -> Has Δ x s A -> Γ' ;; Δ' ⊢ (σ x) : A.[σ] := by
   intro agr wf hs; induction agr generalizing x A
@@ -114,3 +118,116 @@ lemma AgreeSubst.has {Γ Γ'} {Δ Δ' : Ctx Srt} {A x s σ} :
       apply Conv.subst _ (Conv.subst _ eq)
     . apply ih wf; constructor; assumption
     . assumption
+
+lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ} :
+    AgreeSubst σ Γ Δ Γ' Δ' -> Merge Δa Δb Δ ->
+    ∃ Δa' Δb',
+      Merge Δa' Δb' Δ' ∧
+      AgreeSubst σ Γ Δa Γ' Δa' ∧
+      AgreeSubst σ Γ Δb Γ' Δb' := by
+  intro agr mrg; induction agr generalizing Δa Δb
+  case nil =>
+    cases mrg; exists [], []
+    aesop (rule_sets := [subst])
+  case ex A s i σ tyA agr ih =>
+    cases mrg with
+    | contra _ _ h mrg =>
+      have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
+      exists A.[σ] :⟨s⟩ Δa', A.[σ] :⟨s⟩ Δb'; and_intros
+      all_goals constructor <;> assumption
+    | left _ _ mrg =>
+      have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
+      exists A.[σ] :⟨s⟩ Δa', _: Δb'; and_intros
+      all_goals constructor <;> assumption
+    | right _ _ mrg =>
+      have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
+      exists _: Δa', A.[σ] :⟨s⟩ Δb'; and_intros
+      all_goals constructor <;> assumption
+  case im A s i σ tyA agr ih =>
+    cases mrg with
+    | im mrg =>
+      have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
+      exists _: Δa', _: Δb'; and_intros
+      all_goals constructor <;> assumption
+  case wk_im agr ih =>
+    cases mrg with
+    | im mrg =>
+      have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
+      exists Δa', Δb'; and_intros
+      . assumption
+      . constructor <;> assumption
+      . constructor <;> assumption
+  case wk_ex mrg1 lw tym agr ih =>
+    cases mrg with
+    | contra _ _ h mrg =>
+      have ⟨Δa', Δb', mrg2, agr1, agr2⟩ := ih mrg
+      have ⟨Δc1, mrg3, mrg4⟩ := mrg1.sym.split mrg2
+      have ⟨Δc2, mrg5, mrg6⟩ := mrg1.sym.split mrg2.sym
+      exists Δc1, Δc2; and_intros
+      . apply Merge.compose <;> assumption
+      . apply AgreeSubst.wk_ex
+        . exact mrg3.sym
+        . exact lw
+        . exact tym
+        . exact agr1
+      . apply AgreeSubst.wk_ex
+        . exact mrg5.sym
+        . exact lw
+        . exact tym
+        . exact agr2
+    | left _ _ mrg =>
+      have ⟨Δa', Δb', mrg2, agr1, agr2⟩ := ih mrg
+      have ⟨Δc1, mrg3, mrg4⟩ := mrg1.sym.split mrg2
+      exists Δc1, Δb'; and_intros
+      . exact mrg4
+      . apply AgreeSubst.wk_ex
+        . exact mrg3.sym
+        . exact lw
+        . exact tym
+        . exact agr1
+      . apply AgreeSubst.wk_im
+        . exact tym.toStatic
+        . exact agr2
+    | right _ _ mrg =>
+      have ⟨Δa', Δb', mrg2, agr1, agr2⟩ := ih mrg
+      have ⟨Δc1, mrg3, mrg4⟩ := mrg1.sym.split mrg2.sym
+      exists Δa', Δc1; and_intros
+      . exact mrg4.sym
+      . apply AgreeSubst.wk_im
+        . exact tym.toStatic
+        . exact agr1
+      . apply AgreeSubst.wk_ex
+        . exact mrg3.sym
+        . exact lw
+        . exact tym
+        . exact agr2
+  case conv_im eq tyB tyB' agr ih =>
+    cases mrg with
+    | im mrg =>
+      have ⟨Δa', Δb', mrg', agr1, agr2⟩ := ih (Merge.im mrg)
+      exists Δa', Δb'; and_intros
+      . assumption
+      . apply AgreeSubst.conv_im <;> assumption
+      . apply AgreeSubst.conv_im <;> assumption
+  case conv_ex A B s i σ eq tyB tyB' agr ih =>
+    cases mrg with
+    | contra _ _ h mrg =>
+      have ⟨Δa', Δb', mrg', agr1, agr2⟩ := ih (Merge.contra A s h mrg)
+      exists Δa', Δb'; and_intros
+      . assumption
+      . apply AgreeSubst.conv_ex <;> assumption
+      . apply AgreeSubst.conv_ex <;> assumption
+    | left _ _ mrg =>
+      have ⟨Δa', Δb', mrg', agr1, agr2⟩ := ih (Merge.left A s mrg)
+      exists Δa', Δb'
+      and_intros
+      . assumption
+      . apply AgreeSubst.conv_ex <;> assumption
+      . apply AgreeSubst.conv_im <;> assumption
+    | right _ _ mrg =>
+      have ⟨Δa', Δb', mrg', agr1, agr2⟩ := ih (Merge.right A s mrg)
+      exists Δa', Δb'
+      and_intros
+      . assumption
+      . apply AgreeSubst.conv_im <;> assumption
+      . apply AgreeSubst.conv_ex <;> assumption
