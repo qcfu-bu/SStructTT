@@ -19,3 +19,4 @@ import SStructTT.Static.Progress
 import SStructTT.Dynamic.Context
 import SStructTT.Dynamic.Typed
 import SStructTT.Dynamic.Renaming
+import SStructTT.Dynamic.Substitution
