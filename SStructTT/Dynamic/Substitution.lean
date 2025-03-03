@@ -66,6 +66,7 @@ lemma AgreeSubst.refl {Γ} {Δ : Ctx Srt} : Γ ;; Δ ⊢ -> AgreeSubst ids Γ Δ
     replace agr := AgreeSubst.im ty agr
     asimp at agr; assumption
 
+@[aesop safe (rule_sets := [subst])]
 lemma AgreeSubst.none {Γ Γ'} {Δ Δ' : Ctx Srt} {σ} :
     AgreeSubst σ Γ Δ Γ' Δ' -> Δ.Forall (. = none) -> Δ'.Forall (. = none) := by
   intro agr h; induction agr
@@ -232,6 +233,57 @@ lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ} :
       . apply AgreeSubst.conv_im <;> assumption
       . apply AgreeSubst.conv_ex <;> assumption
 
+lemma AgreeSubst.wf_nil {Γ'} {Δ' : Ctx Srt} {σ} :
+    AgreeSubst σ [] [] Γ' Δ' -> Γ' ;; Δ' ⊢ := by
+  generalize e1: [] = Γ
+  generalize e2: [] = Δ
+  intro agr; induction agr <;> try trivial
+  constructor
+
+lemma AgreeSubst.wf_ex {Γ Γ'} {Δ Δ' : Ctx Srt} {A s σ} :
+    AgreeSubst σ (A :: Γ) (A :⟨s⟩ Δ) Γ' Δ' -> Γ ;; Δ ⊢ ->
+    (∀ {Γ' Δ' σ}, AgreeSubst σ Γ Δ Γ' Δ' → Γ' ;; Δ' ⊢) ->
+    Γ' ;; Δ' ⊢ := by
+  generalize e1: A :: Γ = Γ0
+  generalize e2: A :⟨s⟩ Δ = Δ0
+  intro agr wf h; induction agr generalizing Γ Δ A s <;> try trivial
+  case ex tyA agr ih =>
+    cases e1; cases e2
+    constructor
+    . apply tyA.substitution agr.toStatic
+    . apply h agr
+  case im => cases e2
+  case wk_im => cases e2
+  case wk_ex mrg lw tym agr ih =>
+    cases e1; cases e2
+    apply Wf.merge mrg tym.toWf (h agr)
+  case conv_im => cases e2
+  case conv_ex ih =>
+    cases e1; cases e2
+    apply ih rfl rfl wf h
+
+lemma AgreeSubst.wf_im {Γ Γ'} {Δ Δ' : Ctx Srt} {A σ} :
+    AgreeSubst σ (A :: Γ) (_: Δ) Γ' Δ' -> Γ ;; Δ ⊢ ->
+    (∀ {Γ' Δ' σ}, AgreeSubst σ Γ Δ Γ' Δ' → Γ' ;; Δ' ⊢) ->
+    Γ' ;; Δ' ⊢ := by
+  generalize e1: A :: Γ = Γ0
+  generalize e2: _: Δ = Δ0
+  intro agr wf h; induction agr generalizing Γ Δ A <;> try trivial
+  case ex => cases e2
+  case im tyA agr ih =>
+    cases e1; cases e2
+    constructor
+    . apply tyA.substitution agr.toStatic
+    . apply h agr
+  case wk_im agr _ =>
+    cases e1; cases e2
+    apply h agr
+  case wk_ex => cases e2
+  case conv_im ih =>
+    cases e1; cases e2
+    apply ih rfl rfl wf h
+  case conv_ex => cases e2
+
 lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
     Γ ;; Δ ⊢ m : A -> AgreeSubst σ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢ m.[σ] : A.[σ] := by
   intro ty agr; induction ty using
@@ -283,9 +335,192 @@ lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
     rw[show B.[m.[σ] .: σ] = B.[up σ].[m.[σ]/] by asimp] at tyn
     have ty := Typed.tup_ex mrg tyS tym tyn; assumption
   case proj_im A B C m n s sA sC iC mrg tyC tym ext tyn ihm ihn =>
+    have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
+    have wf := tyn.toWf
     have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
     cases ext with
     | extend =>
+      rcases wf with _ | _ | ⟨tyB, wf⟩
+      rcases wf with _ | ⟨tyA, _⟩
+      replace tyC := tyC.substitution (agr.toStatic.cons tyS); asimp at tyC
+      replace tym := ihm agr1; asimp at tym
+      replace tyn := ihn ((agr2.ex tyA).im tyB); asimp at tyn
+      rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
+      apply Typed.proj_im
+      . assumption
+      . assumption
+      . assumption
+      . apply Ext.extend
+      . asimp; assumption
+    | weaken =>
+      rcases wf with _ | _ | ⟨tyB, wf⟩
+      rcases wf with _ | _ | ⟨tyA, _⟩
+      replace tyC := tyC.substitution (agr.toStatic.cons tyS); asimp at tyC
+      replace tym := ihm agr1; asimp at tym
+      replace tyn := ihn ((agr2.im tyA).im tyB); asimp at tyn
+      rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
+      apply Typed.proj_im
+      . assumption
+      . assumption
+      . assumption
+      . apply Ext.weaken; assumption
+      . asimp; assumption
+  case proj_ex C m n s sA sB sC i mrg tyC tym ext1 ext2 tyn ihm ihn =>
+    have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
+    have wf := tyn.toWf
+    have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
+    cases ext1 with
+    | extend =>
+      cases ext2 with
+      | extend =>
+        rcases wf with _ | ⟨tyB, wf⟩
+        rcases wf with _ | ⟨tyA, _⟩
+        replace tyC := tyC.substitution (agr.toStatic.cons tyS); asimp at tyC
+        replace tym := ihm agr1; asimp at tym
+        replace tyn := ihn ((agr2.ex tyA).ex tyB); asimp at tyn
+        rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
+        apply Typed.proj_ex
+        . assumption
+        . assumption
+        . assumption
+        . apply Ext.extend
+        . apply Ext.extend
+        . asimp; assumption
+      | weaken =>
+        rcases wf with _ | _ | ⟨tyB, wf⟩
+        rcases wf with _ | ⟨tyA, _⟩
+        replace tyC := tyC.substitution (agr.toStatic.cons tyS); asimp at tyC
+        replace tym := ihm agr1; asimp at tym
+        replace tyn := ihn ((agr2.ex tyA).im tyB); asimp at tyn
+        rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
+        apply Typed.proj_ex
+        . assumption
+        . assumption
+        . assumption
+        . apply Ext.extend
+        . apply Ext.weaken; assumption
+        . asimp; assumption
+    | weaken =>
+      cases ext2 with
+      | extend =>
+        rcases wf with _ | ⟨tyB, wf⟩
+        rcases wf with _ | _ | ⟨tyA, _⟩
+        replace tyC := tyC.substitution (agr.toStatic.cons tyS); asimp at tyC
+        replace tym := ihm agr1; asimp at tym
+        replace tyn := ihn ((agr2.im tyA).ex tyB); asimp at tyn
+        rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
+        apply Typed.proj_ex
+        . assumption
+        . assumption
+        . assumption
+        . apply Ext.weaken; assumption
+        . apply Ext.extend
+        . asimp; assumption
+      | weaken =>
+        rcases wf with _ | _ | ⟨tyB, wf⟩
+        rcases wf with _ | _ | ⟨tyA, _⟩
+        replace tyC := tyC.substitution (agr.toStatic.cons tyS); asimp at tyC
+        replace tym := ihm agr1; asimp at tym
+        replace tyn := ihn ((agr2.im tyA).im tyB); asimp at tyn
+        rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
+        apply Typed.proj_ex
+        . assumption
+        . assumption
+        . assumption
+        . apply Ext.weaken; assumption
+        . apply Ext.weaken; assumption
+        . asimp; assumption
+  case tt h ih => constructor <;> aesop (rule_sets := [subst])
+  case ff h ih => constructor <;> aesop (rule_sets := [subst])
+  case ite A m n1 n2 s i mrg tyA tym tyn1 tyn2 ihm ihn1 ihn2 =>
+    have ⟨s, i, _, tyb⟩ := tyA.ctx_inv
+    have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg
+    specialize ihm agr1; asimp at ihm
+    specialize ihn1 agr2; asimp at ihn1
+    specialize ihn2 agr2; asimp at ihn2
+    replace tyA := tyA.substitution (agr.toStatic.cons tyb); asimp at tyA
+    rw[show A.[.tt .: σ] = A.[up σ].[.tt/] by asimp] at ihn1
+    rw[show A.[.ff .: σ] = A.[up σ].[.ff/] by asimp] at ihn2
+    have ty := Typed.ite mrg tyA ihm ihn1 ihn2; asimp at ty
+    assumption
+  case rw A B m n a b s i tyA tym tyn ih =>
+    have ⟨_, _, _, tyI⟩ := tyA.ctx_inv
+    have ⟨_, _, _, tyB⟩ := tyI.ctx_inv
+    replace tyA := tyA.substitution ((agr.toStatic.cons tyB).cons tyI); asimp at tyA
+    replace tym := ih agr; asimp at tym
+    replace tyn := tyn.substitution agr.toStatic; asimp at tyn
+    simp[<-SubstLemmas.subst_comp] at tyA
+    rw[show A.[a.[σ].rfl .: a.[σ] .: σ]
+          = A.[upn 2 σ].[.rfl a.[σ],a.[σ]/]
+         by asimp] at tym
+    have := Typed.rw tyA tym tyn
+    asimp at this; assumption
+  case conv eq tym tyB ih =>
+    replace tyB := tyB.substitution agr.toStatic
+    replace tym := ih agr
+    apply Typed.conv
+    . apply Static.Conv.subst _ eq
+    . assumption
+    . assumption
+  case nil agr => apply agr.wf_nil
+  case ex agr => apply agr.wf_ex <;> aesop
+  case im agr => apply agr.wf_im <;> aesop
 
-      sorry
-    | weaken => sorry
+lemma Typed.subst_im {Γ} {Δ : Ctx Srt} {A B m n} :
+    A :: Γ ;; _: Δ ⊢ m : B ->
+    Γ ⊢ n : A ->
+    Γ ;; Δ ⊢ m.[n/] : B.[n/] := by
+  intro tym tyn
+  have wf := tym.toWf; cases wf
+  apply tym.substitution
+  apply AgreeSubst.wk_im
+  . asimp; assumption
+  . apply AgreeSubst.refl; assumption
+
+lemma Typed.subst_ex {Γ} {Δ1 Δ2 Δ : Ctx Srt} {A B m n s} :
+    Δ2 !≤ s -> Merge Δ1 Δ2 Δ ->
+    A :: Γ ;; A :⟨s⟩ Δ1 ⊢ m : B ->
+    Γ ;; Δ2 ⊢ n : A ->
+    Γ ;; Δ ⊢ m.[n/] : B.[n/] := by
+  intro lw mrg tym tyn
+  have wf := tym.toWf; cases wf
+  apply tym.substitution
+  apply AgreeSubst.wk_ex
+  . apply mrg.sym
+  . assumption
+  . asimp; assumption
+  . apply AgreeSubst.refl; assumption
+
+lemma Typed.esubst_im {Γ} {Δ : Ctx Srt} {A B B' m m' n} :
+    m' = m.[n/] ->
+    B' = B.[n/] ->
+    A :: Γ ;; _: Δ ⊢ m : B ->
+    Γ ⊢ n : A ->
+    Γ ;; Δ ⊢ m' : B' := by
+  intros; subst_vars
+  apply Typed.subst_im <;> assumption
+
+lemma Typed.esubst_ex {Γ} {Δ1 Δ2 Δ : Ctx Srt} {A B B' m m' n s} :
+    m' = m.[n/] ->
+    B' = B.[n/] ->
+    Δ2 !≤ s -> Merge Δ1 Δ2 Δ ->
+    A :: Γ ;; A :⟨s⟩ Δ1 ⊢ m : B ->
+    Γ ;; Δ2 ⊢ n : A ->
+    Γ ;; Δ ⊢ m' : B' := by
+  intros; subst_vars
+  apply Typed.subst_ex <;> assumption
+
+lemma Typed.ctx_conv_im {Γ} {Δ : Ctx Srt} {A B C m s i} :
+    B === A ->
+    Γ ⊢ B : .srt s i ->
+    A :: Γ ;; _: Δ ⊢ m : C ->
+    B :: Γ ;; _: Δ ⊢ m : C := by
+  intro eq tyB tym
+  have wf := tym.toWf
+  rcases wf with _ | _ | ⟨tyA, wf⟩
+  replace tym : B :: Γ ;; _: Δ ⊢ m.[ids] : C.[ids] := by
+    apply tym.substitution
+    apply AgreeSubst.conv_im <;> try assumption
+    . asimp; apply tyA.weaken tyB
+    . apply AgreeSubst.refl; constructor <;> assumption
+  asimp at tym; assumption

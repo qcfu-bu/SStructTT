@@ -250,5 +250,4 @@ lemma Typed.conv_ctx {Γ : Ctx Srt} {A B C m s i} :
     . apply AgreeSubst.conv <;> try assumption
       . asimp; apply tyA.weaken tyB
       . apply AgreeSubst.refl; constructor <;> assumption
-  asimp at tym
-  exact tym
+  asimp at tym; assumption
