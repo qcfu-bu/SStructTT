@@ -5,7 +5,7 @@ namespace Dynamic
 variable {Srt : Type} [inst : SStruct Srt]
 
 abbrev Ctx Srt := List (Tm Srt × Rlv × Srt)
-notation:max m " :⟨" r ", " s "⟩ " Δ:81 => (m, r, s) :: Δ
+notation:max A " :⟨" r ", " s "⟩ " Δ:81 => List.cons (A, r, s) Δ
 
 @[scoped aesop safe [constructors]]
 inductive Merge : Ctx Srt -> Ctx Srt -> Ctx Srt -> Prop where

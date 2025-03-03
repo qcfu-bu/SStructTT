@@ -90,8 +90,6 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
   | rw_elim A m n :
     Step (.rw A m (.rfl n)) m
 
-abbrev StarStep := Star (@Step Srt)
-abbrev ConvStep := Conv (@Step Srt)
-infix:50 " ~> " => Step
-infix:50 " ~>* " => StarStep
-infix:50 " === " => ConvStep
+notation:50 m:50 " ~> " n:50 => Step m n
+notation:50 m:50 " ~>* " n:50 => ARS.Star Step m n
+notation:50 m:50 " === " n:50 => ARS.Conv Step m n
