@@ -77,7 +77,7 @@ inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop 
 
   | ite {Γ Δ1 Δ2 Δ A m n1 n2 s i} :
     Merge Δ1 Δ2 Δ ->
-    (.bool :: Γ) ⊢ A : .srt s i ->
+    .bool :: Γ ⊢ A : .srt s i ->
     Typed Γ Δ1 m .bool ->
     Typed Γ Δ2 n1 A.[.tt/] ->
     Typed Γ Δ2 n2 A.[.ff/] ->
