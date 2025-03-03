@@ -9,9 +9,9 @@ notation:max m " :⟨" s "⟩ " Δ:81 => some (m, s) :: Δ
 notation:max "_:" Δ:81 => none :: Δ
 
 inductive Ext : Tm Srt -> Srt -> Ctx Srt -> Ctx Srt -> Prop where
-  | ex {A s Δ} :
+  | extend {A s Δ} :
     Ext A s Δ (some (A, s) :: Δ)
-  | wk {A s Δ} :
+  | weaken {A s Δ} :
     s ∈ weaken_set ->
     Ext A s Δ (none :: Δ)
 

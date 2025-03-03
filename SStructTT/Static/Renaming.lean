@@ -75,8 +75,7 @@ lemma AgreeRen.wf_cons {Γ Γ' : Ctx Srt} {A ξ} :
 
 lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     Γ ⊢ m : A -> AgreeRen ξ Γ Γ' -> Γ' ⊢ m.[ren ξ] : A.[ren ξ] := by
-  intro ty agr; induction ty
-  using
+  intro ty agr; induction ty using
     @Typed.rec _ inst
       (motive_2 := fun Γ _ => ∀ Γ' ξ, AgreeRen ξ Γ Γ' -> Γ' ⊢)
   generalizing Γ' ξ <;> asimp

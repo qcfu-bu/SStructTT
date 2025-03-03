@@ -231,3 +231,61 @@ lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ} :
       . assumption
       . apply AgreeSubst.conv_im <;> assumption
       . apply AgreeSubst.conv_ex <;> assumption
+
+lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
+    Γ ;; Δ ⊢ m : A -> AgreeSubst σ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢ m.[σ] : A.[σ] := by
+  intro ty agr; induction ty using
+    @Typed.rec _ inst
+      (motive_2 := fun Γ Δ _ => ∀ {Γ' Δ' σ}, AgreeSubst σ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢)
+  generalizing Γ' Δ' σ <;> asimp
+  case var wf hs ih => apply agr.has (ih agr) hs
+  case lam_im lw tyA tym ih =>
+    apply Typed.lam_im
+    . apply agr.lower lw
+    . apply tyA.substitution agr.toStatic
+    . apply ih; constructor <;> assumption
+  case lam_ex A B m s sA i lw tyA ext tym ih =>
+    cases ext with
+    | extend =>
+      apply Typed.lam_ex
+      . apply agr.lower lw
+      . apply tyA.substitution agr.toStatic
+      . apply Ext.extend
+      . apply ih; constructor <;> assumption
+    | weaken wk =>
+      apply Typed.lam_ex
+      . apply agr.lower lw
+      . apply tyA.substitution agr.toStatic
+      . apply Ext.weaken wk
+      . apply ih; constructor <;> assumption
+  case app_im tym tyn ih =>
+    replace tym := ih agr; asimp at tym
+    replace tyn := tyn.substitution agr.toStatic
+    have ty := Typed.app_im tym tyn
+    asimp at ty; assumption
+  case app_ex mrg tym tyn ihm ihn =>
+    have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
+    specialize ihm agr1; asimp at ihm
+    specialize ihn agr2
+    have ty := Typed.app_ex mrg ihm ihn
+    asimp at ty; assumption
+  case tup_im B m n s i tyS tym tyn ihm =>
+    replace tyS := tyS.substitution agr.toStatic; asimp at tyS
+    replace tym := ihm agr; asimp at tym
+    replace tyn := tyn.substitution agr.toStatic; asimp at tyn
+    rw[show B.[m.[σ] .: σ] = B.[up σ].[m.[σ]/] by asimp] at tyn
+    have ty := Typed.tup_im tyS tym tyn; assumption
+  case tup_ex B m n s i mrg tyS tym tyn ihm ihn =>
+    have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
+    replace tyS := tyS.substitution agr.toStatic; asimp at tyS
+    replace tym := ihm agr1; asimp at tym
+    replace tyn := ihn agr2; asimp at tyn
+    rw[show B.[m.[σ] .: σ] = B.[up σ].[m.[σ]/] by asimp] at tyn
+    have ty := Typed.tup_ex mrg tyS tym tyn; assumption
+  case proj_im A B C m n s sA sC iC mrg tyC tym ext tyn ihm ihn =>
+    have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
+    cases ext with
+    | extend =>
+
+      sorry
+    | weaken => sorry

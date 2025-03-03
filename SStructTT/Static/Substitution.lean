@@ -94,9 +94,9 @@ lemma AgreeSubst.wf_cons {Γ Γ' : Ctx Srt} {A σ} :
 
 lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     Γ ⊢ m : A -> AgreeSubst σ Γ Γ' -> Γ' ⊢ m.[σ] : A.[σ] := by
-  intro ty
-  induction ty
-  using @Typed.rec _ inst (motive_2 := fun Γ _ => ∀ Γ' σ, AgreeSubst σ Γ Γ' -> Γ' ⊢)
+  intro ty; induction ty using
+    @Typed.rec _ inst
+      (motive_2 := fun Γ _ => ∀ Γ' σ, AgreeSubst σ Γ Γ' -> Γ' ⊢)
   generalizing Γ' σ with
   | srt _ _ _ ih =>
     intro agr; asimp

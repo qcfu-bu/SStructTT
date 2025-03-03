@@ -167,33 +167,33 @@ lemma Typed.toWf {Γ} {Δ : Ctx Srt} {A m} :
     apply Wf.merge mrg ih1 ih2
   case proj_im mrg _ _ ext _ ih1 ih2 =>
     cases ext with
-    | ex =>
+    | extend =>
       rcases ih2 with _ | _ | ⟨_, ih2⟩
       rcases ih2 with _ | ⟨_, ih2⟩
       apply Wf.merge mrg ih1 ih2
-    | wk =>
+    | weaken =>
       rcases ih2 with _ | _ | ⟨_, ih2⟩
       rcases ih2 with _ | _ | ⟨_, ih2⟩
       apply Wf.merge mrg ih1 ih2
   case proj_ex mrg _ _ ext1 ext2 _ ih1 ih2 =>
     cases ext1 with
-    | ex =>
+    | extend =>
       cases ext2 with
-      | ex =>
+      | extend =>
         rcases ih2 with _ | ⟨_, ih2⟩
         rcases ih2 with _ | ⟨_, ih2⟩
         apply Wf.merge mrg ih1 ih2
-      | wk =>
+      | weaken =>
         rcases ih2 with _ | _ | ⟨_, ih2⟩
         rcases ih2 with _ | ⟨_, ih2⟩
         apply Wf.merge mrg ih1 ih2
-    | wk =>
+    | weaken =>
       cases ext2 with
-      | ex =>
+      | extend =>
         rcases ih2 with _ | ⟨_, ih2⟩
         rcases ih2 with _ | _ | ⟨_, ih2⟩
         apply Wf.merge mrg ih1 ih2
-      | wk =>
+      | weaken =>
         rcases ih2 with _ | _ | ⟨_, ih2⟩
         rcases ih2 with _ | _ | ⟨_, ih2⟩
         apply Wf.merge mrg ih1 ih2

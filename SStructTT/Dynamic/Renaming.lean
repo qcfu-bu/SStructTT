@@ -188,8 +188,7 @@ lemma AgreeRen.split {Γ Γ'} {Δ Δ' Δ1 Δ2 : Ctx Srt} {ξ} :
 
 lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
     Γ ;; Δ ⊢ m : A -> AgreeRen ξ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢ m.[ren ξ] : A.[ren ξ] := by
-  intro ty agr; induction ty
-  using
+  intro ty agr; induction ty using
     @Typed.rec _ inst
       (motive_2 := fun Γ Δ _ => ∀ {Γ' Δ' ξ}, AgreeRen ξ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢)
   generalizing Γ' Δ' ξ <;> asimp
@@ -204,18 +203,18 @@ lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
       asimp at ih; assumption
   case lam_ex Γ Δ Δ1 A B m s sA i lw tyA ext tym ih =>
     cases ext with
-    | ex =>
+    | extend =>
       constructor
       . apply agr.lower lw
       . apply tyA.renaming agr.toStatic
-      . apply Ext.ex
+      . apply Ext.extend
       . specialize ih (agr.ex tyA)
         asimp at ih; assumption
-    | wk h =>
+    | weaken h =>
       constructor
       . apply agr.lower lw
       . apply tyA.renaming agr.toStatic
-      . apply Ext.wk h
+      . apply Ext.weaken h
       . specialize ih (agr.im tyA)
         asimp at ih; assumption
   case app_im Γ Δ A B m n s tym tyn ih =>
@@ -245,7 +244,7 @@ lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
     have wf := tyn.toWf
     have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg
     cases ext with
-    | ex =>
+    | extend =>
       rcases wf with _ | _ | ⟨tyB, wf⟩
       rcases wf with _ | ⟨tyA, _⟩
       replace tyC := tyC.renaming (agr.toStatic.cons tyS); asimp at tyC
@@ -258,7 +257,7 @@ lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
       have ext : Ext A.[ren ξ] sA Δ2' (A.[ren ξ] :⟨sA⟩ Δ2') := by constructor
       have ty := Typed.proj_im mrg tyC tym ext tyn; asimp at ty
       assumption
-    | wk h =>
+    | weaken h =>
       rcases wf with _ | _ | ⟨tyB, wf⟩
       rcases wf with _ | _ | ⟨tyA, _⟩
       replace tyC := tyC.renaming (agr.toStatic.cons tyS); asimp at tyC
@@ -277,9 +276,9 @@ lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
     have wf := tyn.toWf
     have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg
     cases ext1 with
-    | ex =>
+    | extend =>
       cases ext2 with
-      | ex =>
+      | extend =>
         rcases wf with _ | ⟨tyB, wf⟩
         rcases wf with _ | ⟨tyA, _⟩
         replace tyC := tyC.renaming (agr.toStatic.cons tyS); asimp at tyC
@@ -294,7 +293,7 @@ lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
         have ext2 : Ext B.[up (ren ξ)] sB Δx (B.[up (ren ξ)] :⟨sB⟩ Δx) := by constructor
         have ty := Typed.proj_ex mrg tyC tym ext1 ext2 tyn; asimp at ty
         assumption
-      | wk =>
+      | weaken =>
         rcases wf with _ | _ | ⟨tyB, wf⟩
         rcases wf with _ | ⟨tyA, _⟩
         replace tyC := tyC.renaming (agr.toStatic.cons tyS); asimp at tyC
@@ -310,9 +309,9 @@ lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
           constructor; assumption
         have ty := Typed.proj_ex mrg tyC tym ext1 ext2 tyn; asimp at ty
         assumption
-    | wk =>
+    | weaken =>
       cases ext2 with
-      | ex =>
+      | extend =>
         rcases wf with _ | ⟨tyB, wf⟩
         rcases wf with _ | _ | ⟨tyA, _⟩
         replace tyC := tyC.renaming (agr.toStatic.cons tyS); asimp at tyC
@@ -327,7 +326,7 @@ lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
         have ext2 : Ext B.[up (ren ξ)] sB Δx (B.[up (ren ξ)] :⟨sB⟩ Δx) := by constructor
         have ty := Typed.proj_ex mrg tyC tym ext1 ext2 tyn; asimp at ty
         assumption
-      | wk =>
+      | weaken =>
         rcases wf with _ | _ | ⟨tyB, wf⟩
         rcases wf with _ | _ | ⟨tyA, _⟩
         replace tyC := tyC.renaming (agr.toStatic.cons tyS); asimp at tyC
