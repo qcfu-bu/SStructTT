@@ -23,7 +23,7 @@ theorem Typed.preservation {A m m' : Tm Srt} :
     case beta_im =>
       replace ⟨sA, tym⟩ := tym.lam_im_inv
       apply tym.subst_im tyn
-  case app_ex Δ1 Δ2 Δ A B m n s mrg tym tyn ihm ihn =>
+  case app_ex mrg tym tyn ihm ihn =>
     subst_vars; cases mrg; cases st
     case app_ex_M st =>
       have tym' := ihm rfl rfl st
@@ -45,4 +45,17 @@ theorem Typed.preservation {A m m' : Tm Srt} :
       cases rs with
       | extend => apply tym.subst_ex (Lower.nil sA) Merge.nil tyn
       | weaken => apply tym.subst_im tyn.toStatic
+  case tup_im tyS tym tyn ih =>
+    subst_vars; cases st
+    case tup_im_M st =>
+      have tym' := ih rfl rfl st
+      have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
+      constructor
+      . assumption
+      . assumption
+      . apply Static.Typed.conv
+        apply Conv.subst1
+        apply Star.conv (st.toStatic tym.toStatic)
+        assumption
+        apply tyB.subst tym'.toStatic
   all_goals sorry
