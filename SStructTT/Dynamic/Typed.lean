@@ -14,14 +14,14 @@ inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop 
   | lam_im {Γ Δ A B m s sA iA} :
     Δ !≤ s ->
     Γ ⊢ A : .srt sA iA ->
-    Typed (A :: Γ) (_: Δ) m B ->
+    Typed (A :: Γ) (A :⟨.im, sA⟩ Δ) m B ->
     Typed Γ Δ (.lam A m .im s) (.pi A B .im s)
 
-  | lam_ex {Γ Δ Δ1 A B m s sA iA} :
+  | lam_ex {Γ Δ A B m rA s sA iA} :
+    RSrt rA sA ->
     Δ !≤ s ->
     Γ ⊢ A : .srt sA iA ->
-    Ext A sA Δ Δ1 ->
-    Typed (A :: Γ) Δ1 m B ->
+    Typed (A :: Γ) (A :⟨rA, sA⟩ Δ) m B ->
     Typed Γ Δ (.lam A m .ex s) (.pi A B .ex s)
 
   | app_im {Γ Δ A B m n s} :
@@ -48,31 +48,31 @@ inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop 
     Typed Γ Δ2 n B.[m/] ->
     Typed Γ Δ (.tup m n .ex s) (.sig A B .ex s)
 
-  | proj_im {Γ Δ1 Δ2 Δ3 Δ A B C m n s sA sC iC} :
+  | proj_im {Γ Δ1 Δ2 Δ A B C m n rA s sA sB sC iC} :
+    RSrt rA sA ->
     Merge Δ1 Δ2 Δ ->
     .sig A B .im s :: Γ ⊢ C : .srt sC iC ->
     Typed Γ Δ1 m (.sig A B .im s) ->
-    Ext A sA Δ2 Δ3 ->
-    Typed (B :: A :: Γ) (_: Δ3) n C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
+    Typed (B :: A :: Γ) (B :⟨.im, sB⟩ A :⟨rA, sA⟩ Δ2) n C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
     Typed Γ Δ (.proj C m n .im) C.[m/]
 
-  | proj_ex {Γ Δ1 Δ2 Δ3 Δ4 Δ A B C m n s sA sB sC iC} :
+  | proj_ex {Γ Δ1 Δ2 Δ A B C m n rA rB s sA sB sC iC} :
+    RSrt rA sA ->
+    RSrt rB sB ->
     Merge Δ1 Δ2 Δ ->
     .sig A B .ex s :: Γ ⊢ C : .srt sC iC ->
     Typed Γ Δ1 m (.sig A B .ex s) ->
-    Ext A sA Δ2 Δ3 ->
-    Ext B sB Δ3 Δ4 ->
-    Typed (B :: A :: Γ) Δ4 n C.[.tup (.var 1) (.var 0) .ex s .: shift 2] ->
+    Typed (B :: A :: Γ) (B :⟨rB, sB⟩ A :⟨rA, sA⟩ Δ2) n C.[.tup (.var 1) (.var 0) .ex s .: shift 2] ->
     Typed Γ Δ (.proj C m n .ex) C.[m/]
 
   | tt {Γ Δ} :
     Wf Γ Δ ->
-    Δ.Forall (. = none) ->
+    Δ.Forall (∃ A s, . = (A, .im, s)) ->
     Typed Γ Δ .tt .bool
 
   | ff {Γ Δ} :
     Wf Γ Δ ->
-    Δ.Forall (. = none) ->
+    Δ.Forall (∃ A s, . = (A, .im, s)) ->
     Typed Γ Δ .ff .bool
 
   | ite {Γ Δ1 Δ2 Δ A m n1 n2 s i} :
@@ -97,14 +97,10 @@ inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop 
 
 inductive Wf : Static.Ctx Srt -> Dynamic.Ctx Srt -> Prop where
   | nil : Wf [] []
-  | ex {Γ Δ A s i} :
+  | cons {Γ Δ A r s i} :
     Γ ⊢ A : .srt s i ->
     Wf Γ Δ ->
-    Wf (A :: Γ) (A :⟨s⟩ Δ)
-  | im {Γ Δ A s i} :
-    Γ ⊢ A : .srt s i ->
-    Wf Γ Δ ->
-    Wf (A :: Γ) (_: Δ)
+    Wf (A :: Γ) (A :⟨r, s⟩ Δ)
 end
 
 notation:50 Γ:50 " ;; " Δ:51 " ⊢ " m:51 " : " A:51 => Typed Γ Δ m A
@@ -154,48 +150,42 @@ lemma Typed.toWf {Γ} {Δ : Ctx Srt} {A m} :
     cases ih
     aesop
   case lam_ex ih =>
-    cases ih
-    case ex ext _ =>
-      cases ext
-      assumption
-    case im ext _ =>
-      cases ext
-      assumption
+    cases ih; assumption
   case app_ex mrg _ _ ih1 ih2 =>
     apply Wf.merge mrg ih1 ih2
   case tup_ex mrg _ _ _ ih1 ih2 =>
     apply Wf.merge mrg ih1 ih2
-  case proj_im mrg _ _ ext _ ih1 ih2 =>
-    cases ext with
-    | extend =>
-      rcases ih2 with _ | _ | ⟨_, ih2⟩
+  case proj_im rs mrg _ _ _ ih1 ih2 =>
+    cases rs with
+    | ex =>
+      rcases ih2 with _ | ⟨_, ih2⟩
       rcases ih2 with _ | ⟨_, ih2⟩
       apply Wf.merge mrg ih1 ih2
-    | weaken =>
-      rcases ih2 with _ | _ | ⟨_, ih2⟩
-      rcases ih2 with _ | _ | ⟨_, ih2⟩
+    | im =>
+      rcases ih2 with _ | ⟨_, ih2⟩
+      rcases ih2 with _ | ⟨_, ih2⟩
       apply Wf.merge mrg ih1 ih2
-  case proj_ex mrg _ _ ext1 ext2 _ ih1 ih2 =>
-    cases ext1 with
-    | extend =>
-      cases ext2 with
-      | extend =>
+  case proj_ex rs1 rs2 mrg _ _ _ ih1 ih2 =>
+    cases rs1 with
+    | ex =>
+      cases rs2 with
+      | ex =>
         rcases ih2 with _ | ⟨_, ih2⟩
         rcases ih2 with _ | ⟨_, ih2⟩
         apply Wf.merge mrg ih1 ih2
-      | weaken =>
-        rcases ih2 with _ | _ | ⟨_, ih2⟩
+      | im =>
+        rcases ih2 with _ | ⟨_, ih2⟩
         rcases ih2 with _ | ⟨_, ih2⟩
         apply Wf.merge mrg ih1 ih2
-    | weaken =>
-      cases ext2 with
-      | extend =>
+    | im =>
+      cases rs2 with
+      | ex =>
         rcases ih2 with _ | ⟨_, ih2⟩
-        rcases ih2 with _ | _ | ⟨_, ih2⟩
+        rcases ih2 with _ | ⟨_, ih2⟩
         apply Wf.merge mrg ih1 ih2
-      | weaken =>
-        rcases ih2 with _ | _ | ⟨_, ih2⟩
-        rcases ih2 with _ | _ | ⟨_, ih2⟩
+      | im =>
+        rcases ih2 with _ | ⟨_, ih2⟩
+        rcases ih2 with _ | ⟨_, ih2⟩
         apply Wf.merge mrg ih1 ih2
   case ite mrg _ _ _ _ ih1 ih2 _ =>
     apply Wf.merge mrg ih1 ih2
@@ -207,8 +197,7 @@ lemma Wf.toStatic {Γ} {Δ : Ctx Srt} : Γ ;; Δ ⊢ -> Γ ⊢ := by
 lemma Wf.hasStatic {Γ} {Δ : Ctx Srt} {A x s} :
     Γ ;; Δ ⊢ -> Dynamic.Has Δ x s A -> Static.Has Γ x A := by
   intro wf hs; induction wf generalizing x s A <;> try trivial
-  case ex => cases hs; constructor
-  case im ih => cases hs; constructor; aesop
+  cases hs <;> aesop (add safe Static.Has)
 
 lemma Typed.toStatic {Γ} {Δ : Ctx Srt} {m A} :
     Γ ;; Δ ⊢ m : A -> Γ ⊢ m : A := by

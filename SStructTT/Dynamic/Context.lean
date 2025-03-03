@@ -4,16 +4,8 @@ import SStructTT.Defs.Syntax
 namespace Dynamic
 variable {Srt : Type} [inst : SStruct Srt]
 
-abbrev Ctx Srt := List (Option (Tm Srt × Srt))
-notation:max m " :⟨" s "⟩ " Δ:81 => some (m, s) :: Δ
-notation:max "_:" Δ:81 => none :: Δ
-
-inductive Ext : Tm Srt -> Srt -> Ctx Srt -> Ctx Srt -> Prop where
-  | extend {A s Δ} :
-    Ext A s Δ (some (A, s) :: Δ)
-  | weaken {A s Δ} :
-    s ∈ weaken_set ->
-    Ext A s Δ (none :: Δ)
+abbrev Ctx Srt := List (Tm Srt × Rlv × Srt)
+notation:max m " :⟨" r ", " s "⟩ " Δ:81 => (m, r, s) :: Δ
 
 @[scoped aesop safe [constructors]]
 inductive Merge : Ctx Srt -> Ctx Srt -> Ctx Srt -> Prop where
@@ -21,16 +13,21 @@ inductive Merge : Ctx Srt -> Ctx Srt -> Ctx Srt -> Prop where
   | contra {Δ1 Δ2 Δ} A s :
     s ∈ contra_set ->
     Merge Δ1 Δ2 Δ ->
-    Merge (A :⟨s⟩ Δ1) (A :⟨s⟩ Δ2) (A :⟨s⟩ Δ)
+    Merge (A :⟨.ex, s⟩ Δ1) (A :⟨.ex, s⟩ Δ2) (A :⟨.ex, s⟩ Δ)
   | left {Δ1 Δ2 Δ} A s :
     Merge Δ1 Δ2 Δ ->
-    Merge (A :⟨s⟩ Δ1) (_: Δ2) (A :⟨s⟩ Δ)
+    Merge (A :⟨.ex, s⟩ Δ1) (A :⟨.im, s⟩ Δ2) (A :⟨.ex, s⟩ Δ)
   | right {Δ1 Δ2 Δ} A s :
     Merge Δ1 Δ2 Δ ->
-    Merge (_: Δ1) (A :⟨s⟩ Δ2) (A :⟨s⟩ Δ)
-  | im {Δ1 Δ2 Δ} :
+    Merge (A :⟨.im, s⟩ Δ1) (A :⟨.ex, s⟩ Δ2) (A :⟨.ex, s⟩ Δ)
+  | im {Δ1 Δ2 Δ} A s :
     Merge Δ1 Δ2 Δ ->
-    Merge (_: Δ1) (_: Δ2) (_: Δ)
+    Merge (A :⟨.im, s⟩ Δ1) (A :⟨.im, s⟩ Δ2) (A :⟨.im, s⟩ Δ)
+
+@[scoped aesop safe [constructors]]
+inductive RSrt : Rlv -> Srt -> Prop where
+  | ex {s} : RSrt .ex s
+  | im {s} : s ∈ weaken_set -> RSrt .im s
 
 @[scoped aesop safe [constructors]]
 inductive Lower : Ctx Srt -> Srt -> Prop where
@@ -38,21 +35,21 @@ inductive Lower : Ctx Srt -> Srt -> Prop where
   | ex {Δ A s s'} :
     s' ≤ s ->
     Lower Δ s ->
-    Lower (A :⟨s'⟩ Δ) s
-  | im {Δ s} :
+    Lower (A :⟨.ex, s'⟩ Δ) s
+  | im {Δ A s s'} :
     Lower Δ s ->
-    Lower (_: Δ) s
+    Lower (A :⟨.im, s'⟩ Δ) s
 
 notation Δ:60 " !≤ " s:60 => Lower Δ s
 
 @[scoped aesop safe [constructors]]
 inductive Has : Ctx Srt -> Var -> Srt -> Tm Srt -> Prop where
   | nil {Δ A s} :
-    Δ.Forall (. = none) ->
-    Has (A :⟨s⟩ Δ) 0 s A.[shift 1]
-  | cons {Δ A x s} :
+    Δ.Forall (∃ A s, . = (A, .im, s)) ->
+    Has (A :⟨.ex, s⟩ Δ) 0 s A.[shift 1]
+  | cons {Δ A B x s s'} :
     Has Δ x s A ->
-    Has (_: Δ) (x + 1) s A.[shift 1]
+    Has (B :⟨.im, s'⟩ Δ) (x + 1) s A.[shift 1]
 
 lemma Lower.split_s0 {Δ : Ctx Srt} :
     Δ !≤ s0 -> ∃ Δ1 Δ2, Δ1 !≤ s0 ∧ Δ2 !≤ s0 ∧ Merge Δ1 Δ2 Δ := by
@@ -66,17 +63,17 @@ lemma Lower.split_s0 {Δ : Ctx Srt} :
     have := inst.le_antisymm _ _ h (inst.s0_min s')
     subst_vars
     have ⟨Δ1, Δ2, l1, l2, mrg⟩ := ih rfl
-    exists A :⟨s0⟩ Δ1, A :⟨s0⟩ Δ2
+    exists A :⟨.ex, s0⟩ Δ1, A :⟨.ex, s0⟩ Δ2
     and_intros
     . constructor <;> assumption
     . constructor <;> assumption
     . constructor
       apply inst.s0_contra
       assumption
-  case im A _ s' ih =>
+  case im A s s' lw ih =>
     subst_vars
     have ⟨Δ1, Δ2, l1, l2, mrg⟩ := ih rfl
-    exists _: Δ1, _: Δ2
+    exists A :⟨.im, s'⟩ Δ1, A :⟨.im, s'⟩ Δ2
     and_intros
     . constructor; assumption
     . constructor; assumption
@@ -123,8 +120,8 @@ lemma Merge.sym {Δ1 Δ2 Δ : Ctx Srt} : Merge Δ1 Δ2 Δ -> Merge Δ2 Δ1 Δ :=
   intro mrg; induction mrg
   all_goals aesop (add safe Merge)
 
-lemma Merge.none {Δ1 Δ2 Δ : Ctx Srt} :
-    Merge Δ1 Δ2 Δ -> Δ1.Forall (. = none) -> Δ2 = Δ := by
+lemma Merge.implicit {Δ1 Δ2 Δ : Ctx Srt} :
+    Merge Δ1 Δ2 Δ -> Δ1.Forall (∃ A s, . = (A, .im, s)) -> Δ2 = Δ := by
   intro mrg h; induction mrg
   all_goals aesop
 
@@ -210,32 +207,32 @@ lemma Merge.split {Δ1 Δ2 Δ Δa Δb : Ctx Srt} :
     cases mrg2 with
     | contra _ _ _ mrg =>
       have ⟨Δc, mrg1, mrg2⟩ := ih mrg
-      exists A :⟨s⟩ Δc; aesop
+      exists A :⟨.ex, s⟩ Δc; aesop
     | left _ _ mrg =>
       have ⟨Δc, mrg1, mrg2⟩ := ih mrg
-      exists A :⟨s⟩ Δc; aesop
+      exists A :⟨.ex, s⟩ Δc; aesop
     | right _ _ mrg =>
       have ⟨Δc, mrg1, mrg2⟩ := ih mrg
-      exists A :⟨s⟩ Δc; aesop
+      exists A :⟨.ex, s⟩ Δc; aesop
   case left A s mrg ih =>
     cases mrg2 with
     | contra _ _ _ mrg =>
       have ⟨Δc, mrg1, mrg2⟩ := ih mrg
-      exists A :⟨s⟩ Δc; aesop
+      exists A :⟨.ex, s⟩ Δc; aesop
     | left _ _ mrg =>
       have ⟨Δc, mrg1, mrg2⟩ := ih mrg
-      exists A :⟨s⟩ Δc; aesop
+      exists A :⟨.ex, s⟩ Δc; aesop
     | right _ _ mrg =>
       have ⟨Δc, mrg1, mrg2⟩ := ih mrg
-      exists _: Δc; aesop
+      exists A :⟨.im, s⟩ Δc; aesop
   case right A s mrg ih =>
-    rcases mrg2 with _ | _ | _ | _ | ⟨mrg⟩
+    rcases mrg2 with _ | _ | _ | _ | ⟨_, _, mrg⟩
     have ⟨Δc, mrg1, mrg2⟩ := ih mrg
-    exists A :⟨s⟩ Δc; aesop
-  case im mrg ih =>
-    rcases mrg2 with _ | _ | _ | _ | ⟨mrg⟩
+    exists A :⟨.ex, s⟩ Δc; aesop
+  case im A s mrg ih =>
+    rcases mrg2 with _ | _ | _ | _ | ⟨_, _, mrg⟩
     have ⟨Δc, mrg1, mrg2⟩ := ih mrg
-    exists _: Δc; aesop
+    exists A :⟨.im, s⟩ Δc; aesop
 
 lemma Merge.distr {Δ1 Δ2 Δ Δ11 Δ12 Δ21 Δ22 : Ctx Srt} :
     Merge Δ1 Δ2 Δ ->
@@ -255,69 +252,69 @@ lemma Merge.distr {Δ1 Δ2 Δ Δ11 Δ12 Δ21 Δ22 : Ctx Srt} :
       cases mrg3 with
       | contra _ _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨s⟩ Δ1', A :⟨s⟩ Δ2'; aesop
+        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
       | left _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨s⟩ Δ1', A :⟨s⟩ Δ2'; aesop
+        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
       | right _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨s⟩ Δ1', A :⟨s⟩ Δ2'; aesop
+        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
     | left _ _ mrg2 =>
       cases mrg3 with
       | contra _ _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨s⟩ Δ1', A :⟨s⟩ Δ2'; aesop
+        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
       | left _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨s⟩ Δ1', _: Δ2'; aesop
+        exists A :⟨.ex, s⟩ Δ1', A :⟨.im, s⟩ Δ2'; aesop
       | right _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨s⟩ Δ1', A :⟨s⟩ Δ2'; aesop
+        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
     | right _ _ mrg2 =>
       cases mrg3 with
       | contra _ _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨s⟩ Δ1', A :⟨s⟩ Δ2'; aesop
+        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
       | left _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨s⟩ Δ1', A :⟨s⟩ Δ2'; aesop
+        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
       | right _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists _: Δ1', A :⟨s⟩ Δ2'; aesop
+        exists A :⟨.im, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
   case left A s mrg ih =>
     cases mrg2 with
     | contra _ _ _ mrg2 =>
       cases mrg3 with
-      | im mrg3 =>
+      | im _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨s⟩ Δ1', A :⟨s⟩ Δ2'; aesop
+        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
     | left _ _ mrg2 =>
       cases mrg3 with
-      | im mrg3 =>
+      | im _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨s⟩ Δ1', _: Δ2'; aesop
+        exists A :⟨.ex, s⟩ Δ1', A :⟨.im, s⟩ Δ2'; aesop
     | right _ _ mrg2 =>
       cases mrg3 with
-      | im mrg3 =>
+      | im _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists _: Δ1', A :⟨s⟩ Δ2'; aesop
+        exists A :⟨.im, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
   case right A s mrg ih =>
     cases mrg2 with
-    | im mrg2 =>
+    | im _ _ mrg2 =>
       cases mrg3 with
       | contra _ _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨s⟩ Δ1', A :⟨s⟩ Δ2'; aesop
+        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
       | left _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨s⟩ Δ1', _: Δ2'; aesop
+        exists A :⟨.ex, s⟩ Δ1', A :⟨.im, s⟩ Δ2'; aesop
       | right _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists _: Δ1', A :⟨s⟩ Δ2'; aesop
-  case im mrg ih =>
+        exists A :⟨.im, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
+  case im A s mrg ih =>
     cases mrg2 with
-    | im mrg2 =>
+    | im _ _ mrg2 =>
       cases mrg3 with
-      | im mrg3 =>
+      | im _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists _: Δ1', _: Δ2'; aesop
+        exists A :⟨.im, s⟩ Δ1', A :⟨.im, s⟩ Δ2'; aesop
