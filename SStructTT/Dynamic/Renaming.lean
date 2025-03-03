@@ -1,5 +1,6 @@
 import SStructTT.Static.Renaming
 import SStructTT.Dynamic.Typed
+open Static
 
 namespace Dynamic
 variable {Srt : Type} [inst : SStruct Srt]
@@ -249,7 +250,7 @@ lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
     replace tyB := tyB.renaming agr.toStatic
     replace tym := ih agr
     apply Typed.conv
-    . apply Static.Conv.subst _ eq
+    . apply Conv.subst _ eq
     . assumption
     . assumption
   case nil agr => apply agr.wf_nil

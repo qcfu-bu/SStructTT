@@ -1,5 +1,6 @@
 import SStructTT.Static.Substitution
 import SStructTT.Dynamic.Renaming
+open Static
 
 namespace Dynamic
 variable {Srt : Type} [inst : SStruct Srt]
@@ -113,8 +114,7 @@ lemma AgreeSubst.has {Γ Γ'} {Δ Δ' : Ctx Srt} {A x s σ} :
     | ex =>
       rcases hs with ⟨h⟩
       apply Typed.conv
-      . open Static in
-        apply Conv.subst _ (Conv.subst _ eq)
+      . apply Conv.subst _ (Conv.subst _ eq)
       . apply ih wf; constructor; assumption
       . assumption
 
@@ -341,7 +341,7 @@ lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
     replace tyB := tyB.substitution agr.toStatic
     replace tym := ih agr
     apply Typed.conv
-    . apply Static.Conv.subst _ eq
+    . apply Conv.subst _ eq
     . assumption
     . assumption
   case nil agr => apply agr.wf_nil
