@@ -4,7 +4,7 @@ open ARS
 namespace Static
 variable {Srt : Type} [inst : SStruct Srt]
 
-lemma Typed.pi0_inv {Γ : Ctx Srt} {A B T r s} :
+lemma Typed.pi_inv {Γ : Ctx Srt} {A B T r s} :
     Γ ⊢ .pi A B r s : T ->
     ∃ sB iB i, A :: Γ ⊢ B : .srt sB iB ∧ T === .srt s i := by
   generalize e: Tm.pi A B r s = x
@@ -133,7 +133,7 @@ theorem Typed.validity {Γ : Ctx Srt} {A m} :
     constructor <;> assumption
   case app ihm _ =>
     replace ⟨s, i, ihm⟩ := ihm
-    have ⟨s, i, j, tyB, eq⟩ := ihm.pi0_inv
+    have ⟨s, i, j, tyB, eq⟩ := ihm.pi_inv
     exists s, i
     apply Typed.esubst <;> try first | rfl | assumption
     asimp
@@ -183,7 +183,7 @@ lemma Typed.lam_inv {Γ : Ctx Srt} {A A' B m r r' s s'} :
   have ⟨_, _, eqA, eqB⟩ := Conv.pi_inj eq
   subst_vars; simp
   have ⟨s, i, tyP⟩ := ty.validity
-  have ⟨_, _, _, tyB, _⟩ := tyP.pi0_inv
+  have ⟨_, _, _, tyB, _⟩ := tyP.pi_inv
   have ⟨_, _, _, tyA'⟩ := tyB.ctx_inv
   have ⟨_, _, _, tyA⟩ := tym.ctx_inv
   replace tyB := Typed.conv_ctx eqA.sym tyA tyB

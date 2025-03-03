@@ -46,7 +46,7 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
       . apply ihm st
   case app tym tyn ihm ihn =>
     have ⟨_, _, tyP⟩ := tym.validity
-    have ⟨_, _, _, tyB, _⟩ := tyP.pi0_inv
+    have ⟨_, _, _, tyB, _⟩ := tyP.pi_inv
     intro st; cases st
     case app_M st =>
       apply Typed.app
@@ -296,3 +296,11 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m n} :
     intro st
     have tym := ihm st
     apply Typed.conv eq tym tyB
+
+theorem Typed.preservation' {Γ : Ctx Srt} {A m n} :
+    Γ ⊢ m : A -> m ~>* n -> Γ ⊢ n : A := by
+  intro ty rd
+  induction rd generalizing Γ A
+  case R => assumption
+  case SE rd st ih =>
+    apply (ih ty).preservation st
