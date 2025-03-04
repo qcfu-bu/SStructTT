@@ -6,6 +6,7 @@ open ARS Static
 namespace Dynamic
 variable {Srt : Type} [inst : SStruct Srt]
 
+-- corollary of strong normalization
 lemma Static.Typed.red_value {A m : Tm Srt} :
     [] ⊢ m : A -> ∃ m', Static.Value m' ∧ m ~>* m' := by
   sorry
