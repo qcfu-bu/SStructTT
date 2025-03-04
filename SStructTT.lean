@@ -23,3 +23,4 @@ import SStructTT.Dynamic.Renaming
 import SStructTT.Dynamic.Substitution
 import SStructTT.Dynamic.Inversion
 import SStructTT.Dynamic.Preservation
+import SStructTT.Dynamic.Progress
