@@ -43,7 +43,7 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
     Step (.tup m n .ex s) (.tup m' n .ex s)
   | tup_ex_N m {n n'} s :
     Step n n' ->
-    Step (.tup m n .ex s) (.tup n' n .ex s)
+    Step (.tup m n .ex s) (.tup m n' .ex s)
   | proj_im_M A {m m'} n :
     Step m m' ->
     Step (.proj A m n .im) (.proj A m' n .im)
@@ -62,7 +62,7 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
   | ite_true A n1 n2 :
     Step (.ite A .tt n1 n2) n1
   | ite_false A n1 n2 :
-    Step (.ite A .tt n1 n2) n2
+    Step (.ite A .ff n1 n2) n2
   | rw_elim A m n :
     Step (.rw A m n) m
 
