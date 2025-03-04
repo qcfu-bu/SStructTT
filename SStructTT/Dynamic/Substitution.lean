@@ -374,8 +374,7 @@ lemma Typed.esubst_im {Γ} {Δ : Ctx Srt} {A B B' m m' n s} :
     A :: Γ ;; A :⟨.im, s⟩ Δ ⊢ m : B ->
     Γ ⊢ n : A ->
     Γ ;; Δ ⊢ m' : B' := by
-  intros; subst_vars
-  apply Typed.subst_im <;> assumption
+  intros; subst_vars; apply Typed.subst_im <;> assumption
 
 lemma Typed.esubst_ex {Γ} {Δ1 Δ2 Δ : Ctx Srt} {A B B' m m' n s} :
     m' = m.[n/] ->
@@ -384,8 +383,7 @@ lemma Typed.esubst_ex {Γ} {Δ1 Δ2 Δ : Ctx Srt} {A B B' m m' n s} :
     A :: Γ ;; A :⟨.ex, s⟩ Δ1 ⊢ m : B ->
     Γ ;; Δ2 ⊢ n : A ->
     Γ ;; Δ ⊢ m' : B' := by
-  intros; subst_vars
-  apply Typed.subst_ex <;> assumption
+  intros; subst_vars; apply Typed.subst_ex <;> assumption
 
 lemma Typed.conv_ctx {Γ} {Δ : Ctx Srt} {A B C m r s i} :
     B === A ->

@@ -18,9 +18,7 @@ inductive AgreeRen : (Var -> Var) -> Ctx Srt -> Ctx Srt -> Prop where
 
 @[aesop safe (rule_sets := [rename])]
 lemma AgreeRen.refl {Γ : Ctx Srt} : Γ ⊢ -> AgreeRen id Γ Γ := by
-  intro wf
-  induction wf
-  all_goals try trivial
+  intro wf; induction wf <;> try trivial
   case nil => constructor
   case cons Γ A s i ty wf _ ih =>
     have h := AgreeRen.cons ty ih
@@ -29,25 +27,22 @@ lemma AgreeRen.refl {Γ : Ctx Srt} : Γ ⊢ -> AgreeRen id Γ Γ := by
 
 lemma AgreeRen.has {Γ Γ' : Ctx Srt} {A x ξ} :
     AgreeRen ξ Γ Γ' -> Has Γ x A -> Has Γ' (ξ x) A.[ren ξ] := by
-  intro agr
-  induction agr generalizing x A with
-  | nil => intro h; cases h
-  | @cons _ _ A _ _ ξ _ _ ih =>
-    intro h; cases h <;> asimp
+  intro agr hs; induction agr generalizing x A
+  case nil => cases hs
+  case cons A _ _ ξ _ _ ih =>
+    cases hs <;> asimp
     case zero =>
       rw[show A.[ren ξ !> shift 1] = A.[ren ξ].[shift 1] by asimp]
       constructor
     case succ A x hs =>
       rw[show A.[ren ξ !> shift 1] = A.[ren ξ].[shift 1] by asimp]
       constructor; apply ih; assumption
-  | @wk _ _ A _ _ ξ _ _ ih =>
-    intro h; asimp
-    rw[show A.[ren (ξ !>> (.+1))] = A.[ren ξ].[shift 1] by asimp; rfl]
+  case wk A _ _ ξ _ _ ih =>
+    asimp; rw[show A.[ren (ξ !>> (.+1))] = A.[ren ξ].[shift 1] by asimp; rfl]
     constructor; apply ih; assumption
 
 lemma AgreeRen.wf_nil {Γ' : Ctx Srt} {ξ} : AgreeRen ξ [] Γ' -> Γ' ⊢ := by
-  intro agr
-  cases agr with
+  intro
   | nil => constructor
   | wk ty agr =>
     constructor
@@ -59,8 +54,7 @@ lemma AgreeRen.wf_cons {Γ Γ' : Ctx Srt} {A ξ} :
     (∀ Γ' ξ, AgreeRen ξ Γ Γ' → Γ' ⊢) ->
     (∀ Γ' ξ, AgreeRen ξ Γ Γ' → ∃ s i, Γ' ⊢ A.[ren ξ] : .srt s i) ->
     Γ' ⊢ := by
-  intro agr
-  cases agr with
+  intro
   | cons ty agr =>
     intro wf h1 h2
     have ⟨s, i, ty⟩ := h2 _ _ agr
@@ -190,10 +184,7 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
 
 lemma Wf.has_typed {Γ : Ctx Srt} {A x} :
     Γ ⊢ -> Has Γ x A -> ∃ s i, Γ ⊢ A : .srt s i := by
-  intro wf
-  induction wf
-  generalizing x A
-  all_goals try trivial
+  intro wf; induction wf generalizing x A <;> try trivial
   case nil => intro h; cases h
   case cons s i ty wf _ ih =>
     intro h

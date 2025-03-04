@@ -24,8 +24,7 @@ where
 
 lemma AgreeRen.toStatic {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ} :
     Dynamic.AgreeRen ξ Γ Δ Γ' Δ' -> Static.AgreeRen ξ Γ Γ' := by
-  intro agr
-  induction agr <;> aesop (rule_sets := [rename])
+  intro agr; induction agr <;> aesop (rule_sets := [rename])
 
 @[aesop safe (rule_sets := [rename])]
 lemma AgreeRen.refl {Γ} {Δ : Ctx Srt} :

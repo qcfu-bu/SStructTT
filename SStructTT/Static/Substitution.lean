@@ -24,8 +24,7 @@ inductive AgreeSubst : (Var -> Tm Srt) -> Ctx Srt -> Ctx Srt -> Prop where
 
 @[aesop safe (rule_sets := [subst])]
 lemma AgreeSubst.refl {Γ : Ctx Srt} : Γ ⊢ -> AgreeSubst ids Γ Γ := by
-  intro wf; induction wf
-  all_goals try trivial
+  intro wf; induction wf <;> try trivial
   case nil => constructor
   case cons ty _ _ agr =>
     replace agr := AgreeSubst.cons ty agr
@@ -33,11 +32,10 @@ lemma AgreeSubst.refl {Γ : Ctx Srt} : Γ ⊢ -> AgreeSubst ids Γ Γ := by
 
 lemma AgreeSubst.has {Γ Γ' : Ctx Srt} {A x σ} :
     AgreeSubst σ Γ Γ' -> Γ' ⊢ -> Has Γ x A -> Γ' ⊢ σ x : A.[σ]  := by
-  intro agr wf hs
-  induction agr generalizing x A with
-  | nil => cases hs
-  | @cons _ _ A _ _ σ _ _ ih =>
-    cases wf; case cons wf ty =>
+  intro agr wf hs; induction agr generalizing x A
+  case nil => cases hs
+  case cons A _ _ σ _ _ ih =>
+    rcases wf with _ | ⟨wf, ty⟩
     cases hs with
     | zero =>
       asimp
@@ -50,11 +48,11 @@ lemma AgreeSubst.has {Γ Γ' : Ctx Srt} {A x σ} :
       rw[show A.[σ !> shift 1] = A.[σ].[shift 1] by asimp]
       apply Typed.eweaken <;> try first | rfl | assumption
       apply ih <;> assumption
-  | wk _ _ ih  =>
+  case wk _ _ ih  =>
     cases hs with
     | zero => asimp; assumption
     | succ => asimp; apply ih <;> assumption
-  | @conv _ _ A B _ _ σ eq ty ty' agr ih =>
+  case conv A B _ _ σ eq ty ty' agr ih =>
     cases hs with
     | zero =>
       apply Typed.conv
@@ -76,72 +74,62 @@ lemma AgreeSubst.wf_cons {Γ Γ' : Ctx Srt} {A σ} :
     (∀ Γ' σ, AgreeSubst σ Γ Γ' -> Γ' ⊢) ->
     (∀ Γ' σ, AgreeSubst σ Γ Γ' -> ∃ s i, Γ' ⊢ A.[σ] : .srt s i) ->
     Γ' ⊢ := by
-  intro agr
-  cases agr with
-  | cons _ agr =>
+  intro agr; cases agr
+  case cons agr _ =>
     intro _ h1 h2
     have wf := h1 _ _ agr
     have ⟨_, _, ty⟩ := h2 _ _ agr
     constructor
     . exact ty
     . apply h1; assumption
-  | wk =>
+  case wk =>
     intro _ h1 h2
     apply h1; assumption
-  | conv _ _ ty' =>
+  case conv ty' _ =>
     intro wf h1 h2
     apply ty'.toWf
 
 lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     Γ ⊢ m : A -> AgreeSubst σ Γ Γ' -> Γ' ⊢ m.[σ] : A.[σ] := by
-  intro ty; induction ty using
+  intro ty agr; induction ty using
     @Typed.rec _ inst
       (motive_2 := fun Γ _ => ∀ Γ' σ, AgreeSubst σ Γ Γ' -> Γ' ⊢)
-  generalizing Γ' σ with
-  | srt _ _ _ ih =>
-    intro agr; asimp
-    constructor
-    apply ih; assumption
-  | var _ _ ih =>
-    intro agr; asimp
+  generalizing Γ' σ <;> asimp
+  case srt ih =>
+    constructor; apply ih; assumption
+  case var ih =>
     apply AgreeSubst.has
     . assumption
     . apply ih; assumption
     . assumption
-  | pi _ _ ihA ihB =>
-    intro agr; asimp
+  case pi ihA ihB =>
     constructor
     . apply ihA; assumption
     . apply ihB; constructor <;> assumption
-  | lam _ _ ihA ihm =>
-    intro agr; asimp
+  case lam ihA ihm =>
     constructor
     . apply ihA; assumption
     . apply ihm; constructor <;> assumption
-  | app _ _ ihm ihn =>
-    intro agr; asimp
+  case app ihm ihn =>
     replace ihm := ihm agr; asimp at ihm
     replace ihn := ihn agr
     have ty := Typed.app ihm ihn
     asimp at ty
     assumption
-  | sig _ _ _ _ ihA ihB =>
-    intro agr; asimp
+  case sig ihA ihB =>
     constructor
     . assumption
     . assumption
     . apply ihA; assumption
     . apply ihB; constructor <;> assumption
-  | tup _ _ _ ihS ihm ihn =>
-    intro agr; asimp
+  case tup ihS ihm ihn =>
     constructor
     . replace ihS := ihS agr; asimp at ihS
       assumption
     . apply ihm; assumption
     . replace ihn := ihn agr; asimp at ihn
       asimp; assumption
-  | @proj _ _ _ C m _ _ _ _ _ tyC _ tyn ihC ihm ihn =>
-    intro agr; asimp
+  case proj C m _ _ _ _ _ tyC _ tyn ihC ihm ihn =>
     rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
     have ⟨_, _, _, tyB⟩ := tyn.ctx_inv
@@ -153,20 +141,10 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     . assumption
     . assumption
     . asimp; assumption
-  | bool _ ih =>
-    intro agr; asimp
-    constructor
-    apply ih; assumption
-  | tt _ ih =>
-    intro agr; asimp
-    constructor
-    apply ih; assumption
-  | ff _ ih =>
-    intro agr; asimp
-    constructor
-    apply ih; assumption
-  | @ite _ A m _ _ _ _ tyA _ _ _ ihA ihm ihn1 ihn2 =>
-    intro agr; asimp
+  case bool ih => constructor; apply ih; assumption
+  case tt ih => constructor; apply ih; assumption
+  case ff ih => constructor; apply ih; assumption
+  case ite A m _ _ _ _ tyA _ _ _ ihA ihm ihn1 ihn2 =>
     rw[show A.[m.[σ] .: σ] = A.[up σ].[m.[σ]/] by asimp]
     have ⟨_, _, _, tyb⟩ := tyA.ctx_inv
     replace ihn1 := ihn1 agr; asimp at ihn1
@@ -176,18 +154,13 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     . apply ihm; assumption
     . asimp; assumption
     . asimp; assumption
-  | idn _ _ _ ihA ihm ihn =>
-    intro agr; asimp
+  case idn ihA ihm ihn =>
     constructor
     . apply ihA; assumption
     . apply ihm; assumption
     . apply ihn; assumption
-  | rfl _ ih =>
-    intro; asimp
-    constructor
-    apply ih; assumption
-  | @rw _ A _ _ n _ b _ _ tyA _ _ ihA ihm ihn =>
-    intro agr; asimp
+  case rfl ih => constructor; apply ih; assumption
+  case rw A _ _ n _ b _ _ tyA _ _ ihA ihm ihn =>
     rw[show A.[n.[σ] .: b.[σ] .: σ] = A.[upn 2 σ].[n.[σ],b.[σ]/] by asimp]
     have ⟨_, _, _, tyI⟩ := tyA.ctx_inv
     have ⟨_, _, _, tyA⟩ := tyI.ctx_inv
@@ -199,16 +172,15 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     . asimp; assumption
     . asimp; assumption
     . assumption
-  | conv eq _ _ ihm ihB =>
-    intro agr;
+  case conv eq _ _ ihm ihB =>
     apply Typed.conv
     . apply Conv.subst _ eq
     . apply ihm; assumption
     . apply ihB; assumption
-  | nil =>
+  case nil =>
     apply AgreeSubst.wf_nil
     assumption
-  | @cons _ _ s i tyA wf ih1 ih2 _ _ agr =>
+  case cons s i tyA wf ih1 ih2 _ _ agr =>
     apply AgreeSubst.wf_cons
     . apply agr
     . apply tyA.toWf
@@ -233,9 +205,7 @@ lemma Typed.esubst {Γ : Ctx Srt} {A B B' m m' n} :
     A :: Γ ⊢ m : B ->
     Γ ⊢ n : A ->
     Γ ⊢ m' : B' := by
-  intros
-  subst_vars
-  apply Typed.subst <;> assumption
+  intros; subst_vars; apply Typed.subst <;> assumption
 
 lemma Typed.conv_ctx {Γ : Ctx Srt} {A B C m s i} :
     B === A ->

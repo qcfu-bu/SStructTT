@@ -59,29 +59,26 @@ lemma Srt.le_RA_false : ¬ le R A := by
       intro; contradiction
 
 lemma Srt.le_antisymm (a b : Srt) : le a b → le b a → a = b := by
-  intro h
-  induction h with
-  | le_refl => intro; rfl
-  | le_trans _ _ _ h1 h2 ih1 ih2 =>
+  intro h; induction h
+  case le_refl => intro; rfl
+  case le_trans h1 h2 ih1 ih2 =>
     intro h3
     have h4 := Srt.le.le_trans _ _ _ h2 h3
-    have e := ih1 h4
-    subst_vars
-    apply ih2
-    assumption
-  | le_UR =>
+    have e := ih1 h4; subst_vars
+    apply ih2; assumption
+  case le_UR =>
     intro h; exfalso
     apply Srt.le_sU_false <;> try assumption
     intro; contradiction
-  | le_UA =>
+  case le_UA =>
     intro h; exfalso
     apply Srt.le_sU_false <;> try assumption
     intro; contradiction
-  | le_AL =>
+  case le_AL =>
     intro h; exfalso
     apply Srt.le_Ls_false <;> try assumption
     intro; contradiction
-  | le_RL =>
+  case le_RL =>
     intro h; exfalso
     apply Srt.le_Ls_false <;> try assumption
     intro; contradiction
@@ -110,40 +107,34 @@ inductive Srt.contra : Srt -> Prop where
   | R : contra A
 
 lemma Srt.weaken_lower : IsLowerSet weaken := by
-  intro s t h wk
-  cases wk with
-  | U =>
-    cases t
-    all_goals try constructor
+  intro s t h wk; cases wk
+  case U =>
+    cases t <;> try constructor
     . exfalso
       apply Srt.le_sU_false <;> try assumption
       aesop
     . exfalso
       apply Srt.le_sU_false <;> try assumption
       aesop
-  | A =>
-    cases t
-    all_goals try constructor
+  case A =>
+    cases t <;> try constructor
     . exfalso; apply Srt.le_RA_false; assumption
     . exfalso
       apply Srt.le_Ls_false <;> try assumption
       aesop
 
 lemma Srt.contra_lower : IsLowerSet contra := by
-  intro s t h wk
-  cases wk with
-  | U =>
-    cases t
-    all_goals try constructor
+  intro s t h wk; cases wk
+  case U =>
+    cases t <;> try constructor
     . exfalso
       apply Srt.le_sU_false <;> try assumption
       aesop
     . exfalso
       apply Srt.le_sU_false <;> try assumption
       aesop
-  | R =>
-    cases t
-    all_goals try constructor
+  case R =>
+    cases t <;> try constructor
     . exfalso; apply Srt.le_RA_false; assumption
     . exfalso
       apply Srt.le_Ls_false <;> try assumption

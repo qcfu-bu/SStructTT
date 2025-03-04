@@ -114,13 +114,10 @@ def Wf.rec_non_mutual {motive : ∀ Γ, @Wf Srt _ Γ -> Prop} :=
   Wf.rec (motive_1 := fun _ _ _ _ => True) (motive_2 := motive)
 
 lemma Typed.toWf {Γ : Ctx Srt} {A m} : Γ ⊢ m : A -> Γ ⊢ := by
-  intro h
-  induction h
+  intro h; induction h
   all_goals trivial
 
 lemma Typed.ctx_inv {Γ : Ctx Srt} {A B m} :
     A :: Γ ⊢ m : B -> ∃ s i, Γ ⊢ ∧ Γ ⊢ A : .srt s i := by
-  intro ty
-  cases ty.toWf
-  case cons s i wf tyA =>
-    exists s, i
+  intro ty; cases ty.toWf
+  case cons s i wf tyA => exists s, i
