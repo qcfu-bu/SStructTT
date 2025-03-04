@@ -1,13 +1,22 @@
 -- This module serves as the root of the `SStructTT` library.
 -- Import modules here that should be built as part of the library.
+
+-------------------------------------------------------------------------------------------------
+
 import SStructTT.Basics.ARS
 import SStructTT.Basics.Subst
+
+-------------------------------------------------------------------------------------------------
 
 import SStructTT.MartinLof.Syntax
 import SStructTT.MartinLof.Context
 import SStructTT.MartinLof.Step
 import SStructTT.MartinLof.Confluence
 import SStructTT.MartinLof.Typed
+import SStructTT.MartinLof.Renaming
+import SStructTT.MartinLof.Substitution
+
+-------------------------------------------------------------------------------------------------
 
 import SStructTT.SStruct.SrtOrder
 import SStructTT.SStruct.Syntax
