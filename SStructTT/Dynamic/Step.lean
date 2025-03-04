@@ -5,6 +5,7 @@ open ARS
 namespace Dynamic
 variable {Srt : Type}
 
+@[scoped aesop safe [constructors]]
 inductive Value : Tm Srt -> Prop where
   | lam_im {A B s} :
     Value (.lam A B .im s)
@@ -20,6 +21,7 @@ inductive Value : Tm Srt -> Prop where
   | tt : Value .tt
   | ff : Value .ff
 
+@[scoped aesop safe [constructors]]
 inductive Step : Tm Srt -> Tm Srt -> Prop where
   | app_im_M {m m'} n :
     Step m m' ->

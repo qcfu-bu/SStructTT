@@ -6,6 +6,22 @@ namespace Static
 variable {Srt : Type}
 
 @[scoped aesop safe [constructors]]
+inductive Value : Tm Srt -> Prop where
+  | srt s i : Value (.srt s i)
+  | pi A B r s : Value (.pi A B r s)
+  | lam A m r s : Value (.lam A m r s)
+  | sig A B r s : Value (.sig A B r s)
+  | tup m n r s :
+    Value m ->
+    (r = .ex -> Value n) ->
+    Value (.tup m n r s)
+  | bool : Value .bool
+  | tt : Value .tt
+  | ff : Value .ff
+  | idn A m n : Value (.idn A m n)
+  | rfl m : Value (.rfl m)
+
+@[scoped aesop safe [constructors]]
 inductive Step : Tm Srt -> Tm Srt -> Prop where
   | pi_A {A A'} B r s :
     Step A A' ->
