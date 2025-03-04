@@ -446,33 +446,33 @@ lemma PStep.compat_subst1 {m m' n n' : Tm Srt} :
 
 lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
   intros m m1 m2 ps
-  induction ps generalizing m2 with
-  | var =>
+  induction ps generalizing m2
+  case var =>
     intro ps; exists m2; constructor
     . assumption
     . apply PStep.refl
-  | srt i =>
+  case srt i =>
     intro ps; exists m2; constructor
     . assumption
     . apply PStep.refl
-  | pi r s _ _ ihA ihB =>
-    intro ps; cases ps with
+  case pi r s _ _ ihA ihB =>
+    intro
     | pi _ _ psA psB =>
       have ⟨A, psA1, psA2⟩ := ihA psA
       have ⟨B, psB1, psB2⟩ := ihB psB
       exists .pi A B r s; constructor
       . apply PStep.pi r s psA1 psB1
       . apply PStep.pi r s psA2 psB2
-  | lam r s _ _ ihA ihm =>
-    intro ps; cases ps with
+  case lam r s _ _ ihA ihm =>
+    intro
     | lam _ _ psA psm =>
       have ⟨A, psA1, psA2⟩ := ihA psA
       have ⟨m, psm1, psm2⟩ := ihm psm
       exists .lam A m r s; constructor
       . apply PStep.lam r s psA1 psm1
       . apply PStep.lam r s psA2 psm2
-  | app r psm psn ihm ihn =>
-    intro ps; cases ps with
+  case app r psm psn ihm ihn =>
+    intro
     | app _ psm psn =>
       have ⟨m, psm1, psm2⟩ := ihm psm
       have ⟨n, psn1, psn2⟩ := ihn psn
@@ -489,8 +489,8 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
       constructor
       . apply PStep.beta <;> assumption
       . apply PStep.compat_subst1 <;> assumption
-  | beta _ r s _ _ ihm ihn =>
-    intro ps; cases ps with
+  case beta _ r s _ _ ihm ihn =>
+    intro
     | app _ psm psn =>
       cases psm; case lam _ psm =>
       have ⟨m, psm1, psm2⟩ := ihm psm
@@ -506,24 +506,24 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
       constructor
       . apply PStep.compat_subst1 <;> assumption
       . apply PStep.compat_subst1 <;> assumption
-  | sig r s _ _ ihA ihB =>
-    intro ps; cases ps with
+  case sig r s _ _ ihA ihB =>
+    intro
     | sig _ _ psA psB =>
       have ⟨A, psA1, psA2⟩ := ihA psA
       have ⟨B, psB1, psB2⟩ := ihB psB
       exists .sig A B r s; constructor
       . apply PStep.sig r s psA1 psB1
       . apply PStep.sig r s psA2 psB2
-  | tup r s _ _ ihm ihn =>
-    intro ps; cases ps with
+  case tup r s _ _ ihm ihn =>
+    intro
     | tup _ _ psm psn =>
       have ⟨m, psm1, psm2⟩ := ihm psm
       have ⟨n, psn1, psn2⟩ := ihn psn
       exists .tup m n r s; constructor
       . apply PStep.tup r s psm1 psn1
       . apply PStep.tup r s psm2 psn2
-  | proj r psA psm psn ihA ihm ihn =>
-    intro ps; cases ps with
+  case proj r psA psm psn ihA ihm ihn =>
+    intro
     | proj _ psA psm psn =>
       have ⟨A, psA1, psA2⟩ := ihA psA
       have ⟨m, psm1, psm2⟩ := ihm psm
@@ -539,8 +539,8 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
       cases psm2; case tup _ _ psm1 psm2 =>
       exists n.[m2,m1/]
       aesop (rule_sets := [pstep])
-  | proj_elim A r s _ _ _ ihm1 ihm2 ihn =>
-    intro ps; cases ps with
+  case proj_elim A r s _ _ _ ihm1 ihm2 ihn =>
+    intro
     | proj _ _ psm psn =>
       cases psm; case tup _ _ psm1 psm2 =>
       have ⟨m1, psm1, _⟩ := ihm1 psm1
@@ -554,20 +554,20 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
       have ⟨n, psn1, psn2⟩ := ihn psn
       exists n.[m2,m1/]
       aesop (rule_sets := [pstep])
-  | bool =>
+  case bool =>
     intro ps; exists m2; constructor
     . assumption
     . apply PStep.refl
-  | tt =>
+  case tt =>
     intro ps; exists m2; constructor
     . assumption
     . apply PStep.refl
-  | ff =>
+  case ff =>
     intro ps; exists m2; constructor
     . assumption
     . apply PStep.refl
-  | ite _ psm _ _ ihA ihm ihn1 ihn2 =>
-    intro ps; cases ps with
+  case ite psm _ _ ihA ihm ihn1 ihn2 =>
+    intro
     | ite psA psm psn1 psn2 =>
       have ⟨A, psA1, psA2⟩ := ihA psA
       have ⟨m, psm1, psm2⟩ := ihm psm
@@ -586,8 +586,8 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
       cases psm; exists n; constructor
       . apply PStep.ite_false _ _ psn21
       . assumption
-  | ite_true _ _ _ ihn =>
-    intro ps; cases ps with
+  case ite_true ihn =>
+    intro
     | ite _ psm psn _ =>
       have ⟨n, _, psn⟩ := ihn psn
       exists n; cases psm; constructor
@@ -596,8 +596,8 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
     | ite_true _ _ psn =>
       have ⟨n, _, _⟩ := ihn psn
       exists n
-  | ite_false _ _ _ ihn =>
-    intro ps; cases ps with
+  case ite_false ihn =>
+    intro
     | ite _ psm _ psn =>
       have ⟨n, _, psn⟩ := ihn psn
       exists n; cases psm; constructor
@@ -606,8 +606,8 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
     | ite_false _ _ psn =>
       have ⟨n, _, _⟩ := ihn psn
       exists n
-  | idn _ _ _ ihA ihm ihn =>
-    intro ps; cases ps with
+  case idn ihA ihm ihn =>
+    intro
     | idn psA psm psn =>
       have ⟨A, psA1, psA2⟩ := ihA psA
       have ⟨m, psm1, psm2⟩ := ihm psm
@@ -615,15 +615,15 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
       exists .idn A m n; constructor
       . apply PStep.idn psA1 psm1 psn1
       . apply PStep.idn psA2 psm2 psn2
-  | rfl _ ih =>
-    intro ps; cases ps with
+  case rfl ih =>
+    intro
     | rfl ps =>
       have ⟨m, psm1, psm2⟩ := ih ps
       exists .rfl m; constructor
       . apply PStep.rfl psm1
       . apply PStep.rfl psm2
-  | rw _ _ psn ihA ihm ihn =>
-    intro ps; cases ps with
+  case rw psn ihA ihm ihn =>
+    intro
     | rw psA psm psn =>
       have ⟨A, psA1, psA2⟩ := ihA psA
       have ⟨m, psm1, psm2⟩ := ihm psm
@@ -636,8 +636,8 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
       exists m; cases psn; constructor
       . apply PStep.rw_elim _ _ psm1
       . assumption
-  | rw_elim _ _ _ ih =>
-    intro ps; cases ps with
+  case rw_elim ih =>
+    intro
     | rw _ psm psn =>
       have ⟨m, _, psm⟩ := ih psm
       exists m; cases psn; constructor
@@ -649,13 +649,12 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
 
 lemma PStep.strip {m m1 m2 : Tm Srt} :
     m ≈> m1 -> m ~>* m2 -> ∃ n, m1 ~>* n ∧ m2 ≈> n := by
-  intros p r
-  induction r generalizing m1 p with
-  | R =>
+  intros p r; induction r generalizing m1 p
+  case R =>
     exists m1; constructor
     . apply Star.R
     . assumption
-  | SE _ s1 ih =>
+  case SE s1 ih =>
     have ⟨m2, r, s2⟩ := ih p
     have ⟨m3, p1, p2⟩ := PStep.diamond s1.toPStep s2
     exists m3; constructor
@@ -663,14 +662,13 @@ lemma PStep.strip {m m1 m2 : Tm Srt} :
     . assumption
 
 theorem Step.confluent : @Confluent (Tm Srt) Step := by
-  intros x y z r
-  induction r generalizing z with
-  | R =>
+  intros x y z r; induction r generalizing z
+  case R =>
     intro h; exists z
     constructor
     assumption
     constructor
-  | SE _ s ih =>
+  case SE s ih =>
     intro h
     have ⟨z1, s1, s2⟩ := ih h
     have ⟨z2, s3, s4⟩ := PStep.strip s.toPStep s1
@@ -697,10 +695,9 @@ lemma Red.srt_inv {s i} {x : Tm Srt} : .srt s i ~>* x -> x = .srt s i := by
 lemma Red.pi_inv {A B x : Tm Srt} {r s} :
     .pi A B r s ~>* x ->
     ∃ A' B', A ~>* A' ∧ B ~>* B' ∧ x = .pi A' B' r s := by
-  intro rd
-  induction rd with
-  | R => aesop
-  | SE rd st ih =>
+  intro rd; induction rd
+  case R => aesop
+  case SE rd st ih =>
     have ⟨A1, B1, rA1, rB1, e⟩ := ih
     subst e
     cases st with
@@ -720,10 +717,9 @@ lemma Red.pi_inv {A B x : Tm Srt} {r s} :
 lemma Red.lam_inv {A m x : Tm Srt} {r s} :
     .lam A m r s ~>* x ->
     ∃ A' m', A ~>* A' ∧ m ~>* m' ∧ x = .lam A' m' r s := by
-  intro rd
-  induction rd with
-  | R => aesop
-  | SE rd st ih =>
+  intro rd; induction rd
+  case R => aesop
+  case SE rd st ih =>
     have ⟨A1, m1, rA1, rm1, e⟩ := ih
     subst e
     cases st with
@@ -743,13 +739,11 @@ lemma Red.lam_inv {A m x : Tm Srt} {r s} :
 lemma Red.sig_inv {A B x : Tm Srt} {r s} :
     .sig A B r s ~>* x ->
     ∃ A' B', A ~>* A' ∧ B ~>* B' ∧ x = .sig A' B' r s := by
-  intro rd
-  induction rd with
-  | R => aesop
-  | SE rd st ih =>
-    have ⟨A1, B1, rA1, rB1, e⟩ := ih
-    subst e
-    cases st with
+  intro rd; induction rd
+  case R => aesop
+  case SE rd st ih =>
+    have ⟨A1, B1, rA1, rB1, _⟩ := ih
+    subst_vars; cases st with
     | @sig_A _ A2 =>
       exists A2, B1
       repeat' apply And.intro
@@ -766,13 +760,11 @@ lemma Red.sig_inv {A B x : Tm Srt} {r s} :
 lemma Red.tup_inv {m n x : Tm Srt} {r s} :
     .tup m n r s ~>* x ->
     ∃ m' n', m ~>* m' ∧ n ~>* n' ∧ x = .tup m' n' r s := by
-  intro rd
-  induction rd with
-  | R => aesop
-  | SE rd st ih =>
-    have ⟨m1, n1, rm1, rn1, e⟩ := ih
-    subst e
-    cases st with
+  intro rd; induction rd
+  case R => aesop
+  case SE rd st ih =>
+    have ⟨m1, n1, rm1, rn1, _⟩ := ih
+    subst_vars; cases st with
     | @tup_M _ m2 =>
       exists m2, n1
       repeat' apply And.intro
@@ -807,13 +799,11 @@ lemma Red.ff_inv {x : Tm Srt} : .ff ~>* x -> x = .ff := by
 lemma Red.idn_inv {A m n x : Tm Srt} :
     .idn A m n ~>* x ->
     ∃ A' m' n', A ~>* A' ∧ m ~>* m' ∧ n ~>* n' ∧ x = .idn A' m' n' := by
-  intro rd
-  induction rd with
-  | R => aesop
-  | SE rd st ih =>
-    have ⟨A1, m1, n1, rA1, rm1, rn1, e⟩ := ih
-    subst e
-    cases st with
+  intro rd; induction rd
+  case R => aesop
+  case SE rd st ih =>
+    have ⟨A1, m1, n1, rA1, rm1, rn1, _⟩ := ih
+    subst_vars; cases st with
     | @idn_A _ A2 =>
       exists A2, m1, n1
       repeat' apply And.intro
@@ -838,13 +828,11 @@ lemma Red.idn_inv {A m n x : Tm Srt} :
 
 lemma Red.rfl_inv {m x : Tm Srt} :
     .rfl m ~>* x -> ∃ m', m ~>* m' ∧ x = .rfl m' := by
-  intro rd
-  induction rd with
-  | R => aesop
-  | SE rd st ih =>
-    have ⟨m1, rm1, e⟩ := ih
-    subst e
-    cases st with
+  intro rd; induction rd
+  case R => aesop
+  case SE rd st ih =>
+    have ⟨m1, rm1, _⟩ := ih
+    subst_vars; cases st with
     | @rfl_M _ m2 =>
       exists m2
       constructor
