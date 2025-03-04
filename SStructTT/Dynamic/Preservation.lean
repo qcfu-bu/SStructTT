@@ -12,7 +12,41 @@ lemma Static.Typed.red_value {A m : Tm Srt} :
 
 lemma Step.toStatic {A m n : Tm Srt} :
     [] ⊢ m : A -> m ~>> n -> m ~>* n := by
-  sorry
+  generalize e: [] = Γ; intro ty st;
+  induction ty generalizing n <;> try trivial
+  case app =>
+    subst_vars; cases st
+    case app_im_M => apply Red.app <;> aesop
+    case app_ex_M => apply Red.app <;> aesop
+    case app_ex_N => apply Red.app <;> aesop
+    case beta_im => apply Star.one; constructor
+    case beta_ex => apply Star.one; constructor
+  case tup =>
+    subst_vars; cases st
+    case tup_im_M => apply Red.tup <;> aesop
+    case tup_ex_M => apply Red.tup <;> aesop
+    case tup_ex_N => apply Red.tup <;> aesop
+  case proj =>
+    subst_vars; cases st
+    case proj_im_M => apply Red.proj <;> aesop
+    case proj_ex_M => apply Red.proj <;> aesop
+    case proj_im_elim => apply Star.one; constructor
+    case proj_ex_elim => apply Star.one; constructor
+  case ite =>
+    subst_vars; cases st
+    case ite_M => apply Red.ite <;> aesop
+    case ite_true => apply Star.one; constructor
+    case ite_false => apply Star.one; constructor
+  case rw tyn _ _ _ =>
+    subst_vars; cases st
+    case rw_elim =>
+      have ⟨n', vl, rd⟩ := Static.Typed.red_value tyn
+      have tyn' := tyn.preservation' rd
+      have ⟨a', _⟩ := tyn'.idn_canonical Conv.R vl; subst_vars
+      apply Star.trans
+      apply Red.rw Star.R Star.R rd
+      apply Star.one; constructor
+  case conv => aesop
 
 theorem Typed.preservation {A m m' : Tm Srt} :
     [] ;; [] ⊢ m : A -> m ~>> m' -> [] ;; [] ⊢ m' : A := by
