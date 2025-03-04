@@ -21,3 +21,5 @@ import SStructTT.Dynamic.Step
 import SStructTT.Dynamic.Typed
 import SStructTT.Dynamic.Renaming
 import SStructTT.Dynamic.Substitution
+import SStructTT.Dynamic.Inversion
+import SStructTT.Dynamic.Preservation
