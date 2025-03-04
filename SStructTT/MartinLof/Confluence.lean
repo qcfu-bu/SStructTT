@@ -1,49 +1,48 @@
-import SStructTT.SStruct.Static.Step
+import SStructTT.MartinLof.Step
 open ARS
 
-namespace SStruct.Static
-variable {Srt : Type}
+namespace MartinLof
 
 @[aesop safe (rule_sets := [pstep]) [constructors]]
-inductive PStep : Tm Srt -> Tm Srt -> Prop where
+inductive PStep : Tm -> Tm -> Prop where
   | var {x} :
     PStep (.var x) (.var x)
-  | srt s i :
-    PStep (.srt s i) (.srt s i)
-  | pi {A A' B B'} r s :
+  | ty i :
+    PStep (.ty i) (.ty i)
+  | pi {A A' B B'} :
     PStep A A' ->
     PStep B B' ->
-    PStep (.pi A B r s) (.pi A' B' r s)
-  | lam {A A' m m'} r s :
+    PStep (.pi A B) (.pi A' B')
+  | lam {A A' m m'} :
     PStep A A' ->
     PStep m m' ->
-    PStep (.lam A m r s) (.lam A' m' r s)
-  | app {m m' n n'} r :
+    PStep (.lam A m) (.lam A' m')
+  | app {m m' n n'} :
     PStep m m' ->
     PStep n n' ->
-    PStep (.app m n r) (.app m' n' r)
-  | beta A {m m' n n'} r s :
+    PStep (.app m n) (.app m' n')
+  | beta A {m m' n n'} :
     PStep m m' ->
     PStep n n' ->
-    PStep (.app (.lam A m r s) n r) m'.[n'/]
-  | sig {A A' B B'} r s :
+    PStep (.app (.lam A m) n) m'.[n'/]
+  | sig {A A' B B'} :
     PStep A A' ->
     PStep B B' ->
-    PStep (.sig A B r s) (.sig A' B' r s)
-  | tup {m m' n n'} r s :
+    PStep (.sig A B) (.sig A' B')
+  | tup {m m' n n'} :
     PStep m m' ->
     PStep n n' ->
-    PStep (.tup m n r s) (.tup m' n' r s)
-  | proj {A A' m m' n n'} r :
+    PStep (.tup m n) (.tup m' n')
+  | proj {A A' m m' n n'} :
     PStep A A' ->
     PStep m m' ->
     PStep n n' ->
-    PStep (.proj A m n r) (.proj A' m' n' r)
-  | proj_elim A {m1 m1' m2 m2' n n'} r s :
+    PStep (.proj A m n) (.proj A' m' n')
+  | proj_elim A {m1 m1' m2 m2' n n'} :
     PStep m1 m1' ->
     PStep m2 m2' ->
     PStep n n' ->
-    PStep (.proj A (.tup m1 m2 r s) n r) n'.[m2',m1'/]
+    PStep (.proj A (.tup m1 m2) n) n'.[m2',m1'/]
   | bool : PStep .bool .bool
   | tt : PStep .tt .tt
   | ff : PStep .ff .ff
@@ -78,71 +77,71 @@ inductive PStep : Tm Srt -> Tm Srt -> Prop where
 
 infix:50 " ≈> " => PStep
 
-def SRed (σ τ : Nat -> Tm Srt) := ∀ x, (σ x) ~>* (τ x)
+def SRed (σ τ : Nat -> Tm) := ∀ x, (σ x) ~>* (τ x)
 
-lemma Step.subst {m n : Tm Srt} σ : m ~> n -> m.[σ] ~> n.[σ] := by
+lemma Step.subst {m n : Tm} σ : m ~> n -> m.[σ] ~> n.[σ] := by
   intro st
   induction st generalizing σ
   all_goals try asimp; aesop
-  case beta A m n r s  =>
+  case beta A m n =>
     rw[show m.[n/].[σ] = m.[up σ].[n.[σ]/] by asimp]
     constructor
-  case proj_elim A m1 m2 n r s =>
+  case proj_elim A m1 m2 n =>
     rw[show n.[m2,m1/].[σ] = n.[upn 2 σ].[m2.[σ],m1.[σ]/] by asimp]
     constructor
 
 @[aesop safe (rule_sets := [red])]
-lemma Red.pi {A A' B B' : Tm Srt} r s :
-    A ~>* A' -> B ~>* B' -> .pi A B r s ~>* .pi A' B' r s := by
+lemma Red.pi {A A' B B' : Tm} :
+    A ~>* A' -> B ~>* B' -> .pi A B ~>* .pi A' B' := by
   intro rA rB
-  apply (@Star.trans _ _ (.pi A' B r s))
+  apply (@Star.trans _ _ (.pi A' B))
   apply Star.hom _ _ rA; aesop
   apply Star.hom _ _ rB; aesop
 
 @[aesop safe (rule_sets := [red])]
-lemma Red.lam {A A' m m' : Tm Srt} r s :
-    A ~>* A' -> m ~>* m' -> .lam A m r s ~>* .lam A' m' r s := by
+lemma Red.lam {A A' m m' : Tm} :
+    A ~>* A' -> m ~>* m' -> .lam A m ~>* .lam A' m' := by
   intro rA rm
-  apply (@Star.trans _ _ (.lam A' m r s))
+  apply (@Star.trans _ _ (.lam A' m))
   apply Star.hom _ _ rA; aesop
   apply Star.hom _ _ rm; aesop
 
 @[aesop safe (rule_sets := [red])]
-lemma Red.app {m m' n n' : Tm Srt} r :
-    m ~>* m' -> n ~>* n' -> .app m n r ~>* .app m' n' r := by
+lemma Red.app {m m' n n' : Tm} :
+    m ~>* m' -> n ~>* n' -> .app m n ~>* .app m' n' := by
   intro rm rn
-  apply (@Star.trans _ _ (.app m' n r))
+  apply (@Star.trans _ _ (.app m' n))
   apply Star.hom _ _ rm; aesop
   apply Star.hom _ _ rn; aesop
 
 @[aesop safe (rule_sets := [red])]
-lemma Red.sig {A A' B B' : Tm Srt} r s :
-    A ~>* A' -> B ~>* B' -> .sig A B r s ~>* .sig A' B' r s := by
+lemma Red.sig {A A' B B' : Tm} :
+    A ~>* A' -> B ~>* B' -> .sig A B ~>* .sig A' B' := by
   intro rA rB
-  apply (@Star.trans _ _ (.sig A' B r s))
+  apply (@Star.trans _ _ (.sig A' B))
   apply Star.hom _ _ rA; aesop
   apply Star.hom _ _ rB; aesop
 
 @[aesop safe (rule_sets := [red])]
-lemma Red.tup {m m' n n' : Tm Srt} r s :
-    m ~>* m' -> n ~>* n' -> .tup m n r s ~>* .tup m' n' r s := by
+lemma Red.tup {m m' n n' : Tm} :
+    m ~>* m' -> n ~>* n' -> .tup m n ~>* .tup m' n' := by
   intro rm rn
-  apply (@Star.trans _ _ (.tup m' n r s))
+  apply (@Star.trans _ _ (.tup m' n))
   apply Star.hom _ _ rm; aesop
   apply Star.hom _ _ rn; aesop
 
 @[aesop safe (rule_sets := [red])]
-lemma Red.proj {A A' m m' n n' : Tm Srt} r :
-    A ~>* A' -> m ~>* m' -> n ~>* n' -> .proj A m n r ~>* .proj A' m' n' r := by
+lemma Red.proj {A A' m m' n n' : Tm} :
+    A ~>* A' -> m ~>* m' -> n ~>* n' -> .proj A m n ~>* .proj A' m' n' := by
   intro rA rm rn
-  apply (@Star.trans _ _ (.proj A' m n r))
+  apply (@Star.trans _ _ (.proj A' m n))
   apply Star.hom _ _ rA; aesop
-  apply (@Star.trans _ _ (.proj A' m' n r))
+  apply (@Star.trans _ _ (.proj A' m' n))
   apply Star.hom _ _ rm; aesop
   apply Star.hom _ _ rn; aesop
 
 @[aesop safe (rule_sets := [red])]
-lemma Red.ite {A A' m m' n1 n1' n2 n2' : Tm Srt} :
+lemma Red.ite {A A' m m' n1 n1' n2 n2' : Tm} :
     A ~>* A' -> m ~>* m' -> n1 ~>* n1' -> n2 ~>* n2' ->
     .ite A m n1 n2 ~>* .ite A' m' n1' n2' := by
   intro rA rm rn1 rn2
@@ -155,7 +154,7 @@ lemma Red.ite {A A' m m' n1 n1' n2 n2' : Tm Srt} :
   apply Star.hom _ _ rn2; aesop
 
 @[aesop safe (rule_sets := [red])]
-lemma Red.idn {A A' m m' n n' : Tm Srt} :
+lemma Red.idn {A A' m m' n n' : Tm} :
     A ~>* A' -> m ~>* m' -> n ~>* n' -> .idn A m n ~>* .idn A' m' n' := by
   intro rA rm rn
   apply (@Star.trans _ _ (.idn A' m n))
@@ -165,11 +164,11 @@ lemma Red.idn {A A' m m' n n' : Tm Srt} :
   apply Star.hom _ _ rn; aesop
 
 @[aesop safe (rule_sets := [red])]
-lemma Red.rfl {m m' : Tm Srt} : m ~>* m' -> .rfl m ~>* .rfl m' := by
+lemma Red.rfl {m m' : Tm} : m ~>* m' -> .rfl m ~>* .rfl m' := by
   intro rm; apply Star.hom _ _ rm; aesop
 
 @[aesop safe (rule_sets := [red])]
-lemma Red.rw {A A' m m' n n' : Tm Srt} :
+lemma Red.rw {A A' m m' n n' : Tm} :
     A ~>* A' -> m ~>* m' -> n ~>* n' -> .rw A m n ~>* .rw A' m' n' := by
   intro rA rm rn
   apply (@Star.trans _ _ (.rw A' m n))
@@ -179,7 +178,7 @@ lemma Red.rw {A A' m m' n n' : Tm Srt} :
   apply Star.hom _ _ rn; aesop
 
 @[aesop safe (rule_sets := [red])]
-lemma Red.subst {m n : Tm Srt} σ : m ~>* n -> m.[σ] ~>* n.[σ] := by
+lemma Red.subst {m n : Tm} σ : m ~>* n -> m.[σ] ~>* n.[σ] := by
   intro rm
   induction rm with
   | R => constructor
@@ -189,78 +188,78 @@ lemma Red.subst {m n : Tm Srt} σ : m ~>* n -> m.[σ] ~>* n.[σ] := by
     apply Step.subst _ st
 
 @[aesop safe (rule_sets := [red])]
-lemma SRed.up {σ τ : Var -> Tm Srt} : SRed σ τ -> SRed (up σ) (up τ) := by
+lemma SRed.up {σ τ : Var -> Tm} : SRed σ τ -> SRed (up σ) (up τ) := by
   intros h x
   cases x with
   | zero => asimp; constructor
   | succ n => asimp; apply Red.subst _ (h n)
 
 @[aesop safe (rule_sets := [red])]
-lemma SRed.upn n {σ τ : Var -> Tm Srt} :
+lemma SRed.upn n {σ τ : Var -> Tm} :
     SRed σ τ -> SRed (upn n σ) (upn n τ) := by
   induction n with
   | zero => asimp
   | succ n ih => intro h; apply SRed.up (ih h)
 
-lemma Red.compat {m : Tm Srt} {σ τ}: SRed σ τ -> m.[σ] ~>* m.[τ] := by
+lemma Red.compat {m : Tm} {σ τ}: SRed σ τ -> m.[σ] ~>* m.[τ] := by
   open SRed in
   induction m generalizing σ τ
   all_goals asimp; try solve| aesop (rule_sets := [red])
 
-def SConv (σ τ : Nat -> Tm Srt) := ∀ x, σ x === τ x
+def SConv (σ τ : Nat -> Tm) := ∀ x, σ x === τ x
 
 @[aesop safe (rule_sets := [conv])]
-lemma Conv.pi {A A' B B' : Tm Srt} r s :
-    A === A' -> B === B' -> .pi A B r s === .pi A' B' r s := by
+lemma Conv.pi {A A' B B' : Tm} :
+    A === A' -> B === B' -> .pi A B === .pi A' B' := by
   intro rA rB
-  apply (@Conv.trans _ _ (.pi A' B r s))
+  apply (@Conv.trans _ _ (.pi A' B))
   apply Conv.hom _ _ rA; aesop
   apply Conv.hom _ _ rB; aesop
 
 @[aesop safe (rule_sets := [conv])]
-lemma Conv.lam {A A' m m' : Tm Srt} r s :
-    A === A' -> m === m' -> .lam A m r s === .lam A' m' r s := by
+lemma Conv.lam {A A' m m' : Tm} :
+    A === A' -> m === m' -> .lam A m === .lam A' m' := by
   intro rA rm
-  apply (@Conv.trans _ _ (.lam A' m r s))
+  apply (@Conv.trans _ _ (.lam A' m))
   apply Conv.hom _ _ rA; aesop
   apply Conv.hom _ _ rm; aesop
 
 @[aesop safe (rule_sets := [conv])]
-lemma Conv.app {m m' n n' : Tm Srt} r :
-    m === m' -> n === n' -> .app m n r === .app m' n' r := by
+lemma Conv.app {m m' n n' : Tm} :
+    m === m' -> n === n' -> .app m n === .app m' n' := by
   intro rm rn
-  apply (@Conv.trans _ _ (.app m' n r))
+  apply (@Conv.trans _ _ (.app m' n))
   apply Conv.hom _ _ rm; aesop
   apply Conv.hom _ _ rn; aesop
 
 @[aesop safe (rule_sets := [conv])]
-lemma Conv.sig {A A' B B' : Tm Srt} r s :
-    A === A' -> B === B' -> .sig A B r s === .sig A' B' r s := by
+lemma Conv.sig {A A' B B' : Tm} :
+    A === A' -> B === B' -> .sig A B === .sig A' B' := by
   intro rA rB
-  apply (@Conv.trans _ _ (.sig A' B r s))
+  apply (@Conv.trans _ _ (.sig A' B))
   apply Conv.hom _ _ rA; aesop
   apply Conv.hom _ _ rB; aesop
 
 @[aesop safe (rule_sets := [conv])]
-lemma Conv.tup {m m' n n' : Tm Srt} r s :
-    m === m' -> n === n' -> .tup m n r s === .tup m' n' r s := by
+lemma Conv.tup {m m' n n' : Tm} :
+    m === m' -> n === n' -> .tup m n === .tup m' n' := by
   intro rm rn
-  apply (@Conv.trans _ _ (.tup m' n r s))
+  apply (@Conv.trans _ _ (.tup m' n))
   apply Conv.hom _ _ rm; aesop
   apply Conv.hom _ _ rn; aesop
 
 @[aesop safe (rule_sets := [conv])]
-lemma Conv.proj {A A' m m' n n' : Tm Srt} r :
-    A === A' -> m === m' -> n === n' -> .proj A m n r === .proj A' m' n' r := by
+lemma Conv.proj {A A' m m' n n' : Tm} :
+    A === A' -> m === m' -> n === n' -> .proj A m n === .proj A' m' n' := by
   intro rA rm rn
-  apply (@Conv.trans _ _ (.proj A' m n r))
+  apply (@Conv.trans _ _ (.proj A' m n))
   apply Conv.hom _ _ rA; aesop
-  apply (@Conv.trans _ _ (.proj A' m' n r))
+  apply (@Conv.trans _ _ (.proj A' m' n))
   apply Conv.hom _ _ rm; aesop
   apply Conv.hom _ _ rn; aesop
 
 @[aesop safe (rule_sets := [conv])]
-lemma Conv.ite {A A' m m' n1 n1' n2 n2' : Tm Srt} :
+lemma Conv.ite {A A' m m' n1 n1' n2 n2' : Tm} :
     A === A' -> m === m' -> n1 === n1' -> n2 === n2' ->
     .ite A m n1 n2 === .ite A' m' n1' n2' := by
   intro rA rm rn1 rn2
@@ -273,7 +272,7 @@ lemma Conv.ite {A A' m m' n1 n1' n2 n2' : Tm Srt} :
   apply Conv.hom _ _ rn2; aesop
 
 @[aesop safe (rule_sets := [conv])]
-lemma Conv.idn {A A' m m' n n' : Tm Srt} :
+lemma Conv.idn {A A' m m' n n' : Tm} :
     A === A' -> m === m' -> n === n' -> .idn A m n === .idn A' m' n' := by
   intro rA rm rn
   apply (@Conv.trans _ _ (.idn A' m n))
@@ -283,11 +282,11 @@ lemma Conv.idn {A A' m m' n n' : Tm Srt} :
   apply Conv.hom _ _ rn; aesop
 
 @[aesop safe (rule_sets := [conv])]
-lemma Conv.rfl {m m' : Tm Srt} : m === m' -> .rfl m === .rfl m' := by
+lemma Conv.rfl {m m' : Tm} : m === m' -> .rfl m === .rfl m' := by
   intro rm; apply Conv.hom _ _ rm; aesop
 
 @[aesop safe (rule_sets := [conv])]
-lemma Conv.rw {A A' m m' n n' : Tm Srt} :
+lemma Conv.rw {A A' m m' n n' : Tm} :
     A === A' -> m === m' -> n === n' -> .rw A m n === .rw A' m' n' := by
   intro rA rm rn
   apply (@Conv.trans _ _ (.rw A' m n))
@@ -297,31 +296,31 @@ lemma Conv.rw {A A' m m' n n' : Tm Srt} :
   apply Conv.hom _ _ rn; aesop
 
 @[aesop safe (rule_sets := [conv])]
-lemma Conv.subst {m n : Tm Srt} σ : m === n -> m.[σ] === n.[σ] := by
+lemma Conv.subst {m n : Tm} σ : m === n -> m.[σ] === n.[σ] := by
   intros r
   apply Conv.hom _ _ r
   intros x y
   apply Step.subst
 
 @[aesop safe (rule_sets := [conv])]
-lemma SConv.up {σ τ : Var -> Tm Srt} : SConv σ τ -> SConv (up σ) (up τ) := by
+lemma SConv.up {σ τ : Var -> Tm} : SConv σ τ -> SConv (up σ) (up τ) := by
   intros h x
   cases x with
   | zero => asimp; constructor
   | succ n => asimp; apply Conv.subst _ (h n)
 
 @[aesop safe (rule_sets := [conv])]
-lemma SConv.upn n {σ τ : Var -> Tm Srt} :
+lemma SConv.upn n {σ τ : Var -> Tm} :
     SConv σ τ -> SConv (upn n σ) (upn n τ) := by
   induction n with
   | zero => asimp
   | succ n ih => intro h; apply SConv.up (ih h)
 
-lemma Conv.compat (m : Tm Srt) {σ τ}: SConv σ τ -> m.[σ] === m.[τ] := by
+lemma Conv.compat (m : Tm) {σ τ}: SConv σ τ -> m.[σ] === m.[τ] := by
   induction m generalizing σ τ
   all_goals asimp; try solve| aesop (rule_sets := [conv])
 
-lemma Conv.subst1 m {n1 n2 : Tm Srt} : n1 === n2 -> m.[n1/] === m.[n2/] := by
+lemma Conv.subst1 m {n1 n2 : Tm} : n1 === n2 -> m.[n1/] === m.[n2/] := by
   intro h; apply Conv.compat
   intro x
   cases x with
@@ -329,29 +328,29 @@ lemma Conv.subst1 m {n1 n2 : Tm Srt} : n1 === n2 -> m.[n1/] === m.[n2/] := by
   | succ => asimp; constructor
 
 @[aesop safe (rule_sets := [pstep])]
-lemma PStep.refl {m : Tm Srt} : m ≈> m := by
+lemma PStep.refl {m : Tm} : m ≈> m := by
   induction m
   all_goals try constructor <;> assumption
 
 @[aesop unsafe (rule_sets := [pstep])]
-lemma Step.toPStep {m m' : Tm Srt} : m ~> m' -> m ≈> m' := by
+lemma Step.toPStep {m m' : Tm} : m ~> m' -> m ≈> m' := by
   open PStep in
   intro st
   induction st <;> aesop (rule_sets := [pstep])
 
 @[aesop unsafe (rule_sets := [pstep])]
-lemma PStep.toRed {m n : Tm Srt} : m ≈> n -> m ~>* n := by
+lemma PStep.toRed {m n : Tm} : m ≈> n -> m ~>* n := by
   intro ps
   induction ps
   all_goals try aesop (rule_sets := [red])
-  case beta r s _ _ ihm ihn =>
+  case beta ihm ihn =>
     apply Star.trans
-    . apply Red.app r (Red.lam r s Star.R ihm) ihn
+    . apply Red.app (Red.lam Star.R ihm) ihn
     . apply Star.one
       apply Step.beta
-  case proj_elim r s _ _ _ ihm1 ihm2 ihn =>
+  case proj_elim ihm1 ihm2 ihn =>
     apply Star.trans
-    . apply Red.proj r Star.R (Red.tup r s ihm1 ihm2) ihn
+    . apply Red.proj Star.R (Red.tup ihm1 ihm2) ihn
     . apply Star.one
       apply Step.proj_elim
   case ite_true ihn1 =>
@@ -371,26 +370,26 @@ lemma PStep.toRed {m n : Tm Srt} : m ≈> n -> m ~>* n := by
       apply Step.rw_elim
 
 @[aesop safe (rule_sets := [pstep])]
-lemma PStep.subst {m n : Tm Srt} σ : m ≈> n -> m.[σ] ≈> n.[σ] := by
+lemma PStep.subst {m n : Tm} σ : m ≈> n -> m.[σ] ≈> n.[σ] := by
   intro ps
   induction ps generalizing σ
   all_goals try asimp; aesop (rule_sets := [pstep])
-  case beta A _ _ _ _ r s _ _ ihm ihn =>
-    have := PStep.beta A.[σ] r s (ihm (up σ)) (ihn σ)
+  case beta A _ _ _ _ _ _ ihm ihn =>
+    have := PStep.beta A.[σ] (ihm (up σ)) (ihn σ)
     asimp; asimp at this; assumption
-  case proj_elim A _ _ _ _ _ _ r s _ _ _ ihm1 ihm2 ihn =>
-    have := PStep.proj_elim A.[up σ] r s (ihm1 σ) (ihm2 σ) (ihn (upn 2 σ))
+  case proj_elim A _ _ _ _ _ _ _ _ _ ihm1 ihm2 ihn =>
+    have := PStep.proj_elim A.[up σ] (ihm1 σ) (ihm2 σ) (ihn (upn 2 σ))
     asimp; asimp at this; assumption
 
-def PSStep (σ τ : Var -> Tm Srt) : Prop := ∀ x, (σ x) ≈> (τ x)
+def PSStep (σ τ : Var -> Tm) : Prop := ∀ x, (σ x) ≈> (τ x)
 
 @[aesop safe (rule_sets := [pstep])]
-lemma PSStep.refl {σ : Var -> Tm Srt} : PSStep σ σ := by
+lemma PSStep.refl {σ : Var -> Tm} : PSStep σ σ := by
   intro x; induction x <;>
   apply PStep.refl
 
 @[aesop safe (rule_sets := [pstep])]
-lemma PSStep.up {σ τ : Var -> Tm Srt} :
+lemma PSStep.up {σ τ : Var -> Tm} :
     PSStep σ τ -> PSStep (up σ) (up τ) := by
   intro h x
   cases x with
@@ -398,32 +397,32 @@ lemma PSStep.up {σ τ : Var -> Tm Srt} :
   | succ n => asimp; apply PStep.subst; apply h
 
 @[aesop safe (rule_sets := [pstep])]
-lemma PSStep.upn n {σ τ : Var -> Tm Srt} :
+lemma PSStep.upn n {σ τ : Var -> Tm} :
     PSStep σ τ -> PSStep (upn n σ) (upn n τ) := by
   induction n with
   | zero => asimp
   | succ n ih => intro h; apply PSStep.up (ih h)
 
 @[aesop safe (rule_sets := [pstep])]
-lemma PStep.compat {m n : Tm Srt} {σ τ}:
+lemma PStep.compat {m n : Tm} {σ τ}:
     m ≈> n -> PSStep σ τ -> m.[σ] ≈> n.[τ] := by
   intro ps;
   induction ps generalizing σ τ
   all_goals asimp; try solve| aesop (rule_sets := [pstep])
-  case beta A _ _ _ _ r s _ _ ihm ihn =>
+  case beta A _ _ _ _ _ _ ihm ihn =>
     intro h
-    have := PStep.beta A.[σ] r s (ihm (h.up)) (ihn h)
+    have := PStep.beta A.[σ] (ihm (h.up)) (ihn h)
     asimp at this; assumption
-  case proj_elim A _ _ _ _ _ _ r s _ _ _ ihm1 ihm2 ihn =>
+  case proj_elim A _ _ _ _ _ _ _ _ _ ihm1 ihm2 ihn =>
     intro h
     specialize ihm1 h
     specialize ihm2 h
     specialize ihn (h.upn 2)
-    have := PStep.proj_elim A.[up σ] r s ihm1 ihm2 ihn
+    have := PStep.proj_elim A.[up σ] ihm1 ihm2 ihn
     asimp at this; assumption
 
 @[aesop safe (rule_sets := [pstep])]
-lemma PSStep.compat {m n : Tm Srt} {σ τ} :
+lemma PSStep.compat {m n : Tm} {σ τ} :
     m ≈> n -> PSStep σ τ -> PSStep (m .: σ) (n .: τ) := by
   intros ps pss x
   cases x with
@@ -431,57 +430,57 @@ lemma PSStep.compat {m n : Tm Srt} {σ τ} :
   | succ n => apply pss
 
 @[aesop safe (rule_sets := [pstep])]
-lemma PStep.subst1 m {n n' : Tm Srt} : n ≈> n' -> m.[n/] ≈> m.[n'/] := by
+lemma PStep.subst1 m {n n' : Tm} : n ≈> n' -> m.[n/] ≈> m.[n'/] := by
   intro ps
   apply PStep.compat PStep.refl
   apply PSStep.compat ps PSStep.refl
 
 @[aesop safe (rule_sets := [pstep])]
-lemma PStep.compat_subst1 {m m' n n' : Tm Srt} :
+lemma PStep.compat_subst1 {m m' n n' : Tm} :
     m ≈> m' -> n ≈> n' -> m.[n/] ≈> m'.[n'/] := by
   intro ps1 ps2
   apply PStep.compat
   . assumption
   . apply PSStep.compat ps2 PSStep.refl
 
-lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
+lemma PStep.diamond : Diamond PStep := by
   intros m m1 m2 ps
   induction ps generalizing m2
   case var =>
     intro ps; exists m2; constructor
     . assumption
     . apply PStep.refl
-  case srt i =>
+  case ty i =>
     intro ps; exists m2; constructor
     . assumption
     . apply PStep.refl
-  case pi r s _ _ ihA ihB =>
+  case pi ihA ihB =>
     intro
-    | pi _ _ psA psB =>
+    | pi psA psB =>
       have ⟨A, psA1, psA2⟩ := ihA psA
       have ⟨B, psB1, psB2⟩ := ihB psB
-      exists .pi A B r s; constructor
-      . apply PStep.pi r s psA1 psB1
-      . apply PStep.pi r s psA2 psB2
-  case lam r s _ _ ihA ihm =>
+      exists .pi A B; constructor
+      . apply PStep.pi psA1 psB1
+      . apply PStep.pi psA2 psB2
+  case lam ihA ihm =>
     intro
-    | lam _ _ psA psm =>
+    | lam psA psm =>
       have ⟨A, psA1, psA2⟩ := ihA psA
       have ⟨m, psm1, psm2⟩ := ihm psm
-      exists .lam A m r s; constructor
-      . apply PStep.lam r s psA1 psm1
-      . apply PStep.lam r s psA2 psm2
-  case app r psm psn ihm ihn =>
+      exists .lam A m; constructor
+      . apply PStep.lam psA1 psm1
+      . apply PStep.lam psA2 psm2
+  case app psm psn ihm ihn =>
     intro
-    | app _ psm psn =>
+    | app psm psn =>
       have ⟨m, psm1, psm2⟩ := ihm psm
       have ⟨n, psn1, psn2⟩ := ihn psn
-      exists .app m n r; constructor
-      . apply PStep.app r psm1 psn1
-      . apply PStep.app r psm2 psn2
-    | beta A r s psm' psn' =>
+      exists .app m n; constructor
+      . apply PStep.app psm1 psn1
+      . apply PStep.app psm2 psn2
+    | beta A psm' psn' =>
       cases psm; case lam _ _ psm =>
-      have ⟨_, psm1, psm2⟩ := ihm (PStep.lam r s PStep.refl psm')
+      have ⟨_, psm1, psm2⟩ := ihm (PStep.lam PStep.refl psm')
       have ⟨n, psn1, psn2⟩ := ihn psn'
       cases psm1; case lam m _ psm1 =>
       cases psm2; case lam _ psm2 =>
@@ -489,9 +488,9 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
       constructor
       . apply PStep.beta <;> assumption
       . apply PStep.compat_subst1 <;> assumption
-  case beta _ r s _ _ ihm ihn =>
+  case beta ihm ihn =>
     intro
-    | app _ psm psn =>
+    | app psm psn =>
       cases psm; case lam _ psm =>
       have ⟨m, psm1, psm2⟩ := ihm psm
       have ⟨n, psn1, psn2⟩ := ihn psn
@@ -499,56 +498,56 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
       constructor
       . apply PStep.compat_subst1 <;> assumption
       . apply PStep.beta <;> assumption
-    | beta _ _ _ psm psn =>
+    | beta _ psm psn =>
       have ⟨m, psm1, psm2⟩ := ihm psm
       have ⟨n, psn1, psn2⟩ := ihn psn
       exists m.[n/]
       constructor
       . apply PStep.compat_subst1 <;> assumption
       . apply PStep.compat_subst1 <;> assumption
-  case sig r s _ _ ihA ihB =>
+  case sig ihA ihB =>
     intro
-    | sig _ _ psA psB =>
+    | sig psA psB =>
       have ⟨A, psA1, psA2⟩ := ihA psA
       have ⟨B, psB1, psB2⟩ := ihB psB
-      exists .sig A B r s; constructor
-      . apply PStep.sig r s psA1 psB1
-      . apply PStep.sig r s psA2 psB2
-  case tup r s _ _ ihm ihn =>
+      exists .sig A B; constructor
+      . apply PStep.sig psA1 psB1
+      . apply PStep.sig psA2 psB2
+  case tup ihm ihn =>
     intro
-    | tup _ _ psm psn =>
+    | tup psm psn =>
       have ⟨m, psm1, psm2⟩ := ihm psm
       have ⟨n, psn1, psn2⟩ := ihn psn
-      exists .tup m n r s; constructor
-      . apply PStep.tup r s psm1 psn1
-      . apply PStep.tup r s psm2 psn2
-  case proj r psA psm psn ihA ihm ihn =>
+      exists .tup m n; constructor
+      . apply PStep.tup psm1 psn1
+      . apply PStep.tup psm2 psn2
+  case proj psA psm psn ihA ihm ihn =>
     intro
-    | proj _ psA psm psn =>
+    | proj psA psm psn =>
       have ⟨A, psA1, psA2⟩ := ihA psA
       have ⟨m, psm1, psm2⟩ := ihm psm
       have ⟨n, psn1, psn2⟩ := ihn psn
-      exists .proj A m n r; constructor
-      . apply PStep.proj r psA1 psm1 psn1
-      . apply PStep.proj r psA2 psm2 psn2
-    | proj_elim _ r s psm1 psm2 psn =>
+      exists .proj A m n; constructor
+      . apply PStep.proj psA1 psm1 psn1
+      . apply PStep.proj psA2 psm2 psn2
+    | proj_elim _ psm1 psm2 psn =>
       cases psm; case tup _ _ _ _ =>
-      have ⟨_, psm1, psm2⟩ := ihm (PStep.tup r s psm1 psm2)
+      have ⟨_, psm1, psm2⟩ := ihm (PStep.tup psm1 psm2)
       have ⟨n, psn1, psn2⟩ := ihn psn
       cases psm1; case tup m1 m2 _ _ =>
       cases psm2; case tup _ _ psm1 psm2 =>
       exists n.[m2,m1/]
       aesop (rule_sets := [pstep])
-  case proj_elim A r s _ _ _ ihm1 ihm2 ihn =>
+  case proj_elim A _ _ _ ihm1 ihm2 ihn =>
     intro
-    | proj _ _ psm psn =>
+    | proj _ psm psn =>
       cases psm; case tup _ _ psm1 psm2 =>
       have ⟨m1, psm1, _⟩ := ihm1 psm1
       have ⟨m2, psm2, _⟩ := ihm2 psm2
       have ⟨n, psn, _⟩ := ihn psn
       exists n.[m2,m1/]
       aesop (rule_sets := [pstep])
-    | proj_elim _ _ _ psm1 psm2 psn =>
+    | proj_elim _ psm1 psm2 psn =>
       have ⟨m1, psm11, psm12⟩ := ihm1 psm1
       have ⟨m2, psm21, psm22⟩ := ihm2 psm2
       have ⟨n, psn1, psn2⟩ := ihn psn
@@ -647,7 +646,7 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
       have ⟨m, psm1, psm2⟩ := ih psm
       exists m
 
-lemma PStep.strip {m m1 m2 : Tm Srt} :
+lemma PStep.strip {m m1 m2 : Tm} :
     m ≈> m1 -> m ~>* m2 -> ∃ n, m1 ~>* n ∧ m2 ≈> n := by
   intros p r; induction r generalizing m1 p
   case R =>
@@ -661,7 +660,7 @@ lemma PStep.strip {m m1 m2 : Tm Srt} :
     . apply Star.trans r p2.toRed
     . assumption
 
-theorem Step.confluent : @Confluent (Tm Srt) Step := by
+theorem Step.confluent : Confluent Step := by
   intros x y z r; induction r generalizing z
   case R =>
     intro h; exists z
@@ -676,25 +675,25 @@ theorem Step.confluent : @Confluent (Tm Srt) Step := by
     . assumption
     . apply Star.trans s2 s4.toRed
 
-theorem Step.cr : @CR (Tm Srt) Step := by
+theorem Step.cr : CR Step := by
   rw[<-Confluent.cr]
   apply Step.confluent
 
-lemma Red.var_inv {x : Var} {y : Tm Srt} : .var x ~>* y -> y = .var x := by
+lemma Red.var_inv {x y} : .var x ~>* y -> y = .var x := by
   intro r
   induction r with
   | R => rfl
   | SE _ st e => subst e; cases st
 
-lemma Red.srt_inv {s i} {x : Tm Srt} : .srt s i ~>* x -> x = .srt s i := by
+lemma Red.ty_inv {i x} : .ty i ~>* x -> x = .ty i := by
   intro r
   induction r with
   | R => rfl
   | SE _ st e => subst e; cases st
 
-lemma Red.pi_inv {A B x : Tm Srt} {r s} :
-    .pi A B r s ~>* x ->
-    ∃ A' B', A ~>* A' ∧ B ~>* B' ∧ x = .pi A' B' r s := by
+lemma Red.pi_inv {A B x} :
+    .pi A B ~>* x ->
+    ∃ A' B', A ~>* A' ∧ B ~>* B' ∧ x = .pi A' B' := by
   intro rd; induction rd
   case R => aesop
   case SE rd st ih =>
@@ -714,9 +713,9 @@ lemma Red.pi_inv {A B x : Tm Srt} {r s} :
       . apply Star.SE <;> assumption
       . rfl
 
-lemma Red.lam_inv {A m x : Tm Srt} {r s} :
-    .lam A m r s ~>* x ->
-    ∃ A' m', A ~>* A' ∧ m ~>* m' ∧ x = .lam A' m' r s := by
+lemma Red.lam_inv {A m x} :
+    .lam A m ~>* x ->
+    ∃ A' m', A ~>* A' ∧ m ~>* m' ∧ x = .lam A' m' := by
   intro rd; induction rd
   case R => aesop
   case SE rd st ih =>
@@ -736,9 +735,9 @@ lemma Red.lam_inv {A m x : Tm Srt} {r s} :
       . apply Star.SE <;> assumption
       . rfl
 
-lemma Red.sig_inv {A B x : Tm Srt} {r s} :
-    .sig A B r s ~>* x ->
-    ∃ A' B', A ~>* A' ∧ B ~>* B' ∧ x = .sig A' B' r s := by
+lemma Red.sig_inv {A B x} :
+    .sig A B ~>* x ->
+    ∃ A' B', A ~>* A' ∧ B ~>* B' ∧ x = .sig A' B' := by
   intro rd; induction rd
   case R => aesop
   case SE rd st ih =>
@@ -757,9 +756,9 @@ lemma Red.sig_inv {A B x : Tm Srt} {r s} :
       . apply Star.SE <;> assumption
       . rfl
 
-lemma Red.tup_inv {m n x : Tm Srt} {r s} :
-    .tup m n r s ~>* x ->
-    ∃ m' n', m ~>* m' ∧ n ~>* n' ∧ x = .tup m' n' r s := by
+lemma Red.tup_inv {m n x} :
+    .tup m n ~>* x ->
+    ∃ m' n', m ~>* m' ∧ n ~>* n' ∧ x = .tup m' n' := by
   intro rd; induction rd
   case R => aesop
   case SE rd st ih =>
@@ -778,25 +777,25 @@ lemma Red.tup_inv {m n x : Tm Srt} {r s} :
       . apply Star.SE <;> assumption
       . rfl
 
-lemma Red.bool_inv {x : Tm Srt} : .bool ~>* x -> x = .bool := by
+lemma Red.bool_inv {x} : .bool ~>* x -> x = .bool := by
   intro rd
   induction rd with
   | R => rfl
   | SE _ st e => subst e; cases st
 
-lemma Red.tt_inv {x : Tm Srt} : .tt ~>* x -> x = .tt := by
+lemma Red.tt_inv {x} : .tt ~>* x -> x = .tt := by
   intro rd
   induction rd with
   | R => rfl
   | SE _ st e => subst e; cases st
 
-lemma Red.ff_inv {x : Tm Srt} : .ff ~>* x -> x = .ff := by
+lemma Red.ff_inv {x} : .ff ~>* x -> x = .ff := by
   intro rd
   induction rd with
   | R => rfl
   | SE _ st e => subst e; cases st
 
-lemma Red.idn_inv {A m n x : Tm Srt} :
+lemma Red.idn_inv {A m n x} :
     .idn A m n ~>* x ->
     ∃ A' m' n', A ~>* A' ∧ m ~>* m' ∧ n ~>* n' ∧ x = .idn A' m' n' := by
   intro rd; induction rd
@@ -826,7 +825,7 @@ lemma Red.idn_inv {A m n x : Tm Srt} :
       . apply Star.SE <;> assumption
       . rfl
 
-lemma Red.rfl_inv {m x : Tm Srt} :
+lemma Red.rfl_inv {m x} :
     .rfl m ~>* x -> ∃ m', m ~>* m' ∧ x = .rfl m' := by
   intro rd; induction rd
   case R => aesop
@@ -839,17 +838,17 @@ lemma Red.rfl_inv {m x : Tm Srt} :
       . apply Star.SE <;> assumption
       . rfl
 
-lemma Conv.srt_inj {s1 s2 : Srt} {i j} :
-    .srt s1 i === .srt s2 j -> s1 = s2 ∧ i = j := by
+lemma Conv.ty_inj {i j} :
+    .ty i === .ty j -> i = j := by
   intro eq
   have ⟨_, eq1, eq2⟩ := Step.cr eq
-  have e1 := Red.srt_inv eq1
-  have e2 := Red.srt_inv eq2
+  have e1 := Red.ty_inv eq1
+  have e2 := Red.ty_inv eq2
   cases e1; cases e2; trivial
 
-lemma Conv.pi_inj {A1 A2 B1 B2 : Tm Srt} {r1 r2 s1 s2} :
-    .pi A1 B1 r1 s1 === .pi A2 B2 r2 s2 ->
-    r1 = r2 ∧ s1 = s2 ∧ A1 === A2 ∧ B1 === B2 := by
+lemma Conv.pi_inj {A1 A2 B1 B2} :
+    .pi A1 B1 === .pi A2 B2 ->
+    A1 === A2 ∧ B1 === B2 := by
   intro eq
   have ⟨x, eq1, eq2⟩ := Step.cr eq
   have ⟨_, _, _, _, e1⟩ := Red.pi_inv eq1
@@ -859,9 +858,9 @@ lemma Conv.pi_inj {A1 A2 B1 B2 : Tm Srt} {r1 r2 s1 s2} :
   . apply Conv.join <;> assumption
   . apply Conv.join <;> assumption
 
-lemma Conv.sig_inj {A1 A2 B1 B2 : Tm Srt} {r1 r2 s1 s2} :
-    .sig A1 B1 r1 s1 === .sig A2 B2 r2 s2 ->
-    r1 = r2 ∧ s1 = s2 ∧ A1 === A2 ∧ B1 === B2 := by
+lemma Conv.sig_inj {A1 A2 B1 B2} :
+    .sig A1 B1 === .sig A2 B2 ->
+    A1 === A2 ∧ B1 === B2 := by
   intro eq
   have ⟨_, eq1, eq2⟩ := Step.cr eq
   have ⟨_, _, _, _, e1⟩ := Red.sig_inv eq1
@@ -871,7 +870,7 @@ lemma Conv.sig_inj {A1 A2 B1 B2 : Tm Srt} {r1 r2 s1 s2} :
   . apply Conv.join <;> assumption
   . apply Conv.join <;> assumption
 
-lemma Conv.idn_inj {A1 A2 m1 m2 n1 n2 : Tm Srt} :
+lemma Conv.idn_inj {A1 A2 m1 m2 n1 n2} :
     .idn A1 m1 n1 === .idn A2 m2 n2 ->
     A1 === A2 ∧ m1 === m2 ∧ n1 === n2 := by
   intro eq
@@ -883,114 +882,3 @@ lemma Conv.idn_inj {A1 A2 m1 m2 n1 n2 : Tm Srt} :
   . apply Conv.join <;> assumption
   . apply Conv.join <;> assumption
   . apply Conv.join <;> assumption
-
-namespace Tactic
-open Lean Elab Tactic Meta
-
--- Eliminate an `Exists` proof `m` using `elim`.
-def existsElim (m : Expr) (elim : Expr -> Expr -> MetaM Expr) : MetaM Expr := do
-  let mType <- whnf $ <-inferType m
-  match mType.getAppFnArgs with
-  | (``Exists, #[a, p]) =>
-    withLocalDecl `x BinderInfo.default a fun x =>
-    withLocalDecl `y BinderInfo.default (.app p x) fun y => do
-      let body <- mkLambdaFVars #[x, y] (<-elim x y)
-      mkAppOptM ``Exists.elim #[none, none, none, m, body]
-  | _ => throwError "existsElim {mType}"
-
--- Eliminate an `And` proof `m` using `elim`.
-def andElim (m : Expr) (elim : Expr -> Expr -> MetaM Expr) : MetaM Expr := do
-  let mType <- whnf $ <-inferType m
-  match mType.and? with
-  | some (a, b) =>
-    withLocalDecl `x BinderInfo.default a fun x =>
-    withLocalDecl `y BinderInfo.default b fun y => do
-      let body <- mkLambdaFVars #[x, y] (<-elim x y)
-      mkAppM ``And.elim #[body, m]
-  | none => throwError f!"andElim {mType}"
-
--- Given a proposition consisting of `Exists` and `And`, find all `Eq`s among the conjuncts.
-partial def projEqs (m : Expr) (elim : Array Expr -> MetaM Expr) : MetaM Expr := do
-  let mType <- whnf $ <-inferType m
-  match mType.getAppFn.constName? with
-  | some ``Exists =>
-    existsElim m fun x y => do
-      projEqs x fun eqs1 =>
-      projEqs y fun eqs2 =>
-      elim (eqs1 ++ eqs2)
-  | some ``And =>
-    andElim m fun x y =>
-      projEqs x fun eqs1 =>
-      projEqs y fun eqs2 =>
-      elim (eqs1 ++ eqs2)
-  | some ``Eq => elim #[m]
-  | _ => elim #[]
-
--- Assuming `id : a === b`, get the associated expression of `id` and the inversion lemmas of `a` and `b`.
-def getConvs (goal : MVarId) : MetaM (Array (Expr × Expr × Expr)) := do
-  goal.withContext do
-    let lctx <- getLCtx
-    let mut acc := #[]
-    for ldecl in lctx do
-      let declExpr := ldecl.toExpr
-      let declType <- whnf $ <-inferType declExpr
-      match declType.app4? ``Conv with
-      | some (_, _, a, b) =>
-        acc := acc.push (declExpr, a, b)
-      | _ => pure ()
-    return acc
-
--- Apply `church_rosser` theorem to refute impossible conversion.
-def applyCR (goal : MVarId) (m l1 l2 : Expr) : MetaM Expr := do
-  let cr <- mkAppM ``Step.cr #[m]
-  existsElim cr fun _ h =>
-  andElim h fun h1 h2 => do
-    let h1 <- mkAppM' l1 #[h1]
-    let h2 <- mkAppM' l2 #[h2]
-    projEqs h1 fun es1 =>
-    projEqs h2 fun es2 => do
-      let e1 <- mkAppM ``Eq.symm #[es1[0]!]
-      let e2 <- mkAppM ``Eq.trans #[e1, es2[0]!]
-      mkAppOptM ``Tm.noConfusion #[none, <-goal.getType, none, none, e2]
-
-/-
-  Get the associated inversion lemma for `m`. For more complex languages, the
-  list of inversion lemmas need to be extended. -/
-def getInvLemma (m : Expr) : MetaM Expr := do
-  match m.getAppFn.constName! with
-  | ``Tm.var  => return .const ``Red.var_inv  []
-  | ``Tm.srt  => return .const ``Red.srt_inv  []
-  | ``Tm.pi   => return .const ``Red.pi_inv  []
-  | ``Tm.lam  => return .const ``Red.lam_inv []
-  | ``Tm.sig  => return .const ``Red.sig_inv []
-  | ``Tm.tup  => return .const ``Red.tup_inv []
-  | ``Tm.bool => return .const ``Red.bool_inv []
-  | ``Tm.tt   => return .const ``Red.tt_inv   []
-  | ``Tm.ff   => return .const ``Red.ff_inv   []
-  | ``Tm.idn  => return .const ``Red.idn_inv  []
-  | ``Tm.rfl  => return .const ``Red.rfl_inv  []
-  | _ => throwError `getInvLemma
-
-/--
-  `false_conv` refutes impossible conversion proofs. -/
-elab "false_conv" : tactic =>
-  withMainContext do
-    let goal <- getMainGoal
-    let goalType <- getMainTarget
-    for (m, a, b) in <-getConvs goal do
-      let s <- saveState
-      try
-        let lemma_a <- getInvLemma a
-        let lemma_b <- getInvLemma b
-        let pf <- applyCR goal m lemma_a lemma_b
-        if <-isDefEq goalType (<-inferType pf) then
-          closeMainGoal `false_conv pf
-      catch _ => restoreState s
-end Tactic
-
-example (a b : Tm Srt) (r : Rlv) (s : Srt) i :
-    Conv Step (Tm.srt s i) (Tm.srt s i) ->
-    (Tm.lam a b r s) === (Tm.srt s i) ->
-    False := by
-  intro h1 h2;
-  false_conv
