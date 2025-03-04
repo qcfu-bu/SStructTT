@@ -4,6 +4,8 @@ import SStructTT.Basics.ARS
 import SStructTT.Basics.Subst
 
 import SStructTT.MartinLof.Syntax
+import SStructTT.MartinLof.Context
+import SStructTT.MartinLof.Step
 
 import SStructTT.SStruct.SrtOrder
 import SStructTT.SStruct.Syntax

@@ -13,7 +13,7 @@ inductive Value : Tm Srt -> Prop where
   | sig A B r s : Value (.sig A B r s)
   | tup m n r s :
     Value m ->
-    (r = .ex -> Value n) ->
+    Value n ->
     Value (.tup m n r s)
   | bool : Value .bool
   | tt : Value .tt

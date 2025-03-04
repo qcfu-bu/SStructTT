@@ -80,7 +80,7 @@ theorem Typed.progress {m A : Tm Srt} :
       | .inr vl =>
         right; constructor
         . assumption
-        . intro; assumption
+        . assumption
   case proj C m n r _ _ _ _ tym _ ihm =>
     match ihm with
     | .inl ⟨m, _⟩ =>
