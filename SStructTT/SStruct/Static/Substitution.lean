@@ -1,7 +1,7 @@
-import SStructTT.Static.Renaming
+import SStructTT.SStruct.Static.Renaming
 
 namespace Static
-variable {Srt : Type} [inst : SStruct Srt]
+variable {Srt : Type} [ord : SrtOrder Srt]
 
 @[aesop safe (rule_sets := [subst]) [constructors]]
 inductive AgreeSubst : (Var -> Tm Srt) -> Ctx Srt -> Ctx Srt -> Prop where
@@ -92,7 +92,7 @@ lemma AgreeSubst.wf_cons {Γ Γ' : Ctx Srt} {A σ} :
 lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     Γ ⊢ m : A -> AgreeSubst σ Γ Γ' -> Γ' ⊢ m.[σ] : A.[σ] := by
   intro ty agr; induction ty using
-    @Typed.rec _ inst
+    @Typed.rec _ ord
       (motive_2 := fun Γ _ => ∀ Γ' σ, AgreeSubst σ Γ Γ' -> Γ' ⊢)
   generalizing Γ' σ <;> asimp
   case srt ih =>

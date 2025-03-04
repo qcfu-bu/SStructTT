@@ -1,9 +1,9 @@
-import SStructTT.Static.Renaming
-import SStructTT.Dynamic.Typed
+import SStructTT.SStruct.Static.Renaming
+import SStructTT.SStruct.Dynamic.Typed
 open Static
 
 namespace Dynamic
-variable {Srt : Type} [inst : SStruct Srt]
+variable {Srt : Type} [ord : SrtOrder Srt]
 
 @[aesop safe (rule_sets := [rename]) [constructors]]
 inductive AgreeRen : (Var -> Var) ->
@@ -149,7 +149,7 @@ lemma AgreeRen.split {Γ Γ'} {Δ Δ' Δ1 Δ2 : Ctx Srt} {ξ} :
 lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
     Γ ;; Δ ⊢ m : A -> AgreeRen ξ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢ m.[ren ξ] : A.[ren ξ] := by
   intro ty agr; induction ty using
-    @Typed.rec _ inst
+    @Typed.rec _ ord
       (motive_2 := fun Γ Δ _ => ∀ {Γ' Δ' ξ}, AgreeRen ξ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢)
   generalizing Γ' Δ' ξ <;> asimp
   case var h _ =>

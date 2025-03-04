@@ -1,4 +1,4 @@
-import SStructTT.Static.Inversion
+import SStructTT.SStruct.Static.Inversion
 open ARS
 
 namespace Static
@@ -178,10 +178,10 @@ lemma Has.inj {Γ : Ctx Srt} {x A B} :
     intro
     | succ _ _ _ _ hs => rw[ih hs]
 
-variable [inst : SStruct Srt]
+variable [ord : SrtOrder Srt]
 
 lemma Typed.srt_unique {Γ : Ctx Srt} {s i1 i2 A} :
-    Γ ⊢ .srt s i1 : A -> Sim (.srt s0 i2) A := by
+    Γ ⊢ .srt s i1 : A -> Sim (.srt ord.s0 i2) A := by
   generalize e: Tm.srt s i1 = m
   intro ty; induction ty generalizing s i1
   all_goals try trivial
@@ -285,7 +285,7 @@ lemma Typed.proj_unique {Γ : Ctx Srt} {A B m n r} :
     apply Sim.trans_left <;> assumption
 
 lemma Typed.bool_unique {Γ : Ctx Srt} {A} :
-    Γ ⊢ .bool : A -> Sim (.srt s0 0) A := by
+    Γ ⊢ .bool : A -> Sim (.srt ord.s0 0) A := by
   generalize e: Tm.bool = m
   intro ty; induction ty
   all_goals try trivial
@@ -329,7 +329,7 @@ lemma Typed.ite_unique {Γ : Ctx Srt} {A B m n1 n2} :
     apply Sim.trans_left <;> assumption
 
 lemma Typed.idn_unique {Γ : Ctx Srt} {A B m n i} :
-    Γ ⊢ .idn A m n : B -> Sim (.srt s0 i) B := by
+    Γ ⊢ .idn A m n : B -> Sim (.srt ord.s0 i) B := by
   generalize e: Tm.idn A m n = x
   intro ty; induction ty generalizing A m n
   all_goals try trivial

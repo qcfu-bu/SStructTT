@@ -1,9 +1,8 @@
-import SStructTT.Static.Inversion
-import Init.Prelude
+import SStructTT.SStruct.Static.Inversion
 open ARS
 
 namespace Static
-variable {Srt : Type} [inst : SStruct Srt]
+variable {Srt : Type} [ord : SrtOrder Srt]
 
 theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
     Γ ⊢ m : A -> m ~> m' -> Γ ⊢ m' : A := by

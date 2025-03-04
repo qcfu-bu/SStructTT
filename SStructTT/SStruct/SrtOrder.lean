@@ -1,16 +1,13 @@
 import Mathlib.Tactic
 import Mathlib.Order.Defs.PartialOrder
 
-class SStruct (S : Type) extends PartialOrder S where
+class SrtOrder (S : Type) extends PartialOrder S where
   s0 : S
   s0_min : ∀ (x : S), s0 ≤ x
   weaken_set : LowerSet S
   contra_set : LowerSet S
   s0_weaken : s0 ∈ weaken_set
   s0_contra : s0 ∈ contra_set
-
-export SStruct
-  (s0 s0_min weaken_set contra_set s0_weaken s0_contra)
 
 namespace TL4 -- 4 Sorted TLL
 inductive Srt where
@@ -140,7 +137,7 @@ lemma Srt.contra_lower : IsLowerSet contra := by
       apply Srt.le_Ls_false <;> try assumption
       aesop
 
-instance : SStruct Srt where
+instance : SrtOrder Srt where
   s0 := Srt.U
   s0_min := Srt.le_U_min
   weaken_set := ⟨_, Srt.weaken_lower⟩

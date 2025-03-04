@@ -1,11 +1,11 @@
-import SStructTT.Static.Inversion
-import SStructTT.Static.Preservation
-import SStructTT.Static.Unique
-import SStructTT.Dynamic.Substitution
+import SStructTT.SStruct.Static.Inversion
+import SStructTT.SStruct.Static.Preservation
+import SStructTT.SStruct.Static.Unique
+import SStructTT.SStruct.Dynamic.Substitution
 open ARS
 
 namespace Dynamic
-variable {Srt : Type} [inst : SStruct Srt]
+variable {Srt : Type} [ord : SrtOrder Srt]
 
 theorem Typed.validity {Γ} {Δ : Ctx Srt} {A m} :
     Γ ;; Δ ⊢ m : A -> ∃ s i, Γ ⊢ A : .srt s i := by

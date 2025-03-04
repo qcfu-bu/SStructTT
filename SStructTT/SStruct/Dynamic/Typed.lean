@@ -1,8 +1,8 @@
-import SStructTT.Static.Typed
-import SStructTT.Dynamic.Context
+import SStructTT.SStruct.Static.Typed
+import SStructTT.SStruct.Dynamic.Context
 
 namespace Dynamic
-variable {Srt : Type} [inst : SStruct Srt]
+variable {Srt : Type} [ord : SrtOrder Srt]
 
 mutual
 inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop where

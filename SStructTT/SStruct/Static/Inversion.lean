@@ -1,8 +1,8 @@
-import SStructTT.Static.Substitution
+import SStructTT.SStruct.Static.Substitution
 open ARS
 
 namespace Static
-variable {Srt : Type} [inst : SStruct Srt]
+variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Typed.pi_inv {Γ : Ctx Srt} {A B T r s} :
     Γ ⊢ .pi A B r s : T ->
@@ -40,7 +40,7 @@ lemma Typed.sig_inv {Γ : Ctx Srt} {A B T r s} :
 
 lemma Typed.idn_inv {Γ : Ctx Srt} {A T m n} :
     Γ ⊢ .idn A m n : T ->
-    ∃ i, Γ ⊢ m : A ∧ Γ ⊢ n : A ∧ T === .srt s0 i := by
+    ∃ i, Γ ⊢ m : A ∧ Γ ⊢ n : A ∧ T === .srt ord.s0 i := by
   generalize e: Tm.idn A m n = x
   intro ty; induction ty generalizing A m n
   all_goals try trivial
@@ -115,14 +115,14 @@ theorem Typed.validity {Γ : Ctx Srt} {A m} :
   intro ty; induction ty
   all_goals try trivial
   case srt i _ _ =>
-    exists s0, i+2
+    exists ord.s0, i+2
     constructor
     assumption
   case var wf hs _ =>
     have ⟨s, i, _⟩ := wf.has_typed hs
     exists s, i
   case pi s _ _ iA iB tyA _ _ _ =>
-    exists s0, (max iA iB + 1)
+    exists ord.s0, (max iA iB + 1)
     constructor
     apply tyA.toWf
   case lam s _ _ _ tym _ ihm =>
@@ -138,7 +138,7 @@ theorem Typed.validity {Γ : Ctx Srt} {A m} :
     apply Typed.esubst <;> try first | rfl | assumption
     asimp
   case sig iA iB _ _ tyA _ _ _ =>
-    exists s0, (max iA iB + 1)
+    exists ord.s0, (max iA iB + 1)
     constructor
     apply tyA.toWf
   case tup s i _ _ _ _ _ _ =>
@@ -147,18 +147,18 @@ theorem Typed.validity {Γ : Ctx Srt} {A m} :
     exists s, i
     apply Typed.esubst <;> try first | rfl | assumption
     asimp
-  case bool => exists s0, 1; constructor; assumption
-  case tt => exists s0, 0; constructor; assumption
-  case ff => exists s0, 0; constructor; assumption
+  case bool => exists ord.s0, 1; constructor; assumption
+  case tt => exists ord.s0, 0; constructor; assumption
+  case ff => exists ord.s0, 0; constructor; assumption
   case ite s i _ _ _ _ _ _ _ _ =>
     exists s, i
     apply Typed.esubst <;> try first | rfl | assumption
     asimp
   case idn i tyA _ _ _ _ _ =>
-    exists s0, i+1; constructor; apply tyA.toWf
+    exists ord.s0, i+1; constructor; apply tyA.toWf
   case rfl ih =>
     have ⟨s, i, ty⟩ := ih
-    exists s0, i
+    exists ord.s0, i
     constructor <;> assumption
   case rw m n a b s i _ _ _ _ _ ihI =>
     have ⟨sI, iI, tyI⟩ := ihI

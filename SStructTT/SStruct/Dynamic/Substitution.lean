@@ -1,9 +1,9 @@
-import SStructTT.Static.Substitution
-import SStructTT.Dynamic.Renaming
+import SStructTT.SStruct.Static.Substitution
+import SStructTT.SStruct.Dynamic.Renaming
 open Static
 
 namespace Dynamic
-variable {Srt : Type} [inst : SStruct Srt]
+variable {Srt : Type} [ord : SrtOrder Srt]
 
 @[aesop safe (rule_sets := [subst]) [constructors]]
 inductive AgreeSubst : (Var -> Tm Srt) ->
@@ -245,7 +245,7 @@ lemma AgreeSubst.wf_cons {Γ Γ'} {Δ Δ' : Ctx Srt} {A r s σ} :
 lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
     Γ ;; Δ ⊢ m : A -> AgreeSubst σ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢ m.[σ] : A.[σ] := by
   intro ty agr; induction ty using
-    @Typed.rec _ inst
+    @Typed.rec _ ord
       (motive_2 := fun Γ Δ _ => ∀ {Γ' Δ' σ}, AgreeSubst σ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢)
   generalizing Γ' Δ' σ <;> asimp
   case var wf hs ih => apply agr.has (ih agr) hs

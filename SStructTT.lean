@@ -1,26 +1,27 @@
 -- This module serves as the root of the `SStructTT` library.
 -- Import modules here that should be built as part of the library.
-import SStructTT.Defs.ARS
-import SStructTT.Defs.Subst
-import SStructTT.Defs.SStruct
-import SStructTT.Defs.Syntax
+import SStructTT.Basics.ARS
+import SStructTT.Basics.Subst
 
-import SStructTT.Static.Context
-import SStructTT.Static.Step
-import SStructTT.Static.Confluence
-import SStructTT.Static.Typed
-import SStructTT.Static.Renaming
-import SStructTT.Static.Substitution
-import SStructTT.Static.Inversion
-import SStructTT.Static.Unique
-import SStructTT.Static.Preservation
-import SStructTT.Static.Progress
+import SStructTT.SStruct.SrtOrder
+import SStructTT.SStruct.Syntax
 
-import SStructTT.Dynamic.Context
-import SStructTT.Dynamic.Step
-import SStructTT.Dynamic.Typed
-import SStructTT.Dynamic.Renaming
-import SStructTT.Dynamic.Substitution
-import SStructTT.Dynamic.Inversion
-import SStructTT.Dynamic.Preservation
-import SStructTT.Dynamic.Progress
+import SStructTT.SStruct.Static.Context
+import SStructTT.SStruct.Static.Step
+import SStructTT.SStruct.Static.Confluence
+import SStructTT.SStruct.Static.Typed
+import SStructTT.SStruct.Static.Renaming
+import SStructTT.SStruct.Static.Substitution
+import SStructTT.SStruct.Static.Inversion
+import SStructTT.SStruct.Static.Unique
+import SStructTT.SStruct.Static.Preservation
+import SStructTT.SStruct.Static.Progress
+
+import SStructTT.SStruct.Dynamic.Context
+import SStructTT.SStruct.Dynamic.Step
+import SStructTT.SStruct.Dynamic.Typed
+import SStructTT.SStruct.Dynamic.Renaming
+import SStructTT.SStruct.Dynamic.Substitution
+import SStructTT.SStruct.Dynamic.Inversion
+import SStructTT.SStruct.Dynamic.Preservation
+import SStructTT.SStruct.Dynamic.Progress

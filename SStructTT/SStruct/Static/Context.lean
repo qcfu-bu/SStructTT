@@ -1,4 +1,4 @@
-import SStructTT.Defs.Syntax
+import SStructTT.SStruct.Syntax
 
 namespace Static
 abbrev Ctx Srt := List (Tm Srt)

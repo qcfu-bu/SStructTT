@@ -1,4 +1,4 @@
-import SStructTT.Static.Step
+import SStructTT.SStruct.Static.Step
 open ARS
 
 namespace Static

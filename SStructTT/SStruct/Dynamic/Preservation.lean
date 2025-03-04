@@ -1,10 +1,10 @@
-import SStructTT.Static.Progress
-import SStructTT.Dynamic.Step
-import SStructTT.Dynamic.Inversion
+import SStructTT.SStruct.Static.Progress
+import SStructTT.SStruct.Dynamic.Step
+import SStructTT.SStruct.Dynamic.Inversion
 open ARS Static
 
 namespace Dynamic
-variable {Srt : Type} [inst : SStruct Srt]
+variable {Srt : Type} [ord : SrtOrder Srt]
 
 -- corollary of strong normalization
 lemma Static.Typed.red_value {A m : Tm Srt} :

@@ -1,5 +1,5 @@
-import SStructTT.Defs.ARS
-import SStructTT.Defs.Syntax
+import SStructTT.Basics.ARS
+import SStructTT.SStruct.Syntax
 open ARS
 
 namespace Dynamic

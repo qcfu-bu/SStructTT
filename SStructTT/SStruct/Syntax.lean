@@ -1,4 +1,4 @@
-import SStructTT.Defs.Subst
+import SStructTT.Basics.Subst
 
 section Defs
 -- Sorts

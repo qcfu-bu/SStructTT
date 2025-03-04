@@ -1,8 +1,8 @@
-import SStructTT.Defs.SStruct
-import SStructTT.Defs.Syntax
+import SStructTT.SStruct.SrtOrder
+import SStructTT.SStruct.Syntax
 
 namespace Dynamic
-variable {Srt : Type} [inst : SStruct Srt]
+variable {Srt : Type} [ord : SrtOrder Srt]
 
 abbrev Ctx Srt := List (Tm Srt × Rlv × Srt)
 notation:max A " :⟨" r ", " s "⟩ " Δ:81 => List.cons (A, r, s) Δ
@@ -11,7 +11,7 @@ notation:max A " :⟨" r ", " s "⟩ " Δ:81 => List.cons (A, r, s) Δ
 inductive Merge : Ctx Srt -> Ctx Srt -> Ctx Srt -> Prop where
   | nil : Merge [] [] []
   | contra {Δ1 Δ2 Δ} A s :
-    s ∈ contra_set ->
+    s ∈ ord.contra_set ->
     Merge Δ1 Δ2 Δ ->
     Merge (A :⟨.ex, s⟩ Δ1) (A :⟨.ex, s⟩ Δ2) (A :⟨.ex, s⟩ Δ)
   | left {Δ1 Δ2 Δ} A s :
@@ -27,7 +27,7 @@ inductive Merge : Ctx Srt -> Ctx Srt -> Ctx Srt -> Prop where
 @[scoped aesop safe [constructors]]
 inductive RSrt : Rlv -> Srt -> Prop where
   | extend {s} : RSrt .ex s
-  | weaken {s} : s ∈ weaken_set -> RSrt .im s
+  | weaken {s} : s ∈ ord.weaken_set -> RSrt .im s
 
 @[scoped aesop safe [constructors]]
 inductive Lower : Ctx Srt -> Srt -> Prop where
@@ -52,23 +52,23 @@ inductive Has : Ctx Srt -> Var -> Srt -> Tm Srt -> Prop where
     Has (B :⟨.im, s'⟩ Δ) (x + 1) s A.[shift 1]
 
 lemma Lower.split_s0 {Δ : Ctx Srt} :
-    Δ !≤ s0 -> ∃ Δ1 Δ2, Δ1 !≤ s0 ∧ Δ2 !≤ s0 ∧ Merge Δ1 Δ2 Δ := by
-  generalize e: inst.s0 = s
+    Δ !≤ ord.s0 -> ∃ Δ1 Δ2, Δ1 !≤ ord.s0 ∧ Δ2 !≤ ord.s0 ∧ Merge Δ1 Δ2 Δ := by
+  generalize e: ord.s0 = s
   intro l; induction l
   case nil =>
     subst_vars
     exists [], []; aesop
   case ex A _ s' h _ ih =>
     subst_vars
-    have := inst.le_antisymm _ _ h (inst.s0_min s')
+    have := ord.le_antisymm _ _ h (ord.s0_min s')
     subst_vars
     have ⟨Δ1, Δ2, l1, l2, mrg⟩ := ih rfl
-    exists A :⟨.ex, s0⟩ Δ1, A :⟨.ex, s0⟩ Δ2
+    exists A :⟨.ex, ord.s0⟩ Δ1, A :⟨.ex, ord.s0⟩ Δ2
     and_intros
     . constructor <;> assumption
     . constructor <;> assumption
     . constructor
-      apply inst.s0_contra
+      apply ord.s0_contra
       assumption
   case im A s s' lw ih =>
     subst_vars
@@ -126,7 +126,7 @@ lemma Merge.implicit {Δ1 Δ2 Δ : Ctx Srt} :
   all_goals aesop
 
 lemma Merge.compose {Δ1 Δ2 Δa Δb Δx Δy Δ : Ctx Srt} {s} :
-    Δa !≤ s -> s ∈ contra_set ->
+    Δa !≤ s -> s ∈ ord.contra_set ->
     Merge Δa Δb Δ ->
     Merge Δx Δa Δ1 ->
     Merge Δy Δa Δ2 ->
@@ -180,7 +180,7 @@ lemma Merge.compose {Δ1 Δ2 Δa Δb Δx Δy Δ : Ctx Srt} {s} :
       | contra => cases mrg3
       | right =>
         cases mrg3; constructor
-        . apply contra_set.lower <;> assumption
+        . apply ord.contra_set.lower <;> assumption
         . apply ih <;> assumption
   case im ih =>
     cases lw; cases mrg with
