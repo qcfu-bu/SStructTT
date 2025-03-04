@@ -1,7 +1,7 @@
 import SStructTT.SStruct.Syntax
 import SStructTT.SStruct.SrtOrder
-import SStructTT.SStruct.Static.Confluence
 import SStructTT.SStruct.Static.Context
+import SStructTT.SStruct.Static.Confluence
 
 namespace SStruct.Static
 variable {Srt : Type} [ord : SrtOrder Srt]

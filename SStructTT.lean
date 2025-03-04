@@ -7,6 +7,7 @@ import SStructTT.MartinLof.Syntax
 import SStructTT.MartinLof.Context
 import SStructTT.MartinLof.Step
 import SStructTT.MartinLof.Confluence
+import SStructTT.MartinLof.Typed
 
 import SStructTT.SStruct.SrtOrder
 import SStructTT.SStruct.Syntax
