@@ -1,7 +1,7 @@
 import SStructTT.SStruct.Static.Substitution
 open ARS
 
-namespace Static
+namespace SStruct.Static
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Typed.pi_inv {Γ : Ctx Srt} {A B T r s} :

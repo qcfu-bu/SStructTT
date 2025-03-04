@@ -4,7 +4,7 @@ import SStructTT.SStruct.Static.Unique
 import SStructTT.SStruct.Dynamic.Substitution
 open ARS
 
-namespace Dynamic
+namespace SStruct.Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 theorem Typed.validity {Γ} {Δ : Ctx Srt} {A m} :

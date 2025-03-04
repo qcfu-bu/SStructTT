@@ -1,7 +1,7 @@
 import SStructTT.SStruct.SrtOrder
 import SStructTT.SStruct.Syntax
 
-namespace Dynamic
+namespace SStruct.Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 abbrev Ctx Srt := List (Tm Srt × Rlv × Srt)

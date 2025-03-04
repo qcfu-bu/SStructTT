@@ -3,7 +3,7 @@ import SStructTT.SStruct.SrtOrder
 import SStructTT.SStruct.Static.Confluence
 import SStructTT.SStruct.Static.Context
 
-namespace Static
+namespace SStruct.Static
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 mutual

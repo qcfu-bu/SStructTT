@@ -1,7 +1,7 @@
 import SStructTT.SStruct.Static.Step
 open ARS
 
-namespace Static
+namespace SStruct.Static
 variable {Srt : Type}
 
 @[aesop safe (rule_sets := [pstep]) [constructors]]

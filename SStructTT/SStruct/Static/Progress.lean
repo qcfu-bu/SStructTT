@@ -1,7 +1,7 @@
 import SStructTT.SStruct.Static.Preservation
 open ARS
 
-namespace Static
+namespace SStruct.Static
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Typed.pi_canonical {A B C m : Tm Srt} {r s} :

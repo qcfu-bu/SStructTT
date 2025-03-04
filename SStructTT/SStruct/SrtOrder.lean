@@ -1,6 +1,8 @@
 import Mathlib.Tactic
 import Mathlib.Order.Defs.PartialOrder
 
+namespace SStruct
+
 class SrtOrder (S : Type) extends PartialOrder S where
   s0 : S
   s0_min : ∀ (x : S), s0 ≤ x

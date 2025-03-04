@@ -1,7 +1,7 @@
 import SStructTT.SStruct.Static.Inversion
 open ARS
 
-namespace Static
+namespace SStruct.Static
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :

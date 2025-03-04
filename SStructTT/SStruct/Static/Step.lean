@@ -2,7 +2,7 @@ import SStructTT.Basics.ARS
 import SStructTT.SStruct.Syntax
 open ARS
 
-namespace Static
+namespace SStruct.Static
 variable {Srt : Type}
 
 @[scoped aesop safe [constructors]]

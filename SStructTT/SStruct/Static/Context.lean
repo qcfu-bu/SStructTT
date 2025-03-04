@@ -1,6 +1,6 @@
 import SStructTT.SStruct.Syntax
 
-namespace Static
+namespace SStruct.Static
 abbrev Ctx Srt := List (Tm Srt)
 
 @[scoped aesop safe [constructors]]

@@ -1,7 +1,7 @@
 import SStructTT.SStruct.Static.Typed
 import SStructTT.SStruct.Dynamic.Context
 
-namespace Dynamic
+namespace SStruct.Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 mutual

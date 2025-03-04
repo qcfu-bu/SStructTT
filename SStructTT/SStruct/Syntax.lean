@@ -1,6 +1,7 @@
 import SStructTT.Basics.Subst
+import SStructTT.MartinLof.Syntax
 
-section Defs
+namespace SStruct
 -- Sorts
 variable (Srt : Type)
 
@@ -21,7 +22,6 @@ inductive Tm where
   | idn  (A m n : Tm)
   | rfl  (m : Tm)
   | rw   (A m n : Tm)
-end Defs
 
 namespace Tm
 variable {Srt : Type}

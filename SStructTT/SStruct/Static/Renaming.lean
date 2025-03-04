@@ -1,6 +1,6 @@
 import SStructTT.SStruct.Static.Typed
 
-namespace Static
+namespace SStruct.Static
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 @[aesop safe (rule_sets := [rename]) [constructors]]

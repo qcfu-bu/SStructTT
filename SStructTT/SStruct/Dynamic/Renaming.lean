@@ -1,8 +1,8 @@
 import SStructTT.SStruct.Static.Renaming
 import SStructTT.SStruct.Dynamic.Typed
-open Static
+open SStruct.Static
 
-namespace Dynamic
+namespace SStruct.Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 @[aesop safe (rule_sets := [rename]) [constructors]]

@@ -1,6 +1,6 @@
 import SStructTT.SStruct.Static.Renaming
 
-namespace Static
+namespace SStruct.Static
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 @[aesop safe (rule_sets := [subst]) [constructors]]

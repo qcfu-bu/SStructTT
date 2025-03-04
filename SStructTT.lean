@@ -3,6 +3,8 @@
 import SStructTT.Basics.ARS
 import SStructTT.Basics.Subst
 
+import SStructTT.MartinLof.Syntax
+
 import SStructTT.SStruct.SrtOrder
 import SStructTT.SStruct.Syntax
 

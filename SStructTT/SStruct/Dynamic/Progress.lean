@@ -1,9 +1,9 @@
 import SStructTT.SStruct.Static.Progress
 import SStructTT.SStruct.Dynamic.Step
 import SStructTT.SStruct.Dynamic.Inversion
-open ARS Static
+open ARS SStruct.Static
 
-namespace Dynamic
+namespace SStruct.Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Typed.pi_canonical {A B C m : Tm Srt} {r s} :
