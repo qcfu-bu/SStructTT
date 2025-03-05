@@ -6,43 +6,94 @@ open ARS SStruct.Static
 namespace SStruct.Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-lemma Step.toStatic {A m n : Tm Srt} :
-    [] ⊢ m : A -> m ~>> n -> m ~>* n := by
+lemma Step.toStatic' {A m n : Tm Srt} :
+    [] ⊢ m : A -> m ~>> n -> ∃ x, m ~> x ∧ x ~>* n := by
   generalize e: [] = Γ; intro ty st;
   induction ty generalizing n <;> try trivial
-  case app =>
+  case app m n _ _ _ _ ihm ihn =>
     subst_vars; cases st
-    case app_im_M => apply Red.app <;> aesop
-    case app_ex_M => apply Red.app <;> aesop
-    case app_ex_N => apply Red.app <;> aesop
-    case beta_im => apply Star.one; constructor
-    case beta_ex => apply Star.one; constructor
-  case tup =>
+    case app_im_M st _ =>
+      have ⟨m', st, rd⟩ := ihm rfl st
+      exists Tm.app m' n .im; and_intros
+      . constructor; assumption
+      . apply Red.app <;> aesop
+    case app_ex_M st _ =>
+      have ⟨m', st, rd⟩ := ihm rfl st
+      exists Tm.app m' n .ex; and_intros
+      . constructor; assumption
+      . apply Red.app <;> aesop
+    case app_ex_N st _ =>
+      have ⟨n', st, rd⟩ := ihn rfl st
+      exists Tm.app m n' .ex; and_intros
+      . constructor; assumption
+      . apply Red.app <;> aesop
+    case beta_im m _ _ =>
+      exists m.[n/]; and_intros <;> constructor
+    case beta_ex m _ _ _ =>
+      exists m.[n/]; and_intros <;> constructor
+  case tup m n _ s _ _ _ _ _ ihm ihn =>
     subst_vars; cases st
-    case tup_im_M => apply Red.tup <;> aesop
-    case tup_ex_M => apply Red.tup <;> aesop
-    case tup_ex_N => apply Red.tup <;> aesop
-  case proj =>
+    case tup_im_M st _ _ =>
+      have ⟨m', st, rd⟩ := ihm rfl st
+      exists Tm.tup m' n .im s; and_intros
+      . constructor; assumption
+      . apply Red.tup <;> aesop
+    case tup_ex_M st _ _ =>
+      have ⟨m', st, rd⟩ := ihm rfl st
+      exists Tm.tup m' n .ex s; and_intros
+      . constructor; assumption
+      . apply Red.tup <;> aesop
+    case tup_ex_N st _ _ =>
+      have ⟨n', st, rd⟩ := ihn rfl st
+      exists Tm.tup m n' .ex s; and_intros
+      . constructor; assumption
+      . apply Red.tup <;> aesop
+  case proj C m n _ _ _ _ _ _ _ _ ihm ihn =>
     subst_vars; cases st
-    case proj_im_M => apply Red.proj <;> aesop
-    case proj_ex_M => apply Red.proj <;> aesop
-    case proj_im_elim => apply Star.one; constructor
-    case proj_ex_elim => apply Star.one; constructor
-  case ite =>
+    case proj_im_M st _ _ _ _ =>
+      have ⟨m', st, rd⟩ := ihm rfl st
+      exists Tm.proj C m' n .im; and_intros
+      . constructor; assumption
+      . apply Red.proj <;> aesop
+    case proj_ex_M st _ _ _ _ =>
+      have ⟨m', st, rd⟩ := ihm rfl st
+      exists Tm.proj C m' n .ex; and_intros
+      . constructor; assumption
+      . apply Red.proj <;> aesop
+    case proj_im_elim m1 m2 _ _ _ _ _ _ =>
+      exists n.[m2,m1/]; and_intros <;> constructor
+    case proj_ex_elim m1 m2 _ _ _ _ _ _ =>
+      exists n.[m2,m1/]; and_intros <;> constructor
+  case ite A m n1 n2 _ _ _ _ _ _ _ ihm ihn1 ihn2 =>
     subst_vars; cases st
-    case ite_M => apply Red.ite <;> aesop
-    case ite_true => apply Star.one; constructor
-    case ite_false => apply Star.one; constructor
-  case rw tyn _ _ _ =>
+    case ite_M st =>
+      have ⟨m', st, rd⟩ := ihm rfl st
+      exists Tm.ite A m' n1 n2; and_intros
+      . constructor; assumption
+      . apply Red.ite <;> aesop
+    case ite_true => exists n1; and_intros <;> constructor
+    case ite_false => exists n2; and_intros <;> constructor
+  case rw A B m n _ _ _ _ _ _ tyn _ _ ihn =>
     subst_vars; cases st
     case rw_elim =>
       have ⟨n', vl, rd⟩ := Static.Typed.red_value tyn
       have tyn' := tyn.preservation' rd
       have ⟨a', _⟩ := tyn'.idn_canonical Conv.R vl; subst_vars
-      apply Star.trans
-      apply Red.rw Star.R Star.R rd
-      apply Star.one; constructor
+      match Star.ES_split rd with
+      | .inl _ => subst_vars; exists m; and_intros <;> constructor
+      | .inr ⟨n', st, rd⟩ =>
+        exists Tm.rw A m n'; and_intros
+        . constructor; assumption
+        . apply Star.trans
+          apply Red.rw Star.R Star.R rd
+          apply Star.one; constructor
   case conv => aesop
+
+lemma Step.toStatic {A m n : Tm Srt} :
+    [] ⊢ m : A -> m ~>> n -> m ~>* n := by
+  intro ty st
+  have ⟨x, st, rd⟩ := st.toStatic' ty
+  apply Star.ES <;> assumption
 
 theorem Typed.preservation {A m m' : Tm Srt} :
     [] ;; [] ⊢ m : A -> m ~>> m' -> [] ;; [] ⊢ m' : A := by
@@ -217,3 +268,11 @@ theorem Typed.preservation {A m m' : Tm Srt} :
   case conv eq _ tyB ihm =>
     subst_vars; have tym := ihm rfl rfl st
     apply tym.conv eq tyB
+
+theorem Typed.preservation' {A m m' : Tm Srt} :
+    [] ;; [] ⊢ m : A -> m ~>>* m' -> [] ;; [] ⊢ m' : A := by
+  intro ty rd
+  induction rd generalizing A
+  case R => assumption
+  case SE rd st ih =>
+    apply (ih ty).preservation st

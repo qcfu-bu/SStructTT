@@ -56,6 +56,18 @@ lemma Star.ES {y x z} : e x y -> Star e y z -> Star e x z := by
   apply Star.one
   assumption
 
+lemma Star.ES_split {x z} :
+    Star e x z -> x = z ∨ ∃ y, e x y ∧ Star e y z := by
+  intro rd; induction rd
+  case R => left; rfl
+  case SE a b rd st ih =>
+    match ih with
+    | .inl e => subst_vars; right; exists b; aesop
+    | .inr ⟨x, _, rd⟩ =>
+      right; exists x; and_intros
+      . assumption
+      . apply Star.SE rd st
+
 lemma Star.conv {x y} : Star e x y -> Conv e x y := by
   intro h
   induction h with
