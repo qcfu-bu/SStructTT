@@ -1,4 +1,4 @@
-import SStructTT.SStruct.Static.Progress
+import SStructTT.SStruct.Static.Normalization
 import SStructTT.SStruct.Dynamic.Step
 import SStructTT.SStruct.Dynamic.Inversion
 open ARS SStruct.Static
