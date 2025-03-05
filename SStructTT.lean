@@ -42,3 +42,4 @@ import SStructTT.SStruct.Dynamic.Substitution
 import SStructTT.SStruct.Dynamic.Inversion
 import SStructTT.SStruct.Dynamic.Preservation
 import SStructTT.SStruct.Dynamic.Progress
+import SStructTT.SStruct.Dynamic.Normalization
