@@ -957,13 +957,13 @@ def applyCR (goal : MVarId) (m l1 l2 : Expr) : MetaM Expr := do
   Get the associated inversion lemma for `m`. For more complex languages, the
   list of inversion lemmas need to be extended. -/
 def getInvLemma (m : Expr) : MetaM Expr := do
-  match m.getAppFn.constName! with
+  match m.getAppFn.constName? with
   | ``Tm.var  => return .const ``Red.var_inv  []
   | ``Tm.srt  => return .const ``Red.srt_inv  []
-  | ``Tm.pi   => return .const ``Red.pi_inv  []
-  | ``Tm.lam  => return .const ``Red.lam_inv []
-  | ``Tm.sig  => return .const ``Red.sig_inv []
-  | ``Tm.tup  => return .const ``Red.tup_inv []
+  | ``Tm.pi   => return .const ``Red.pi_inv   []
+  | ``Tm.lam  => return .const ``Red.lam_inv  []
+  | ``Tm.sig  => return .const ``Red.sig_inv  []
+  | ``Tm.tup  => return .const ``Red.tup_inv  []
   | ``Tm.bool => return .const ``Red.bool_inv []
   | ``Tm.tt   => return .const ``Red.tt_inv   []
   | ``Tm.ff   => return .const ``Red.ff_inv   []
