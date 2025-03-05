@@ -114,10 +114,8 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
           aesop (rule_sets := [rename])
       have typ : B :: A :: Γ ⊢ .tup (.var 1) (.var 0) r s : (.sig A B r s).[shift 2] := by
         asimp; apply Typed.tup
-        . rw[show Tm.sig A.[shift 2] B.[up (shift 2)] r s
-                = (Tm.sig A B r s).[shift 1].[shift 1] by asimp]
-          have := (tyS.weaken tyA).weaken tyB
-          assumption
+        . have ty := (tyS.weaken tyA).weaken tyB
+          asimp at ty; assumption
         . rw[show A.[shift 2] = A.[shift 1].[shift 1] by asimp]
           constructor <;> aesop
         . asimp; constructor <;> aesop

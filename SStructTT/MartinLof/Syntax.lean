@@ -41,7 +41,7 @@ def rename_rec (ξ : Var -> Var) (m : Tm) : Tm :=
   | rfl m => rfl (rename_rec ξ m)
   | rw A m n => rw (rename_rec (upren (upren ξ)) A) (rename_rec ξ m) (rename_rec ξ n)
 
-@[irreducible]instance : Rename Tm where
+instance : Rename Tm where
   rename := rename_rec
 
 namespace Rename
@@ -62,6 +62,7 @@ variable (ξ : Var -> Var) (A B m n n1 n2 : Tm) (x i : Nat)
 @[asimp]lemma idn  : rename ξ (idn A m n) = idn (rename ξ A) (rename ξ m) (rename ξ n) := by rfl
 @[asimp]lemma rfl  : rename ξ (rfl m) = rfl (rename ξ m) := by rfl
 @[asimp]lemma rw   : rename ξ (rw A m n) = rw (rename (upren $ upren ξ) A) (rename ξ m) (rename ξ n) := by rfl
+@[asimp]lemma rename_rec : rename_rec ξ m = rename ξ m := by rfl
 end Rename
 
 def subst_rec (σ : Var -> Tm) (m : Tm) : Tm :=
@@ -82,7 +83,7 @@ def subst_rec (σ : Var -> Tm) (m : Tm) : Tm :=
   | rfl m => rfl (subst_rec σ m)
   | rw A m n => rw (subst_rec (upn 2 σ) A) (subst_rec σ m) (subst_rec σ n)
 
-@[irreducible]instance : Subst Tm where
+instance : Subst Tm where
   subst := subst_rec
 
 namespace Subst
@@ -103,6 +104,7 @@ variable (σ : Var -> Tm) (A B m n n1 n2 : Tm) (x i : Nat)
 @[asimp]lemma idn  : subst σ (idn A m n) = idn (subst σ A) (subst σ m) (subst σ n) := by rfl
 @[asimp]lemma rfl  : subst σ (rfl m) = rfl (subst σ m) := by rfl
 @[asimp]lemma rw   : subst σ (rw A m n) = rw (subst (upn 2 σ) A) (subst σ m) (subst σ n) := by rfl
+@[asimp]lemma subst_rec : subst_rec σ m = subst σ m := by rfl
 end Subst
 
 section SubstLemmas

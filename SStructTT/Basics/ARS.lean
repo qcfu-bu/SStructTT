@@ -32,7 +32,7 @@ def Normal (x : T) := ¬ Reducible e x
 def NF (x y : T) := Star e x y ∧ Normal e y
 
 inductive SN : T -> Prop where
-  | intro x : (∀ y, e x y -> SN y) -> SN x
+  | intro {x} : (∀ {y}, e x y -> SN y) -> SN x
 end Definitions
 
 section Lemmas
@@ -209,6 +209,12 @@ lemma SN.preimage {x} (f : T -> T) :
     . apply h1 _ _ r
     . rfl
     . apply h1
+
+lemma SN.negate {x} :
+    ¬SN e x -> ∃ y, e x y ∧ ¬SN e y := by
+  intro sn; apply Classical.byContradiction
+  intro h; simp at h; apply sn
+  constructor; assumption
 
 lemma Normal.star {x y} : Star e x y -> Normal e x -> x = y := by
   intro h1 h2

@@ -6,11 +6,6 @@ open ARS SStruct.Static
 namespace SStruct.Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
--- corollary of strong normalization
-lemma Static.Typed.red_value {A m : Tm Srt} :
-    [] ⊢ m : A -> ∃ m', Static.Value m' ∧ m ~>* m' := by
-  sorry
-
 lemma Step.toStatic {A m n : Tm Srt} :
     [] ⊢ m : A -> m ~>> n -> m ~>* n := by
   generalize e: [] = Γ; intro ty st;

@@ -1,6 +1,6 @@
 import SStructTT.MartinLof.Normalization
 import SStructTT.MartinLof.Substitution
-import SStructTT.SStruct.Static.Substitution
+import SStructTT.SStruct.Static.Progress
 open ARS
 
 namespace SStruct.Static
@@ -128,7 +128,7 @@ lemma interp_conv {m n : Tm Srt} :
     . assumption
     . apply interp_step; assumption
 
-lemma interp_has {Γ : Ctx Srt} {x A} :
+lemma interp_has {Γ : Ctx Srt} {A x} :
     Has Γ x A -> MartinLof.Has [| Γ |]* x [| A |] := by
   intro hs; induction hs
   case zero =>
@@ -140,9 +140,25 @@ lemma interp_has {Γ : Ctx Srt} {x A} :
     . constructor; assumption
     . intro x; cases x <;> asimp
 
+lemma interp_sn' {m : MartinLof.Tm} :
+    SN MartinLof.Step m ->
+    ∀ {n : Tm Srt}, [| n |] = m -> SN Step n := by
+  intro sn; induction sn
+  case intro ih =>
+    apply Classical.byContradiction
+    intro h; simp at h
+    have ⟨x, _, nn⟩ := h; subst_vars
+    have ⟨y, st, nn⟩ := SN.negate nn
+    have sn := ih (interp_step st) rfl
+    contradiction
+
+lemma interp_sn {m : Tm Srt} :
+    SN MartinLof.Step [| m |] -> SN Step m := by
+  intro sn; apply interp_sn' <;> aesop
+
 variable [ord : SrtOrder Srt]
 
-theorem Typed.toMartinLof {Γ : Ctx Srt} {m A} :
+theorem Typed.toMartinLof {Γ : Ctx Srt} {A m} :
     Typed Γ m A -> MartinLof.Typed [| Γ |]* [| m |] [| A |] := by
   intro ty; induction ty using
     @Typed.rec _ ord (motive_2 := fun Γ _ => MartinLof.Wf [| Γ |]*)
@@ -189,3 +205,27 @@ theorem Typed.toMartinLof {Γ : Ctx Srt} {m A} :
     . apply interp_conv; assumption
     . assumption
     . assumption
+
+theorem Typed.normalization {Γ : Ctx Srt} {A m} :
+    Γ ⊢ m : A -> SN Step m := by
+  intro ty
+  replace ty := ty.toMartinLof
+  have sn := ty.normalization
+  apply interp_sn sn
+
+-- corollary of strong normalization
+lemma Typed.red_value {A m : Tm Srt} :
+    [] ⊢ m : A -> ∃ n, Static.Value n ∧ m ~>* n := by
+  intro ty; have sn := ty.normalization
+  induction sn generalizing A
+  case intro n h ih =>
+    match ty.progress with
+    | .inl ⟨n, st⟩ =>
+      have ⟨n', vl, rd⟩ := ih st (ty.preservation st)
+      exists n'; and_intros
+      . assumption
+      . apply Star.ES <;> assumption
+    | .inr vl =>
+      exists n; and_intros
+      . assumption
+      . apply Star.R
