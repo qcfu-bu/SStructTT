@@ -22,7 +22,7 @@ where
     AgreeSubst (m .: σ) (A :: Γ) (A :⟨.im, s⟩ Δ) Γ' Δ'
   | wk_ex {Γ Γ' Δ Δ' Δa Δb A m s σ} :
     Merge Δa Δb Δ' ->
-    Δa !≤ s ->
+    Δa ≤* s ->
     Γ' ;; Δa ⊢ m : A.[σ] ->
     AgreeSubst σ Γ Δ Γ' Δb ->
     AgreeSubst (m .: σ) (A :: Γ) (A :⟨.ex, s⟩ Δ) Γ' Δ'
@@ -66,7 +66,7 @@ lemma AgreeSubst.implicit {Γ Γ'} {Δ Δ' : Ctx Srt} {σ} :
   case conv => simp at h; aesop
 
 lemma AgreeSubst.lower {Γ Γ'} {Δ Δ' : Ctx Srt} {s σ} :
-    AgreeSubst σ Γ Δ Γ' Δ' -> Δ !≤ s -> Δ' !≤ s := by
+    AgreeSubst σ Γ Δ Γ' Δ' -> Δ ≤* s -> Δ' ≤* s := by
   intro agr lw; induction agr generalizing s
   case nil => assumption
   case cons =>
@@ -355,7 +355,7 @@ lemma Typed.subst_im {Γ} {Δ : Ctx Srt} {A B m n s} :
   . apply AgreeSubst.refl; assumption
 
 lemma Typed.subst_ex {Γ} {Δ1 Δ2 Δ : Ctx Srt} {A B m n s} :
-    Δ2 !≤ s -> Merge Δ1 Δ2 Δ ->
+    Δ2 ≤* s -> Merge Δ1 Δ2 Δ ->
     A :: Γ ;; A :⟨.ex, s⟩ Δ1 ⊢ m : B ->
     Γ ;; Δ2 ⊢ n : A ->
     Γ ;; Δ ⊢ m.[n/] : B.[n/] := by
@@ -379,7 +379,7 @@ lemma Typed.esubst_im {Γ} {Δ : Ctx Srt} {A B B' m m' n s} :
 lemma Typed.esubst_ex {Γ} {Δ1 Δ2 Δ : Ctx Srt} {A B B' m m' n s} :
     m' = m.[n/] ->
     B' = B.[n/] ->
-    Δ2 !≤ s -> Merge Δ1 Δ2 Δ ->
+    Δ2 ≤* s -> Merge Δ1 Δ2 Δ ->
     A :: Γ ;; A :⟨.ex, s⟩ Δ1 ⊢ m : B ->
     Γ ;; Δ2 ⊢ n : A ->
     Γ ;; Δ ⊢ m' : B' := by

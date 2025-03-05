@@ -48,7 +48,7 @@ def rename_rec (ξ : Var -> Var) (m : Tm Srt) : Tm Srt :=
   | rfl m => rfl (rename_rec ξ m)
   | rw A m n => rw (rename_rec (upren (upren ξ)) A) (rename_rec ξ m) (rename_rec ξ n)
 
-instance : Rename (Tm Srt) where
+@[irreducible]instance : Rename (Tm Srt) where
   rename := rename_rec
 
 namespace Rename
@@ -89,7 +89,7 @@ def subst_rec (σ : Var -> Tm Srt) (m : Tm Srt) : Tm Srt :=
   | rfl m => rfl (subst_rec σ m)
   | rw A m n => rw (subst_rec (upn 2 σ) A) (subst_rec σ m) (subst_rec σ n)
 
-instance : Subst (Tm Srt) where
+@[irreducible]instance : Subst (Tm Srt) where
   subst := subst_rec
 
 namespace Subst

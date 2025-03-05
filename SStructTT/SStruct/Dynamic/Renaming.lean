@@ -43,7 +43,7 @@ lemma AgreeRen.implicit {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ} :
 
 @[aesop safe (rule_sets := [rename])]
 lemma AgreeRen.lower {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ s} :
-    AgreeRen ξ Γ Δ Γ' Δ' -> Δ !≤ s -> Δ' !≤ s := by
+    AgreeRen ξ Γ Δ Γ' Δ' -> Δ ≤* s -> Δ' ≤* s := by
   intro agr lw; induction agr <;> try (solve| aesop)
   cases lw <;> constructor <;> aesop
 

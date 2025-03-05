@@ -15,6 +15,7 @@ import SStructTT.MartinLof.Confluence
 import SStructTT.MartinLof.Typed
 import SStructTT.MartinLof.Renaming
 import SStructTT.MartinLof.Substitution
+import SStructTT.MartinLof.Normalization
 
 -------------------------------------------------------------------------------------------------
 
@@ -31,6 +32,7 @@ import SStructTT.SStruct.Static.Inversion
 import SStructTT.SStruct.Static.Unique
 import SStructTT.SStruct.Static.Preservation
 import SStructTT.SStruct.Static.Progress
+import SStructTT.SStruct.Static.Normalization
 
 import SStructTT.SStruct.Dynamic.Context
 import SStructTT.SStruct.Dynamic.Step
