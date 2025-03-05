@@ -11,7 +11,7 @@ class SrtOrder (S : Type) extends PartialOrder S where
   s0_weaken : s0 ∈ weaken_set
   s0_contra : s0 ∈ contra_set
 
-namespace TL4 -- 4 Sorted TLL
+namespace SO4 -- 4 Sorted
 inductive Srt where
   | U -- unbound
   | R -- relevant
@@ -146,4 +146,4 @@ instance : SrtOrder Srt where
   contra_set := ⟨_, Srt.contra_lower⟩
   s0_weaken := Srt.weaken.U
   s0_contra := Srt.contra.U
-end TL4
+end SO4
