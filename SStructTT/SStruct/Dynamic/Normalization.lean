@@ -5,6 +5,7 @@ open ARS SStruct.Static
 namespace SStruct.Dynamic
 variable {Srt : Type}
 
+-- extension of a static step
 def Ext (x z : Tm Srt) : Prop :=
   ∃ y, Static.Step x y ∧ Star Static.Step y z
 
