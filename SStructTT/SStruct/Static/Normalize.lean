@@ -1,4 +1,4 @@
-import SStructTT.MartinLof.Normalization
+import SStructTT.MartinLof.Normalize
 import SStructTT.MartinLof.Substitution
 import SStructTT.SStruct.Static.Progress
 open ARS
@@ -206,17 +206,17 @@ theorem Typed.toMartinLof {Γ : Ctx Srt} {A m} :
     . assumption
     . assumption
 
-theorem Typed.normalization {Γ : Ctx Srt} {A m} :
+theorem Typed.normalize {Γ : Ctx Srt} {A m} :
     Γ ⊢ m : A -> SN Step m := by
   intro ty
   replace ty := ty.toMartinLof
-  have sn := ty.normalization
+  have sn := ty.normalize
   apply interp_sn sn
 
 -- corollary of strong normalization
 lemma Typed.red_value {A m : Tm Srt} :
     [] ⊢ m : A -> ∃ n, Static.Value n ∧ m ~>* n := by
-  intro ty; have sn := ty.normalization
+  intro ty; have sn := ty.normalize
   induction sn generalizing A
   case intro n h ih =>
     match ty.progress with

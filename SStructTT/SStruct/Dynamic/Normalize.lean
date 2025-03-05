@@ -1,4 +1,4 @@
-import SStructTT.SStruct.Static.Normalization
+import SStructTT.SStruct.Static.Normalize
 import SStructTT.SStruct.Dynamic.Preservation
 open ARS SStruct.Static
 
@@ -53,10 +53,10 @@ lemma ext_sn_dynamic {A a : Tm Srt} :
     [] ;; [] ⊢ a : A -> SN Ext a -> SN Step a := by
   intro sn ty; apply ext_sn_dynamic' sn ty Star.R
 
-theorem Typed.normalization {A m : Tm Srt} :
+theorem Typed.normalize {A m : Tm Srt} :
     [] ;; [] ⊢ m : A -> SN Step m := by
   intro ty
-  have sn := ty.toStatic.normalization
+  have sn := ty.toStatic.normalize
   have sn := static_sn_ext sn
   have sn := ext_sn_dynamic ty sn
   exact sn
