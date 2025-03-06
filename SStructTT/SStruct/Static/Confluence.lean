@@ -53,10 +53,10 @@ inductive PStep : Tm Srt -> Tm Srt -> Prop where
     PStep n1 n1' ->
     PStep n2 n2' ->
     PStep (.ite A m n1 n2) (.ite A' m' n1' n2')
-  | ite_true A {n1 n1'} n2 :
+  | ite_tt A {n1 n1'} n2 :
     PStep n1 n1' ->
     PStep (.ite A .tt n1 n2) n1'
-  | ite_false A n1 {n2 n2'} :
+  | ite_ff A n1 {n2 n2'} :
     PStep n2 n2' ->
     PStep (.ite A .ff n1 n2) n2'
   | idn {A A' m m' n n'} :
@@ -354,16 +354,16 @@ lemma PStep.toRed {m n : Tm Srt} : m ≈> n -> m ~>* n := by
     . apply Red.proj r Star.R (Red.tup r s ihm1 ihm2) ihn
     . apply Star.one
       apply Step.proj_elim
-  case ite_true ihn1 =>
+  case ite_tt ihn1 =>
     apply Star.trans
     . apply Red.ite Star.R Star.R ihn1 Star.R
     . apply Star.one
-      apply Step.ite_true
-  case ite_false ihn2 =>
+      apply Step.ite_tt
+  case ite_ff ihn2 =>
     apply Star.trans
     . apply Red.ite Star.R Star.R Star.R ihn2
     . apply Star.one
-      apply Step.ite_false
+      apply Step.ite_ff
   case rw_elim ihm =>
     apply Star.trans
     . apply Red.rw Star.R ihm Star.R
@@ -576,34 +576,34 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
       exists .ite A m n1 n2; constructor
       . apply PStep.ite psA1 psm1 psn11 psn21
       . apply PStep.ite psA2 psm2 psn12 psn22
-    | ite_true _ _ psn =>
+    | ite_tt _ _ psn =>
       have ⟨n, psn11, psn12⟩ := ihn1 psn
       cases psm; exists n; constructor
-      . apply PStep.ite_true _ _ psn11
+      . apply PStep.ite_tt _ _ psn11
       . assumption
-    | ite_false _ _ psn =>
+    | ite_ff _ _ psn =>
       have ⟨n, psn21, psn22⟩ := ihn2 psn
       cases psm; exists n; constructor
-      . apply PStep.ite_false _ _ psn21
+      . apply PStep.ite_ff _ _ psn21
       . assumption
-  case ite_true ihn =>
+  case ite_tt ihn =>
     intro
     | ite _ psm psn _ =>
       have ⟨n, _, psn⟩ := ihn psn
       exists n; cases psm; constructor
       . assumption
-      . apply PStep.ite_true _ _ psn
-    | ite_true _ _ psn =>
+      . apply PStep.ite_tt _ _ psn
+    | ite_tt _ _ psn =>
       have ⟨n, _, _⟩ := ihn psn
       exists n
-  case ite_false ihn =>
+  case ite_ff ihn =>
     intro
     | ite _ psm _ psn =>
       have ⟨n, _, psn⟩ := ihn psn
       exists n; cases psm; constructor
       . assumption
-      . apply PStep.ite_false _ _ psn
-    | ite_false _ _ psn =>
+      . apply PStep.ite_ff _ _ psn
+    | ite_ff _ _ psn =>
       have ⟨n, _, _⟩ := ihn psn
       exists n
   case idn ihA ihm ihn =>

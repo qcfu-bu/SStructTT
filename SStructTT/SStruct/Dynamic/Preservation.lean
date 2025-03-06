@@ -71,8 +71,8 @@ lemma Step.toStatic' {A m n : Tm Srt} :
       exists Tm.ite A m' n1 n2; and_intros
       . constructor; assumption
       . apply Red.ite <;> aesop
-    case ite_true => exists n1; and_intros <;> constructor
-    case ite_false => exists n2; and_intros <;> constructor
+    case ite_tt => exists n1; and_intros <;> constructor
+    case ite_ff => exists n2; and_intros <;> constructor
   case rw A B m n _ _ _ _ _ _ tyn _ _ ihn =>
     subst_vars; cases st
     case rw_elim =>
@@ -233,8 +233,8 @@ theorem Typed.preservation {A m m' : Tm Srt} :
         . assumption
         . assumption
       . apply tyA.subst tym.toStatic
-    case ite_true => assumption
-    case ite_false => assumption
+    case ite_tt => assumption
+    case ite_ff => assumption
   case rw A B m n a b s i tyA tym tyn ih =>
     subst_vars; cases st
     case rw_elim =>

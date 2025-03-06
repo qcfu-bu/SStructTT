@@ -61,9 +61,9 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
   | ite_M A {m m'} n1 n2 :
     Step m m' ->
     Step (.ite A m n1 n2) (.ite A m' n1 n2)
-  | ite_true A n1 n2 :
+  | ite_tt A n1 n2 :
     Step (.ite A .tt n1 n2) n1
-  | ite_false A n1 n2 :
+  | ite_ff A n1 n2 :
     Step (.ite A .ff n1 n2) n2
   | rw_elim A m n :
     Step (.rw A m n) m

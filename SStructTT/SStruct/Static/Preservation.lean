@@ -177,8 +177,8 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
     case ite_N2 st =>
       constructor <;> try assumption
       apply ihn2 st
-    case ite_true => assumption
-    case ite_false => assumption
+    case ite_tt => assumption
+    case ite_ff => assumption
   case idn ihA ihm ihn =>
     cases st
     case idn_A st =>
