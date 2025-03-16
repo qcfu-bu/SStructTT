@@ -1,48 +1,30 @@
-# SStructTT
+# Substructural Dependent Type Theory
+This repository contains the formalization of 
+Substructural Dependent Type Theory (SStruct) in [Lean 4](https://lean-lang.org/).
 
+| logic    | contraction | weakening | sort |
+| -------- | ----------- | --------- | ---- |
+| linear   | no          | no        | L    |
+| affine   | no          | yes       | A    |
+| relevant | yes         | no        | R    |
+| unbound  | yes         | yes       | U    |
 
-| logic    | contraction | weakening |
-| -------- | ----------- | --------- |
-| linear   | no          | no        |
-| affine   | no          | yes       |
-| relevant | yes         | no        |
-| unbound  | yes         | yes       |
+## Dependencies
+- Lean 4 toolchain (v4.17.0)
+- [Mathlib4](https://github.com/leanprover-community/mathlib4) (v4.17.0)
 
-If there are `Γ ⊢ m : A`, `A` is unbound and `B` is affine, can we weaken `Γ` with `B`?
-```
-Γ ⊢ m : A
------------------
-Γ, x : B ⊢ m : A
+## Build Instructions
+1. Fetch cache for Mathlib4 with `lake exec get cache`.
+2. Build SStruct with `lake build`.
 
-
-(λ(x : A). ⟨x, x⟩) m ~> ⟨m, m⟩
-```
-
-Contraction and weakening are connected in a subtle way. Consider some type
-`A` without contraction but has weakening.
-
-The following derivation is not admissible due to `A` lacking contraction:
-```
-Δ1 ⊢ m : X
--------------------(weaken)
-Δ1, (x : A) ⊢ m : X
-
-Δ2 ⊢ n : Y
--------------------(weaken)
-Δ2, (x : A) ⊢ n : Y
-
-Δ1, (x : A) ⊢ m : X         Δ2, (x : A) ⊢ n : Y
-------------------------------------------------(tup)
-Δ1, Δ2, (x : A) ⊢ ⟨m, n⟩ : X × Y
-```
-
-However, the conclusion is actually valid:
-```
-Δ1 ⊢ m : X         Δ2 ⊢ n : Y
-------------------------------(tup)
-Δ1, Δ2 ⊢ ⟨m, n⟩ : X × Y
-----------------------------------(weaken)
-Δ1, Δ2, (x : A) ⊢ ⟨m, n⟩ : X × Y
-```
-
-The `(x : A)` entry is *weak-contractible*.
+## Organizational Structure
+- **`SStructTT/`**
+  - **`Basics/`**: Basic definitions (autorewrite system and σ-substitution calculus).
+  - **`MartinLof/`**: Formalization of Martin-Löf Type Theory (axiomatized strong normalization).
+  - **`SStruct/`**
+    - **`Static/`**: Logical level theories. 
+    - **`Dynamic/`**: Program level theories.
+    - **`Erasure/`**:  Erasure soundness theories (🔨**WIP**).
+    - `SrtOrder.lean`: Typeclass for sort-orderings.
+    - `Syntax.lean`: Abstract syntax of SStruct.
+- `SStructTT.lean`: Root module file of project.

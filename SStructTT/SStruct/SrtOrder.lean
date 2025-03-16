@@ -4,12 +4,12 @@ import Mathlib.Order.Defs.PartialOrder
 namespace SStruct
 
 class SrtOrder (S : Type) extends PartialOrder S where
-  s0 : S
-  s0_min : ∀ (x : S), s0 ≤ x
+  e : S
   weaken_set : LowerSet S
   contra_set : LowerSet S
-  s0_weaken : s0 ∈ weaken_set
-  s0_contra : s0 ∈ contra_set
+  e_min : ∀ (x : S), e ≤ x
+  e_weaken : e ∈ weaken_set
+  e_contra : e ∈ contra_set
 
 namespace SO4 -- 4 Sorted
 inductive Srt where
@@ -140,10 +140,10 @@ lemma Srt.contra_lower : IsLowerSet contra := by
       aesop
 
 instance : SrtOrder Srt where
-  s0 := Srt.U
-  s0_min := Srt.le_U_min
+  e := Srt.U
   weaken_set := ⟨_, Srt.weaken_lower⟩
   contra_set := ⟨_, Srt.contra_lower⟩
-  s0_weaken := Srt.weaken.U
-  s0_contra := Srt.contra.U
+  e_min := Srt.le_U_min
+  e_weaken := Srt.weaken.U
+  e_contra := Srt.contra.U
 end SO4

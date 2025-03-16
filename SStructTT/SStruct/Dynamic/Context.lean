@@ -51,24 +51,24 @@ inductive Has : Ctx Srt -> Var -> Srt -> Tm Srt -> Prop where
     Has Δ x s A ->
     Has (B :⟨.im, s'⟩ Δ) (x + 1) s A.[shift 1]
 
-lemma Lower.split_s0 {Δ : Ctx Srt} :
-    Δ ≤* ord.s0 -> ∃ Δ1 Δ2, Δ1 ≤* ord.s0 ∧ Δ2 ≤* ord.s0 ∧ Merge Δ1 Δ2 Δ := by
-  generalize e: ord.s0 = s
+lemma Lower.split_e {Δ : Ctx Srt} :
+    Δ ≤* ord.e -> ∃ Δ1 Δ2, Δ1 ≤* ord.e ∧ Δ2 ≤* ord.e ∧ Merge Δ1 Δ2 Δ := by
+  generalize e: ord.e = s
   intro l; induction l
   case nil =>
     subst_vars
     exists [], []; aesop
   case ex A _ s' h _ ih =>
     subst_vars
-    have := ord.le_antisymm _ _ h (ord.s0_min s')
+    have := ord.le_antisymm _ _ h (ord.e_min s')
     subst_vars
     have ⟨Δ1, Δ2, l1, l2, mrg⟩ := ih rfl
-    exists A :⟨.ex, ord.s0⟩ Δ1, A :⟨.ex, ord.s0⟩ Δ2
+    exists A :⟨.ex, ord.e⟩ Δ1, A :⟨.ex, ord.e⟩ Δ2
     and_intros
     . constructor <;> assumption
     . constructor <;> assumption
     . constructor
-      apply ord.s0_contra
+      apply ord.e_contra
       assumption
   case im A s s' lw ih =>
     subst_vars

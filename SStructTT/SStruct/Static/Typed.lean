@@ -10,7 +10,7 @@ mutual
 inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
   | srt {Γ} s i :
     Wf Γ ->
-    Typed Γ (.srt s i) (.srt ord.s0 (i + 1))
+    Typed Γ (.srt s i) (.srt ord.e (i + 1))
 
   | var {Γ x A} :
     Wf Γ ->
@@ -53,7 +53,7 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
 
   | bool {Γ} :
     Wf Γ ->
-    Typed Γ .bool (.srt ord.s0 0)
+    Typed Γ .bool (.srt ord.e 0)
 
   | tt {Γ} :
     Wf Γ ->
@@ -74,7 +74,7 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
     Typed Γ A (.srt s i) ->
     Typed Γ m A ->
     Typed Γ n A ->
-    Typed Γ (.idn A m n) (.srt ord.s0 i)
+    Typed Γ (.idn A m n) (.srt ord.e i)
 
   | rfl {Γ A m} :
     Typed Γ m A ->
