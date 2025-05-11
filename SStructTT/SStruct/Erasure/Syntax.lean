@@ -92,7 +92,7 @@ end Subst
 
 section SubstLemmas
 lemma up_upren (ξ : Var -> Var) :
-  @up (Tm Srt) _ _ (ren ξ) = ren (upren ξ) := by
+    @up (Tm Srt) _ _ (ren ξ) = ren (upren ξ) := by
   funext x; cases x <;> asimp
 
 lemma rename_subst ξ (m : Tm Srt) : rename ξ m = m.[ren ξ] := by
@@ -130,7 +130,7 @@ lemma subst_id (m : Tm Srt) : m.[ids] = m := by
   | none => asimp
 
 lemma up_comp_upren (ξ : Var -> Var) (σ : Var -> Tm Srt) :
-  up (ξ !>> σ) = upren ξ !>> up σ := by
+    up (ξ !>> σ) = upren ξ !>> up σ := by
   funext x
   cases x with
   | zero => rfl
