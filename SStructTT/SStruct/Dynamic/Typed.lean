@@ -4,6 +4,11 @@ import SStructTT.SStruct.Dynamic.Context
 namespace SStruct.Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
+@[scoped aesop safe [constructors]]
+inductive RSrt : Rlv -> Srt -> Prop where
+  | extend {s} : RSrt .ex s
+  | weaken {s} : s ∈ ord.weaken_set -> RSrt .im s
+
 mutual
 inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
   | var {Γ Δ x s A} :

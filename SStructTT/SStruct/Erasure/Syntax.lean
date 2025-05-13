@@ -4,15 +4,18 @@ import SStructTT.SStruct.Dynamic.Typed
 namespace SStruct.Erasure
 variable (Srt : Type)
 
+inductive Ctrl where
+  | keep
+  | drop
+
 inductive Tm where
   | var  (x : Var)
-  | lam  (m : Tm) (s : Srt)
+  | lam  (m : Tm) (c : Ctrl) (s : Srt)
   | app  (m n : Tm)
   | tup  (m n : Tm) (s : Srt)
-  | proj (m n : Tm)
+  | proj (m n : Tm) (c d : Ctrl)
   | bool | tt | ff
   | ite (m n1 n2 : Tm)
-  | drop (m : Tm)
   | none
 
 namespace Tm
@@ -25,33 +28,31 @@ instance : Ids (Tm Srt) where
 def rename_rec (ξ : Var -> Var) (m : Tm Srt) : Tm Srt :=
   match m with
   | var x => var (ξ x)
-  | lam m s => lam (rename_rec (upren ξ) m) s
+  | lam m c s => lam (rename_rec (upren ξ) m) c s
   | app m n => app (rename_rec ξ m) (rename_rec ξ n)
   | tup m n s => tup (rename_rec ξ m) (rename_rec ξ n) s
-  | proj m n => proj (rename_rec ξ m) (rename_rec (upren $ upren ξ) n)
+  | proj m n c d => proj (rename_rec ξ m) (rename_rec (upren $ upren ξ) n) c d
   | bool => bool
   | tt => tt
   | ff => ff
   | ite m n1 n2 => ite (rename_rec ξ m) (rename_rec ξ n1) (rename_rec ξ n2)
-  | drop m => drop (rename_rec ξ m)
   | none => none
 
 instance : Rename (Tm Srt) where
   rename := rename_rec
 
 namespace Rename
-variable (ξ : Var -> Var) (A B m n n1 n2 : Tm Srt) (x i : Nat) (r : Rlv) (s : Srt)
+variable (ξ : Var -> Var) (A B m n n1 n2 : Tm Srt) (x i : Nat) (c d : Ctrl) (s : Srt)
 
 @[asimp]lemma ids  : rename ξ (ids x) = @ids (Tm Srt) _ (ξ x) := by rfl
-@[asimp]lemma lam  : rename ξ (lam m s) = lam (rename (upren ξ) m) s := by rfl
+@[asimp]lemma lam  : rename ξ (lam m c s) = lam (rename (upren ξ) m) c s := by rfl
 @[asimp]lemma app  : rename ξ (app m n) = app (rename ξ m) (rename ξ n) := by rfl
 @[asimp]lemma tup1 : rename ξ (tup m n s) = tup (rename ξ m) (rename ξ n) s := by rfl
-@[asimp]lemma proj : rename ξ (proj m n) = proj (rename ξ m) (rename (upren $ upren ξ) n) := by rfl
+@[asimp]lemma proj : rename ξ (proj m n c d) = proj (rename ξ m) (rename (upren $ upren ξ) n) c d := by rfl
 @[asimp]lemma bool : rename ξ (@bool Srt) = bool := by rfl
 @[asimp]lemma tt   : rename ξ (@tt Srt) = tt := by rfl
 @[asimp]lemma ff   : rename ξ (@ff Srt) = ff := by rfl
 @[asimp]lemma ite  : rename ξ (ite m n1 n2) = ite (rename ξ m) (rename ξ n1) (rename ξ n2) := by rfl
-@[asimp]lemma drop : rename ξ (drop m) = drop (rename ξ m) := by rfl
 @[asimp]lemma none : rename ξ (@none Srt) = none := by rfl
 @[asimp]lemma rename_rec : rename_rec ξ m = rename ξ m := by rfl
 end Rename
@@ -59,33 +60,31 @@ end Rename
 def subst_rec (σ : Var -> Tm Srt) (m : Tm Srt) : Tm Srt :=
   match m with
   | var x => σ x
-  | lam m s => lam (subst_rec (up σ) m) s
+  | lam m c s => lam (subst_rec (up σ) m) c s
   | app m n => app (subst_rec σ m) (subst_rec σ n)
   | tup m n s => tup (subst_rec σ m) (subst_rec σ n) s
-  | proj m n => proj (subst_rec σ m) (subst_rec (upn 2 σ) n)
+  | proj m n c d=> proj (subst_rec σ m) (subst_rec (upn 2 σ) n) c d
   | bool => bool
   | tt => tt
   | ff => ff
   | ite m n1 n2 => ite (subst_rec σ m) (subst_rec σ n1) (subst_rec σ n2)
-  | drop m => drop (subst_rec σ m)
   | none => none
 
 instance : Subst (Tm Srt) where
   subst := subst_rec
 
 namespace Subst
-variable (σ : Var -> Tm Srt) (A B m n n1 n2 : Tm Srt) (x i : Nat) (r : Rlv) (s : Srt)
+variable (σ : Var -> Tm Srt) (A B m n n1 n2 : Tm Srt) (x i : Nat) (c d : Ctrl) (s : Srt)
 
 @[asimp]lemma ids  : subst σ (ids x) = σ x := by rfl
-@[asimp]lemma lam  : subst σ (lam m s) = lam (subst (up σ) m) s := by rfl
+@[asimp]lemma lam  : subst σ (lam m c s) = lam (subst (up σ) m) c s := by rfl
 @[asimp]lemma app  : subst σ (app m n) = app (subst σ m) (subst σ n) := by rfl
 @[asimp]lemma tup  : subst σ (tup m n s) = tup (subst σ m) (subst σ n) s := by rfl
-@[asimp]lemma proj : subst σ (proj m n) = proj (subst σ m) (subst (upn 2 σ) n) := by rfl
+@[asimp]lemma proj : subst σ (proj m n c d) = proj (subst σ m) (subst (upn 2 σ) n) c d := by rfl
 @[asimp]lemma bool : subst σ (@bool Srt) = bool := by rfl
 @[asimp]lemma tt   : subst σ (@tt Srt) = tt := by rfl
 @[asimp]lemma ff   : subst σ (@ff Srt) = ff := by rfl
 @[asimp]lemma ite  : subst σ (ite m n1 n2) = ite (subst σ m) (subst σ n1) (subst σ n2) := by rfl
-@[asimp]lemma drop : subst σ (drop m) = drop (subst σ m) := by rfl
 @[asimp]lemma none : subst σ (@none Srt) = none := by rfl
 @[asimp]lemma subst_rec : subst_rec σ m = subst σ m := by rfl
 end Subst
@@ -98,15 +97,14 @@ lemma up_upren (ξ : Var -> Var) :
 lemma rename_subst ξ (m : Tm Srt) : rename ξ m = m.[ren ξ] := by
   induction m generalizing ξ with
   | var => asimp
-  | lam m s ihm => asimp[up_upren, ihm]
+  | lam m c s ihm => asimp[up_upren, ihm]
   | app m n ihm ihn => asimp[ihm, ihn]
   | tup m n s ihm ihn => asimp[ihm, ihn]
-  | proj m n ihm ihn => asimp[up_upren, ihm, ihn]
+  | proj m n c d ihm ihn => asimp[up_upren, ihm, ihn]
   | bool => asimp
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_upren, ihm, ihn1, ihn2]
-  | drop m ihm => asimp[ihm]
   | none => asimp
 
 lemma up_ids : up ids = @ids (Tm Srt) _ := by
@@ -118,15 +116,14 @@ lemma up_ids : up ids = @ids (Tm Srt) _ := by
 lemma subst_id (m : Tm Srt) : m.[ids] = m := by
   induction m with
   | var => asimp
-  | lam m s ihm => asimp[up_ids, ihm]
+  | lam m c s ihm => asimp[up_ids, ihm]
   | app m n ihm ihn => asimp[ihm, ihn]
   | tup m n s ihm ihn => asimp[ihm, ihn]
-  | proj m n ihm ihn => asimp[up_ids, ihm, ihn]
+  | proj m n c d ihm ihn => asimp[up_ids, ihm, ihn]
   | bool => asimp
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_ids, ihm, ihn1, ihn2]
-  | drop m ihm => asimp[ihm]
   | none => asimp
 
 lemma up_comp_upren (ξ : Var -> Var) (σ : Var -> Tm Srt) :
@@ -139,15 +136,14 @@ lemma up_comp_upren (ξ : Var -> Var) (σ : Var -> Tm Srt) :
 lemma ren_subst_comp ξ σ (m : Tm Srt) : m.[ren ξ].[σ] = m.[ξ !>> σ] := by
   induction m generalizing ξ σ with
   | var => asimp
-  | lam m s ihm => asimp[up_upren, up_comp_upren, ihm]
+  | lam m c s ihm => asimp[up_upren, up_comp_upren, ihm]
   | app m n ihm ihn => asimp[ihm, ihn]
   | tup m n s ihm ihn => asimp[ihm, ihn]
-  | proj m n ihm ihn => asimp[up_upren, up_comp_upren, ihm, ihn]
+  | proj m n c d ihm ihn => asimp[up_upren, up_comp_upren, ihm, ihn]
   | bool => asimp
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_upren, up_comp_upren, ihm, ihn1, ihn2]
-  | drop m ihm => asimp[ihm]
   | none => asimp
 
 lemma up_comp_ren (σ : Var -> Tm Srt) (ξ : Var -> Var) :
@@ -164,15 +160,14 @@ lemma up_comp_ren (σ : Var -> Tm Srt) (ξ : Var -> Var) :
 lemma subst_ren_comp σ ξ (m : Tm Srt) : m.[σ].[ren ξ] = m.[σ !>> rename ξ] := by
   induction m generalizing σ ξ with
   | var => asimp[rename_subst]
-  | lam m s ihm => asimp[up_upren, up_comp_ren, ihm]
+  | lam m c s ihm => asimp[up_upren, up_comp_ren, ihm]
   | app m n ihm ihn => asimp[ihm, ihn]
   | tup m n s ihm ihn => asimp[ihm, ihn]
-  | proj m n ihm ihn => asimp[up_upren, up_comp_ren, ihm, ihn]
+  | proj m n c d ihm ihn => asimp[up_upren, up_comp_ren, ihm, ihn]
   | bool => asimp
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_upren, up_comp_ren, ihm, ihn1, ihn2]
-  | drop m ihm => asimp[ihm]
   | none => asimp
 
 lemma up_comp (σ τ : Var -> Tm Srt) :  up σ !> up τ = up (σ !> τ) := by
@@ -189,15 +184,14 @@ lemma up_comp (σ τ : Var -> Tm Srt) :  up σ !> up τ = up (σ !> τ) := by
 lemma subst_comp (σ τ : Var -> Tm Srt) m : m.[σ].[τ] = m.[σ !> τ] := by
   induction m generalizing σ τ with
   | var => asimp
-  | lam m s ihm => asimp[up_comp, ihm]
+  | lam m c s ihm => asimp[up_comp, ihm]
   | app m n ihm ihn => asimp[ihm, ihn]
   | tup m n s ihm ihn => asimp[ihm, ihn]
-  | proj m n ihm ihn => asimp[up_comp, ihm, ihn]
+  | proj m n c d ihm ihn => asimp[up_comp, ihm, ihn]
   | bool => asimp
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_comp, ihm, ihn1, ihn2]
-  | drop m ihm => asimp[ihm]
   | none => asimp
 
 instance : SubstLemmas (Tm Srt) where

@@ -25,11 +25,6 @@ inductive Merge : Ctx Srt -> Ctx Srt -> Ctx Srt -> Prop where
     Merge (A :⟨.im, s⟩ Δ1) (A :⟨.im, s⟩ Δ2) (A :⟨.im, s⟩ Δ)
 
 @[scoped aesop safe [constructors]]
-inductive RSrt : Rlv -> Srt -> Prop where
-  | extend {s} : RSrt .ex s
-  | weaken {s} : s ∈ ord.weaken_set -> RSrt .im s
-
-@[scoped aesop safe [constructors]]
 inductive Lower : Ctx Srt -> Srt -> Prop where
   | nil s : Lower [] s
   | ex {Δ A s s'} :
