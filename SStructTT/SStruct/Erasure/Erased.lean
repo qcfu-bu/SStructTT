@@ -29,12 +29,12 @@ where
     Erased (A :: Γ) (A :⟨.im, sA⟩ Δ) m m' B ->
     Erased Γ Δ (.lam A m .im s) (.lam m' .keep s) (.pi A B .im s)
 
-  | lam_ex {Γ Δ A B m em0 em1 rA s sA iA} :
-    RSrt rA sA em0 em1 ->
+  | lam_ex {Γ Δ A B m m' rA s sA iA c} :
+    RSrt rA sA c ->
     Δ ≤* s ->
     Γ ⊢ A : .srt sA iA ->
-    Erased (A :: Γ) (A :⟨rA, sA⟩ Δ) m em0 B ->
-    Erased Γ Δ (.lam A m .ex s) (.lam em1 s) (.pi A B .ex s)
+    Erased (A :: Γ) (A :⟨rA, sA⟩ Δ) m m' B ->
+    Erased Γ Δ (.lam A m .ex s) (.lam m' c s) (.pi A B .ex s)
 
   | app_im {Γ Δ A B m m' n s} :
     Erased Γ Δ m m' (.pi A B .im s) ->
@@ -60,51 +60,49 @@ where
     Erased Γ Δ2 n n' B.[m/] ->
     Erased Γ Δ (.tup m n .ex s) (.tup m' n' s) (.sig A B .ex s)
 
-  | proj_im {Γ Δ1 Δ2 Δ A B C m m' n n' n'' rA s sA sB sC iC} :
-    RSrt rA sA n' n'' ->
+  | proj_im {Γ Δ1 Δ2 Δ A B C m m' n n' rA s sA sB sC iC c1} :
+    RSrt rA sA c1 ->
     Merge Δ1 Δ2 Δ ->
     .sig A B .im s :: Γ ⊢ C : .srt sC iC ->
     Erased Γ Δ1 m m' (.sig A B .im s) ->
     Erased (B :: A :: Γ) (B :⟨.im, sB⟩ A :⟨rA, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
-    Erased Γ Δ (.proj C m n .im) (.proj m' n'') C.[m/]
+    Erased Γ Δ (.proj C m n .im) (.proj m' n' c1 .keep) C.[m/]
 
-  | proj_ex {Γ Δ1 Δ2 Δ A B C m m' n n' n'' n''' rA rB s sA sB sC iC} :
-    RSrt rA sA n' n'' ->
-    RSrt rB sB n'' n''' ->
+  | proj_ex {Γ Δ1 Δ2 Δ A B C m m' n n' rA rB s sA sB sC iC c1 c2} :
+    RSrt rA sA c1 ->
+    RSrt rB sB c2 ->
     Merge Δ1 Δ2 Δ ->
     .sig A B .ex s :: Γ ⊢ C : .srt sC iC ->
     Erased Γ Δ1 m m' (.sig A B .ex s) ->
     Erased (B :: A :: Γ) (B :⟨rB, sB⟩ A :⟨rA, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .ex s .: shift 2] ->
-    Erased Γ Δ (.proj C m n .ex) (.proj m' n''') C.[m/]
+    Erased Γ Δ (.proj C m n .ex) (.proj m' n' c1 c2) C.[m/]
 
-/-
   | tt {Γ Δ} :
     Wf Γ Δ ->
     Δ.Forall (∃ A s, . = (A, .im, s)) ->
-    Typed Γ Δ .tt .bool
+    Erased Γ Δ .tt .tt .bool
 
   | ff {Γ Δ} :
     Wf Γ Δ ->
     Δ.Forall (∃ A s, . = (A, .im, s)) ->
-    Typed Γ Δ .ff .bool
+    Erased Γ Δ .ff .ff .bool
 
-  | ite {Γ Δ1 Δ2 Δ A m n1 n2 s i} :
+  | ite {Γ Δ1 Δ2 Δ A m m' n1 n1' n2 n2' s i} :
     Merge Δ1 Δ2 Δ ->
     .bool :: Γ ⊢ A : .srt s i ->
-    Typed Γ Δ1 m .bool ->
-    Typed Γ Δ2 n1 A.[.tt/] ->
-    Typed Γ Δ2 n2 A.[.ff/] ->
-    Typed Γ Δ (.ite A m n1 n2) A.[m/]
+    Erased Γ Δ1 m m' .bool ->
+    Erased Γ Δ2 n1 n1' A.[.tt/] ->
+    Erased Γ Δ2 n2 n2' A.[.ff/] ->
+    Erased Γ Δ (.ite A m n1 n2) (.ite m' n1' n2') A.[m/]
 
-  | rw {Γ Δ A B m n a b s i} :
+  | rw {Γ Δ A B m m' n a b s i} :
     .idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ ⊢ A : .srt s i ->
-    Typed Γ Δ m A.[.rfl a,a/] ->
+    Erased Γ Δ m m' A.[.rfl a,a/] ->
     Γ ⊢ n : .idn B a b ->
-    Typed Γ Δ (.rw A m n) A.[n,b/]
+    Erased Γ Δ (.rw A m n) m' A.[n,b/]
 
-  | conv {Γ Δ A B m s i} :
+  | conv {Γ Δ A B m m' s i} :
     A === B ->
-    Typed Γ Δ m A ->
+    Erased Γ Δ m m' A ->
     Γ ⊢ B : .srt s i ->
-    Typed Γ Δ m B
--/
+    Erased Γ Δ m m' B
