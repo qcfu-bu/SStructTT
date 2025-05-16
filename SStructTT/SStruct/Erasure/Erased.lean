@@ -99,7 +99,7 @@ where
     .idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ ⊢ A : .srt s i ->
     Erased Γ Δ m m' A.[.rfl a,a/] ->
     Γ ⊢ n : .idn B a b ->
-    Erased Γ Δ (.rw A m n) m' A.[n,b/]
+    Erased Γ Δ (.rw A m n) (.rw m') A.[n,b/]
 
   | conv {Γ Δ A B m m' s i} :
     A === B ->
@@ -263,7 +263,7 @@ lemma Typed.toErased {Γ} {Δ : Ctx Srt} {A m} :
     constructor <;> aesop
   case rw ihm =>
     have ⟨m', erm⟩ := ihm
-    exists m'; constructor <;> aesop
+    exists (.rw m'); constructor <;> aesop
   case conv ihm =>
     have ⟨m', erm⟩ := ihm
     exists m'; constructor <;> assumption

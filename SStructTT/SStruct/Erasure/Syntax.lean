@@ -15,8 +15,9 @@ inductive Tm where
   | tup  (m n : Tm) (s : Srt)
   | proj (m n : Tm) (c1 c2 : Ctrl)
   | bool | tt | ff
-  | ite (m n1 n2 : Tm)
-  | ptr (l : Nat)
+  | ite  (m n1 n2 : Tm)
+  | rw   (m : Tm)
+  | ptr  (l : Nat)
   | none
 
 namespace Tm
@@ -37,6 +38,7 @@ def rename_rec (ξ : Var -> Var) (m : Tm Srt) : Tm Srt :=
   | tt => tt
   | ff => ff
   | ite m n1 n2 => ite (rename_rec ξ m) (rename_rec ξ n1) (rename_rec ξ n2)
+  | rw m => rw (rename_rec ξ m)
   | ptr l => ptr l
   | none => none
 
@@ -56,6 +58,7 @@ variable (ξ : Var -> Var) (A B m n n1 n2 : Tm Srt) (x i l : Nat) (c c1 c2 : Ctr
 @[asimp]lemma ff   : rename ξ (@ff Srt) = ff := by rfl
 @[asimp]lemma ite  : rename ξ (ite m n1 n2) = ite (rename ξ m) (rename ξ n1) (rename ξ n2) := by rfl
 @[asimp]lemma ptr  : rename ξ (@ptr Srt l) = ptr l := by rfl
+@[asimp]lemma rw   : rename ξ (rw m) = rw (rename ξ m) := by rfl
 @[asimp]lemma none : rename ξ (@none Srt) = none := by rfl
 @[asimp]lemma rename_rec : rename_rec ξ m = rename ξ m := by rfl
 end Rename
@@ -71,6 +74,7 @@ def subst_rec (σ : Var -> Tm Srt) (m : Tm Srt) : Tm Srt :=
   | tt => tt
   | ff => ff
   | ite m n1 n2 => ite (subst_rec σ m) (subst_rec σ n1) (subst_rec σ n2)
+  | rw m => rw (subst_rec σ m)
   | ptr l => ptr l
   | none => none
 
@@ -89,6 +93,7 @@ variable (σ : Var -> Tm Srt) (A B m n n1 n2 : Tm Srt) (x i l : Nat) (c c1 c2 : 
 @[asimp]lemma tt   : subst σ (@tt Srt) = tt := by rfl
 @[asimp]lemma ff   : subst σ (@ff Srt) = ff := by rfl
 @[asimp]lemma ite  : subst σ (ite m n1 n2) = ite (subst σ m) (subst σ n1) (subst σ n2) := by rfl
+@[asimp]lemma rw   : subst σ (rw m) = rw (subst σ m) := by rfl
 @[asimp]lemma ptr  : subst σ (@ptr Srt l) = ptr l := by rfl
 @[asimp]lemma none : subst σ (@none Srt) = none := by rfl
 @[asimp]lemma subst_rec : subst_rec σ m = subst σ m := by rfl
@@ -110,6 +115,7 @@ lemma rename_subst ξ (m : Tm Srt) : rename ξ m = m.[ren ξ] := by
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_upren, ihm, ihn1, ihn2]
+  | rw m ihm => asimp[ihm]
   | ptr l => asimp
   | none => asimp
 
@@ -130,6 +136,7 @@ lemma subst_id (m : Tm Srt) : m.[ids] = m := by
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_ids, ihm, ihn1, ihn2]
+  | rw m ihm => asimp[ihm]
   | ptr l => asimp
   | none => asimp
 
@@ -151,6 +158,7 @@ lemma ren_subst_comp ξ σ (m : Tm Srt) : m.[ren ξ].[σ] = m.[ξ !>> σ] := by
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_upren, up_comp_upren, ihm, ihn1, ihn2]
+  | rw m ihm => asimp[ihm]
   | ptr l => asimp
   | none => asimp
 
@@ -176,6 +184,7 @@ lemma subst_ren_comp σ ξ (m : Tm Srt) : m.[σ].[ren ξ] = m.[σ !>> rename ξ]
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_upren, up_comp_ren, ihm, ihn1, ihn2]
+  | rw m ihm => asimp[ihm]
   | ptr l => asimp
   | none => asimp
 
@@ -201,6 +210,7 @@ lemma subst_comp (σ τ : Var -> Tm Srt) m : m.[σ].[τ] = m.[σ !> τ] := by
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_comp, ihm, ihn1, ihn2]
+  | rw m ihm => asimp[ihm]
   | ptr l => asimp
   | none => asimp
 

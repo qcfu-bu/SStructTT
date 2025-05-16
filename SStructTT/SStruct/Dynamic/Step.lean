@@ -65,11 +65,7 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
     Step (.ite A .tt n1 n2) n1
   | ite_ff A n1 n2 :
     Step (.ite A .ff n1 n2) n2
-  | rw_elim A m1 m2 n :
-    Step m1 m2 ->
-    Step (.rw A m1 n) m2
-  | rw_value A m n :
-    Value m ->
+  | rw_elim A m n :
     Step (.rw A m n) m
 
 notation:50 m:50 " ~>> " n:50 => Step m n

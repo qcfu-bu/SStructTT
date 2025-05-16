@@ -54,6 +54,8 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
     Step (.ite .tt n1 n2) n1
   | ite_ff n1 n2 :
     Step (.ite .ff n1 n2) n2
+  | rw_elim m :
+    Step (.rw m) m
 
-notation:50 m:50 " ~>>' " n:50 => Step m n
-notation:50 m:50 " ~>>'* " n:50 => ARS.Star Step m n
+notation:50 m:50 " ~>> " n:50 => Step m n
+notation:50 m:50 " ~>>* " n:50 => ARS.Star Step m n

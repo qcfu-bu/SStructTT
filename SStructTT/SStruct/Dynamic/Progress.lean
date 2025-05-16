@@ -142,11 +142,5 @@ theorem Typed.progress {m A : Tm Srt} :
       cases tym.bool_canonical Conv.R vl with
       | inl => subst_vars; left; exists n1; constructor
       | inr => subst_vars; left; exists n2; constructor
-  case rw m n _ _ _ _ _ _ _ ih =>
-    match ih with
-    | .inl ⟨m, st⟩ =>
-      left; exists m
-      apply Step.rw_elim; assumption
-    | .inr vl =>
-      left; exists m
-      apply Step.rw_value; assumption
+  case rw m n _ _ _ _ _ _ _ _ =>
+    left; exists m; apply Step.rw_elim

@@ -78,35 +78,15 @@ lemma Step.toStatic' {A m n : Tm Srt} :
     have ⟨n', vl, rd⟩ := Static.Typed.red_value tyn
     have tyn' := tyn.preservation' rd
     have ⟨a', _⟩ := tyn'.idn_canonical Conv.R vl; subst_vars
-    cases st with
-    | rw_elim _ _ _ _ st =>
-      have ⟨m', st', rd'⟩ := ihm rfl st
-      match Star.ES_split rd with
-      | .inl _ =>
-        subst_vars; exists .rw A m' (.rfl a'); and_intros
-        . constructor; assumption
-        . apply Star.ES
-          apply Static.Step.rw_elim
-          assumption
-      | .inr ⟨n', st, rd⟩ =>
-        exists Tm.rw A m n'; and_intros
-        . constructor; assumption
-        . apply Star.trans
-          apply Red.rw Star.R Star.R rd
-          apply Star.ES
-          apply Static.Step.rw_elim
-          apply Star.ES
-          assumption
-          assumption
-    | rw_value =>
-      match Star.ES_split rd with
-      | .inl _ => subst_vars; exists m; and_intros <;> constructor
-      | .inr ⟨n', st, rd⟩ =>
-        exists Tm.rw A m n'; and_intros
-        . constructor; assumption
-        . apply Star.trans
-          apply Red.rw Star.R Star.R rd
-          apply Star.one; constructor
+    cases st
+    match Star.ES_split rd with
+    | .inl _ => subst_vars; exists m; and_intros <;> constructor
+    | .inr ⟨n', st, rd⟩ =>
+      exists Tm.rw A m n'; and_intros
+      . constructor; assumption
+      . apply Star.trans
+        apply Red.rw Star.R Star.R rd
+        apply Star.one; constructor
   case conv => aesop
 
 lemma Step.toStatic {A m n : Tm Srt} :
@@ -280,17 +260,11 @@ theorem Typed.preservation {A m m' : Tm Srt} :
         apply AgreeSubst.wk; asimp; assumption
         apply Static.AgreeSubst.refl
         apply tyn.toWf
-    cases st with
-    | rw_elim _ _ _ _ st =>
-      apply Typed.conv
-      . apply Conv.compat; assumption
-      . apply ih rfl rfl st
-      . assumption
-    | rw_value =>
-      apply Typed.conv
-      . apply Conv.compat; assumption
-      . assumption
-      . assumption
+    cases st
+    apply Typed.conv
+    . apply Conv.compat; assumption
+    . assumption
+    . assumption
   case conv eq _ tyB ihm =>
     subst_vars; have tym := ihm rfl rfl st
     apply tym.conv eq tyB
