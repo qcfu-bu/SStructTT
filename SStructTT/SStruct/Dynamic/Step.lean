@@ -7,10 +7,10 @@ variable {Srt : Type}
 
 @[scoped aesop safe [constructors]]
 inductive Value : Tm Srt -> Prop where
-  | lam_im {A B s} :
-    Value (.lam A B .im s)
-  | lam_ex {A B s} :
-    Value (.lam A B .ex s)
+  | lam_im {A m s} :
+    Value (.lam A m .im s)
+  | lam_ex {A m s} :
+    Value (.lam A m .ex s)
   | tup_im {m n s} :
     Value m ->
     Value (.tup m n .im s)

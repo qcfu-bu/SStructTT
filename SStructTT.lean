@@ -43,3 +43,7 @@ import SStructTT.SStruct.Dynamic.Inversion
 import SStructTT.SStruct.Dynamic.Preservation
 import SStructTT.SStruct.Dynamic.Progress
 import SStructTT.SStruct.Dynamic.Normalize
+
+import SStructTT.SStruct.Erasure.Syntax
+import SStructTT.SStruct.Erasure.Step
+import SStructTT.SStruct.Erasure.Erased
