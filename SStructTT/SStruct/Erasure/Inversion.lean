@@ -1,0 +1,145 @@
+import SStructTT.SStruct.Dynamic.Inversion
+import SStructTT.SStruct.Erasure.Substitution
+open ARS
+
+namespace SStruct.Erasure
+open Dynamic
+variable {Srt : Type} [ord : SrtOrder Srt]
+
+theorem Erased.validity {Γ} {Δ : Ctx Srt} {A m m'} :
+    Γ ;; Δ ⊢ m ▷ m' : A -> ∃ s i, Γ ⊢ A : .srt s i := by
+  intro erm; apply erm.toDynamic.validity
+
+lemma Erased.lam_im_inv' {Γ} {Δ : Ctx Srt} {A T m m' c s} :
+    Γ ;; Δ ⊢ .lam A m .im s ▷ .lam m' c s : T ->
+    ∃ B sA,
+      A :: Γ ;; A :⟨.im, sA⟩ Δ ⊢ m ▷ m' : B ∧
+      T === .pi A B .im s ∧ c = .keep := by
+  generalize e1: SStruct.Tm.lam A m .im s = x
+  generalize e2: Tm.lam m' c s = y
+  intro er; induction er generalizing A m m' c s
+  all_goals try trivial
+  case lam_im B _ _ _ sA _ _ _ _ _ =>
+    cases e1; cases e2; exists B, sA; aesop
+  case lam_ex => cases e1
+  case conv eq1 _ _ ih =>
+    have ⟨B, sA, erm, eq2, e⟩ := ih e1 e2
+    exists B, sA
+    and_intros
+    . assumption
+    . apply Conv.trans
+      apply Conv.sym eq1
+      apply eq2
+    . assumption
+
+lemma Erased.lam_ex_inv' {Γ} {Δ : Ctx Srt} {A T m m' c s} :
+    Γ ;; Δ ⊢ .lam A m .ex s ▷ .lam m' c s : T ->
+    ∃ B rA sA,
+      RSrt rA sA c ∧
+      A :: Γ ;; A :⟨rA, sA⟩ Δ ⊢ m ▷ m' : B ∧
+      T === .pi A B .ex s := by
+  generalize e1: SStruct.Tm.lam A m .ex s = x
+  generalize e2: Tm.lam m' c s = x
+  intro er; induction er generalizing A m s
+  all_goals try trivial
+  case lam_im => cases e1
+  case lam_ex B _ _ rA _ sA _ _ rs _ _ _ _ =>
+    cases e1; cases e2; exists B, rA, sA; aesop
+  case conv eq1 _ _ ih =>
+    have ⟨B, sA, rA, rs, erm, eq2⟩ := ih e1 e2
+    exists B, sA, rA
+    and_intros
+    . assumption
+    . assumption
+    . apply Conv.trans
+      apply Conv.sym eq1
+      apply eq2
+
+lemma Erased.tup_im_inv' {Γ} {Δ : Ctx Srt} {T m m' n n' s} :
+    Γ ;; Δ ⊢ .tup m n .im s ▷ .tup m' n' s : T ->
+    ∃ A B,
+      Γ ;; Δ ⊢ m ▷ m' : A ∧
+      Γ ⊢ n : B.[m/] ∧ n' = .none ∧
+      T === .sig A B .im s := by
+  generalize e1: SStruct.Tm.tup m n .im s = x
+  generalize e2: Tm.tup m' n' s = y
+  intro er; induction er generalizing m n s
+  all_goals try trivial
+  case tup_im A B _ _ _ _ _ _ _ _ _ =>
+    cases e1; cases e2; exists A, B; aesop
+  case tup_ex => cases e1
+  case conv eq1 _ _ ih =>
+    have ⟨A, B, _, _, _, eq2⟩ := ih e1 e2
+    exists A, B
+    and_intros
+    . assumption
+    . assumption
+    . assumption
+    . apply Conv.trans
+      apply Conv.sym eq1
+      apply eq2
+
+lemma Erased.tup_ex_inv' {Γ} {Δ : Ctx Srt} {T m m' n n' s} :
+    Γ ;; Δ ⊢ .tup m n .ex s ▷ .tup m' n' s : T ->
+    ∃ Δ1 Δ2 A B,
+      Merge Δ1 Δ2 Δ ∧
+      Γ ;; Δ1 ⊢ m ▷ m' : A ∧
+      Γ ;; Δ2 ⊢ n ▷ n' : B.[m/] ∧
+      T === .sig A B .ex s := by
+  generalize e1: SStruct.Tm.tup m n .ex s = x
+  generalize e2: Tm.tup m' n' s = y
+  intro er; induction er generalizing m n s
+  all_goals try trivial
+  case tup_im => cases e1
+  case tup_ex Δ1 Δ2 Δ A B _ _ _ _ _ _ _ _ _ _ _ _ =>
+    cases e1; cases e2; exists Δ1, Δ2, A, B; aesop
+  case conv eq1 _ _ ih =>
+    have ⟨Δ1, Δ2, A, B, mrg, _, _, eq2⟩ := ih e1 e2
+    exists Δ1, Δ2, A, B
+    and_intros
+    . assumption
+    . assumption
+    . assumption
+    . apply Conv.trans
+      apply Conv.sym eq1
+      apply eq2
+
+lemma Erased.lam_im_inv {Γ} {Δ : Ctx Srt} {A A' B m m' s s'} :
+    Γ ;; Δ ⊢ .lam A m .im s ▷ .lam m' .keep s : .pi A' B .im s' ->
+    ∃ sA, A' :: Γ ;; A' :⟨.im, sA⟩ Δ ⊢ m ▷ m' : B := by
+  intro er
+  have ⟨B, sA, erm, eq, _⟩ := er.lam_im_inv'
+  have ⟨_, _, eqA, eqB⟩ := Static.Conv.pi_inj eq
+  have ⟨s, i, tyP⟩ := er.toStatic.validity
+  have ⟨_, _, _, tyB, _⟩ := tyP.pi_inv
+  have ⟨sA', _, _, tyA'⟩ := tyB.ctx_inv
+  obtain ⟨_, _, tyA⟩ := erm.ctx_inv
+  have ⟨x, rd', rd⟩ := Static.Step.cr eqA
+  have ty1 := tyA'.preservation' rd'
+  have ty2 := tyA.preservation' rd
+  have e := Static.Typed.unique ty1 ty2
+  subst_vars; exists sA'
+  replace tyB := Static.Typed.conv_ctx eqA.sym tyA tyB
+  apply Erased.conv_ctx eqA tyA'
+  apply Erased.conv eqB.sym erm tyB
+
+lemma Erased.lam_ex_inv {Γ} {Δ : Ctx Srt} {A A' B m m' c s s'} :
+    Γ ;; Δ ⊢ .lam A m .ex s ▷ .lam m' c s : .pi A' B .ex s' ->
+    ∃ rA sA, RSrt rA sA c ∧ A' :: Γ ;; A' :⟨rA, sA⟩ Δ ⊢ m ▷ m' : B := by
+  intro er
+  have ⟨B, rA, sA, rs, erm, eq⟩ := er.lam_ex_inv'
+  have ⟨_, _, eqA, eqB⟩ := Static.Conv.pi_inj eq
+  have ⟨s, i, tyP⟩ := er.toStatic.validity
+  have ⟨_, _, _, tyB, _⟩ := tyP.pi_inv
+  have ⟨sA', _, _, tyA'⟩ := tyB.ctx_inv
+  obtain ⟨_, _, tyA⟩ := erm.ctx_inv
+  have ⟨x, rd', rd⟩ := Static.Step.cr eqA
+  have ty1 := tyA'.preservation' rd'
+  have ty2 := tyA.preservation' rd
+  have e := Static.Typed.unique ty1 ty2
+  subst_vars; exists rA, sA'
+  replace tyB := Static.Typed.conv_ctx eqA.sym tyA tyB
+  and_intros
+  . assumption
+  . apply Erased.conv_ctx eqA tyA'
+    apply Erased.conv eqB.sym erm tyB
