@@ -6,6 +6,61 @@ namespace SStruct.Erasure
 open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
+lemma Erased.var_image {Γ} {Δ : Ctx Srt} {B t x} :
+    Γ ;; Δ ⊢ .var x ▷ t : B -> ∃ x, t = .var x := by
+  generalize e: SStruct.Tm.var x = k
+  intro er; induction er <;> try trivial
+  case var => cases e; exists x
+  case conv ih => subst_vars; simp[ih]
+
+lemma Erased.lam_im_image {Γ} {Δ : Ctx Srt} {A B t m s} :
+    Γ ;; Δ ⊢ .lam A m .im s ▷ t : B ->
+    ∃ m', t = .lam m' .keep s := by
+  generalize e: SStruct.Tm.lam A m .im s = k
+  intro er; induction er <;> try trivial
+  case lam_im => cases e; aesop
+  case lam_ex => cases e
+  case conv ih => subst_vars; simp[ih]
+
+lemma Erased.lam_ex_image {Γ} {Δ : Ctx Srt} {A B t m s} :
+    Γ ;; Δ ⊢ .lam A m .ex s ▷ t : B ->
+    ∃ m' c, t = .lam m' c s := by
+  generalize e: SStruct.Tm.lam A m .ex s = k
+  intro er; induction er <;> try trivial
+  case lam_im => cases e
+  case lam_ex => cases e; aesop
+  case conv ih => subst_vars; simp[ih]
+
+lemma Erased.tup_im_image {Γ} {Δ : Ctx Srt} {B m n t s} :
+    Γ ;; Δ ⊢ .tup m n .im s ▷ t : B ->
+    ∃ m', t = .tup m' .none s := by
+  generalize e: SStruct.Tm.tup m n .im s = k
+  intro er; induction er <;> try trivial
+  case tup_im => cases e; aesop
+  case tup_ex => cases e
+  case conv ih => subst_vars; simp[ih]
+
+lemma Erased.tup_ex_image {Γ} {Δ : Ctx Srt} {B m n t s} :
+    Γ ;; Δ ⊢ .tup m n .ex s ▷ t : B ->
+    ∃ m' n', t = .tup m' n' s := by
+  generalize e: SStruct.Tm.tup m n .ex s = k
+  intro er; induction er <;> try trivial
+  case tup_im => cases e
+  case tup_ex => cases e; aesop
+  case conv ih => subst_vars; simp[ih]
+
+lemma Erased.tt_image {Γ} {Δ : Ctx Srt} {B t} :
+    Γ ;; Δ ⊢ .tt ▷ t : B -> t = .tt := by
+  generalize e: SStruct.Tm.tt = k
+  intro er; induction er <;> try trivial
+  case conv ih => subst_vars; simp[ih]
+
+lemma Erased.ff_image {Γ} {Δ : Ctx Srt} {B t} :
+    Γ ;; Δ ⊢ .ff ▷ t : B -> t = .ff := by
+  generalize e: SStruct.Tm.ff = k
+  intro er; induction er <;> try trivial
+  case conv ih => subst_vars; simp[ih]
+
 theorem Erased.validity {Γ} {Δ : Ctx Srt} {A m m'} :
     Γ ;; Δ ⊢ m ▷ m' : A -> ∃ s i, Γ ⊢ A : .srt s i := by
   intro erm; apply erm.toDynamic.validity
