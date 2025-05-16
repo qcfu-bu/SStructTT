@@ -143,3 +143,45 @@ lemma Erased.lam_ex_inv {Γ} {Δ : Ctx Srt} {A A' B m m' c s s'} :
   . assumption
   . apply Erased.conv_ctx eqA tyA'
     apply Erased.conv eqB.sym erm tyB
+
+lemma Erased.tup_im_inv {Γ} {Δ : Ctx Srt} {A B m m' n n' s s'} :
+    Γ ;; Δ ⊢ .tup m n .im s ▷ .tup m' n' s : .sig A B .im s' ->
+    Γ ;; Δ ⊢ m ▷ m' : A ∧ Γ ⊢ n : B.[m/] ∧ n' = .none ∧ s = s' := by
+  intro er
+  have ⟨A', B', erm, tyn, e, eq⟩ := er.tup_im_inv'
+  have ⟨_, _, eqA, eqB⟩ := Static.Conv.sig_inj eq
+  subst_vars
+  have ⟨s, i, tyS⟩ := er.validity
+  have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
+  have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
+  replace erm := Erased.conv eqA.sym erm tyA
+  replace tyB := tyB.subst erm.toStatic; asimp at tyB
+  simp; and_intros
+  . assumption
+  . apply Static.Typed.conv
+    apply Static.Conv.subst _ eqB.sym
+    assumption
+    assumption
+
+lemma Erased.tup_ex_inv {Γ} {Δ : Ctx Srt} {A B m m' n n' s s'} :
+    Γ ;; Δ ⊢ .tup m n .ex s ▷ .tup m' n' s : .sig A B .ex s' ->
+    ∃ Δ1 Δ2,
+      Merge Δ1 Δ2 Δ ∧
+      Γ ;; Δ1 ⊢ m ▷ m' : A ∧
+      Γ ;; Δ2 ⊢ n ▷ n' : B.[m/] ∧ s = s' := by
+  intro er
+  have ⟨Δ1, Δ2, A', B', mrg, erm, ern, eq⟩ := er.tup_ex_inv'
+  have ⟨_, _, eqA, eqB⟩ := Static.Conv.sig_inj eq
+  subst_vars
+  have ⟨s, i, tyS⟩ := er.validity
+  have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
+  have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
+  replace erm := Erased.conv eqA.sym erm tyA
+  replace tyB := tyB.subst erm.toStatic; asimp at tyB
+  exists Δ1, Δ2; simp; and_intros
+  . assumption
+  . assumption
+  . apply Erased.conv
+    apply Static.Conv.subst _ eqB.sym
+    assumption
+    assumption
