@@ -47,3 +47,4 @@ import SStructTT.SStruct.Dynamic.Normalize
 import SStructTT.SStruct.Erasure.Syntax
 import SStructTT.SStruct.Erasure.Step
 import SStructTT.SStruct.Erasure.Erased
+import SStructTT.SStruct.Erasure.Renaming
