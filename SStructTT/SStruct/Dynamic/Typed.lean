@@ -6,7 +6,7 @@ variable {Srt : Type} [ord : SrtOrder Srt]
 
 @[scoped aesop safe [constructors]]
 inductive RSrt : Rlv -> Srt -> Prop where
-  | extend {s} : RSrt .ex s
+  | extend s : RSrt .ex s
   | weaken {s} : s ∈ ord.weaken_set -> RSrt .im s
 
 mutual
