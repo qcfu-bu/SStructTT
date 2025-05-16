@@ -1,12 +1,11 @@
 import SStructTT.SStruct.Dynamic.Renaming
 import SStructTT.SStruct.Erasure.Erased
-open SStruct.Static
+open SStruct.Dynamic
 
 namespace SStruct.Erasure
-open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-lemma Erased.renaming {Γ Γ'} {Δ Δ' : Dynamic.Ctx Srt} {A m m' ξ} :
+lemma Erased.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m m' ξ} :
     Γ ;; Δ ⊢ m ▷ m' : A ->
     AgreeRen ξ Γ Δ Γ' Δ' ->
     Γ' ;; Δ' ⊢ m.[ren ξ] ▷ m'.[ren ξ] : A.[ren ξ] := by
@@ -105,7 +104,7 @@ lemma Erased.renaming {Γ Γ'} {Δ Δ' : Dynamic.Ctx Srt} {A m m' ξ} :
     replace tyB := tyB.renaming agr.toStatic
     replace erm := ih agr
     apply Erased.conv
-    . apply Conv.subst _ eq
+    . apply Static.Conv.subst _ eq
     . assumption
     . assumption
 
