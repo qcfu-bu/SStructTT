@@ -5,7 +5,7 @@ open ARS
 namespace SStruct.Erasure
 variable {Srt : Type}
 
-def Ctrl.ctrl : Ctrl -> Tm Srt -> Tm Srt
+@[simp]def Ctrl.ctrl : Ctrl -> Tm Srt -> Tm Srt
   | .keep => id
   | .drop => fun _ => .none
 
