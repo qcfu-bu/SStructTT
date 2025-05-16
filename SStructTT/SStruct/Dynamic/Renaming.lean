@@ -96,6 +96,13 @@ lemma AgreeRen.wf_cons {Γ Γ'} {Δ Δ' : Ctx Srt} {A r s ξ} :
     specialize ih rfl rfl wf h
     constructor <;> aesop
 
+@[aesop safe (rule_sets := [rename])]
+lemma AgreeRen.wf {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ} :
+    AgreeRen ξ Γ Δ Γ' Δ' -> Γ ;; Δ ⊢ -> Γ' ;; Δ' ⊢ := by
+  intro agr wf; induction wf generalizing Γ' Δ' ξ <;> try aesop
+  case nil => apply agr.wf_nil
+  case cons ih => apply agr.wf_cons <;> aesop
+
 lemma AgreeRen.split {Γ Γ'} {Δ Δ' Δ1 Δ2 : Ctx Srt} {ξ} :
     AgreeRen ξ Γ Δ Γ' Δ' -> Merge Δ1 Δ2 Δ ->
     ∃ Δ1' Δ2',
