@@ -49,3 +49,4 @@ import SStructTT.SStruct.Erasure.Step
 import SStructTT.SStruct.Erasure.Erased
 import SStructTT.SStruct.Erasure.Renaming
 import SStructTT.SStruct.Erasure.Substitution
+import SStructTT.SStruct.Erasure.Inversion
