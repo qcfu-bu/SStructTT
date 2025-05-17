@@ -6,58 +6,45 @@ namespace SStruct.Erasure
 open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-lemma Erased.var_image {Γ} {Δ : Ctx Srt} {B t x} :
-    Γ ;; Δ ⊢ .var x ▷ t : B -> ∃ x, t = .var x := by
-  generalize e: SStruct.Tm.var x = k
+lemma Erased.none_preimage {Γ} {Δ : Ctx Srt} {t B} :
+    Γ ;; Δ ⊢ t ▷ .none : B -> False := by
+  generalize e: Tm.none = k
+  intro er; induction er <;> trivial
+
+lemma Erased.var_preimage {Γ} {Δ : Ctx Srt} {B t x} :
+    Γ ;; Δ ⊢ t ▷ .var x : B -> ∃ x, t = .var x := by
+  generalize e: Tm.var x = k
   intro er; induction er <;> try trivial
   case var => cases e; exists x
   case conv ih => subst_vars; simp[ih]
 
-lemma Erased.lam_im_image {Γ} {Δ : Ctx Srt} {A B t m s} :
-    Γ ;; Δ ⊢ .lam A m .im s ▷ t : B ->
-    ∃ m', t = .lam m' .keep s := by
-  generalize e: SStruct.Tm.lam A m .im s = k
+lemma Erased.lam_preimage {Γ} {Δ : Ctx Srt} {B t m' c s} :
+    Γ ;; Δ ⊢ t ▷ .lam m' c s : B ->
+    ∃ A m r, t = .lam A m r s := by
+  generalize e: Tm.lam m' c s = k
   intro er; induction er <;> try trivial
   case lam_im => cases e; aesop
-  case lam_ex => cases e
-  case conv ih => subst_vars; simp[ih]
-
-lemma Erased.lam_ex_image {Γ} {Δ : Ctx Srt} {A B t m s} :
-    Γ ;; Δ ⊢ .lam A m .ex s ▷ t : B ->
-    ∃ m' c, t = .lam m' c s := by
-  generalize e: SStruct.Tm.lam A m .ex s = k
-  intro er; induction er <;> try trivial
-  case lam_im => cases e
   case lam_ex => cases e; aesop
   case conv ih => subst_vars; simp[ih]
 
-lemma Erased.tup_im_image {Γ} {Δ : Ctx Srt} {B m n t s} :
-    Γ ;; Δ ⊢ .tup m n .im s ▷ t : B ->
-    ∃ m', t = .tup m' .none s := by
-  generalize e: SStruct.Tm.tup m n .im s = k
+lemma Erased.tup_preimage {Γ} {Δ : Ctx Srt} {B m' n' t s} :
+    Γ ;; Δ ⊢ t ▷ .tup m' n' s : B ->
+    ∃ m n r, t = .tup m n r s := by
+  generalize e: Tm.tup m' n' s = k
   intro er; induction er <;> try trivial
   case tup_im => cases e; aesop
-  case tup_ex => cases e
-  case conv ih => subst_vars; simp[ih]
-
-lemma Erased.tup_ex_image {Γ} {Δ : Ctx Srt} {B m n t s} :
-    Γ ;; Δ ⊢ .tup m n .ex s ▷ t : B ->
-    ∃ m' n', t = .tup m' n' s := by
-  generalize e: SStruct.Tm.tup m n .ex s = k
-  intro er; induction er <;> try trivial
-  case tup_im => cases e
   case tup_ex => cases e; aesop
   case conv ih => subst_vars; simp[ih]
 
-lemma Erased.tt_image {Γ} {Δ : Ctx Srt} {B t} :
-    Γ ;; Δ ⊢ .tt ▷ t : B -> t = .tt := by
-  generalize e: SStruct.Tm.tt = k
+lemma Erased.tt_preimage {Γ} {Δ : Ctx Srt} {B t} :
+    Γ ;; Δ ⊢ t ▷ .tt : B -> t = .tt := by
+  generalize e: Tm.tt = k
   intro er; induction er <;> try trivial
   case conv ih => subst_vars; simp[ih]
 
-lemma Erased.ff_image {Γ} {Δ : Ctx Srt} {B t} :
-    Γ ;; Δ ⊢ .ff ▷ t : B -> t = .ff := by
-  generalize e: SStruct.Tm.ff = k
+lemma Erased.ff_preimage {Γ} {Δ : Ctx Srt} {B t} :
+    Γ ;; Δ ⊢ t ▷ .ff : B -> t = .ff := by
+  generalize e: Tm.ff = k
   intro er; induction er <;> try trivial
   case conv ih => subst_vars; simp[ih]
 
@@ -159,9 +146,9 @@ lemma Erased.tup_ex_inv' {Γ} {Δ : Ctx Srt} {T m m' n n' s} :
       apply Conv.sym eq1
       apply eq2
 
-lemma Erased.lam_im_inv {Γ} {Δ : Ctx Srt} {A A' B m m' s s'} :
-    Γ ;; Δ ⊢ .lam A m .im s ▷ .lam m' .keep s : .pi A' B .im s' ->
-    ∃ sA, A' :: Γ ;; A' :⟨.im, sA⟩ Δ ⊢ m ▷ m' : B := by
+lemma Erased.lam_im_inv {Γ} {Δ : Ctx Srt} {A A' B m m' c s s'} :
+    Γ ;; Δ ⊢ .lam A m .im s ▷ .lam m' c s : .pi A' B .im s' ->
+    ∃ sA, A' :: Γ ;; A' :⟨.im, sA⟩ Δ ⊢ m ▷ m' : B ∧ c = .keep := by
   intro er
   have ⟨B, sA, erm, eq, _⟩ := er.lam_im_inv'
   have ⟨_, _, eqA, eqB⟩ := Static.Conv.pi_inj eq
@@ -173,7 +160,7 @@ lemma Erased.lam_im_inv {Γ} {Δ : Ctx Srt} {A A' B m m' s s'} :
   have ty1 := tyA'.preservation' rd'
   have ty2 := tyA.preservation' rd
   have e := Static.Typed.unique ty1 ty2
-  subst_vars; exists sA'
+  subst_vars; exists sA'; simp
   replace tyB := Static.Typed.conv_ctx eqA.sym tyA tyB
   apply Erased.conv_ctx eqA tyA'
   apply Erased.conv eqB.sym erm tyB

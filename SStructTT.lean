@@ -52,3 +52,4 @@ import SStructTT.SStruct.Erasure.Substitution
 import SStructTT.SStruct.Erasure.Inversion
 import SStructTT.SStruct.Erasure.Preservation
 import SStructTT.SStruct.Erasure.Progress
+import SStructTT.SStruct.Erasure.Normalize
