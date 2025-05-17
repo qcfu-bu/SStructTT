@@ -24,14 +24,14 @@ where
     Erased Γ Δ (.var x) (.var x) A
 
   | lam_im {Γ Δ A B m m' s sA iA} :
-    Δ ≤* s ->
+    Lower Δ s ->
     Γ ⊢ A : .srt sA iA ->
     Erased (A :: Γ) (A :⟨.im, sA⟩ Δ) m m' B ->
     Erased Γ Δ (.lam A m .im s) (.lam m' .keep s) (.pi A B .im s)
 
   | lam_ex {Γ Δ A B m m' rA s sA iA c} :
     RSrt rA sA c ->
-    Δ ≤* s ->
+    Lower Δ s ->
     Γ ⊢ A : .srt sA iA ->
     Erased (A :: Γ) (A :⟨rA, sA⟩ Δ) m m' B ->
     Erased Γ Δ (.lam A m .ex s) (.lam m' c s) (.pi A B .ex s)

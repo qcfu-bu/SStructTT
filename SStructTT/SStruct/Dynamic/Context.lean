@@ -35,8 +35,6 @@ inductive Lower : Ctx Srt -> Srt -> Prop where
     Lower Δ s ->
     Lower (A :⟨.im, s'⟩ Δ) s
 
-notation Δ:60 " ≤* " s:60 => Lower Δ s
-
 @[scoped aesop safe [constructors]]
 inductive Has : Ctx Srt -> Var -> Srt -> Tm Srt -> Prop where
   | nil {Δ A s} :
@@ -47,7 +45,7 @@ inductive Has : Ctx Srt -> Var -> Srt -> Tm Srt -> Prop where
     Has (B :⟨.im, s'⟩ Δ) (x + 1) s A.[shift 1]
 
 lemma Lower.split_e {Δ : Ctx Srt} :
-    Δ ≤* ord.e -> ∃ Δ1 Δ2, Δ1 ≤* ord.e ∧ Δ2 ≤* ord.e ∧ Merge Δ1 Δ2 Δ := by
+    Lower Δ ord.e -> ∃ Δ1 Δ2, Lower Δ1 ord.e ∧ Lower Δ2 ord.e ∧ Merge Δ1 Δ2 Δ := by
   generalize e: ord.e = s
   intro l; induction l
   case nil =>
@@ -75,7 +73,7 @@ lemma Lower.split_e {Δ : Ctx Srt} :
     . constructor; assumption
 
 lemma Lower.trans {Δ : Ctx Srt} {s1 s2} :
-    Δ ≤* s1 -> s1 ≤ s2 -> Δ ≤* s2 := by
+    Lower Δ s1 -> s1 ≤ s2 -> Lower Δ s2 := by
   intro lw le2; induction lw generalizing s2
   case nil => constructor
   case ex le1 _ ih =>
@@ -87,7 +85,7 @@ lemma Lower.trans {Δ : Ctx Srt} {s1 s2} :
     apply ih le2
 
 lemma Merge.lower {Δ1 Δ2 Δ : Ctx Srt} s :
-    Merge Δ1 Δ2 Δ -> Δ1 ≤* s -> Δ2 ≤* s -> Δ ≤* s := by
+    Merge Δ1 Δ2 Δ -> Lower Δ1 s -> Lower Δ2 s -> Lower Δ s := by
   intro mrg; induction mrg
   case nil =>
     intros; constructor
@@ -121,7 +119,7 @@ lemma Merge.implicit {Δ1 Δ2 Δ : Ctx Srt} :
   all_goals aesop
 
 lemma Merge.compose {Δ1 Δ2 Δa Δb Δx Δy Δ : Ctx Srt} {s} :
-    Δa ≤* s -> s ∈ ord.contra_set ->
+    Lower Δa s -> s ∈ ord.contra_set ->
     Merge Δa Δb Δ ->
     Merge Δx Δa Δ1 ->
     Merge Δy Δa Δ2 ->

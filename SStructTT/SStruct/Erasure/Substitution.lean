@@ -24,7 +24,7 @@ where
     AgreeSubst (m .: σ) (m' .: σ') (A :: Γ) (A :⟨.im, s⟩ Δ) Γ' Δ'
   | wk_ex {Γ Γ' Δ Δ' Δa Δb A m m' s σ σ'} :
     Merge Δa Δb Δ' ->
-    Δa ≤* s ->
+    Lower Δa s ->
     Γ' ;; Δa ⊢ m ▷ m' : A.[σ] ->
     AgreeSubst σ σ' Γ Δ Γ' Δb ->
     AgreeSubst (m .: σ) (m' .: σ') (A :: Γ) (A :⟨.ex, s⟩ Δ) Γ' Δ'
@@ -66,7 +66,7 @@ lemma AgreeSubst.implicit {Γ Γ'} {Δ Δ' : Ctx Srt} {σ σ'} :
   intro agr; apply agr.toDynamic.implicit
 
 lemma AgreeSubst.lower {Γ Γ'} {Δ Δ' : Ctx Srt} {s σ σ'} :
-    AgreeSubst σ σ' Γ Δ Γ' Δ' -> Δ ≤* s -> Δ' ≤* s := by
+    AgreeSubst σ σ' Γ Δ Γ' Δ' -> Lower Δ s -> Lower Δ' s := by
   intro agr; apply agr.toDynamic.lower
 
 lemma AgreeSubst.has {Γ Γ'} {Δ Δ' : Ctx Srt} {A x s σ σ'} :
@@ -320,7 +320,7 @@ lemma Erased.subst_im {Γ} {Δ : Ctx Srt} {A B m m' n s} :
   . apply AgreeSubst.refl; assumption
 
 lemma Erased.subst_ex {Γ} {Δ1 Δ2 Δ : Ctx Srt} {A B m m' n n' s} :
-    Δ2 ≤* s -> Merge Δ1 Δ2 Δ ->
+    Lower Δ2 s -> Merge Δ1 Δ2 Δ ->
     A :: Γ ;; A :⟨.ex, s⟩ Δ1 ⊢ m ▷ m' : B ->
     Γ ;; Δ2 ⊢ n ▷ n' : A ->
     Γ ;; Δ ⊢ m.[n/] ▷ m'.[n'/] : B.[n/] := by
@@ -346,7 +346,7 @@ lemma Erased.esubst_ex {Γ} {Δ1 Δ2 Δ : Ctx Srt} {A B1 B2 m1 e1 m2 e2 n1 n2 s}
     m2 = m1.[n1/] ->
     e2 = e1.[n2/] ->
     B2 = B1.[n1/] ->
-    Δ2 ≤* s -> Merge Δ1 Δ2 Δ ->
+    Lower Δ2 s -> Merge Δ1 Δ2 Δ ->
     A :: Γ ;; A :⟨.ex, s⟩ Δ1 ⊢ m1 ▷ e1 : B1 ->
     Γ ;; Δ2 ⊢ n1 ▷ n2 : A ->
     Γ ;; Δ ⊢ m2 ▷ e2 : B2 := by

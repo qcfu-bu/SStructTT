@@ -17,14 +17,14 @@ inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop 
     Typed Γ Δ (.var x) A
 
   | lam_im {Γ Δ A B m s sA iA} :
-    Δ ≤* s ->
+    Lower Δ s ->
     Γ ⊢ A : .srt sA iA ->
     Typed (A :: Γ) (A :⟨.im, sA⟩ Δ) m B ->
     Typed Γ Δ (.lam A m .im s) (.pi A B .im s)
 
   | lam_ex {Γ Δ A B m rA s sA iA} :
     RSrt rA sA ->
-    Δ ≤* s ->
+    Lower Δ s ->
     Γ ⊢ A : .srt sA iA ->
     Typed (A :: Γ) (A :⟨rA, sA⟩ Δ) m B ->
     Typed Γ Δ (.lam A m .ex s) (.pi A B .ex s)
