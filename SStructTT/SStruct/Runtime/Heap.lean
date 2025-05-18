@@ -39,9 +39,18 @@ def HLower (H : @Heap Srt) (s0 : Srt) : Prop :=
     | some (_, s) => s <= s0
     | none => True
 
-lemma Heap.insert_lower {H} {m : Tm Srt} {l s1 s2} :
-    s1 ≤ s2 -> HLower H s2 -> HLower (H.insert l (m, s1)) s2 := by
-  intro lw; intro h x
+lemma HLower.trans {H : @Heap Srt} {s1 s2 : Srt} :
+    HLower H s1 -> s1 ≤ s2 -> HLower H s2 := by
+  intro lw le x
+  split <;> try simp
+  case h_1 opt m s h =>
+    replace lw := lw x
+    simp_rw[h] at lw
+    apply lw.trans le
+
+lemma HLower.insert_lower {H} {m : Tm Srt} {l s1 s2} :
+    HLower H s2 -> s1 ≤ s2 ->  HLower (H.insert l (m, s1)) s2 := by
+  intro h lw x
   split <;> try simp
   case h_1 opt m1 s3 e =>
     cases x.decEq l with
@@ -49,10 +58,10 @@ lemma Heap.insert_lower {H} {m : Tm Srt} {l s1 s2} :
     | isFalse ne =>
       rw[Finmap.lookup_insert_of_ne _ ne] at e
       replace h := h x
-      rw[e] at h; simp at h
+      simp_rw[e] at h
       assumption
 
-lemma Heap.erase_lower {H : @Heap Srt} {s l} :
+lemma HLower.erase_lower {H : @Heap Srt} {s l} :
     HLower H s -> HLower (H.erase l) s := by
   intro lw x
   cases x.decEq l with
@@ -61,7 +70,7 @@ lemma Heap.erase_lower {H : @Heap Srt} {s l} :
     rw[Finmap.lookup_erase_ne ne]
     apply lw
 
-lemma Heap.union {H1 H2 : @Heap Srt} {s1 s2 : Srt} :
+lemma HLower.union {H1 H2 : @Heap Srt} {s1 s2 : Srt} :
     HLower H1 s1 ->
     HLower H2 s2 ->
     s1 ≤ s2 ->
@@ -74,12 +83,12 @@ lemma Heap.union {H1 H2 : @Heap Srt} {s1 s2 : Srt} :
     | .inl h =>
       simp at h
       replace lw1 := lw1 x
-      rw[h] at lw1; simp at lw1
+      simp_rw[h] at lw1
       apply lw1.trans lw
     | .inr ⟨_, h⟩ =>
       simp at h
       replace lw2 := lw2 x
-      rw[h] at lw2; simp at lw2
+      simp_rw[h] at lw2
       assumption
 
 def HMerge (H1 H2 H3 : @Heap Srt) : Prop :=
@@ -95,3 +104,31 @@ def HMerge (H1 H2 H3 : @Heap Srt) : Prop :=
       m2 = m3 ∧ s2 = s3
     | none, none, none => True
     | _, _, _ => False
+
+lemma HMerge.lower {H1 H2 H3 : @Heap Srt} {s} :
+    HMerge H1 H2 H3 -> HLower H1 s -> HLower H2 s -> HLower H3 s := by
+  intro mrg lw1 lw2 x
+  split <;> try simp
+  case h_1 opt m s h =>
+    replace mrg := mrg x
+    simp_rw[h] at mrg
+    split at mrg <;> try trivial
+    case h_1 h1 h2 e =>
+      cases e; have ⟨_, e1, e2, e3, e4⟩ := mrg; subst_vars
+      replace lw1 := lw1 x; simp_rw[h1] at lw1
+      assumption
+    case h_2 h1 h2 e =>
+      cases e; have ⟨e1, e2⟩ := mrg; subst_vars
+      replace lw1 := lw1 x; simp_rw[h1] at lw1
+      assumption
+    case h_3 h1 h2 e =>
+      cases e; have ⟨e1, e2⟩ := mrg; subst_vars
+      replace lw2 := lw2 x; simp_rw[h2] at lw2
+      assumption
+
+lemma HMerge.none {H1 H2 H3 : @Heap Srt} {l : Nat} :
+    HMerge H1 H2 H3 -> l ∉ H3.keys -> l ∉ H1.keys ∧ l ∉ H2.keys := by
+  intro mrg h3
+  apply Classical.byContradiction
+  intro h; rw[Classical.not_and_iff_not_or_not] at h
+  sorry
