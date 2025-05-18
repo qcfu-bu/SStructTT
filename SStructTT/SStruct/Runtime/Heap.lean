@@ -4,9 +4,9 @@ import Mathlib.Data.Finmap
 namespace SStruct.Runtime
 variable {Srt : Type}
 
-abbrev Heap := Finmap (fun (_ : Nat) => Tm Srt × Srt)
+abbrev Heap Srt := Finmap (fun (_ : Nat) => Tm Srt × Srt)
 
-lemma Heap.fresh (H : @Heap Srt) : ∃ l, l ∉ H.keys := by
+lemma Heap.fresh (H : Heap Srt) : ∃ l, l ∉ H.keys := by
   generalize e1: H.keys = keys
   cases e2: keys.max with
   | bot =>
@@ -17,7 +17,7 @@ lemma Heap.fresh (H : @Heap Srt) : ∃ l, l ∉ H.keys := by
     apply keys.not_mem_of_max_lt _ e2
     simp
 
-lemma Heap.erase_insert {H : @Heap Srt} {l v} :
+lemma Heap.erase_insert {H : Heap Srt} {l v} :
     l ∉ H.keys -> (H.insert l v).erase l = H := by
   intro h
   apply Finmap.ext_lookup
@@ -33,13 +33,13 @@ lemma Heap.erase_insert {H : @Heap Srt} {l v} :
 
 variable [ord : SrtOrder Srt]
 
-def HLower (H : @Heap Srt) (s0 : Srt) : Prop :=
+def HLower (H : Heap Srt) (s0 : Srt) : Prop :=
   ∀ l,
     match H.lookup l with
     | some (_, s) => s <= s0
     | none => True
 
-lemma HLower.trans {H : @Heap Srt} {s1 s2 : Srt} :
+lemma HLower.trans {H : Heap Srt} {s1 s2 : Srt} :
     HLower H s1 -> s1 ≤ s2 -> HLower H s2 := by
   intro lw le x
   split <;> try simp
@@ -61,7 +61,7 @@ lemma HLower.insert_lower {H} {m : Tm Srt} {l s1 s2} :
       simp_rw[e] at h
       assumption
 
-lemma HLower.erase_lower {H : @Heap Srt} {s l} :
+lemma HLower.erase_lower {H : Heap Srt} {s l} :
     HLower H s -> HLower (H.erase l) s := by
   intro lw x
   cases x.decEq l with
@@ -70,7 +70,7 @@ lemma HLower.erase_lower {H : @Heap Srt} {s l} :
     rw[Finmap.lookup_erase_ne ne]
     apply lw
 
-lemma HLower.union {H1 H2 : @Heap Srt} {s1 s2 : Srt} :
+lemma HLower.union {H1 H2 : Heap Srt} {s1 s2 : Srt} :
     HLower H1 s1 ->
     HLower H2 s2 ->
     s1 ≤ s2 ->
@@ -91,7 +91,7 @@ lemma HLower.union {H1 H2 : @Heap Srt} {s1 s2 : Srt} :
       simp_rw[h] at lw2
       assumption
 
-def HMerge (H1 H2 H3 : @Heap Srt) : Prop :=
+def HMerge (H1 H2 H3 : Heap Srt) : Prop :=
   ∀ l,
     match H1.lookup l, H2.lookup l, H3.lookup l with
     | some (m1, s1), some (m2, s2), some (m3, s3) =>
@@ -105,7 +105,20 @@ def HMerge (H1 H2 H3 : @Heap Srt) : Prop :=
     | none, none, none => True
     | _, _, _ => False
 
-lemma HMerge.lower {H1 H2 H3 : @Heap Srt} {s} :
+lemma HLower.merge_refl {H : Heap Srt} :
+    HLower H ord.e -> HMerge H H H := by
+  intro lw1 x
+  replace lw1 := lw1 x
+  split at lw1
+  case h_1 opt m s e =>
+    rw[e]; simp
+    have lw2 := ord.e_min s
+    have e := ord.le_antisymm _ _ lw1 lw2
+    subst e
+    apply ord.e_contra
+  case h_2 => aesop
+
+lemma HMerge.lower_hom {H1 H2 H3 : Heap Srt} {s} :
     HMerge H1 H2 H3 -> HLower H1 s -> HLower H2 s -> HLower H3 s := by
   intro mrg lw1 lw2 x
   split <;> try simp
@@ -126,13 +139,13 @@ lemma HMerge.lower {H1 H2 H3 : @Heap Srt} {s} :
       replace lw2 := lw2 x; simp_rw[h2] at lw2
       assumption
 
-lemma HMerge.sym {H1 H2 H3 : @Heap Srt} :
+lemma HMerge.sym {H1 H2 H3 : Heap Srt} :
     HMerge H1 H2 H3 -> HMerge H2 H1 H3 := by
   intro mrg x
   replace mrg := mrg x
   split at mrg <;> aesop
 
-lemma HMerge.split_none {H1 H2 H3 : @Heap Srt} {l} :
+lemma HMerge.split_none {H1 H2 H3 : Heap Srt} {l} :
     HMerge H1 H2 H3 -> l ∉ H3.keys -> l ∉ H1.keys ∧ l ∉ H2.keys := by
   intro mrg h3
   apply Classical.byContradiction
@@ -153,7 +166,7 @@ lemma HMerge.split_none {H1 H2 H3 : @Heap Srt} {l} :
     simp_rw[h2,h3] at mrg
     split at mrg <;> try trivial
 
-lemma HMerge.mem_left {H1 H2 H3 : @Heap Srt} {l} :
+lemma HMerge.mem_left {H1 H2 H3 : Heap Srt} {l} :
     HMerge H1 H2 H3 -> l ∈ H1.keys -> l ∈ H3.keys := by
   intro mrg h1
   rw[Finmap.mem_keys,Finmap.mem_iff] at h1
@@ -165,7 +178,7 @@ lemma HMerge.mem_left {H1 H2 H3 : @Heap Srt} {l} :
   . apply Finmap.mem_of_lookup_eq_some
     assumption
 
-lemma HMerge.insert_contra {H1 H2 H3 : @Heap Srt} {m l s} :
+lemma HMerge.insert_contra {H1 H2 H3 : Heap Srt} {m l s} :
     HMerge H1 H2 H3 -> s ∈ ord.contra_set ->
     HMerge (H1.insert l ⟨m, s⟩) (H2.insert l ⟨m, s⟩) (H3.insert l ⟨m, s⟩) := by
   intro mrg h x
@@ -178,7 +191,7 @@ lemma HMerge.insert_contra {H1 H2 H3 : @Heap Srt} {m l s} :
     simp[Finmap.lookup_insert_of_ne _ ne]
     apply mrg
 
-lemma HMerge.insert_left {H1 H2 H3 : @Heap Srt} {m l s} :
+lemma HMerge.insert_left {H1 H2 H3 : Heap Srt} {m l s} :
     HMerge H1 H2 H3 -> l ∉ H3 ->
     HMerge (H1.insert l ⟨m, s⟩) H2 (H3.insert l ⟨m, s⟩) := by
   intro mrg h x
@@ -190,3 +203,152 @@ lemma HMerge.insert_left {H1 H2 H3 : @Heap Srt} {m l s} :
   | isFalse ne =>
     simp[Finmap.lookup_insert_of_ne _ ne]
     apply mrg
+
+lemma HMerge.lower_split {H3 : Heap Srt} :
+    HLower H3 ord.e ->
+    ∃ H1 H2, HLower H1 ord.e ∧ HLower H2 ord.e ∧ HMerge H1 H2 H3 := by
+  intro lw
+  exists H3, H3; and_intros
+  . assumption
+  . assumption
+  . apply lw.merge_refl
+
+lemma HMerge.compose {H1 H2 H3 Ha Hb Hx Hy : Heap Srt} {s} :
+    HLower Ha s -> s ∈ ord.contra_set ->
+    HMerge Ha Hb H3 ->
+    HMerge Hx Ha H1 ->
+    HMerge Hy Ha H2 ->
+    HMerge Hx Hy Hb ->
+    HMerge H1 H2 H3 := by
+  intro lw h mrg1 mrg2 mrg3 mrg4 x
+  replace lw := lw x
+  replace mrg1 := mrg1 x
+  replace mrg2 := mrg2 x
+  replace mrg3 := mrg3 x
+  replace mrg4 := mrg4 x
+  split at mrg1 <;> simp_all
+  case h_1 =>
+    split at mrg2 <;> simp_all
+    case h_1 => split at mrg3 <;> simp_all; aesop
+    case h_3 => split at mrg3 <;> simp_all; aesop
+  case h_2 =>
+    split at mrg2 <;> simp_all
+    case h_3 =>
+      split at mrg3 <;> simp_all
+      apply ord.contra_set.lower lw h
+  case h_3 =>
+    split at mrg2 <;> simp_all
+    case h_2 =>
+      split at mrg3 <;> simp_all
+      case h_2 =>
+        have ⟨h, _, _, _⟩ := mrg4; subst_vars
+        assumption
+    case h_4 => split at mrg3 <;> simp_all
+  case h_4 =>
+    split at mrg2 <;> simp_all
+    split at mrg3 <;> simp_all
+
+lemma HMerge.split {H1 H2 H3 Ha Hb : Heap Srt} :
+    HMerge H1 H2 H3 ->
+    HMerge Ha Hb H1 ->
+    ∃ Hc, HMerge Ha H2 Hc ∧ HMerge Hc Hb H3 := by
+  intro mrg1 mrg2; exists Ha ∪ H2; and_intros
+  . intro x
+    replace mrg1 := mrg1 x
+    replace mrg2 := mrg2 x
+    split at mrg1 <;> simp_all
+    . split at mrg2 <;> simp_all
+      case h_1 e _ _ =>
+        have h := Finmap.mem_of_lookup_eq_some e
+        rw[Finmap.lookup_union_left h]
+        rw[e]; aesop
+      case h_2 e _ _ =>
+        have h := Finmap.mem_of_lookup_eq_some e
+        rw[Finmap.lookup_union_left h]
+        rw[e]; aesop
+      case h_3 e _ ne _ _ =>
+        rw[Finmap.lookup_eq_none] at ne
+        have h := Finmap.mem_of_lookup_eq_some e
+        rw[Finmap.lookup_union_right ne]
+        rw[e]; simp
+    . split at mrg2 <;> simp_all
+      case h_1 e _ _ =>
+        have h := Finmap.mem_of_lookup_eq_some e
+        rw[Finmap.lookup_union_left h]
+        rw[e]; simp
+      case h_2 e _ _ =>
+        have h := Finmap.mem_of_lookup_eq_some e
+        rw[Finmap.lookup_union_left h]
+        rw[e]; simp
+      case h_3 e _ ne _ _ =>
+        rw[Finmap.lookup_eq_none] at ne
+        rw[Finmap.lookup_union_right ne]
+        rw[e]; simp
+    . split at mrg2 <;> simp_all
+      case h_4 e _ _ _ _ ne _ =>
+        rw[Finmap.lookup_eq_none] at ne
+        rw[Finmap.lookup_union_right ne]
+        rw[e]; simp
+    . split at mrg2 <;> simp_all
+      case h_4 e _ _ _ _ ne _ =>
+        rw[Finmap.lookup_eq_none] at ne
+        rw[Finmap.lookup_union_right ne]
+        rw[e]; simp
+  . intro x
+    replace mrg1 := mrg1 x
+    replace mrg2 := mrg2 x
+    split at mrg1 <;> simp_all
+    . split at mrg2 <;> simp_all
+      case h_1 e _ _ =>
+        have h := Finmap.mem_of_lookup_eq_some e
+        rw[Finmap.lookup_union_left h]
+        rw[e]; aesop
+      case h_2 e _ _ =>
+        have h := Finmap.mem_of_lookup_eq_some e
+        rw[Finmap.lookup_union_left h]
+        rw[e]; simp
+      case h_3 e _ ne _ _ =>
+        rw[Finmap.lookup_eq_none] at ne
+        have h := Finmap.mem_of_lookup_eq_some e
+        rw[Finmap.lookup_union_right ne]
+        rw[e]; aesop
+    . split at mrg2 <;> simp_all
+      case h_1 e _ _ =>
+        have h := Finmap.mem_of_lookup_eq_some e
+        rw[Finmap.lookup_union_left h]
+        rw[e]; aesop
+      case h_2 e _ _ =>
+        have h := Finmap.mem_of_lookup_eq_some e
+        rw[Finmap.lookup_union_left h]
+        rw[e]; simp
+      case h_3 e _ ne _ _ =>
+        rw[Finmap.lookup_eq_none] at ne
+        rw[Finmap.lookup_union_right ne]
+        rw[e]; simp
+    . split at mrg2 <;> simp_all
+      case h_4 e _ _ _ _ ne _ =>
+        rw[Finmap.lookup_eq_none] at ne
+        rw[Finmap.lookup_union_right ne]
+        rw[e]; simp
+    . split at mrg2 <;> simp_all
+      case h_4 e _ _ _ _ ne _ =>
+        rw[Finmap.lookup_eq_none] at ne
+        rw[Finmap.lookup_union_right ne]
+        rw[e]; simp
+
+lemma HMerge.distr {H1 H2 H3 H11 H12 H21 H22 : Heap Srt} :
+    HMerge H1 H2 H3 ->
+    HMerge H11 H12 H1 ->
+    HMerge H21 H22 H2 ->
+    ∃ H1' H2',
+      HMerge H1' H2' H3 ∧
+      HMerge H11 H21 H1' ∧
+      HMerge H12 H22 H2' := by
+  intro mrg0 mrg1 mrg2
+  have ⟨H4, mrg3, mrg4⟩ := mrg0.split mrg1
+  have ⟨H5, mrg5, mrg6⟩ := mrg3.sym.split mrg2
+  have ⟨H6, mrg7, mrg8⟩ := mrg4.split mrg6.sym
+  exists H5, H6; and_intros
+  . apply mrg8.sym
+  . apply mrg5.sym
+  . apply mrg7.sym
