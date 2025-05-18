@@ -126,9 +126,67 @@ lemma HMerge.lower {H1 H2 H3 : @Heap Srt} {s} :
       replace lw2 := lw2 x; simp_rw[h2] at lw2
       assumption
 
-lemma HMerge.none {H1 H2 H3 : @Heap Srt} {l : Nat} :
+lemma HMerge.sym {H1 H2 H3 : @Heap Srt} :
+    HMerge H1 H2 H3 -> HMerge H2 H1 H3 := by
+  intro mrg x
+  replace mrg := mrg x
+  split at mrg <;> aesop
+
+lemma HMerge.split_none {H1 H2 H3 : @Heap Srt} {l} :
     HMerge H1 H2 H3 -> l ∉ H3.keys -> l ∉ H1.keys ∧ l ∉ H2.keys := by
   intro mrg h3
   apply Classical.byContradiction
-  intro h; rw[Classical.not_and_iff_not_or_not] at h
-  sorry
+  intro h; rw[Classical.not_and_iff_not_or_not] at h; simp at h
+  cases h with
+  | inl h1 =>
+    rw[Finmap.mem_keys,Finmap.mem_iff] at h1
+    replace ⟨⟨m, s⟩, h1⟩ := h1
+    rw[Finmap.mem_keys,<-Finmap.lookup_eq_none] at h3
+    replace mrg := mrg l
+    simp_rw[h1,h3] at mrg
+    split at mrg <;> try trivial
+  | inr h2 =>
+    rw[Finmap.mem_keys] at h2
+    rw[Finmap.mem_iff] at h2; replace ⟨⟨m, s⟩, h2⟩ := h2
+    rw[Finmap.mem_keys,<-Finmap.lookup_eq_none] at h3
+    replace mrg := mrg l
+    simp_rw[h2,h3] at mrg
+    split at mrg <;> try trivial
+
+lemma HMerge.mem_left {H1 H2 H3 : @Heap Srt} {l} :
+    HMerge H1 H2 H3 -> l ∈ H1.keys -> l ∈ H3.keys := by
+  intro mrg h1
+  rw[Finmap.mem_keys,Finmap.mem_iff] at h1
+  replace ⟨⟨m, s⟩, h1⟩ := h1
+  replace mrg := mrg l; rw[h1] at mrg
+  split at mrg <;> try trivial
+  . apply Finmap.mem_of_lookup_eq_some
+    assumption
+  . apply Finmap.mem_of_lookup_eq_some
+    assumption
+
+lemma HMerge.insert_contra {H1 H2 H3 : @Heap Srt} {m l s} :
+    HMerge H1 H2 H3 -> s ∈ ord.contra_set ->
+    HMerge (H1.insert l ⟨m, s⟩) (H2.insert l ⟨m, s⟩) (H3.insert l ⟨m, s⟩) := by
+  intro mrg h x
+  cases x.decEq l with
+  | isTrue =>
+    subst_vars
+    simp[Finmap.lookup_insert]
+    assumption
+  | isFalse ne =>
+    simp[Finmap.lookup_insert_of_ne _ ne]
+    apply mrg
+
+lemma HMerge.insert_left {H1 H2 H3 : @Heap Srt} {m l s} :
+    HMerge H1 H2 H3 -> l ∉ H3 ->
+    HMerge (H1.insert l ⟨m, s⟩) H2 (H3.insert l ⟨m, s⟩) := by
+  intro mrg h x
+  have ⟨h1, h2⟩ := mrg.split_none h
+  rw [Finmap.mem_keys,<-Finmap.lookup_eq_none] at h1
+  rw [Finmap.mem_keys,<-Finmap.lookup_eq_none] at h2
+  cases x.decEq l with
+  | isTrue => subst_vars; simp[Finmap.lookup_insert,h2]
+  | isFalse ne =>
+    simp[Finmap.lookup_insert_of_ne _ ne]
+    apply mrg
