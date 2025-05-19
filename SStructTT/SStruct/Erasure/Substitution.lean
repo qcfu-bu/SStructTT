@@ -251,7 +251,7 @@ lemma Erased.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m m' σ σ'} :
     replace ern := ihn agr2; asimp at ern
     rw[show B.[m.[σ] .: σ] = B.[up σ].[m.[σ]/] by asimp] at ern
     have er := Erased.tup_ex mrg tyS erm ern; assumption
-  case proj_im A B C m m' n n' rA s sA sB sC iC c rs mrg tyC erm ern ihm ihn =>
+  case prj_im A B C m m' n n' rA s sA sB sC iC c rs mrg tyC erm ern ihm ihn =>
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
     obtain ⟨_, _ | ⟨tyA, _⟩, tyB⟩ := ern.ctx_inv
     have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
@@ -259,8 +259,8 @@ lemma Erased.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m m' σ σ'} :
     replace erm := ihm agr1; asimp at erm
     replace ern := ihn ((agr2.cons rA tyA).cons .im tyB); asimp at ern
     rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
-    apply Erased.proj_im <;> (asimp; assumption)
-  case proj_ex C m m' n n' rA rB s sA sB sC i c1 c2 rs1 rs2 mrg tyC erm ern ihm ihn =>
+    apply Erased.prj_im <;> (asimp; assumption)
+  case prj_ex C m m' n n' rA rB s sA sB sC i c1 c2 rs1 rs2 mrg tyC erm ern ihm ihn =>
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
     obtain ⟨_, _ | ⟨tyA, _⟩, tyB⟩ := ern.ctx_inv
     have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
@@ -268,7 +268,7 @@ lemma Erased.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m m' σ σ'} :
     replace erm := ihm agr1; asimp at erm
     replace ern := ihn ((agr2.cons rA tyA).cons rB tyB); asimp at ern
     rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
-    apply Erased.proj_ex
+    apply Erased.prj_ex
     . apply rs1
     . apply rs2
     . assumption
@@ -311,7 +311,7 @@ lemma Erased.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m m' σ σ'} :
 lemma Erased.subst_im {Γ} {Δ : Ctx Srt} {A B m m' n s} :
     A :: Γ ;; A :⟨.im, s⟩ Δ ⊢ m ▷ m' : B ->
     Γ ⊢ n : A ->
-    Γ ;; Δ ⊢ m.[n/] ▷ m'.[.none/] : B.[n/] := by
+    Γ ;; Δ ⊢ m.[n/] ▷ m'.[.null/] : B.[n/] := by
   intro erm tyn
   obtain ⟨_, _, _⟩ := erm.ctx_inv
   apply erm.substitution
@@ -335,7 +335,7 @@ lemma Erased.subst_ex {Γ} {Δ1 Δ2 Δ : Ctx Srt} {A B m m' n n' s} :
 
 lemma Erased.esubst_im {Γ} {Δ : Ctx Srt} {A B1 B2 m1 m2 e1 e2 n s} :
     m2 = m1.[n/] ->
-    e2 = e1.[.none/] ->
+    e2 = e1.[.null/] ->
     B2 = B1.[n/] ->
     A :: Γ ;; A :⟨.im, s⟩ Δ ⊢ m1 ▷ e1 : B1 ->
     Γ ⊢ n : A ->

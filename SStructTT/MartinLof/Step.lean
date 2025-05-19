@@ -38,17 +38,17 @@ inductive Step : Tm -> Tm -> Prop where
   | tup_N m {n n'} :
     Step n n' ->
     Step (.tup m n) (.tup m n')
-  | proj_A {A A'} m n :
+  | prj_A {A A'} m n :
     Step A A' ->
-    Step (.proj A m n) (.proj A' m n)
-  | proj_M A {m m'} n :
+    Step (.prj A m n) (.prj A' m n)
+  | prj_M A {m m'} n :
     Step m m' ->
-    Step (.proj A m n) (.proj A m' n)
-  | proj_N A m {n n'} :
+    Step (.prj A m n) (.prj A m' n)
+  | prj_N A m {n n'} :
     Step n n' ->
-    Step (.proj A m n) (.proj A m n')
-  | proj_elim A m1 m2 n :
-    Step (.proj A (.tup m1 m2) n) n.[m2,m1/]
+    Step (.prj A m n) (.prj A m n')
+  | prj_elim A m1 m2 n :
+    Step (.prj A (.tup m1 m2) n) n.[m2,m1/]
   | ite_A {A A'} m n1 n2 :
     Step A A' ->
     Step (.ite A m n1 n2) (.ite A' m n1 n2)

@@ -129,7 +129,7 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     . apply ihm; assumption
     . replace ihn := ihn agr; asimp at ihn
       asimp; assumption
-  case proj C m _ _ _ _ _ tyC _ tyn ihC ihm ihn =>
+  case prj C m _ _ _ _ _ tyC _ tyn ihC ihm ihn =>
     rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
     have ⟨_, _, _, tyB⟩ := tyn.ctx_inv
@@ -137,7 +137,7 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     replace ihC := ihC (agr.cons tyS); asimp at ihC
     replace ihm := ihm agr; asimp at ihm
     replace ihn := ihn ((agr.cons tyA).cons tyB); asimp at ihn
-    apply Typed.proj
+    apply Typed.prj
     . assumption
     . assumption
     . asimp; assumption

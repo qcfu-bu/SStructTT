@@ -81,10 +81,10 @@ theorem Typed.progress {m A : Tm Srt} :
         right; constructor
         . assumption
         . assumption
-  case proj C m n r _ _ _ _ tym _ ihm =>
+  case prj C m n r _ _ _ _ tym _ ihm =>
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.proj C m n r
+      left; exists Tm.prj C m n r
       constructor; assumption
     | .inr vl =>
       have ⟨m1, m2, _⟩ := tym.sig_canonical Conv.R vl

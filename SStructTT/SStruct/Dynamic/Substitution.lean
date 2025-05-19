@@ -293,7 +293,7 @@ lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
     replace tyn := ihn agr2; asimp at tyn
     rw[show B.[m.[σ] .: σ] = B.[up σ].[m.[σ]/] by asimp] at tyn
     have ty := Typed.tup_ex mrg tyS tym tyn; assumption
-  case proj_im A B C m n rA s sA sB sC iC rs mrg tyC tym tyn ihm ihn =>
+  case prj_im A B C m n rA s sA sB sC iC rs mrg tyC tym tyn ihm ihn =>
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
     obtain ⟨_, _ | ⟨tyA, _⟩, tyB⟩ := tyn.ctx_inv
     have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
@@ -301,8 +301,8 @@ lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
     replace tym := ihm agr1; asimp at tym
     replace tyn := ihn ((agr2.cons rA tyA).cons .im tyB); asimp at tyn
     rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
-    apply Typed.proj_im <;> (asimp; assumption)
-  case proj_ex C m n rA rB s sA sB sC i rs1 rs2 mrg tyC tym tyn ihm ihn =>
+    apply Typed.prj_im <;> (asimp; assumption)
+  case prj_ex C m n rA rB s sA sB sC i rs1 rs2 mrg tyC tym tyn ihm ihn =>
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
     obtain ⟨_, _ | ⟨tyA, _⟩, tyB⟩ := tyn.ctx_inv
     have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
@@ -310,7 +310,7 @@ lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
     replace tym := ihm agr1; asimp at tym
     replace tyn := ihn ((agr2.cons rA tyA).cons rB tyB); asimp at tyn
     rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
-    apply Typed.proj_ex
+    apply Typed.prj_ex
     . apply rs1
     . apply rs2
     . assumption

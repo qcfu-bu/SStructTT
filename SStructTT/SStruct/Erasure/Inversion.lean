@@ -6,9 +6,9 @@ namespace SStruct.Erasure
 open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-lemma Erased.none_preimage {Γ} {Δ : Ctx Srt} {t B} :
-    Γ ;; Δ ⊢ t ▷ .none : B -> False := by
-  generalize e: Tm.none = k
+lemma Erased.null_preimage {Γ} {Δ : Ctx Srt} {t B} :
+    Γ ;; Δ ⊢ t ▷ .null : B -> False := by
+  generalize e: Tm.null = k
   intro er; induction er <;> trivial
 
 lemma Erased.var_preimage {Γ} {Δ : Ctx Srt} {B t x} :
@@ -101,7 +101,7 @@ lemma Erased.tup_im_inv' {Γ} {Δ : Ctx Srt} {T m m' n n' s} :
     Γ ;; Δ ⊢ .tup m n .im s ▷ .tup m' n' s : T ->
     ∃ A B,
       Γ ;; Δ ⊢ m ▷ m' : A ∧
-      Γ ⊢ n : B.[m/] ∧ n' = .none ∧
+      Γ ⊢ n : B.[m/] ∧ n' = .null ∧
       T === .sig A B .im s := by
   generalize e1: SStruct.Tm.tup m n .im s = x
   generalize e2: Tm.tup m' n' s = y
@@ -188,7 +188,7 @@ lemma Erased.lam_ex_inv {Γ} {Δ : Ctx Srt} {A A' B m m' c s s'} :
 
 lemma Erased.tup_im_inv {Γ} {Δ : Ctx Srt} {A B m m' n n' s s'} :
     Γ ;; Δ ⊢ .tup m n .im s ▷ .tup m' n' s : .sig A B .im s' ->
-    Γ ;; Δ ⊢ m ▷ m' : A ∧ Γ ⊢ n : B.[m/] ∧ n' = .none ∧ s = s' := by
+    Γ ;; Δ ⊢ m ▷ m' : A ∧ Γ ⊢ n : B.[m/] ∧ n' = .null ∧ s = s' := by
   intro er
   have ⟨A', B', erm, tyn, e, eq⟩ := er.tup_im_inv'
   have ⟨_, _, eqA, eqB⟩ := Static.Conv.sig_inj eq

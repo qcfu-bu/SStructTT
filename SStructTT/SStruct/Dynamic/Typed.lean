@@ -53,22 +53,22 @@ inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop 
     Typed Γ Δ2 n B.[m/] ->
     Typed Γ Δ (.tup m n .ex s) (.sig A B .ex s)
 
-  | proj_im {Γ Δ1 Δ2 Δ A B C m n rA s sA sB sC iC} :
+  | prj_im {Γ Δ1 Δ2 Δ A B C m n rA s sA sB sC iC} :
     RSrt rA sA ->
     Merge Δ1 Δ2 Δ ->
     .sig A B .im s :: Γ ⊢ C : .srt sC iC ->
     Typed Γ Δ1 m (.sig A B .im s) ->
     Typed (B :: A :: Γ) (B :⟨.im, sB⟩ A :⟨rA, sA⟩ Δ2) n C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
-    Typed Γ Δ (.proj C m n .im) C.[m/]
+    Typed Γ Δ (.prj C m n .im) C.[m/]
 
-  | proj_ex {Γ Δ1 Δ2 Δ A B C m n rA rB s sA sB sC iC} :
+  | prj_ex {Γ Δ1 Δ2 Δ A B C m n rA rB s sA sB sC iC} :
     RSrt rA sA ->
     RSrt rB sB ->
     Merge Δ1 Δ2 Δ ->
     .sig A B .ex s :: Γ ⊢ C : .srt sC iC ->
     Typed Γ Δ1 m (.sig A B .ex s) ->
     Typed (B :: A :: Γ) (B :⟨rB, sB⟩ A :⟨rA, sA⟩ Δ2) n C.[.tup (.var 1) (.var 0) .ex s .: shift 2] ->
-    Typed Γ Δ (.proj C m n .ex) C.[m/]
+    Typed Γ Δ (.prj C m n .ex) C.[m/]
 
   | tt {Γ Δ} :
     Wf Γ Δ ->
@@ -160,11 +160,11 @@ lemma Typed.toWf {Γ} {Δ : Ctx Srt} {A m} :
     apply Wf.merge mrg ih1 ih2
   case tup_ex mrg _ _ _ ih1 ih2 =>
     apply Wf.merge mrg ih1 ih2
-  case proj_im rs mrg _ _ _ ih1 ih2 =>
+  case prj_im rs mrg _ _ _ ih1 ih2 =>
     rcases ih2 with _ | ⟨_, ih2⟩
     rcases ih2 with _ | ⟨_, ih2⟩
     apply Wf.merge mrg ih1 ih2
-  case proj_ex rs1 rs2 mrg _ _ _ ih1 ih2 =>
+  case prj_ex rs1 rs2 mrg _ _ _ ih1 ih2 =>
     rcases ih2 with _ | ⟨_, ih2⟩
     rcases ih2 with _ | ⟨_, ih2⟩
     apply Wf.merge mrg ih1 ih2
@@ -193,8 +193,8 @@ lemma Typed.toStatic {Γ} {Δ : Ctx Srt} {m A} :
   case app_ex => constructor <;> aesop
   case tup_im => constructor <;> aesop
   case tup_ex => constructor <;> aesop
-  case proj_im => constructor <;> aesop
-  case proj_ex => constructor <;> aesop
+  case prj_im => constructor <;> aesop
+  case prj_ex => constructor <;> aesop
   case tt wf _ _ => constructor; apply wf.toStatic
   case ff wf _ _ => constructor; apply wf.toStatic
   case ite => constructor <;> aesop

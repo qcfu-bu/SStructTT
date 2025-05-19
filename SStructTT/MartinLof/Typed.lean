@@ -41,11 +41,11 @@ inductive Typed : Ctx -> Tm -> Tm -> Prop where
     Typed Γ n B.[m/] ->
     Typed Γ (.tup m n) (.sig A B)
 
-  | proj {Γ A B C m n iC} :
+  | prj {Γ A B C m n iC} :
     Typed (.sig A B :: Γ) C (.ty iC) ->
     Typed Γ m (.sig A B) ->
     Typed (B :: A :: Γ) n C.[.tup (.var 1) (.var 0) .: shift 2] ->
-    Typed Γ (.proj C m n) C.[m/]
+    Typed Γ (.prj C m n) C.[m/]
 
   | bool {Γ} :
     Wf Γ ->

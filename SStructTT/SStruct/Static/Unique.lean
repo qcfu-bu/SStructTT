@@ -17,7 +17,7 @@ inductive HeadSim : Tm Srt -> Tm Srt -> Prop where
   | sig {A1 A2 B1 B2 r s} :
     HeadSim (.sig A1 B1 r s) (.sig A2 B2 r s)
   | tup {m n r s} : HeadSim (.tup m n r s) (.tup m n r s)
-  | proj {A m n r} : HeadSim (.proj A m n r) (.proj A m n r)
+  | prj {A m n r} : HeadSim (.prj A m n r) (.prj A m n r)
   | bool : HeadSim .bool .bool
   | tt : HeadSim .tt .tt
   | ff : HeadSim .ff .ff
@@ -90,7 +90,7 @@ lemma Sim.srt_inj {s1 s2 : Srt} {i1 i2} :
   case app eq1 eq2 =>
     have ⟨_, _⟩ := Conv.srt_inj (Conv.trans eq1 eq2)
     assumption
-  case proj eq1 eq2 =>
+  case prj eq1 eq2 =>
     have ⟨_, _⟩ := Conv.srt_inj (Conv.trans eq1 eq2)
     assumption
   case ite eq1 eq2 =>
@@ -116,7 +116,7 @@ lemma Sim.pi_inj {A1 A2 B1 B2 : Tm Srt} {r1 r2 s1 s2} :
     subst_vars; simp; and_intros
     . aesop (rule_sets := [unique])
     . aesop (rule_sets := [unique])
-  case proj eq1 eq2 =>
+  case prj eq1 eq2 =>
     have ⟨_, _, _, _⟩ := Conv.pi_inj (Conv.trans eq1 eq2)
     subst_vars; simp; and_intros
     . aesop (rule_sets := [unique])
@@ -143,7 +143,7 @@ lemma Sim.idn_inj {A1 A2 m1 m2 n1 n2 : Tm Srt} :
     . aesop (rule_sets := [unique])
     . aesop (rule_sets := [unique])
     . aesop (rule_sets := [unique])
-  case proj eq1 eq2 =>
+  case prj eq1 eq2 =>
     have ⟨_, _, _⟩ := Conv.idn_inj (Conv.trans eq1 eq2)
     and_intros
     . aesop (rule_sets := [unique])
@@ -273,12 +273,12 @@ lemma Typed.tup_unique {Γ : Ctx Srt} {A B C m n r s} :
     apply Sim.trans_left <;> assumption
 
 @[aesop safe (rule_sets := [unique])]
-lemma Typed.proj_unique {Γ : Ctx Srt} {A B m n r} :
-    Γ ⊢ .proj A m n r : B -> Sim A.[m/] B := by
-  generalize e: Tm.proj A m n r = x
+lemma Typed.prj_unique {Γ : Ctx Srt} {A B m n r} :
+    Γ ⊢ .prj A m n r : B -> Sim A.[m/] B := by
+  generalize e: Tm.prj A m n r = x
   intro ty; induction ty generalizing A m n r
   all_goals try trivial
-  case proj ihA ihm ihn => cases e; apply Sim.refl
+  case prj ihA ihm ihn => cases e; apply Sim.refl
   case conv ihm _ =>
     subst_vars
     have := ihm (Eq.refl _)
@@ -390,7 +390,7 @@ lemma Typed.unique' {Γ : Ctx Srt} {A B m} :
   case app => apply Typed.app_unique <;> aesop
   case sig => apply Typed.sig_unique <;> aesop
   case tup => apply Typed.tup_unique <;> aesop
-  case proj => apply Typed.proj_unique <;> aesop
+  case prj => apply Typed.prj_unique <;> aesop
   case bool => apply Typed.bool_unique <;> aesop
   case tt => apply Typed.tt_unique <;> aesop
   case ff => apply Typed.ff_unique <;> aesop

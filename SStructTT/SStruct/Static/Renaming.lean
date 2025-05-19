@@ -108,7 +108,7 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     . apply ihm; assumption
     . have := ihn agr
       asimp at this; asimp; assumption
-  case proj Γ A B C m n r s sC iC tyC tym tyn ihC ihm ihn =>
+  case prj Γ A B C m n r s sC iC tyC tym tyn ihC ihm ihn =>
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
     have ⟨_, _, _, tyB⟩ := tyn.ctx_inv
     have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
@@ -124,7 +124,7 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
            = C.[up (ren ξ)].[.tup (.var 1) (.var 0) r s .: shift 2]
           by asimp] at ihn
     rw[SubstLemmas.upren_up] at ihn
-    replace := Typed.proj ihC ihm ihn
+    replace := Typed.prj ihC ihm ihn
     asimp at this
     assumption
   case bool ih =>

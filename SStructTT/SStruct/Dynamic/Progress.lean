@@ -110,21 +110,21 @@ theorem Typed.progress {m A : Tm Srt} :
         left; exists Tm.tup m n .ex s
         constructor; assumption
       | .inr _ => right; constructor <;> assumption
-  case proj_im C _ n _ _ _ _ _ _ _ _ tym _ ihm mrg =>
+  case prj_im C _ n _ _ _ _ _ _ _ _ tym _ ihm mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.proj C m n .im
+      left; exists Tm.prj C m n .im
       constructor; assumption
     | .inr vl =>
       have ⟨m1, m2, _⟩ := tym.sig_canonical Conv.R vl
       subst_vars; left; exists n.[m2,m1/]
       constructor; assumption
-  case proj_ex C _ n _ _ _ _ _ _ _ _ _ _ tym _ ihm mrg =>
+  case prj_ex C _ n _ _ _ _ _ _ _ _ _ _ tym _ ihm mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.proj C m n .ex
+      left; exists Tm.prj C m n .ex
       constructor; assumption
     | .inr vl =>
       have ⟨m1, m2, _⟩ := tym.sig_canonical Conv.R vl

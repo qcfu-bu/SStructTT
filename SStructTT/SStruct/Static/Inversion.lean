@@ -143,7 +143,7 @@ theorem Typed.validity {Γ : Ctx Srt} {A m} :
     apply tyA.toWf
   case tup s i _ _ _ _ _ _ =>
     exists s, i
-  case proj s i _ _ _ _ _ _ =>
+  case prj s i _ _ _ _ _ _ =>
     exists s, i
     apply Typed.esubst <;> try first | rfl | assumption
     asimp

@@ -94,14 +94,14 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
       . assumption
       . assumption
       . apply ihn st
-  case proj Γ A B C _ _ r s sC iC tyC tym tyn ihC ihm ihn =>
+  case prj Γ A B C _ _ r s sC iC tyC tym tyn ihC ihm ihn =>
     have ⟨s, _, wf, tyS⟩ := tyC.ctx_inv
     have ⟨_, _, _, tyB, eq⟩ := tyS.sig_inv
     have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
     have ⟨_, _⟩ := Conv.srt_inj eq
     subst_vars; clear eq
     cases st
-    case proj_A C' st =>
+    case prj_A C' st =>
       replace ihC := ihC st
       have wf := tyn.toWf
       have tyC' : (.sig A B r s).[shift 2] :: B :: A :: Γ ⊢ C'.[ren (upren (.+2))] :
@@ -123,21 +123,21 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
       apply Typed.conv
       . apply Conv.subst
         apply Conv.onei st
-      . apply Typed.proj ihC tym
+      . apply Typed.prj ihC tym
         apply Typed.conv
         apply Conv.subst
         apply Conv.one st
         assumption
         assumption
       . apply tyC.subst tym
-    case proj_M st =>
+    case prj_M st =>
       apply Typed.conv
       . apply Conv.subst1
         apply Conv.onei st
-      . apply Typed.proj tyC (ihm st) tyn
+      . apply Typed.prj tyC (ihm st) tyn
       . apply tyC.subst tym
-    case proj_N => apply Typed.proj <;> aesop
-    case proj_elim m1 m2 s =>
+    case prj_N => apply Typed.prj <;> aesop
+    case prj_elim m1 m2 s =>
       have ⟨tym1, tym2, _, _⟩ := tym.tup_inv; subst_vars
       rw[show C.[.tup m1 m2 r s/]
             = C.[.tup (.var 1) (.var 0) r s .: shift 2].[m2,m1/] by asimp]

@@ -49,7 +49,7 @@ lemma Erased.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m m' ξ} :
     replace ern := ihn agr2; asimp at ern
     replace tyS := tyS.renaming agr.toStatic; asimp at tyS
     constructor <;> (asimp; assumption)
-  case proj_im A B C m m' n n' rA s sA sB sC iC c rs mrg tyC erm ern ihm ihn =>
+  case prj_im A B C m m' n n' rA s sA sB sC iC c rs mrg tyC erm ern ihm ihn =>
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
     obtain ⟨_, _ | ⟨tyA, _⟩, tyB⟩ := ern.ctx_inv
     have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg
@@ -60,9 +60,9 @@ lemma Erased.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m m' ξ} :
           = C.[up (ren ξ)].[.tup (.var 1) (.var 0) .im s .: shift 2]
         by asimp] at ern
     rw[SubstLemmas.upren_up] at ern
-    have er := Erased.proj_im rs mrg tyC erm ern
+    have er := Erased.prj_im rs mrg tyC erm ern
     asimp at er; assumption
-  case proj_ex A B C m m' n n' rA rB s sA sB sC iC c1 c2 rs1 rs2 mrg tyC erm ern ihm ihn =>
+  case prj_ex A B C m m' n n' rA rB s sA sB sC iC c1 c2 rs1 rs2 mrg tyC erm ern ihm ihn =>
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
     obtain ⟨_, _ | ⟨tyA, _⟩, tyB⟩ := ern.ctx_inv
     have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg
@@ -73,7 +73,7 @@ lemma Erased.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m m' ξ} :
           = C.[up (ren ξ)].[.tup (.var 1) (.var 0) .ex s .: shift 2]
         by asimp] at ern
     rw[SubstLemmas.upren_up] at ern
-    have er := Erased.proj_ex rs1 rs2 mrg tyC erm ern
+    have er := Erased.prj_ex rs1 rs2 mrg tyC erm ern
     asimp at er; assumption
   case tt h ih => constructor <;> aesop (rule_sets := [rename])
   case ff h ih => constructor <;> aesop (rule_sets := [rename])

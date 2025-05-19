@@ -34,16 +34,16 @@ inductive PStep : Tm Srt -> Tm Srt -> Prop where
     PStep m m' ->
     PStep n n' ->
     PStep (.tup m n r s) (.tup m' n' r s)
-  | proj {A A' m m' n n'} r :
+  | prj {A A' m m' n n'} r :
     PStep A A' ->
     PStep m m' ->
     PStep n n' ->
-    PStep (.proj A m n r) (.proj A' m' n' r)
-  | proj_elim A {m1 m1' m2 m2' n n'} r s :
+    PStep (.prj A m n r) (.prj A' m' n' r)
+  | prj_elim A {m1 m1' m2 m2' n n'} r s :
     PStep m1 m1' ->
     PStep m2 m2' ->
     PStep n n' ->
-    PStep (.proj A (.tup m1 m2 r s) n r) n'.[m2',m1'/]
+    PStep (.prj A (.tup m1 m2 r s) n r) n'.[m2',m1'/]
   | bool : PStep .bool .bool
   | tt : PStep .tt .tt
   | ff : PStep .ff .ff
@@ -87,7 +87,7 @@ lemma Step.subst {m n : Tm Srt} σ : m ~> n -> m.[σ] ~> n.[σ] := by
   case beta A m n r s  =>
     rw[show m.[n/].[σ] = m.[up σ].[n.[σ]/] by asimp]
     constructor
-  case proj_elim A m1 m2 n r s =>
+  case prj_elim A m1 m2 n r s =>
     rw[show n.[m2,m1/].[σ] = n.[upn 2 σ].[m2.[σ],m1.[σ]/] by asimp]
     constructor
 
@@ -132,12 +132,12 @@ lemma Red.tup {m m' n n' : Tm Srt} r s :
   apply Star.hom _ _ rn; aesop
 
 @[aesop safe (rule_sets := [red])]
-lemma Red.proj {A A' m m' n n' : Tm Srt} r :
-    A ~>* A' -> m ~>* m' -> n ~>* n' -> .proj A m n r ~>* .proj A' m' n' r := by
+lemma Red.prj {A A' m m' n n' : Tm Srt} r :
+    A ~>* A' -> m ~>* m' -> n ~>* n' -> .prj A m n r ~>* .prj A' m' n' r := by
   intro rA rm rn
-  apply (@Star.trans _ _ (.proj A' m n r))
+  apply (@Star.trans _ _ (.prj A' m n r))
   apply Star.hom _ _ rA; aesop
-  apply (@Star.trans _ _ (.proj A' m' n r))
+  apply (@Star.trans _ _ (.prj A' m' n r))
   apply Star.hom _ _ rm; aesop
   apply Star.hom _ _ rn; aesop
 
@@ -250,12 +250,12 @@ lemma Conv.tup {m m' n n' : Tm Srt} r s :
   apply Conv.hom _ _ rn; aesop
 
 @[aesop safe (rule_sets := [conv])]
-lemma Conv.proj {A A' m m' n n' : Tm Srt} r :
-    A === A' -> m === m' -> n === n' -> .proj A m n r === .proj A' m' n' r := by
+lemma Conv.prj {A A' m m' n n' : Tm Srt} r :
+    A === A' -> m === m' -> n === n' -> .prj A m n r === .prj A' m' n' r := by
   intro rA rm rn
-  apply (@Conv.trans _ _ (.proj A' m n r))
+  apply (@Conv.trans _ _ (.prj A' m n r))
   apply Conv.hom _ _ rA; aesop
-  apply (@Conv.trans _ _ (.proj A' m' n r))
+  apply (@Conv.trans _ _ (.prj A' m' n r))
   apply Conv.hom _ _ rm; aesop
   apply Conv.hom _ _ rn; aesop
 
@@ -349,11 +349,11 @@ lemma PStep.toRed {m n : Tm Srt} : m ≈> n -> m ~>* n := by
     . apply Red.app r (Red.lam r s Star.R ihm) ihn
     . apply Star.one
       apply Step.beta
-  case proj_elim r s _ _ _ ihm1 ihm2 ihn =>
+  case prj_elim r s _ _ _ ihm1 ihm2 ihn =>
     apply Star.trans
-    . apply Red.proj r Star.R (Red.tup r s ihm1 ihm2) ihn
+    . apply Red.prj r Star.R (Red.tup r s ihm1 ihm2) ihn
     . apply Star.one
-      apply Step.proj_elim
+      apply Step.prj_elim
   case ite_tt ihn1 =>
     apply Star.trans
     . apply Red.ite Star.R Star.R ihn1 Star.R
@@ -378,8 +378,8 @@ lemma PStep.subst {m n : Tm Srt} σ : m ≈> n -> m.[σ] ≈> n.[σ] := by
   case beta A _ _ _ _ r s _ _ ihm ihn =>
     have := PStep.beta A.[σ] r s (ihm (up σ)) (ihn σ)
     asimp; asimp at this; assumption
-  case proj_elim A _ _ _ _ _ _ r s _ _ _ ihm1 ihm2 ihn =>
-    have := PStep.proj_elim A.[up σ] r s (ihm1 σ) (ihm2 σ) (ihn (upn 2 σ))
+  case prj_elim A _ _ _ _ _ _ r s _ _ _ ihm1 ihm2 ihn =>
+    have := PStep.prj_elim A.[up σ] r s (ihm1 σ) (ihm2 σ) (ihn (upn 2 σ))
     asimp; asimp at this; assumption
 
 def PSStep (σ τ : Var -> Tm Srt) : Prop := ∀ x, (σ x) ≈> (τ x)
@@ -414,12 +414,12 @@ lemma PStep.compat {m n : Tm Srt} {σ τ}:
     intro h
     have := PStep.beta A.[σ] r s (ihm (h.up)) (ihn h)
     asimp at this; assumption
-  case proj_elim A _ _ _ _ _ _ r s _ _ _ ihm1 ihm2 ihn =>
+  case prj_elim A _ _ _ _ _ _ r s _ _ _ ihm1 ihm2 ihn =>
     intro h
     specialize ihm1 h
     specialize ihm2 h
     specialize ihn (h.upn 2)
-    have := PStep.proj_elim A.[up σ] r s ihm1 ihm2 ihn
+    have := PStep.prj_elim A.[up σ] r s ihm1 ihm2 ihn
     asimp at this; assumption
 
 @[aesop safe (rule_sets := [pstep])]
@@ -522,16 +522,16 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
       exists .tup m n r s; constructor
       . apply PStep.tup r s psm1 psn1
       . apply PStep.tup r s psm2 psn2
-  case proj r psA psm psn ihA ihm ihn =>
+  case prj r psA psm psn ihA ihm ihn =>
     intro
-    | proj _ psA psm psn =>
+    | prj _ psA psm psn =>
       have ⟨A, psA1, psA2⟩ := ihA psA
       have ⟨m, psm1, psm2⟩ := ihm psm
       have ⟨n, psn1, psn2⟩ := ihn psn
-      exists .proj A m n r; constructor
-      . apply PStep.proj r psA1 psm1 psn1
-      . apply PStep.proj r psA2 psm2 psn2
-    | proj_elim _ r s psm1 psm2 psn =>
+      exists .prj A m n r; constructor
+      . apply PStep.prj r psA1 psm1 psn1
+      . apply PStep.prj r psA2 psm2 psn2
+    | prj_elim _ r s psm1 psm2 psn =>
       cases psm; case tup _ _ _ _ =>
       have ⟨_, psm1, psm2⟩ := ihm (PStep.tup r s psm1 psm2)
       have ⟨n, psn1, psn2⟩ := ihn psn
@@ -539,16 +539,16 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
       cases psm2; case tup _ _ psm1 psm2 =>
       exists n.[m2,m1/]
       aesop (rule_sets := [pstep])
-  case proj_elim A r s _ _ _ ihm1 ihm2 ihn =>
+  case prj_elim A r s _ _ _ ihm1 ihm2 ihn =>
     intro
-    | proj _ _ psm psn =>
+    | prj _ _ psm psn =>
       cases psm; case tup _ _ psm1 psm2 =>
       have ⟨m1, psm1, _⟩ := ihm1 psm1
       have ⟨m2, psm2, _⟩ := ihm2 psm2
       have ⟨n, psn, _⟩ := ihn psn
       exists n.[m2,m1/]
       aesop (rule_sets := [pstep])
-    | proj_elim _ _ _ psm1 psm2 psn =>
+    | prj_elim _ _ _ psm1 psm2 psn =>
       have ⟨m1, psm11, psm12⟩ := ihm1 psm1
       have ⟨m2, psm21, psm22⟩ := ihm2 psm2
       have ⟨n, psn1, psn2⟩ := ihn psn
@@ -910,18 +910,18 @@ def andElim (m : Expr) (elim : Expr -> Expr -> MetaM Expr) : MetaM Expr := do
   | none => throwError f!"andElim {mType}"
 
 -- Given a proposition consisting of `Exists` and `And`, find all `Eq`s among the conjuncts.
-partial def projEqs (m : Expr) (elim : Array Expr -> MetaM Expr) : MetaM Expr := do
+partial def prjEqs (m : Expr) (elim : Array Expr -> MetaM Expr) : MetaM Expr := do
   let mType <- whnf $ <-inferType m
   match mType.getAppFn.constName? with
   | some ``Exists =>
     existsElim m fun x y => do
-      projEqs x fun eqs1 =>
-      projEqs y fun eqs2 =>
+      prjEqs x fun eqs1 =>
+      prjEqs y fun eqs2 =>
       elim (eqs1 ++ eqs2)
   | some ``And =>
     andElim m fun x y =>
-      projEqs x fun eqs1 =>
-      projEqs y fun eqs2 =>
+      prjEqs x fun eqs1 =>
+      prjEqs y fun eqs2 =>
       elim (eqs1 ++ eqs2)
   | some ``Eq => elim #[m]
   | _ => elim #[]
@@ -947,8 +947,8 @@ def applyCR (goal : MVarId) (m l1 l2 : Expr) : MetaM Expr := do
   andElim h fun h1 h2 => do
     let h1 <- mkAppM' l1 #[h1]
     let h2 <- mkAppM' l2 #[h2]
-    projEqs h1 fun es1 =>
-    projEqs h2 fun es2 => do
+    prjEqs h1 fun es1 =>
+    prjEqs h2 fun es2 => do
       let e1 <- mkAppM ``Eq.symm #[es1[0]!]
       let e2 <- mkAppM ``Eq.trans #[e1, es2[0]!]
       mkAppOptM ``Tm.noConfusion #[none, <-goal.getType, none, none, e2]

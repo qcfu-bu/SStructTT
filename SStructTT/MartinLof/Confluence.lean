@@ -33,16 +33,16 @@ inductive PStep : Tm -> Tm -> Prop where
     PStep m m' ->
     PStep n n' ->
     PStep (.tup m n) (.tup m' n')
-  | proj {A A' m m' n n'} :
+  | prj {A A' m m' n n'} :
     PStep A A' ->
     PStep m m' ->
     PStep n n' ->
-    PStep (.proj A m n) (.proj A' m' n')
-  | proj_elim A {m1 m1' m2 m2' n n'} :
+    PStep (.prj A m n) (.prj A' m' n')
+  | prj_elim A {m1 m1' m2 m2' n n'} :
     PStep m1 m1' ->
     PStep m2 m2' ->
     PStep n n' ->
-    PStep (.proj A (.tup m1 m2) n) n'.[m2',m1'/]
+    PStep (.prj A (.tup m1 m2) n) n'.[m2',m1'/]
   | bool : PStep .bool .bool
   | tt : PStep .tt .tt
   | ff : PStep .ff .ff
@@ -86,7 +86,7 @@ lemma Step.subst {m n : Tm} σ : m ~> n -> m.[σ] ~> n.[σ] := by
   case beta A m n =>
     rw[show m.[n/].[σ] = m.[up σ].[n.[σ]/] by asimp]
     constructor
-  case proj_elim A m1 m2 n =>
+  case prj_elim A m1 m2 n =>
     rw[show n.[m2,m1/].[σ] = n.[upn 2 σ].[m2.[σ],m1.[σ]/] by asimp]
     constructor
 
@@ -131,12 +131,12 @@ lemma Red.tup {m m' n n' : Tm} :
   apply Star.hom _ _ rn; aesop
 
 @[aesop safe (rule_sets := [red])]
-lemma Red.proj {A A' m m' n n' : Tm} :
-    A ~>* A' -> m ~>* m' -> n ~>* n' -> .proj A m n ~>* .proj A' m' n' := by
+lemma Red.prj {A A' m m' n n' : Tm} :
+    A ~>* A' -> m ~>* m' -> n ~>* n' -> .prj A m n ~>* .prj A' m' n' := by
   intro rA rm rn
-  apply (@Star.trans _ _ (.proj A' m n))
+  apply (@Star.trans _ _ (.prj A' m n))
   apply Star.hom _ _ rA; aesop
-  apply (@Star.trans _ _ (.proj A' m' n))
+  apply (@Star.trans _ _ (.prj A' m' n))
   apply Star.hom _ _ rm; aesop
   apply Star.hom _ _ rn; aesop
 
@@ -249,12 +249,12 @@ lemma Conv.tup {m m' n n' : Tm} :
   apply Conv.hom _ _ rn; aesop
 
 @[aesop safe (rule_sets := [conv])]
-lemma Conv.proj {A A' m m' n n' : Tm} :
-    A === A' -> m === m' -> n === n' -> .proj A m n === .proj A' m' n' := by
+lemma Conv.prj {A A' m m' n n' : Tm} :
+    A === A' -> m === m' -> n === n' -> .prj A m n === .prj A' m' n' := by
   intro rA rm rn
-  apply (@Conv.trans _ _ (.proj A' m n))
+  apply (@Conv.trans _ _ (.prj A' m n))
   apply Conv.hom _ _ rA; aesop
-  apply (@Conv.trans _ _ (.proj A' m' n))
+  apply (@Conv.trans _ _ (.prj A' m' n))
   apply Conv.hom _ _ rm; aesop
   apply Conv.hom _ _ rn; aesop
 
@@ -348,11 +348,11 @@ lemma PStep.toRed {m n : Tm} : m ≈> n -> m ~>* n := by
     . apply Red.app (Red.lam Star.R ihm) ihn
     . apply Star.one
       apply Step.beta
-  case proj_elim ihm1 ihm2 ihn =>
+  case prj_elim ihm1 ihm2 ihn =>
     apply Star.trans
-    . apply Red.proj Star.R (Red.tup ihm1 ihm2) ihn
+    . apply Red.prj Star.R (Red.tup ihm1 ihm2) ihn
     . apply Star.one
-      apply Step.proj_elim
+      apply Step.prj_elim
   case ite_tt ihn1 =>
     apply Star.trans
     . apply Red.ite Star.R Star.R ihn1 Star.R
@@ -377,8 +377,8 @@ lemma PStep.subst {m n : Tm} σ : m ≈> n -> m.[σ] ≈> n.[σ] := by
   case beta A _ _ _ _ _ _ ihm ihn =>
     have := PStep.beta A.[σ] (ihm (up σ)) (ihn σ)
     asimp; asimp at this; assumption
-  case proj_elim A _ _ _ _ _ _ _ _ _ ihm1 ihm2 ihn =>
-    have := PStep.proj_elim A.[up σ] (ihm1 σ) (ihm2 σ) (ihn (upn 2 σ))
+  case prj_elim A _ _ _ _ _ _ _ _ _ ihm1 ihm2 ihn =>
+    have := PStep.prj_elim A.[up σ] (ihm1 σ) (ihm2 σ) (ihn (upn 2 σ))
     asimp; asimp at this; assumption
 
 def PSStep (σ τ : Var -> Tm) : Prop := ∀ x, (σ x) ≈> (τ x)
@@ -413,12 +413,12 @@ lemma PStep.compat {m n : Tm} {σ τ}:
     intro h
     have := PStep.beta A.[σ] (ihm (h.up)) (ihn h)
     asimp at this; assumption
-  case proj_elim A _ _ _ _ _ _ _ _ _ ihm1 ihm2 ihn =>
+  case prj_elim A _ _ _ _ _ _ _ _ _ ihm1 ihm2 ihn =>
     intro h
     specialize ihm1 h
     specialize ihm2 h
     specialize ihn (h.upn 2)
-    have := PStep.proj_elim A.[up σ] ihm1 ihm2 ihn
+    have := PStep.prj_elim A.[up σ] ihm1 ihm2 ihn
     asimp at this; assumption
 
 @[aesop safe (rule_sets := [pstep])]
@@ -521,16 +521,16 @@ lemma PStep.diamond : Diamond PStep := by
       exists .tup m n; constructor
       . apply PStep.tup psm1 psn1
       . apply PStep.tup psm2 psn2
-  case proj psA psm psn ihA ihm ihn =>
+  case prj psA psm psn ihA ihm ihn =>
     intro
-    | proj psA psm psn =>
+    | prj psA psm psn =>
       have ⟨A, psA1, psA2⟩ := ihA psA
       have ⟨m, psm1, psm2⟩ := ihm psm
       have ⟨n, psn1, psn2⟩ := ihn psn
-      exists .proj A m n; constructor
-      . apply PStep.proj psA1 psm1 psn1
-      . apply PStep.proj psA2 psm2 psn2
-    | proj_elim _ psm1 psm2 psn =>
+      exists .prj A m n; constructor
+      . apply PStep.prj psA1 psm1 psn1
+      . apply PStep.prj psA2 psm2 psn2
+    | prj_elim _ psm1 psm2 psn =>
       cases psm; case tup _ _ _ _ =>
       have ⟨_, psm1, psm2⟩ := ihm (PStep.tup psm1 psm2)
       have ⟨n, psn1, psn2⟩ := ihn psn
@@ -538,16 +538,16 @@ lemma PStep.diamond : Diamond PStep := by
       cases psm2; case tup _ _ psm1 psm2 =>
       exists n.[m2,m1/]
       aesop (rule_sets := [pstep])
-  case proj_elim A _ _ _ ihm1 ihm2 ihn =>
+  case prj_elim A _ _ _ ihm1 ihm2 ihn =>
     intro
-    | proj _ psm psn =>
+    | prj _ psm psn =>
       cases psm; case tup _ _ psm1 psm2 =>
       have ⟨m1, psm1, _⟩ := ihm1 psm1
       have ⟨m2, psm2, _⟩ := ihm2 psm2
       have ⟨n, psn, _⟩ := ihn psn
       exists n.[m2,m1/]
       aesop (rule_sets := [pstep])
-    | proj_elim _ psm1 psm2 psn =>
+    | prj_elim _ psm1 psm2 psn =>
       have ⟨m1, psm11, psm12⟩ := ihm1 psm1
       have ⟨m2, psm21, psm22⟩ := ihm2 psm2
       have ⟨n, psn1, psn2⟩ := ihn psn

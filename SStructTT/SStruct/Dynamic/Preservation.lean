@@ -48,21 +48,21 @@ lemma Step.toStatic' {A m n : Tm Srt} :
       exists Tm.tup m n' .ex s; and_intros
       . constructor; assumption
       . apply Red.tup <;> aesop
-  case proj C m n _ _ _ _ _ _ _ _ ihm ihn =>
+  case prj C m n _ _ _ _ _ _ _ _ ihm ihn =>
     subst_vars; cases st
-    case proj_im_M st _ _ _ _ =>
+    case prj_im_M st _ _ _ _ =>
       have ⟨m', st, rd⟩ := ihm rfl st
-      exists Tm.proj C m' n .im; and_intros
+      exists Tm.prj C m' n .im; and_intros
       . constructor; assumption
-      . apply Red.proj <;> aesop
-    case proj_ex_M st _ _ _ _ =>
+      . apply Red.prj <;> aesop
+    case prj_ex_M st _ _ _ _ =>
       have ⟨m', st, rd⟩ := ihm rfl st
-      exists Tm.proj C m' n .ex; and_intros
+      exists Tm.prj C m' n .ex; and_intros
       . constructor; assumption
-      . apply Red.proj <;> aesop
-    case proj_im_elim m1 m2 _ _ _ _ _ _ =>
+      . apply Red.prj <;> aesop
+    case prj_im_elim m1 m2 _ _ _ _ _ _ =>
       exists n.[m2,m1/]; and_intros <;> constructor
-    case proj_ex_elim m1 m2 _ _ _ _ _ _ =>
+    case prj_ex_elim m1 m2 _ _ _ _ _ _ =>
       exists n.[m2,m1/]; and_intros <;> constructor
   case ite A m n1 n2 _ _ _ _ _ _ _ ihm ihn1 ihn2 =>
     subst_vars; cases st
@@ -164,15 +164,15 @@ theorem Typed.preservation {A m m' : Tm Srt} :
       . assumption
       . assumption
       . apply ihn rfl rfl st
-  case proj_im C m n rA s sA sB sC iC rs mrg tyC tym tyn ihm _ =>
+  case prj_im C m n rA s sA sB sC iC rs mrg tyC tym tyn ihm _ =>
     subst_vars; cases mrg; cases st
-    case proj_im_M st =>
+    case prj_im_M st =>
       apply Typed.conv
       . apply Conv.subst1
         apply (Star.conv (st.toStatic tym.toStatic)).sym
-      . apply Typed.proj_im rs Merge.nil tyC (ihm rfl rfl st) tyn
+      . apply Typed.prj_im rs Merge.nil tyC (ihm rfl rfl st) tyn
       . apply tyC.subst tym.toStatic
-    case proj_im_elim m1 m2 s vl =>
+    case prj_im_elim m1 m2 s vl =>
       have ⟨tym1, tym2, _⟩ := tym.tup_im_inv; subst_vars
       rw[show C.[.tup m1 m2 .im s/]
             = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[m2,m1/] by asimp]
@@ -185,15 +185,15 @@ theorem Typed.preservation {A m m' : Tm Srt} :
       | weaken =>
         apply AgreeSubst.wk_im; asimp; apply tym1.toStatic
         apply AgreeSubst.refl Wf.nil
-  case proj_ex C m n rA rB s sA sB sC iC rs1 rs2 mrg tyC tym tyn ihm ihn =>
+  case prj_ex C m n rA rB s sA sB sC iC rs1 rs2 mrg tyC tym tyn ihm ihn =>
     subst_vars; cases mrg; cases st
-    case proj_ex_M st =>
+    case prj_ex_M st =>
       apply Typed.conv
       . apply Conv.subst1
         apply (Star.conv (st.toStatic tym.toStatic)).sym
-      . apply Typed.proj_ex rs1 rs2 Merge.nil tyC (ihm rfl rfl st) tyn
+      . apply Typed.prj_ex rs1 rs2 Merge.nil tyC (ihm rfl rfl st) tyn
       . apply tyC.subst tym.toStatic
-    case proj_ex_elim m1 m2 s vl =>
+    case prj_ex_elim m1 m2 s vl =>
       have ⟨Δ1, Δ2, mrg, tym1, tym2, _⟩ := tym.tup_ex_inv; subst_vars
       cases mrg
       rw[show C.[.tup m1 m2 .ex s/]

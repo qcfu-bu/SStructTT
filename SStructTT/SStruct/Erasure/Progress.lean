@@ -31,7 +31,7 @@ lemma Erased.sig_canonical {A B C m : SStruct.Tm Srt} {m' r s} :
   all_goals try false_conv
   case tup_im A0 B0 m m' n _ _ _ _ _ _ =>
     have ⟨_, _, _, _⟩ := Static.Conv.sig_inj eq
-    subst_vars; exists m, m', n, .none
+    subst_vars; exists m, m', n, .null
   case tup_ex A0 B0 m m' n n' _ _ _ _ _ _ _ _ =>
     have ⟨_, _, _, _⟩ := Static.Conv.sig_inj eq
     subst_vars; exists m, m', n, n'
@@ -63,11 +63,11 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
     simp_all
     match ih with
     | .inl ⟨m', _⟩ =>
-      left; exists Tm.app m' .none
+      left; exists Tm.app m' .null
       constructor; assumption
     | .inr vl =>
       have ⟨_, m, m', c, e1, e2⟩ := erm.pi_canonical Conv.R vl
-      subst_vars; left; exists m'.[.none/]
+      subst_vars; left; exists m'.[.null/]
       constructor
       constructor
       cases c <;> simp
@@ -89,13 +89,13 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
           subst_vars; left; exists m'.[n'/]
           constructor; assumption; simp
         | drop =>
-          subst_vars; left; exists m'.[.none/]
+          subst_vars; left; exists m'.[.null/]
           constructor; assumption; simp
   case tup_im m m' n s _ _ _ _ ih =>
     simp_all
     match ih with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.tup m .none s
+      left; exists Tm.tup m .null s
       constructor; assumption
     | .inr _ => right; aesop
   case tup_ex m m' n n' s _ _ _ _ ihm ihn mrg =>
@@ -110,20 +110,20 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
         left; exists Tm.tup m' n s
         constructor; assumption
       | .inr _ => right; constructor <;> assumption
-  case proj_im C n n' _ _ _ _ _ _ c _ _ erm _ ihm _ mrg =>
+  case prj_im C n n' _ _ _ _ _ _ c _ _ erm _ ihm _ mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.proj m n' c .keep
+      left; exists Tm.prj m n' c .keep
       constructor; assumption
     | .inr vl =>
       have ⟨m1, m1', m2, m2', _, _⟩ := erm.sig_canonical Conv.R vl
       subst_vars; left; exists n'.[m2',c.ctrl m1'/]; aesop
-  case proj_ex C _ _ n n' _ _ _ _ _ _ _ c1 c2 _ _ _ erm _ ihm _ mrg =>
+  case prj_ex C _ _ n n' _ _ _ _ _ _ _ c1 c2 _ _ _ erm _ ihm _ mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.proj m n' c1 c2
+      left; exists Tm.prj m n' c1 c2
       constructor; assumption
     | .inr vl =>
       have ⟨m1, m1', m2, m2', _, _⟩ := erm.sig_canonical Conv.R vl

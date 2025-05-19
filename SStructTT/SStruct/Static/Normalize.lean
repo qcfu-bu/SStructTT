@@ -14,7 +14,7 @@ variable {Srt : Type}
   | .app m n _ => .app (interp m) (interp n)
   | .sig A B _ _ => .sig (interp A) (interp B)
   | .tup m n _ _ => .tup (interp m) (interp n)
-  | .proj A m n _ => .proj (interp A) (interp m) (interp n)
+  | .prj A m n _ => .prj (interp A) (interp m) (interp n)
   | .bool => .bool
   | .tt => .tt
   | .ff => .ff
@@ -38,7 +38,7 @@ lemma interp_ren_com {m : Tm Srt} {ξ} :
   case app ihm ihn => rw[ihm,ihn]; asimp
   case sig ihA ihB => rw[<-SubstLemmas.upren_up,ihA,ihB]; asimp
   case tup ihm ihn => rw[ihm,ihn]; asimp
-  case proj ihA ihm ihn =>
+  case prj ihA ihm ihn =>
     rw[show 2 = (1 + 1) by simp]
     rw[<-SubstLemmas.upn_comp]
     repeat rw[SubstLemmas.upn1_up]
@@ -73,7 +73,7 @@ lemma interp_subst_com {m : Tm Srt} {σ τ} :
   case app ihm ihn => rw[ihm h,ihn h]; asimp
   case sig ihA ihB => rw[ihA h,ihB (interp_subst_up h)]; asimp
   case tup ihm ihn => rw[ihm h,ihn h]; asimp
-  case proj ihA ihm ihn =>
+  case prj ihA ihm ihn =>
     rw[show 2 = (1 + 1) by simp]
     rw[<-SubstLemmas.upn_comp]
     repeat rw[SubstLemmas.upn1_up]
@@ -101,7 +101,7 @@ lemma interp_step {m n : Tm Srt} :
     rw[interp_subst_com]
     . constructor
     . intro x; cases x <;> asimp
-  case proj_elim =>
+  case prj_elim =>
     rw[interp_subst_com]
     . constructor
     . intro x; rcases x with _ | ⟨_ | _⟩ <;> asimp
@@ -175,7 +175,7 @@ theorem Typed.toMartinLof {Γ : Ctx Srt} {A m} :
     constructor <;> try assumption
     rwa[<-interp_subst_com]
     intro x; cases x <;> asimp
-  case proj =>
+  case prj =>
     rw[interp_subst_com]
     . constructor <;> try assumption
       rw[<-interp_subst_com]

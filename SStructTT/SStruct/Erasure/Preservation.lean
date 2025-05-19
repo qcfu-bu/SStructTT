@@ -122,18 +122,18 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
       constructor
       . assumption
       . constructor <;> aesop
-  case proj_im C m m' n n' rA s sA sB sC iC c rs mrg tyC erm ern ihm _ =>
+  case prj_im C m m' n n' rA s sA sB sC iC c rs mrg tyC erm ern ihm _ =>
     subst_vars; cases mrg; cases st
-    case proj_M st' =>
+    case prj_M st' =>
       have ⟨m1, st, erm1⟩ := ihm rfl rfl st'
-      exists .proj C m1 n .im; and_intros
+      exists .prj C m1 n .im; and_intros
       . constructor; assumption
       . apply Erased.conv
         . apply Static.Conv.subst1
           apply (Star.conv (st.toStatic erm.toStatic)).sym
-        . apply Erased.proj_im rs Merge.nil tyC erm1 ern
+        . apply Erased.prj_im rs Merge.nil tyC erm1 ern
         . apply tyC.subst erm.toStatic
-    case proj_elim m1 m2 m1' m2' s vl' e1 e2 =>
+    case prj_elim m1 m2 m1' m2' s vl' e1 e2 =>
       have ⟨m1, m2, r, e⟩ := erm.tup_preimage; subst_vars
       cases r with
       | im =>
@@ -157,18 +157,18 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
         have ⟨_, _, _, _, _, _, _, eq⟩ := erm.toDynamic.tup_ex_inv'
         have ⟨e, _⟩ := Static.Conv.sig_inj eq
         contradiction
-  case proj_ex C m m' n n' rA rB s sA sB sC iC c1 c2 rs1 rs2 mrg tyC erm ern ihm ihn =>
+  case prj_ex C m m' n n' rA rB s sA sB sC iC c1 c2 rs1 rs2 mrg tyC erm ern ihm ihn =>
     subst_vars; cases mrg; cases st
-    case proj_M st' =>
+    case prj_M st' =>
       have ⟨m1, st, erm1⟩ := ihm rfl rfl st'
-      exists .proj C m1 n .ex; and_intros
+      exists .prj C m1 n .ex; and_intros
       . constructor; assumption
       . apply Erased.conv
         . apply Static.Conv.subst1
           apply (Star.conv (st.toStatic erm.toStatic)).sym
-        . apply Erased.proj_ex rs1 rs2 Merge.nil tyC erm1 ern
+        . apply Erased.prj_ex rs1 rs2 Merge.nil tyC erm1 ern
         . apply tyC.subst erm.toStatic
-    case proj_elim m1' m2' s vl' e1 e2 =>
+    case prj_elim m1' m2' s vl' e1 e2 =>
       have ⟨m1, m2, r, e⟩ := erm.tup_preimage; subst_vars
       cases r with
       | im =>

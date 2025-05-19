@@ -46,18 +46,18 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
   | tup_ex_N m {n n'} s :
     Step n n' ->
     Step (.tup m n .ex s) (.tup m n' .ex s)
-  | proj_im_M A {m m'} n :
+  | prj_im_M A {m m'} n :
     Step m m' ->
-    Step (.proj A m n .im) (.proj A m' n .im)
-  | proj_ex_M A {m m'} n :
+    Step (.prj A m n .im) (.prj A m' n .im)
+  | prj_ex_M A {m m'} n :
     Step m m' ->
-    Step (.proj A m n .ex) (.proj A m' n .ex)
-  | proj_im_elim A {m1 m2} n {s} :
+    Step (.prj A m n .ex) (.prj A m' n .ex)
+  | prj_im_elim A {m1 m2} n {s} :
     Value (.tup m1 m2 .im s) ->
-    Step (.proj A (.tup m1 m2 .im s) n .im) n.[m2,m1/]
-  | proj_ex_elim A {m1 m2} n {s} :
+    Step (.prj A (.tup m1 m2 .im s) n .im) n.[m2,m1/]
+  | prj_ex_elim A {m1 m2} n {s} :
     Value (.tup m1 m2 .ex s) ->
-    Step (.proj A (.tup m1 m2 .ex s) n .ex) n.[m2,m1/]
+    Step (.prj A (.tup m1 m2 .ex s) n .ex) n.[m2,m1/]
   | ite_M A {m m'} n1 n2 :
     Step m m' ->
     Step (.ite A m n1 n2) (.ite A m' n1 n2)

@@ -55,17 +55,17 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
   | tup_N m {n n'} r s :
     Step n n' ->
     Step (.tup m n r s) (.tup m n' r s)
-  | proj_A {A A'} m n r :
+  | prj_A {A A'} m n r :
     Step A A' ->
-    Step (.proj A m n r) (.proj A' m n r)
-  | proj_M A {m m'} n r :
+    Step (.prj A m n r) (.prj A' m n r)
+  | prj_M A {m m'} n r :
     Step m m' ->
-    Step (.proj A m n r) (.proj A m' n r)
-  | proj_N A m {n n'} r :
+    Step (.prj A m n r) (.prj A m' n r)
+  | prj_N A m {n n'} r :
     Step n n' ->
-    Step (.proj A m n r) (.proj A m n' r)
-  | proj_elim A m1 m2 n r s :
-    Step (.proj A (.tup m1 m2 r s) n r) n.[m2,m1/]
+    Step (.prj A m n r) (.prj A m n' r)
+  | prj_elim A m1 m2 n r s :
+    Step (.prj A (.tup m1 m2 r s) n r) n.[m2,m1/]
   | ite_A {A A'} m n1 n2 :
     Step A A' ->
     Step (.ite A m n1 n2) (.ite A' m n1 n2)

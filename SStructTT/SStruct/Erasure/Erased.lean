@@ -39,7 +39,7 @@ where
   | app_im {Γ Δ A B m m' n s} :
     Erased Γ Δ m m' (.pi A B .im s) ->
     Γ ⊢ n : A ->
-    Erased Γ Δ (.app m n .im) (.app m' .none) B.[n/]
+    Erased Γ Δ (.app m n .im) (.app m' .null) B.[n/]
 
   | app_ex {Γ Δ1 Δ2 Δ A B m m' n n' s} :
     Merge Δ1 Δ2 Δ ->
@@ -51,7 +51,7 @@ where
     Γ ⊢ .sig A B .im s : .srt s i ->
     Erased Γ Δ m m' A ->
     Γ ⊢ n : B.[m/] ->
-    Erased Γ Δ (.tup m n .im s) (.tup m' .none s) (.sig A B .im s)
+    Erased Γ Δ (.tup m n .im s) (.tup m' .null s) (.sig A B .im s)
 
   | tup_ex {Γ Δ1 Δ2 Δ A B m m' n n' s i} :
     Merge Δ1 Δ2 Δ ->
@@ -60,22 +60,22 @@ where
     Erased Γ Δ2 n n' B.[m/] ->
     Erased Γ Δ (.tup m n .ex s) (.tup m' n' s) (.sig A B .ex s)
 
-  | proj_im {Γ Δ1 Δ2 Δ A B C m m' n n' rA s sA sB sC iC c1} :
+  | prj_im {Γ Δ1 Δ2 Δ A B C m m' n n' rA s sA sB sC iC c1} :
     RSrt rA sA c1 ->
     Merge Δ1 Δ2 Δ ->
     .sig A B .im s :: Γ ⊢ C : .srt sC iC ->
     Erased Γ Δ1 m m' (.sig A B .im s) ->
     Erased (B :: A :: Γ) (B :⟨.im, sB⟩ A :⟨rA, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
-    Erased Γ Δ (.proj C m n .im) (.proj m' n' c1 .keep) C.[m/]
+    Erased Γ Δ (.prj C m n .im) (.prj m' n' c1 .keep) C.[m/]
 
-  | proj_ex {Γ Δ1 Δ2 Δ A B C m m' n n' rA rB s sA sB sC iC c1 c2} :
+  | prj_ex {Γ Δ1 Δ2 Δ A B C m m' n n' rA rB s sA sB sC iC c1 c2} :
     RSrt rA sA c1 ->
     RSrt rB sB c2 ->
     Merge Δ1 Δ2 Δ ->
     .sig A B .ex s :: Γ ⊢ C : .srt sC iC ->
     Erased Γ Δ1 m m' (.sig A B .ex s) ->
     Erased (B :: A :: Γ) (B :⟨rB, sB⟩ A :⟨rA, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .ex s .: shift 2] ->
-    Erased Γ Δ (.proj C m n .ex) (.proj m' n' c1 c2) C.[m/]
+    Erased Γ Δ (.prj C m n .ex) (.prj m' n' c1 c2) C.[m/]
 
   | tt {Γ Δ} :
     Wf Γ Δ ->
@@ -124,7 +124,7 @@ lemma Erased.toDynamic {Γ} {Δ : Ctx Srt} {A m m'} :
       constructor
       apply Dynamic.RSrt.weaken h
       all_goals aesop
-  case proj_im sA _ _ _ _ rs _ _ _ _ ihm ihn =>
+  case prj_im sA _ _ _ _ rs _ _ _ _ ihm ihn =>
     cases rs with
     | extend =>
       constructor
@@ -134,7 +134,7 @@ lemma Erased.toDynamic {Γ} {Δ : Ctx Srt} {A m m'} :
       constructor
       apply Dynamic.RSrt.weaken h
       all_goals aesop
-  case proj_ex sA sB _ _ _ _ rsA rsB _ _ _ _ ihm ihn =>
+  case prj_ex sA sB _ _ _ _ rsA rsB _ _ _ _ ihm ihn =>
     cases rsA with
     | extend =>
       cases rsB with
@@ -199,7 +199,7 @@ lemma Typed.toErased {Γ} {Δ : Ctx Srt} {A m} :
       apply Erasure.RSrt.weaken h; all_goals aesop
   case app_im ihm =>
     have ⟨m', erm⟩ := ihm
-    exists (.app m' .none)
+    exists (.app m' .null)
     constructor <;> aesop
   case app_ex ihm ihn =>
     have ⟨m', erm⟩ := ihm
@@ -208,48 +208,48 @@ lemma Typed.toErased {Γ} {Δ : Ctx Srt} {A m} :
     constructor <;> aesop
   case tup_im s _ _  _ _ ihm =>
     have ⟨m', erm⟩ := ihm
-    exists (.tup m' .none s)
+    exists (.tup m' .null s)
     constructor <;> aesop
   case tup_ex s _ _ _ _ _ ihm ihn =>
     have ⟨m', erm⟩ := ihm
     have ⟨n', ern⟩ := ihn
     exists (.tup m' n' s)
     constructor <;> aesop
-  case proj_im sA SB _ _ rs _ _ _ _ ihm ihn =>
+  case prj_im sA SB _ _ rs _ _ _ _ ihm ihn =>
     have ⟨m', erm⟩ := ihm
     have ⟨n', ern⟩ := ihn
     cases rs with
     | extend =>
-      exists (.proj m' n' .keep .keep); constructor
+      exists (.prj m' n' .keep .keep); constructor
       apply Erasure.RSrt.extend sA; all_goals aesop
     | weaken h =>
-      exists (.proj m' n' .drop .keep); constructor
+      exists (.prj m' n' .drop .keep); constructor
       apply Erasure.RSrt.weaken h; all_goals aesop
-  case proj_ex sA sB _ _ rsA rsB _ _ _ _ ihm ihn =>
+  case prj_ex sA sB _ _ rsA rsB _ _ _ _ ihm ihn =>
     have ⟨m', erm⟩ := ihm
     have ⟨n', ern⟩ := ihn
     cases rsA with
     | extend =>
       cases rsB with
       | extend =>
-        exists (.proj m' n' .keep .keep); constructor
+        exists (.prj m' n' .keep .keep); constructor
         apply Erasure.RSrt.extend sA
         apply Erasure.RSrt.extend sB
         all_goals aesop
       | weaken h =>
-        exists (.proj m' n' .keep .drop); constructor
+        exists (.prj m' n' .keep .drop); constructor
         apply Erasure.RSrt.extend sA
         apply Erasure.RSrt.weaken h
         all_goals aesop
     | weaken hA =>
       cases rsB with
       | extend =>
-        exists (.proj m' n' .drop .keep); constructor
+        exists (.prj m' n' .drop .keep); constructor
         apply Erasure.RSrt.weaken hA
         apply Erasure.RSrt.extend sB
         all_goals aesop
       | weaken hB =>
-        exists (.proj m' n' .drop .drop); constructor
+        exists (.prj m' n' .drop .drop); constructor
         apply Erasure.RSrt.weaken hA
         apply Erasure.RSrt.weaken hB
         all_goals aesop

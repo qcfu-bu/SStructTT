@@ -7,7 +7,7 @@ variable {Srt : Type}
 
 @[simp]def Ctrl.ctrl : Ctrl -> Tm Srt -> Tm Srt
   | .keep => id
-  | .drop => fun _ => .none
+  | .drop => fun _ => .null
 
 @[scoped aesop safe [constructors]]
 inductive Value : Tm Srt -> Prop where
@@ -19,7 +19,7 @@ inductive Value : Tm Srt -> Prop where
     Value (.tup m n s)
   | tt : Value .tt
   | ff : Value .ff
-  | none : Value .none
+  | null : Value .null
 
 @[scoped aesop safe [constructors]]
 inductive Step : Tm Srt -> Tm Srt -> Prop where
@@ -39,14 +39,14 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
   | tup_N m {n n'} s :
     Step n n' ->
     Step (.tup m n s) (.tup m n' s)
-  | proj_M {m m'} n c1 c2 :
+  | prj_M {m m'} n c1 c2 :
     Step m m' ->
-    Step (.proj m n c1 c2) (.proj m' n c1 c2)
-  | proj_elim {m1 m2 m1' m2'} n c1 c2 {s} :
+    Step (.prj m n c1 c2) (.prj m' n c1 c2)
+  | prj_elim {m1 m2 m1' m2'} n c1 c2 {s} :
     Value (.tup m1 m2 s) ->
     c1.ctrl m1 = m1' ->
     c2.ctrl m2 = m2' ->
-    Step (.proj (.tup m1 m2 s) n c1 c2) n.[m2',m1'/]
+    Step (.prj (.tup m1 m2 s) n c1 c2) n.[m2',m1'/]
   | ite_M {m m'} n1 n2 :
     Step m m' ->
     Step (.ite m n1 n2) (.ite m' n1 n2)
