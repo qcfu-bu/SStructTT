@@ -205,7 +205,7 @@ lemma HMerge.insert_left {H1 H2 H3 : Heap Srt} {m l s} :
     simp[Finmap.lookup_insert_of_ne _ ne]
     apply mrg
 
-lemma HMerge.lower_split {H3 : Heap Srt} :
+lemma HMerge.split_lower {H3 : Heap Srt} :
     HLower H3 ord.e ->
     ∃ H1 H2, HLower H1 ord.e ∧ HLower H2 ord.e ∧ HMerge H1 H2 H3 := by
   intro lw

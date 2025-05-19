@@ -486,6 +486,63 @@ def WR (H : Heap Srt) : Prop :=
     | some ⟨.lam m _ s1, s2⟩ => NF 1 m ∧ s1 = s2
     | some ⟨.tup (.ptr _) .null s1, s2⟩ => s1 = s2
     | some ⟨.tup (.ptr _) (.ptr _) s1, s2⟩ => s1 = s2
-    | some (.tt, s) => s = ord.e
-    | some (.ff, s) => s = ord.e
+    | some ⟨.tt, s⟩ => s = ord.e
+    | some ⟨.ff, s⟩ => s = ord.e
     | _ => False
+
+lemma Erased.nf {Γ Δ} {m A : SStruct.Tm Srt} {m'} :
+    Γ ;; Δ ⊢ m ▷ m' : A -> NF (Γ.length) m' := by
+  intro erm; induction erm
+  all_goals try (solve | aesop)
+  case var wf hs =>
+    replace hs := wf.hasStatic hs
+    apply hs.var_lt_length
+
+lemma HLookup.nf {H H' : Heap Srt} {m l} :
+    HLookup H l m H' -> WR H -> NF 0 m := by
+  intro lk wr
+  unfold HLookup at lk; split at lk <;> try trivial
+  case h_1 m' s h =>
+    replace ⟨_, lk⟩ := lk; subst_vars
+    split_ifs at lk
+    case pos =>
+      subst_vars
+      replace wr := wr l
+      simp[h] at wr; split at wr
+      all_goals simp_all
+    case neg =>
+      subst_vars
+      replace wr := wr l
+      simp[h] at wr; split at wr
+      all_goals simp_all
+
+lemma HMerge.merge_wr {H1 H2 H3 : Heap Srt} :
+    HMerge H1 H2 H3 -> WR H1 -> WR H2 -> WR H3 := by
+  intro mrg wr1 wr2 x
+  replace wr1 := wr1 x
+  replace wr2 := wr2 x
+  replace mrg := mrg x
+  revert wr1 wr2
+  generalize e1: Finmap.lookup x H1 = r1
+  generalize e2: Finmap.lookup x H2 = r2
+  generalize e3: Finmap.lookup x H3 = r3
+  rw[e1,e2,e3] at mrg
+  split at mrg <;> simp_all
+
+lemma HMerge.split_wr' {H1 H2 H3 : Heap Srt} :
+    HMerge H1 H2 H3 -> WR H3 -> WR H1 := by
+  intro mrg wr3 x
+  replace wr3 := wr3 x
+  replace mrg := mrg x
+  revert wr3
+  generalize e1: Finmap.lookup x H1 = r1
+  generalize e2: Finmap.lookup x H2 = r2
+  generalize e3: Finmap.lookup x H3 = r3
+  rw[e1,e2,e3] at mrg
+  split at mrg <;> simp_all
+
+lemma HMerge.split_wr {H1 H2 H3 : Heap Srt} :
+    HMerge H1 H2 H3 -> WR H3 -> WR H1 ∧ WR H2 := by
+  intro mrg wr; and_intros
+  . apply mrg.split_wr' wr
+  . apply mrg.sym.split_wr' wr
