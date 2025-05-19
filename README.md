@@ -10,8 +10,8 @@ Substructural Dependent Type Theory (SStruct) in [Lean 4](https://lean-lang.org/
 | unbound  | yes         | yes       | U    |
 
 ## Dependencies
-- Lean 4 toolchain (v4.17.0)
-- [Mathlib4](https://github.com/leanprover-community/mathlib4) (v4.17.0)
+- Lean 4 toolchain (v4.19.0)
+- [Mathlib4](https://github.com/leanprover-community/mathlib4) (v4.19.0)
 
 ## Build Instructions
 1. Fetch cache for Mathlib4 with `lake exec get cache`.
