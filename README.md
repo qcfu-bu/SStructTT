@@ -24,7 +24,8 @@ Substructural Dependent Type Theory (SStruct) in [Lean 4](https://lean-lang.org/
   - **SStruct/**
     - **Static/**: Logical level theories. 
     - **Dynamic/**: Program level theories.
-    - **Erasure/**:  Erasure soundness theories (🔨**WIP**).
+    - **Erasure/**:  Erasure soundness theories.
+    - **Runtime/**:  Runtime soundness theories (🔨**WIP**).
     - `SrtOrder.lean`: Typeclass for sort-orderings.
     - `Syntax.lean`: Abstract syntax of SStruct.
 - `SStructTT.lean`: Root module file of project.
