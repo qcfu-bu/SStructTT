@@ -8,9 +8,7 @@ variable {Srt : Type} [ord : SrtOrder Srt]
 def HLookup (H1 : Heap Srt) (l : Nat) (m : Tm Srt) (H2 : Heap Srt) : Prop :=
   match H1.lookup l with
   | some ⟨n, s⟩ =>
-    m = n ∧ (
-      (s ∉ ord.contra_set -> H2 = H1.erase l) ∨
-      (s ∈ ord.contra_set -> H1 = H2))
+    m = n ∧ if s ∈ ord.contra_set then H1 = H2 else H2 = H1.erase l
   | none => False
 
 inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
@@ -98,3 +96,55 @@ where
 
 notation:50 H:50 " ;; " x:51 " ▷ " y:51 " ◁ " z:51 " : " A:51 =>
   WellResolved H x y z A
+
+lemma HLookup.not_mem {H1 H2 : Heap Srt} {l1 l2 m} :
+    HLookup H1 l1 m H2 -> l2 ∉ H1.keys -> l2 ∉ H2.keys := by
+  intro lk h
+  rw[HLookup] at lk
+  rw[Finmap.mem_keys,<-Finmap.lookup_eq_none] at h
+  rw[Finmap.mem_keys,<-Finmap.lookup_eq_none]
+  split at lk <;> try trivial
+  case h_1 opt m' s e =>
+    have ⟨e, h⟩ := lk; split_ifs at h
+    case pos => subst_vars; assumption
+    case neg =>
+      subst_vars
+      cases l2.decEq l1 with
+      | isTrue => subst_vars; apply Finmap.lookup_erase
+      | isFalse ne => rw[Finmap.lookup_erase_ne ne]; assumption
+
+lemma HLookup.insert {H1 H2 : Heap Srt} {l1 l2 m n s} :
+    HLookup H1 l1 m H2 -> l2 ∉ H1.keys ->
+    HLookup (H1.insert l2 ⟨n, s⟩) l1 m (H2.insert l2 ⟨n, s⟩) := by
+  intro lk h
+  rw[Finmap.mem_keys,<-Finmap.lookup_eq_none] at h
+  rw[HLookup]
+  cases l1.decEq l2 with
+  | isTrue =>
+    subst_vars
+    rw[HLookup] at lk
+    rw[h] at lk; simp at lk
+  | isFalse ne =>
+    rw[H1.lookup_insert_of_ne ne]
+    rw[HLookup] at lk
+    split at lk <;> try trivial
+    replace ⟨_, lk⟩ := lk; subst_vars; simp
+    split_ifs at lk <;> try simp_all
+    apply Finmap.ext_lookup
+    intro x
+    cases x.decEq l2 with
+    | isTrue =>
+      subst_vars
+      rw[Finmap.lookup_insert]
+      rw[Finmap.lookup_erase_ne (by aesop)]
+      rw[Finmap.lookup_insert]
+    | isFalse ne2 =>
+      rw[Finmap.lookup_insert_of_ne _ ne2]
+      cases x.decEq l1 with
+      | isTrue =>
+        subst_vars
+        rw[Finmap.lookup_erase]
+        rw[Finmap.lookup_erase]
+      | isFalse ne1 =>
+        repeat rw[Finmap.lookup_erase_ne ne1]
+        rw[Finmap.lookup_insert_of_ne _ ne2]

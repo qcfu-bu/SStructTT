@@ -10,6 +10,14 @@ class SrtOrder (S : Type) extends PartialOrder S where
   e_min : ∀ (x : S), e ≤ x
   e_weaken : e ∈ weaken_set
   e_contra : e ∈ contra_set
+  weaken_dec : ∀ s, Decidable (s ∈ weaken_set)
+  contra_dec : ∀ s, Decidable (s ∈ contra_set)
+
+instance {S : Type} {s : S} [ord : SrtOrder S] : Decidable (s ∈ ord.weaken_set) :=
+  ord.weaken_dec s
+
+instance {S : Type} {s : S} [ord : SrtOrder S] : Decidable (s ∈ ord.contra_set) :=
+  ord.contra_dec s
 
 namespace SO4 -- 4 Sorted
 inductive Srt where
@@ -39,6 +47,25 @@ lemma Srt.le_Ls_false s : ¬ s = L -> ¬ le L s := by
   case le_trans => aesop
 
 lemma Srt.le_RA_false : ¬ le R A := by
+  generalize e1: R = r
+  generalize e2: A = s
+  intro h; induction h
+  all_goals try trivial
+  case le_refl =>
+    subst_vars; contradiction
+  case le_trans s r t h1 h2 ih1 ih2 =>
+    subst_vars
+    cases r with
+    | U =>
+      apply Srt.le_sU_false <;> try assumption
+      intro; contradiction
+    | A => aesop
+    | R => aesop
+    | L =>
+      apply Srt.le_Ls_false <;> try assumption
+      intro; contradiction
+
+lemma Srt.le_AR_false : ¬ le A R := by
   generalize e1: R = r
   generalize e2: A = s
   intro h; induction h
@@ -101,9 +128,9 @@ inductive Srt.weaken : Set Srt where
   | U : weaken U
   | A : weaken A
 
-inductive Srt.contra : Srt -> Prop where
+inductive Srt.contra : Set Srt where
   | U : contra U
-  | R : contra A
+  | R : contra R
 
 lemma Srt.weaken_lower : IsLowerSet weaken := by
   intro s t h wk; cases wk
@@ -134,10 +161,24 @@ lemma Srt.contra_lower : IsLowerSet contra := by
       aesop
   case R =>
     cases t <;> try constructor
-    . exfalso; apply Srt.le_RA_false; assumption
+    . exfalso; apply Srt.le_AR_false; assumption
     . exfalso
       apply Srt.le_Ls_false <;> try assumption
       aesop
+
+def Srt.weaken_dec (s : Srt) : Decidable (s ∈ weaken) := by
+  cases s with
+  | U => apply isTrue .U
+  | A => apply isTrue .A
+  | R => apply isFalse; intro h; cases h
+  | L => apply isFalse; intro h; cases h
+
+def Srt.contra_dec (s : Srt) : Decidable (s ∈ contra) := by
+  cases s with
+  | U => apply isTrue .U
+  | R => apply isTrue .R
+  | A => apply isFalse; intro h; cases h
+  | L => apply isFalse; intro h; cases h
 
 instance : SrtOrder Srt where
   e := Srt.U
@@ -146,4 +187,6 @@ instance : SrtOrder Srt where
   e_min := Srt.le_U_min
   e_weaken := Srt.weaken.U
   e_contra := Srt.contra.U
+  weaken_dec := Srt.weaken_dec
+  contra_dec := Srt.contra_dec
 end SO4
