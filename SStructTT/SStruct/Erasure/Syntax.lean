@@ -14,7 +14,7 @@ inductive Tm where
   | app  (m n : Tm)
   | tup  (m n : Tm) (s : Srt)
   | proj (m n : Tm) (c1 c2 : Ctrl)
-  | bool | tt | ff
+  | tt | ff
   | ite  (m n1 n2 : Tm)
   | rw   (m : Tm)
   | ptr  (l : Nat)
@@ -34,7 +34,6 @@ def rename_rec (ξ : Var -> Var) (m : Tm Srt) : Tm Srt :=
   | app m n => app (rename_rec ξ m) (rename_rec ξ n)
   | tup m n s => tup (rename_rec ξ m) (rename_rec ξ n) s
   | proj m n c1 c2 => proj (rename_rec ξ m) (rename_rec (upren $ upren ξ) n) c1 c2
-  | bool => bool
   | tt => tt
   | ff => ff
   | ite m n1 n2 => ite (rename_rec ξ m) (rename_rec ξ n1) (rename_rec ξ n2)
@@ -53,7 +52,6 @@ variable (ξ : Var -> Var) (A B m n n1 n2 : Tm Srt) (x i l : Nat) (c c1 c2 : Ctr
 @[asimp]lemma app  : rename ξ (app m n) = app (rename ξ m) (rename ξ n) := by rfl
 @[asimp]lemma tup1 : rename ξ (tup m n s) = tup (rename ξ m) (rename ξ n) s := by rfl
 @[asimp]lemma proj : rename ξ (proj m n c1 c2) = proj (rename ξ m) (rename (upren $ upren ξ) n) c1 c2 := by rfl
-@[asimp]lemma bool : rename ξ (@bool Srt) = bool := by rfl
 @[asimp]lemma tt   : rename ξ (@tt Srt) = tt := by rfl
 @[asimp]lemma ff   : rename ξ (@ff Srt) = ff := by rfl
 @[asimp]lemma ite  : rename ξ (ite m n1 n2) = ite (rename ξ m) (rename ξ n1) (rename ξ n2) := by rfl
@@ -70,7 +68,6 @@ def subst_rec (σ : Var -> Tm Srt) (m : Tm Srt) : Tm Srt :=
   | app m n => app (subst_rec σ m) (subst_rec σ n)
   | tup m n s => tup (subst_rec σ m) (subst_rec σ n) s
   | proj m n c1 c2 => proj (subst_rec σ m) (subst_rec (upn 2 σ) n) c1 c2
-  | bool => bool
   | tt => tt
   | ff => ff
   | ite m n1 n2 => ite (subst_rec σ m) (subst_rec σ n1) (subst_rec σ n2)
@@ -89,7 +86,6 @@ variable (σ : Var -> Tm Srt) (A B m n n1 n2 : Tm Srt) (x i l : Nat) (c c1 c2 : 
 @[asimp]lemma app  : subst σ (app m n) = app (subst σ m) (subst σ n) := by rfl
 @[asimp]lemma tup  : subst σ (tup m n s) = tup (subst σ m) (subst σ n) s := by rfl
 @[asimp]lemma proj : subst σ (proj m n c1 c2) = proj (subst σ m) (subst (upn 2 σ) n) c1 c2 := by rfl
-@[asimp]lemma bool : subst σ (@bool Srt) = bool := by rfl
 @[asimp]lemma tt   : subst σ (@tt Srt) = tt := by rfl
 @[asimp]lemma ff   : subst σ (@ff Srt) = ff := by rfl
 @[asimp]lemma ite  : subst σ (ite m n1 n2) = ite (subst σ m) (subst σ n1) (subst σ n2) := by rfl
@@ -111,7 +107,6 @@ lemma rename_subst ξ (m : Tm Srt) : rename ξ m = m.[ren ξ] := by
   | app m n ihm ihn => asimp[ihm, ihn]
   | tup m n s ihm ihn => asimp[ihm, ihn]
   | proj m n c1 c2 ihm ihn => asimp[up_upren, ihm, ihn]
-  | bool => asimp
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_upren, ihm, ihn1, ihn2]
@@ -132,7 +127,6 @@ lemma subst_id (m : Tm Srt) : m.[ids] = m := by
   | app m n ihm ihn => asimp[ihm, ihn]
   | tup m n s ihm ihn => asimp[ihm, ihn]
   | proj m n c1 c2 ihm ihn => asimp[up_ids, ihm, ihn]
-  | bool => asimp
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_ids, ihm, ihn1, ihn2]
@@ -154,7 +148,6 @@ lemma ren_subst_comp ξ σ (m : Tm Srt) : m.[ren ξ].[σ] = m.[ξ !>> σ] := by
   | app m n ihm ihn => asimp[ihm, ihn]
   | tup m n s ihm ihn => asimp[ihm, ihn]
   | proj m n c1 c2 ihm ihn => asimp[up_upren, up_comp_upren, ihm, ihn]
-  | bool => asimp
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_upren, up_comp_upren, ihm, ihn1, ihn2]
@@ -180,7 +173,6 @@ lemma subst_ren_comp σ ξ (m : Tm Srt) : m.[σ].[ren ξ] = m.[σ !>> rename ξ]
   | app m n ihm ihn => asimp[ihm, ihn]
   | tup m n s ihm ihn => asimp[ihm, ihn]
   | proj m n c1 c2 ihm ihn => asimp[up_upren, up_comp_ren, ihm, ihn]
-  | bool => asimp
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_upren, up_comp_ren, ihm, ihn1, ihn2]
@@ -206,7 +198,6 @@ lemma subst_comp (σ τ : Var -> Tm Srt) m : m.[σ].[τ] = m.[σ !> τ] := by
   | app m n ihm ihn => asimp[ihm, ihn]
   | tup m n s ihm ihn => asimp[ihm, ihn]
   | proj m n c1 c2 ihm ihn => asimp[up_comp, ihm, ihn]
-  | bool => asimp
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_comp, ihm, ihn1, ihn2]

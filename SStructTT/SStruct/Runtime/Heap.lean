@@ -1,7 +1,8 @@
 import SStructTT.SStruct.Erasure.Syntax
 import Mathlib.Data.Finmap
 
-namespace SStruct.Runtime
+namespace SStruct.Erasure
+namespace Runtime
 variable {Srt : Type}
 
 abbrev Heap Srt := Finmap (fun (_ : Nat) => Tm Srt × Srt)
