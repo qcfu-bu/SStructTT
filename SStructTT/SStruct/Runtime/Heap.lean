@@ -214,6 +214,14 @@ lemma HMerge.lower_split {H3 : Heap Srt} :
   . assumption
   . apply lw.merge_refl
 
+lemma HMerge.lookup_collision {H1 H2 H3 : Heap Srt} {l} :
+    HMerge H1 H2 H3 -> l ∈ H1.keys -> H1.lookup l = H3.lookup l := by
+  intro mrg h
+  rw[Finmap.mem_keys,Finmap.mem_iff] at h
+  have ⟨⟨m, s⟩, e⟩ := h
+  replace mrg := mrg l
+  rw[e] at mrg; split at mrg <;> aesop
+
 lemma HMerge.compose {H1 H2 H3 Ha Hb Hx Hy : Heap Srt} {s} :
     HLower Ha s -> s ∈ ord.contra_set ->
     HMerge Ha Hb H3 ->

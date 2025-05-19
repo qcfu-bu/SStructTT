@@ -69,33 +69,33 @@ inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
 
 notation:50 H:50 " ;; " m:51 " ▷ " m':51 => Resolve H m m'
 
-@[simp]def Resolved : Tm Srt -> Prop
+@[simp]def IsResolved : Tm Srt -> Prop
   | .var _ => True
-  | .lam m _ _ => Resolved m
-  | .app m n => Resolved m ∧ Resolved n
-  | .tup m n _ => Resolved m ∧ Resolved n
-  | .prj m n _ _ => Resolved m ∧ Resolved n
+  | .lam m _ _ => IsResolved m
+  | .app m n => IsResolved m ∧ IsResolved n
+  | .tup m n _ => IsResolved m ∧ IsResolved n
+  | .prj m n _ _ => IsResolved m ∧ IsResolved n
   | .tt => True
   | .ff => True
-  | .ite m n1 n2 => Resolved m ∧ Resolved n1 ∧ Resolved n2
-  | .rw m => Resolved m
+  | .ite m n1 n2 => IsResolved m ∧ IsResolved n1 ∧ IsResolved n2
+  | .rw m => IsResolved m
   | .ptr _ => False
   | .null => True
 
-lemma Resolve.is_resolved {H : Heap Srt} {m m'} : H ;; m ▷ m' -> Resolved m' := by
+lemma Resolve.is_resolved {H : Heap Srt} {m m'} : H ;; m ▷ m' -> IsResolved m' := by
   intro rs; induction rs
   all_goals aesop
 
-inductive WellResolved :
+inductive Resolved :
   Heap Srt -> SStruct.Tm Srt -> Tm Srt -> Tm Srt -> SStruct.Tm Srt -> Prop
 where
   | intro {H x y z A} :
     [] ;; [] ⊢ x ▷ y : A ->
     H ;; z ▷ y ->
-    WellResolved H x y z A
+    Resolved H x y z A
 
 notation:50 H:50 " ;; " x:51 " ▷ " y:51 " ◁ " z:51 " : " A:51 =>
-  WellResolved H x y z A
+  Resolved H x y z A
 
 lemma HLookup.not_mem {H1 H2 : Heap Srt} {l1 l2 m} :
     HLookup H1 l1 m H2 -> l2 ∉ H1.keys -> l2 ∉ H2.keys := by
@@ -269,3 +269,223 @@ lemma Resolve.weaken {H : Heap Srt} {m m' n l} :
     | isFalse ne =>
       rw[Finmap.lookup_insert_of_ne _ ne]
       apply lw
+
+lemma Erased.resolve_refl {Γ Δ} {H : Heap Srt} {m n A} :
+    Γ ;; Δ ⊢ m ▷ n : A -> HLower H ord.e -> H ;; n ▷ n := by
+  intro er lw
+  induction er generalizing H
+  case var =>
+    constructor; assumption
+  case lam_im ih =>
+    constructor
+    apply lw.trans (ord.e_min _)
+    apply ih lw
+  case lam_ex ih =>
+    constructor
+    apply lw.trans (ord.e_min _)
+    apply ih lw
+  case app_im ih =>
+    have mrg := lw.merge_refl
+    constructor
+    . apply mrg
+    . apply ih lw
+    . constructor
+      assumption
+  case app_ex =>
+    have mrg := lw.merge_refl
+    constructor <;> aesop
+  case tup_im ih =>
+    have mrg := lw.merge_refl
+    constructor
+    . apply mrg
+    . apply ih lw
+    . constructor
+      assumption
+  case tup_ex =>
+    have mrg := lw.merge_refl
+    constructor <;> aesop
+  case prj_im =>
+    have mrg := lw.merge_refl
+    constructor <;> aesop
+  case prj_ex =>
+    have mrg := lw.merge_refl
+    constructor <;> aesop
+  case tt => constructor; assumption
+  case ff => constructor; assumption
+  case ite =>
+    have mrg := lw.merge_refl
+    constructor <;> aesop
+  case rw => constructor; aesop
+  case conv => aesop
+
+lemma Erased.resolve_id {Γ Δ} {H : Heap Srt} {x y z A} :
+    Γ ;; Δ ⊢ x ▷ y : A -> H ;; y ▷ z -> y = z := by
+  intro ty rs; induction ty generalizing H z
+  case var => cases rs; simp
+  case lam_im => cases rs; aesop
+  case lam_ex => cases rs; aesop
+  case app_im ih =>
+    cases rs
+    case app rsn =>
+      cases rsn; aesop
+  case app_ex => cases rs; aesop
+  case tup_im =>
+    cases rs
+    case tup rsn =>
+      cases rsn; aesop
+  case tup_ex => cases rs; aesop
+  case prj_im => cases rs; aesop
+  case prj_ex => cases rs; aesop
+  case tt => cases rs; simp
+  case ff => cases rs; simp
+  case ite => cases rs; aesop
+  case rw => cases rs; aesop
+  case conv => aesop
+
+lemma HLookup.insert_lookup {H H' : Heap Srt} {m n l s} :
+    HLookup (H.insert l ⟨m, s⟩) l n H' ->
+    m = n ∧
+      if s ∈ ord.contra_set
+      then H' = H.insert l ⟨m, s⟩
+      else H' = H.erase l := by
+  intro lk
+  simp_rw[HLookup,Finmap.lookup_insert] at lk
+  replace ⟨e, lk⟩ := lk; subst_vars; simp
+  split_ifs at lk
+  case pos h => simp[h]; aesop
+  case neg h =>
+    simp[h,lk]
+    apply Finmap.ext_lookup
+    intro x
+    cases x.decEq l with
+    | isTrue => subst_vars; repeat rw[Finmap.lookup_erase]
+    | isFalse ne =>
+      repeat rw[Finmap.lookup_erase_ne ne]
+      rw[Finmap.lookup_insert_of_ne _ ne]
+
+lemma HLookup.merge {H1 H1' H2 H3 : Heap Srt} {m l} :
+    HLookup H1 l m H1' -> HMerge H1 H2 H3 ->
+    ∃ H3', HLookup H3 l m H3' ∧ HMerge H1' H2 H3' := by
+  intro lk mrg
+  rw[HLookup] at lk; split at lk <;> try trivial
+  case h_1 opt n s e =>
+    replace ⟨_, lk⟩ := lk; subst_vars
+    split_ifs at lk
+    case pos h =>
+      subst_vars
+      exists H3; and_intros
+      . replace mrg := mrg l
+        rw[e] at mrg; split at mrg <;> try trivial
+        case h_1 e h2 h3 =>
+          rcases mrg with ⟨_, _, _, _, _⟩
+          cases e; subst_vars
+          unfold HLookup
+          simp_rw[h3]; simp[h]
+        case h_2 e h2 h3 =>
+          rcases mrg with ⟨_, _, _, _, _⟩
+          cases e; subst_vars
+          unfold HLookup
+          simp_rw[h3]; simp[h]
+      . assumption
+    case neg h =>
+      subst_vars
+      exists H3.erase l; and_intros
+      . replace mrg := mrg l
+        rw[e] at mrg; split at mrg <;> try trivial
+        case h_1 e h2 h3 =>
+          rcases mrg with ⟨_, _, _, _, _⟩
+          cases e; subst_vars
+          unfold HLookup
+          simp_rw[h3]; simp[h]
+        case h_2 e h2 h3 =>
+          rcases mrg with ⟨_, _, _, _, _⟩
+          cases e; subst_vars
+          unfold HLookup
+          simp_rw[h3]; simp[h]
+      . intro x
+        replace mrg := mrg x
+        cases x.decEq l with
+        | isTrue =>
+          subst_vars
+          rw[e] at mrg; split at mrg <;> try trivial
+          case h_1 e _ _ =>
+            rcases mrg with ⟨_, _, _, _, _⟩
+            cases e; subst_vars
+            contradiction
+          case h_2 e h1 h2 =>
+            rcases mrg with ⟨_, _⟩
+            cases e; subst_vars
+            simp[h1,h2,e]
+        | isFalse ne =>
+          simp[Finmap.lookup_erase_ne ne]
+          assumption
+
+lemma HLookup.lower {H H' : Heap Srt} {m l s} :
+    HLookup H l m H' -> HLower H s -> HLower H' s := by
+  intro lk
+  unfold HLookup at lk
+  split at lk <;> try trivial
+  replace ⟨_, lk⟩ := lk; subst_vars
+  split_ifs at lk <;> subst_vars
+  . simp
+  . apply HLower.erase_lower
+
+lemma HLookup.collision {H1 H1' H2 H3 H3' : Heap Srt} {m n l} :
+    HMerge H1 H2 H3 ->
+    HLookup H3 l m H3' ->
+    HLookup H1 l n H1' ->
+    m = n ∧ HMerge H1' H2 H3' := by
+  intro mrg lk1 lk2
+  unfold HLookup at lk1 lk2
+  split at lk1 <;> try trivial
+  split at lk2 <;> try trivial
+  replace ⟨_, lk1⟩ := lk1; subst_vars
+  replace ⟨_, lk2⟩ := lk2; subst_vars
+  case h_1 h1 _ _ _ h2 =>
+    have h := Finmap.mem_of_lookup_eq_some h2
+    have e := mrg.lookup_collision h
+    rw[h1,h2] at e; cases e; simp
+    split_ifs at lk1 <;> simp_all
+    intro x; replace mrg := mrg x
+    cases x.decEq l with
+    | isTrue =>
+      subst_vars
+      simp[Finmap.lookup_erase]
+      simp[h1,h2] at mrg
+      split at mrg <;> simp_all
+      aesop
+    | isFalse ne =>
+      simp[Finmap.lookup_erase_ne ne]
+      assumption
+
+lemma HLookup.resolve {H1 H2 H3 H3' : Heap Srt} {l m n} :
+    HLookup H3 l m H3' -> H1 ;; .ptr l ▷ n -> HMerge H1 H2 H3 ->
+    ∃ H1', HMerge H1' H2 H3' ∧ H1' ;; m ▷ n := by
+  intro lk1 rs mrg; cases rs
+  case ptr H1' _ lk2 erm =>
+    have ⟨_, mrg'⟩ := lk1.collision mrg lk2; subst_vars
+    exists H1'
+
+@[simp]def NF (i : Nat) : Tm Srt -> Prop
+  | .var x => x < i
+  | .lam m _ _ => NF (i + 1) m
+  | .app m n => NF i m ∧ NF i n
+  | .tup m n _ => NF i m ∧ NF i n
+  | .prj m n _ _ => NF i m ∧ NF (i + 2) n
+  | .tt => True
+  | .ff => True
+  | .ite m n1 n2 => NF i m ∧ NF i n1 ∧ NF i n2
+  | .rw m => NF i m
+  | .ptr _ => True
+  | .null => True
+
+def WR (H : Heap Srt) : Prop :=
+  ∀ l,
+    match H.lookup l with
+    | none => True
+    | some ⟨.lam m _ s1, s2⟩ => NF 1 m ∧ s1 = s2
+    | some ⟨.tup (.ptr _) .null s1, s2⟩ => s1 = s2
+    | some ⟨.tup (.ptr _) (.ptr _) s1, s2⟩ => s1 = s2
+    | some (.tt, s) => s = ord.e
+    | some (.ff, s) => s = ord.e
+    | _ => False
