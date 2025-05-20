@@ -19,6 +19,7 @@ inductive Value : Tm Srt -> Prop where
     Value (.tup m n s)
   | tt : Value .tt
   | ff : Value .ff
+  | ptr {l} : Value (.ptr l)
   | null : Value .null
 
 @[scoped aesop safe [constructors]]

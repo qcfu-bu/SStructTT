@@ -921,3 +921,35 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
     have tyx2 := ty.preservation' rd2
     have e := tyx1.unique tyx2; subst_vars
     aesop
+
+lemma HLookup.wr_value {H H' : Heap Srt} {m l} :
+    HLookup H l m H' -> WR H -> Value m := by
+  intro lk wr
+  replace wr := wr l
+  revert lk
+  revert wr
+  unfold HLookup
+  generalize H.lookup l = r
+  split <;> aesop
+
+lemma Resolve.value_image {H : Heap Srt} {m m'} :
+    H ;; m ▷ m' -> WR H -> Value m -> Value m' := by
+  intro rsm wr vl; induction rsm <;> try (solve|aesop)
+  all_goals try (solve|cases vl)
+  case tup mrg rsm rsn ihm ihn =>
+    cases vl; case tup vl1 vl2 =>
+    have ⟨wr1, wr2⟩ := mrg.split_wr wr
+    replace ihm := ihm wr1 vl1
+    replace ihn := ihn wr2 vl2
+    constructor <;> assumption
+  case ptr lw rs ih =>
+    have vl := lw.wr_value wr
+    have wr := lw.wr_hom wr
+    apply ih wr vl
+
+lemma Resolve.ptr_value {H : Heap Srt} {n l} :
+    H ;; .ptr l ▷ n -> WR H -> Value n := by
+  intro rs wr; cases rs
+  case ptr lk rs =>
+    apply rs.value_image (lk.wr_hom wr)
+    apply lk.wr_value wr
