@@ -21,22 +21,31 @@ lemma Typed.pi_inv {Γ : Ctx Srt} {A B T r s} :
       apply Conv.sym eq1
       apply eq2
 
-lemma Typed.sig_inv {Γ : Ctx Srt} {A B T r s} :
+lemma Typed.sig_inv' {Γ : Ctx Srt} {A B T r s} :
     Γ ⊢ .sig A B r s : T ->
-    ∃ sB iB i, A :: Γ ⊢ B : .srt sB iB ∧ T === .srt s i := by
+    ∃ sA sB iA iB i,
+      sA ≤ s ∧
+      (r = .ex -> sB ≤ s) ∧
+      Γ ⊢ A : .srt sA iA ∧
+      A :: Γ ⊢ B : .srt sB iB ∧
+      T === .srt s i := by
   generalize e: Tm.sig A B r s = x
   intro ty; induction ty generalizing A B s
   all_goals try trivial
-  case sig sB iA iB _ _ _ _ _ _ =>
-    cases e; exists sB, iB, (max iA iB); aesop
+  case sig sA sB iA iB _ _ _ _ _ _ =>
+    cases e; exists sA, sB, iA, iB, (max iA iB); aesop
   case conv eq1 _ _ ih _ =>
-    have ⟨sB, iB, i, _, eq2⟩ := ih e
-    exists sB, iB, i
-    constructor
-    . assumption
-    . apply Conv.trans
-      apply Conv.sym eq1
-      apply eq2
+    have ⟨sA, sB, iA, iB, i, _, _, _, _, eq2⟩ := ih e
+    exists sA, sB, iA, iB, i
+    and_intros <;> try assumption
+    apply Conv.trans
+    apply Conv.sym eq1
+    apply eq2
+
+lemma Typed.sig_inv {Γ : Ctx Srt} {A B T r s} :
+    Γ ⊢ .sig A B r s : T ->
+    ∃ sB iB i, A :: Γ ⊢ B : .srt sB iB ∧ T === .srt s i := by
+  intro ty; have := ty.sig_inv'; aesop
 
 lemma Typed.idn_inv {Γ : Ctx Srt} {A T m n} :
     Γ ⊢ .idn A m n : T ->
