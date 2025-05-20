@@ -119,7 +119,7 @@ lemma HLower.merge_refl {H : Heap Srt} :
     apply ord.e_contra
   case h_2 => aesop
 
-lemma HMerge.lower_hom {H1 H2 H3 : Heap Srt} {s} :
+lemma HMerge.lower_image {H1 H2 H3 : Heap Srt} {s} :
     HMerge H1 H2 H3 -> HLower H1 s -> HLower H2 s -> HLower H3 s := by
   intro mrg lw1 lw2 x
   split <;> try simp

@@ -549,7 +549,7 @@ lemma HMerge.split_wr {H1 H2 H3 : Heap Srt} :
   . apply mrg.split_wr' wr
   . apply mrg.sym.split_wr' wr
 
-lemma HLookup.wr_hom {H H' : Heap Srt} {m l} :
+lemma HLookup.wr_image {H H' : Heap Srt} {m l} :
     HLookup H l m H' -> WR H -> WR H' := by
   intro lk wr x
   replace wr := wr x
@@ -593,7 +593,7 @@ lemma Resolve.nf_image {H : Heap Srt} {m m' i} :
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     aesop
   case ptr lk erm ihm =>
-    have wr' := lk.wr_hom wr
+    have wr' := lk.wr_image wr
     have nf0 := lk.nf wr
     replace nf0 := ihm wr' nf0
     apply nf0.weaken
@@ -822,17 +822,17 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
       have ⟨lw2, _⟩ := rsn.null_inv wr2; subst_vars
       replace lw1 := lw1.trans le
       replace lw2 := lw2.trans (ord.e_min s)
-      apply mrg.lower_hom lw1 lw2
+      apply mrg.lower_image lw1 lw2
     case ptr l _ m lk rs =>
       cases m <;> cases rs
       case tup H1 H2 mrg rsm rsn =>
-        have wr' := lk.wr_hom wr
+        have wr' := lk.wr_image wr
         have ⟨wr1, wr2⟩ := mrg.split_wr wr'
         have lw1 := ihm rsm tyA vl1 wr1
         have ⟨lw2, _⟩ := rsn.null_inv wr2; subst_vars
         replace lw1 := lw1.trans le
         replace lw2 := lw2.trans (ord.e_min s)
-        have lw := mrg.lower_hom lw1 lw2
+        have lw := mrg.lower_image lw1 lw2
         unfold HLookup at lk
         split at lk <;> try trivial
         case h_1 h =>
@@ -867,17 +867,17 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
       have lw2 := ihn rsn (tyB.subst erm.toStatic) wr2
       replace lw1 := lw1.trans le1
       replace lw2 := lw2.trans le2
-      apply mrg.lower_hom lw1 lw2
+      apply mrg.lower_image lw1 lw2
     case ptr l _ m lk rs =>
       cases m <;> cases rs
       case tup H1 H2 mrg rsm rsn =>
-        have wr' := lk.wr_hom wr
+        have wr' := lk.wr_image wr
         have ⟨wr1, wr2⟩ := mrg.split_wr wr'
         have lw1 := ihm rsm tyA wr1
         have lw2 := ihn rsn (tyB.subst erm.toStatic) wr2
         replace lw1 := lw1.trans le1
         replace lw2 := lw2.trans le2
-        have lw := mrg.lower_hom lw1 lw2
+        have lw := mrg.lower_image lw1 lw2
         unfold HLookup at lk
         split at lk <;> try trivial
         case h_1 h =>
@@ -944,12 +944,12 @@ lemma Resolve.value_image {H : Heap Srt} {m m'} :
     constructor <;> assumption
   case ptr lw rs ih =>
     have vl := lw.wr_value wr
-    have wr := lw.wr_hom wr
+    have wr := lw.wr_image wr
     apply ih wr vl
 
 lemma Resolve.ptr_value {H : Heap Srt} {n l} :
     H ;; .ptr l ▷ n -> WR H -> Value n := by
   intro rs wr; cases rs
   case ptr lk rs =>
-    apply rs.value_image (lk.wr_hom wr)
+    apply rs.value_image (lk.wr_image wr)
     apply lk.wr_value wr
