@@ -3,19 +3,19 @@ import SStructTT.Basics.Subst
 namespace MartinLof
 
 inductive Tm where
-  | var  (x : Var)
-  | ty   (i : Nat)
-  | pi   (A B : Tm)
-  | lam  (A m : Tm)
-  | app  (m n : Tm)
-  | sig  (A B : Tm)
-  | tup  (m n : Tm)
+  | var (x : Var)
+  | ty  (i : Nat)
+  | pi  (A B : Tm)
+  | lam (A m : Tm)
+  | app (m n : Tm)
+  | sig (A B : Tm)
+  | tup (m n : Tm)
   | prj (A m n : Tm)
   | bool | tt | ff
-  | ite  (A m n1 n2 : Tm)
-  | idn  (A m n : Tm)
-  | rfl  (m : Tm)
-  | rw   (A m n : Tm)
+  | ite (A m n1 n2 : Tm)
+  | idn (A m n : Tm)
+  | rfl (m : Tm)
+  | rw  (A m n : Tm)
 
 namespace Tm
 instance : Ids Tm where

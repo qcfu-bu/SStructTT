@@ -9,19 +9,19 @@ inductive Rlv where
   | im | ex
 
 inductive Tm where
-  | var  (x : Var)
-  | srt  (s : Srt) (i : Nat)
-  | pi   (A B : Tm) (r : Rlv) (s : Srt)
-  | lam  (A m : Tm) (r : Rlv) (s : Srt)
-  | app  (m n : Tm) (r : Rlv)
-  | sig  (A B : Tm) (r : Rlv) (s : Srt)
-  | tup  (m n : Tm) (r : Rlv) (s : Srt)
+  | var (x : Var)
+  | srt (s : Srt) (i : Nat)
+  | pi  (A B : Tm) (r : Rlv) (s : Srt)
+  | lam (A m : Tm) (r : Rlv) (s : Srt)
+  | app (m n : Tm) (r : Rlv)
+  | sig (A B : Tm) (r : Rlv) (s : Srt)
+  | tup (m n : Tm) (r : Rlv) (s : Srt)
   | prj (A m n : Tm) (r : Rlv)
   | bool | tt | ff
-  | ite  (A m n1 n2 : Tm)
-  | idn  (A m n : Tm)
-  | rfl  (m : Tm)
-  | rw   (A m n : Tm)
+  | ite (A m n1 n2 : Tm)
+  | idn (A m n : Tm)
+  | rfl (m : Tm)
+  | rw  (A m n : Tm)
 
 namespace Tm
 variable {Srt : Type}

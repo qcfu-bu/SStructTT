@@ -38,11 +38,31 @@ inductive Lower : Ctx Srt -> Srt -> Prop where
 @[scoped aesop safe [constructors]]
 inductive Has : Ctx Srt -> Var -> Srt -> Tm Srt -> Prop where
   | nil {Δ A s} :
-    Δ.Forall (∃ A s, . = (A, .im, s)) ->
+    Lower Δ ord.e ->
     Has (A :⟨.ex, s⟩ Δ) 0 s A.[shift 1]
   | cons {Δ A B x s s'} :
     Has Δ x s A ->
     Has (B :⟨.im, s'⟩ Δ) (x + 1) s A.[shift 1]
+
+@[scoped aesop safe [constructors]]
+inductive Weaken : Ctx Srt -> Ctx Srt -> Prop where
+  | nil : Weaken [] []
+  | cons {Δ1 Δ2} A r s :
+    Weaken Δ1 Δ2 ->
+    Weaken (A :⟨r, s⟩ Δ1) (A :⟨r, s⟩ Δ2)
+  | weak {Δ1 Δ2} A r s :
+    s ∈ ord.weaken_set ->
+    Weaken Δ1 Δ2 ->
+    Weaken (A :⟨r, s⟩ Δ1) (A :⟨.ex, s⟩ Δ2)
+
+lemma Weaken.refl {Δ : Ctx Srt} : Weaken Δ Δ := by
+  induction Δ
+  case nil => constructor
+  case cons hd tl ih =>
+    have ⟨m, r, s⟩ := hd
+    cases r
+    . constructor; assumption
+    . constructor; assumption
 
 lemma Lower.split_e {Δ : Ctx Srt} :
     Lower Δ ord.e -> ∃ Δ1 Δ2, Lower Δ1 ord.e ∧ Lower Δ2 ord.e ∧ Merge Δ1 Δ2 Δ := by
@@ -84,7 +104,7 @@ lemma Lower.trans {Δ : Ctx Srt} {s1 s2} :
     constructor
     apply ih le2
 
-lemma Merge.lower {Δ1 Δ2 Δ : Ctx Srt} s :
+lemma Merge.lower_image {Δ1 Δ2 Δ : Ctx Srt} {s} :
     Merge Δ1 Δ2 Δ -> Lower Δ1 s -> Lower Δ2 s -> Lower Δ s := by
   intro mrg; induction mrg
   case nil =>
@@ -109,14 +129,110 @@ lemma Merge.lower {Δ1 Δ2 Δ : Ctx Srt} s :
     apply Lower.im
     apply ih <;> assumption
 
+lemma Merge.lower_weaken {Δ1 Δ2 Δ3 : Ctx Srt} :
+    Merge Δ1 Δ2 Δ3 -> Lower Δ1 ord.e -> Weaken Δ2 Δ3 := by
+  intro mrg lw; induction mrg
+  case nil => constructor
+  case contra =>
+    cases lw; constructor; aesop
+  case left ih =>
+    cases lw; case ex le lw =>
+    constructor
+    . apply ord.weaken_set.lower le
+      apply ord.e_weaken
+    . apply ih lw
+  case right ih =>
+    cases lw; case im le lw =>
+    constructor
+    apply ih lw
+  case im =>
+    cases lw; constructor; aesop
+
+lemma Merge.lower_weaken_compose {Δ0 Δ1 Δ2 Δ3 : Ctx Srt} {s} :
+    Merge Δ1 Δ2 Δ3 ->
+    Lower Δ2 s -> s ∈ ord.weaken_set ->
+    Weaken Δ0 Δ1 ->
+    Weaken Δ0 Δ3 := by
+  intro mrg lw h wk; induction mrg generalizing Δ0
+  case nil => assumption
+  case contra =>
+    cases lw; cases wk
+    . constructor; aesop
+    . constructor
+      assumption
+      aesop
+  case left =>
+    cases lw; cases wk
+    . constructor; aesop
+    . constructor
+      assumption
+      aesop
+  case right =>
+    cases lw; cases wk
+    constructor
+    . apply ord.weaken_set.lower
+      assumption
+      assumption
+    . aesop
+  case im =>
+    cases lw; cases wk
+    constructor; aesop
+
+lemma Merge.weaken_pullback {Δ0 Δ1 Δ2 Δ3 : Ctx Srt} :
+    Merge Δ1 Δ2 Δ3 -> Weaken Δ0 Δ1 ->
+    ∃ Δ3w, Merge Δ0 Δ2 Δ3w ∧ Weaken Δ3w Δ3 := by
+  intro mrg wk; induction mrg generalizing Δ0
+  case nil =>
+    cases wk
+    exists []; and_intros
+    . constructor
+    . constructor
+  case contra A s _ _ ih =>
+    cases wk
+    case cons wk =>
+      replace ⟨Δ3w, mrg, wk⟩ := ih wk
+      exists A :⟨.ex, s⟩ Δ3w; and_intros
+      . constructor <;> assumption
+      . constructor; assumption
+    case weak r h wk =>
+      replace ⟨Δ3w, mrg, wk⟩ := ih wk
+      exists A :⟨.ex, s⟩ Δ3w; and_intros
+      . cases r
+        constructor; assumption
+        constructor <;> assumption
+      . constructor; assumption
+  case left A s mrg ih =>
+    cases wk
+    case cons wk =>
+      replace ⟨Δ3w, mrg, wk⟩ := ih wk
+      exists A :⟨.ex, s⟩ Δ3w; and_intros
+      . constructor; assumption
+      . constructor; assumption
+    case weak r h wk =>
+      replace ⟨Δ3w, mrg, wk⟩ := ih wk
+      exists A :⟨r, s⟩ Δ3w; and_intros
+      . cases r
+        constructor; assumption
+        constructor; assumption
+      . constructor <;> assumption
+  case right A s mrg ih =>
+    cases wk
+    case cons wk =>
+      replace ⟨Δ3w, mrg, wk⟩ := ih wk
+      exists A :⟨.ex, s⟩ Δ3w; and_intros
+      . constructor; assumption
+      . constructor; assumption
+  case im A s mrg ih =>
+    cases wk
+    case cons wk =>
+      replace ⟨Δ3w, mrg, wk⟩ := ih wk
+      exists A :⟨.im, s⟩ Δ3w; and_intros
+      . constructor; assumption
+      . constructor; assumption
+
 lemma Merge.sym {Δ1 Δ2 Δ : Ctx Srt} : Merge Δ1 Δ2 Δ -> Merge Δ2 Δ1 Δ := by
   intro mrg; induction mrg
   all_goals aesop (add safe Merge)
-
-lemma Merge.implicit {Δ1 Δ2 Δ : Ctx Srt} :
-    Merge Δ1 Δ2 Δ -> Δ1.Forall (∃ A s, . = (A, .im, s)) -> Δ2 = Δ := by
-  intro mrg h; induction mrg
-  all_goals aesop
 
 lemma Merge.compose {Δ1 Δ2 Δa Δb Δx Δy Δ : Ctx Srt} {s} :
     Lower Δa s -> s ∈ ord.contra_set ->

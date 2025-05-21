@@ -127,10 +127,8 @@ theorem Typed.preservation {A m m' : Tm Srt} :
         . apply ihn rfl rfl st
       . apply tyB.subst tyn.toStatic
     case beta_ex =>
-      replace ⟨rA, sA, rs, tym⟩ := tym.lam_ex_inv
-      cases rs with
-      | extend => apply tym.subst_ex (Lower.nil sA) Merge.nil tyn
-      | weaken => apply tym.subst_im tyn.toStatic
+      replace ⟨sA, tym⟩ := tym.lam_ex_inv
+      apply tym.subst_ex (Lower.nil sA) Merge.nil tyn
   case tup_im tyS tym tyn ih =>
     subst_vars; cases st
     case tup_im_M st =>
@@ -164,34 +162,29 @@ theorem Typed.preservation {A m m' : Tm Srt} :
       . assumption
       . assumption
       . apply ihn rfl rfl st
-  case prj_im C m n rA s sA sB sC iC rs mrg tyC tym tyn ihm _ =>
+  case prj_im C m n s sA sB sC iC mrg tyC tym tyn ihm _ =>
     subst_vars; cases mrg; cases st
     case prj_im_M st =>
       apply Typed.conv
       . apply Conv.subst1
         apply (Star.conv (st.toStatic tym.toStatic)).sym
-      . apply Typed.prj_im rs Merge.nil tyC (ihm rfl rfl st) tyn
+      . apply Typed.prj_im Merge.nil tyC (ihm rfl rfl st) tyn
       . apply tyC.subst tym.toStatic
     case prj_im_elim m1 m2 s vl =>
       have ⟨tym1, tym2, _⟩ := tym.tup_im_inv; subst_vars
       rw[show C.[.tup m1 m2 .im s/]
             = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[m2,m1/] by asimp]
       apply tyn.substitution
-      apply AgreeSubst.wk_im tym2
-      cases rs with
-      | extend =>
-        apply AgreeSubst.wk_ex Merge.nil; constructor; asimp; assumption
-        apply AgreeSubst.refl Wf.nil
-      | weaken =>
-        apply AgreeSubst.wk_im; asimp; apply tym1.toStatic
-        apply AgreeSubst.refl Wf.nil
-  case prj_ex C m n rA rB s sA sB sC iC rs1 rs2 mrg tyC tym tyn ihm ihn =>
+      apply AgreeSubst.intro_im tym2
+      apply AgreeSubst.intro_ex Merge.nil; constructor; asimp; assumption
+      apply AgreeSubst.refl Wf.nil
+  case prj_ex C m n s sA sB sC iC mrg tyC tym tyn ihm ihn =>
     subst_vars; cases mrg; cases st
     case prj_ex_M st =>
       apply Typed.conv
       . apply Conv.subst1
         apply (Star.conv (st.toStatic tym.toStatic)).sym
-      . apply Typed.prj_ex rs1 rs2 Merge.nil tyC (ihm rfl rfl st) tyn
+      . apply Typed.prj_ex Merge.nil tyC (ihm rfl rfl st) tyn
       . apply tyC.subst tym.toStatic
     case prj_ex_elim m1 m2 s vl =>
       have ⟨Δ1, Δ2, mrg, tym1, tym2, _⟩ := tym.tup_ex_inv; subst_vars
@@ -199,27 +192,9 @@ theorem Typed.preservation {A m m' : Tm Srt} :
       rw[show C.[.tup m1 m2 .ex s/]
             = C.[.tup (.var 1) (.var 0) .ex s .: shift 2].[m2,m1/] by asimp]
       apply tyn.substitution
-      cases rs1 with
-      | extend =>
-        cases rs2 with
-        | extend =>
-          apply AgreeSubst.wk_ex Merge.nil; constructor; assumption
-          apply AgreeSubst.wk_ex Merge.nil; constructor; asimp; assumption
-          apply AgreeSubst.refl Wf.nil
-        | weaken =>
-          apply AgreeSubst.wk_im; apply tym2.toStatic
-          apply AgreeSubst.wk_ex Merge.nil; constructor; asimp; assumption
-          apply AgreeSubst.refl Wf.nil
-      | weaken =>
-        cases rs2 with
-        | extend =>
-          apply AgreeSubst.wk_ex Merge.nil; constructor; assumption
-          apply AgreeSubst.wk_im; asimp; apply tym1.toStatic
-          apply AgreeSubst.refl Wf.nil
-        | weaken =>
-          apply AgreeSubst.wk_im; apply tym2.toStatic
-          apply AgreeSubst.wk_im; asimp; apply tym1.toStatic
-          apply AgreeSubst.refl Wf.nil
+      apply AgreeSubst.intro_ex Merge.nil; constructor; assumption
+      apply AgreeSubst.intro_ex Merge.nil; constructor; asimp; assumption
+      apply AgreeSubst.refl Wf.nil
   case ite mrg tyA tym tyn1 tyn2 ihm ihn1 ihn2 =>
     subst_vars; cases mrg; cases st
     case ite_M st =>
@@ -265,6 +240,9 @@ theorem Typed.preservation {A m m' : Tm Srt} :
     . apply Conv.compat; assumption
     . assumption
     . assumption
+  case weak wk tym ihm =>
+    subst_vars; cases wk
+    apply ihm rfl rfl st
   case conv eq _ tyB ihm =>
     subst_vars; have tym := ihm rfl rfl st
     apply tym.conv eq tyB

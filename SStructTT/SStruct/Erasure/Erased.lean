@@ -6,11 +6,15 @@ open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 @[scoped aesop safe [constructors]]
-inductive RSrt : Rlv -> Srt -> Ctrl -> Prop where
-  | extend s : RSrt .ex s .keep
-  | weaken {s} :
+inductive Weaken : Ctx Srt -> Ctx Srt -> Prop where
+  | nil : Weaken [] []
+  | cons {Δ1 Δ2} A r s :
+    Weaken Δ1 Δ2 ->
+    Weaken (A :⟨r, s⟩ Δ1) (A :⟨r, s⟩ Δ2)
+  | weak {Δ1 Δ2} A r s :
     s ∈ ord.weaken_set ->
-    RSrt .im s .drop
+    Weaken Δ1 Δ2 ->
+    Weaken (A :⟨r, s⟩ Δ1) (A :⟨.ex, s⟩ Δ2)
 
 inductive Erased :
   Static.Ctx Srt -> Dynamic.Ctx Srt ->
@@ -27,14 +31,13 @@ where
     Lower Δ s ->
     Γ ⊢ A : .srt sA iA ->
     Erased (A :: Γ) (A :⟨.im, sA⟩ Δ) m m' B ->
-    Erased Γ Δ (.lam A m .im s) (.lam m' .keep s) (.pi A B .im s)
+    Erased Γ Δ (.lam A m .im s) (.lam m' s) (.pi A B .im s)
 
-  | lam_ex {Γ Δ A B m m' rA s sA iA c} :
-    RSrt rA sA c ->
+  | lam_ex {Γ Δ A B m m' s sA iA} :
     Lower Δ s ->
     Γ ⊢ A : .srt sA iA ->
-    Erased (A :: Γ) (A :⟨rA, sA⟩ Δ) m m' B ->
-    Erased Γ Δ (.lam A m .ex s) (.lam m' c s) (.pi A B .ex s)
+    Erased (A :: Γ) (A :⟨.ex, sA⟩ Δ) m m' B ->
+    Erased Γ Δ (.lam A m .ex s) (.lam m' s) (.pi A B .ex s)
 
   | app_im {Γ Δ A B m m' n s} :
     Erased Γ Δ m m' (.pi A B .im s) ->
@@ -60,22 +63,19 @@ where
     Erased Γ Δ2 n n' B.[m/] ->
     Erased Γ Δ (.tup m n .ex s) (.tup m' n' s) (.sig A B .ex s)
 
-  | prj_im {Γ Δ1 Δ2 Δ A B C m m' n n' rA s sA sB sC iC c1} :
-    RSrt rA sA c1 ->
+  | prj_im {Γ Δ1 Δ2 Δ A B C m m' n n' s sA sB sC iC} :
     Merge Δ1 Δ2 Δ ->
     .sig A B .im s :: Γ ⊢ C : .srt sC iC ->
     Erased Γ Δ1 m m' (.sig A B .im s) ->
-    Erased (B :: A :: Γ) (B :⟨.im, sB⟩ A :⟨rA, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
-    Erased Γ Δ (.prj C m n .im) (.prj m' n' c1 .keep) C.[m/]
+    Erased (B :: A :: Γ) (B :⟨.im, sB⟩ A :⟨.ex, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
+    Erased Γ Δ (.prj C m n .im) (.prj m' n') C.[m/]
 
-  | prj_ex {Γ Δ1 Δ2 Δ A B C m m' n n' rA rB s sA sB sC iC c1 c2} :
-    RSrt rA sA c1 ->
-    RSrt rB sB c2 ->
+  | prj_ex {Γ Δ1 Δ2 Δ A B C m m' n n' s sA sB sC iC} :
     Merge Δ1 Δ2 Δ ->
     .sig A B .ex s :: Γ ⊢ C : .srt sC iC ->
     Erased Γ Δ1 m m' (.sig A B .ex s) ->
-    Erased (B :: A :: Γ) (B :⟨rB, sB⟩ A :⟨rA, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .ex s .: shift 2] ->
-    Erased Γ Δ (.prj C m n .ex) (.prj m' n' c1 c2) C.[m/]
+    Erased (B :: A :: Γ) (B :⟨.ex, sB⟩ A :⟨.ex, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .ex s .: shift 2] ->
+    Erased Γ Δ (.prj C m n .ex) (.prj m' n') C.[m/]
 
   | tt {Γ Δ} :
     Wf Γ Δ ->
@@ -101,6 +101,11 @@ where
     Γ ⊢ n : .idn B a b ->
     Erased Γ Δ (.rw A m n) (.rw m') A.[n,b/]
 
+  | weak {Γ Δ1 Δ2 ms m m' A} :
+    Weaken Δ1 Δ2 ms ->
+    Erased Γ Δ1 m m' A ->
+    Erased Γ Δ2 m (.drop ms m') A
+
   | conv {Γ Δ A B m m' s i} :
     A === B ->
     Erased Γ Δ m m' A ->
@@ -110,6 +115,7 @@ where
 notation:50 Γ:50 " ;; " Δ:51 " ⊢ " m:51 " ▷ " m':51 " : " A:51 =>
   Erased Γ Δ m m' A
 
+/-
 lemma Erased.toDynamic {Γ} {Δ : Ctx Srt} {A m m'} :
     Γ ;; Δ ⊢ m ▷ m' : A -> Γ ;; Δ ⊢ m : A := by
   intro ty; induction ty
@@ -270,3 +276,4 @@ lemma Typed.toErased {Γ} {Δ : Ctx Srt} {A m} :
   all_goals trivial
 
 end SStruct.Dynamic
+-/

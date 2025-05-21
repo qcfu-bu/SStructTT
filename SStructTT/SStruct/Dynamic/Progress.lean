@@ -16,9 +16,11 @@ lemma Typed.pi_canonical {A B C m : Tm Srt} {r s} :
   case lam_im A B m _ _ _ _ _ _ _  =>
     have ⟨_, _, eqA, eqB⟩ := Conv.pi_inj eq
     subst_vars; exists A, m
-  case lam_ex A B m _ _ _ _ _ _ _ _ _ =>
+  case lam_ex A B m _ _ _ _ _ _ _ =>
     have ⟨_, _, eqA, eqB⟩ := Conv.pi_inj eq
     subst_vars; exists A, m
+  case weak wk _ _ =>
+    subst_vars; cases wk; aesop
   case conv ih =>
     apply ih <;> try assumption
     apply Conv.trans <;> assumption
@@ -36,6 +38,8 @@ lemma Typed.sig_canonical {A B C m : Tm Srt} {r s} :
   case tup_ex A0 B0 m n _ _ _ _ _ _ _ _ =>
     have ⟨_, _, _, _⟩ := Conv.sig_inj eq
     subst_vars; exists m, n
+  case weak wk _ _ =>
+    subst_vars; cases wk; aesop
   case conv ihm =>
     apply ihm <;> try assumption
     apply Conv.trans <;> assumption
@@ -48,6 +52,8 @@ lemma Typed.bool_canonical {C m : Tm Srt} :
   all_goals try false_conv
   case tt => simp
   case ff => simp
+  case weak wk _ _ =>
+    subst_vars; cases wk; aesop
   case conv ihm =>
     apply ihm <;> try assumption
     apply Conv.trans <;> assumption
@@ -58,6 +64,8 @@ lemma Typed.idn_canonical {A C m a b : Tm Srt} :
   generalize e2: [] = Δ
   intro ty eq vl; induction ty <;> try trivial
   all_goals try false_conv
+  case weak wk _ _ =>
+    subst_vars; cases wk; aesop
   case conv ihm =>
     apply ihm <;> try assumption
     apply Conv.trans <;> assumption
@@ -110,7 +118,7 @@ theorem Typed.progress {m A : Tm Srt} :
         left; exists Tm.tup m n .ex s
         constructor; assumption
       | .inr _ => right; constructor <;> assumption
-  case prj_im C _ n _ _ _ _ _ _ _ _ tym _ ihm mrg =>
+  case prj_im C _ n _ _ _ _ _ _ tym _ ihm mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
@@ -120,7 +128,7 @@ theorem Typed.progress {m A : Tm Srt} :
       have ⟨m1, m2, _⟩ := tym.sig_canonical Conv.R vl
       subst_vars; left; exists n.[m2,m1/]
       constructor; assumption
-  case prj_ex C _ n _ _ _ _ _ _ _ _ _ _ tym _ ihm mrg =>
+  case prj_ex C _ n _ _ _ _ _ _ tym _ ihm mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
@@ -142,5 +150,6 @@ theorem Typed.progress {m A : Tm Srt} :
       cases tym.bool_canonical Conv.R vl with
       | inl => subst_vars; left; exists n1; constructor
       | inr => subst_vars; left; exists n2; constructor
-  case rw m n _ _ _ _ _ _ _ _ =>
+  case weak wk => cases wk; aesop
+  case rw m _ _ _ _ _ _ _ _ _ =>
     left; exists m; apply Step.rw_elim

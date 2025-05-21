@@ -4,11 +4,6 @@ import SStructTT.SStruct.Dynamic.Context
 namespace SStruct.Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-@[scoped aesop safe [constructors]]
-inductive RSrt : Rlv -> Srt -> Prop where
-  | extend s : RSrt .ex s
-  | weaken {s} : s ∈ ord.weaken_set -> RSrt .im s
-
 mutual
 inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
   | var {Γ Δ x s A} :
@@ -22,11 +17,10 @@ inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop 
     Typed (A :: Γ) (A :⟨.im, sA⟩ Δ) m B ->
     Typed Γ Δ (.lam A m .im s) (.pi A B .im s)
 
-  | lam_ex {Γ Δ A B m rA s sA iA} :
-    RSrt rA sA ->
+  | lam_ex {Γ Δ A B m s sA iA} :
     Lower Δ s ->
     Γ ⊢ A : .srt sA iA ->
-    Typed (A :: Γ) (A :⟨rA, sA⟩ Δ) m B ->
+    Typed (A :: Γ) (A :⟨.ex, sA⟩ Δ) m B ->
     Typed Γ Δ (.lam A m .ex s) (.pi A B .ex s)
 
   | app_im {Γ Δ A B m n s} :
@@ -53,31 +47,28 @@ inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop 
     Typed Γ Δ2 n B.[m/] ->
     Typed Γ Δ (.tup m n .ex s) (.sig A B .ex s)
 
-  | prj_im {Γ Δ1 Δ2 Δ A B C m n rA s sA sB sC iC} :
-    RSrt rA sA ->
+  | prj_im {Γ Δ1 Δ2 Δ A B C m n s sA sB sC iC} :
     Merge Δ1 Δ2 Δ ->
     .sig A B .im s :: Γ ⊢ C : .srt sC iC ->
     Typed Γ Δ1 m (.sig A B .im s) ->
-    Typed (B :: A :: Γ) (B :⟨.im, sB⟩ A :⟨rA, sA⟩ Δ2) n C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
+    Typed (B :: A :: Γ) (B :⟨.im, sB⟩ A :⟨.ex, sA⟩ Δ2) n C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
     Typed Γ Δ (.prj C m n .im) C.[m/]
 
-  | prj_ex {Γ Δ1 Δ2 Δ A B C m n rA rB s sA sB sC iC} :
-    RSrt rA sA ->
-    RSrt rB sB ->
+  | prj_ex {Γ Δ1 Δ2 Δ A B C m n s sA sB sC iC} :
     Merge Δ1 Δ2 Δ ->
     .sig A B .ex s :: Γ ⊢ C : .srt sC iC ->
     Typed Γ Δ1 m (.sig A B .ex s) ->
-    Typed (B :: A :: Γ) (B :⟨rB, sB⟩ A :⟨rA, sA⟩ Δ2) n C.[.tup (.var 1) (.var 0) .ex s .: shift 2] ->
+    Typed (B :: A :: Γ) (B :⟨.ex, sB⟩ A :⟨.ex, sA⟩ Δ2) n C.[.tup (.var 1) (.var 0) .ex s .: shift 2] ->
     Typed Γ Δ (.prj C m n .ex) C.[m/]
 
   | tt {Γ Δ} :
     Wf Γ Δ ->
-    Δ.Forall (∃ A s, . = (A, .im, s)) ->
+    Lower Δ ord.e ->
     Typed Γ Δ .tt .bool
 
   | ff {Γ Δ} :
     Wf Γ Δ ->
-    Δ.Forall (∃ A s, . = (A, .im, s)) ->
+    Lower Δ ord.e ->
     Typed Γ Δ .ff .bool
 
   | ite {Γ Δ1 Δ2 Δ A m n1 n2 s i} :
@@ -93,6 +84,11 @@ inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop 
     Typed Γ Δ m A.[.rfl a,a/] ->
     Γ ⊢ n : .idn B a b ->
     Typed Γ Δ (.rw A m n) A.[n,b/]
+
+  | weak {Γ Δ1 Δ2 m A} :
+    Weaken Δ1 Δ2 ->
+    Typed Γ Δ1 m A ->
+    Typed Γ Δ2 m A
 
   | conv {Γ Δ A B m s i} :
     A === B ->
@@ -137,6 +133,21 @@ lemma Wf.merge {Γ} {Δ Δ1 Δ2 : Ctx Srt} :
   case right ih  => cases wf1; cases wf2; aesop (add safe Wf)
   case im ih     => cases wf1; cases wf2; aesop (add safe Wf)
 
+lemma Wf.weaken {Γ} {Δ1 Δ2 : Ctx Srt} :
+    Weaken Δ1 Δ2 -> Γ ;; Δ1 ⊢ -> Γ ;; Δ2 ⊢ := by
+  intro wk agr; induction wk generalizing Γ
+  case nil => assumption
+  case cons =>
+    cases agr
+    constructor
+    assumption
+    aesop
+  case weak =>
+    cases agr
+    constructor
+    assumption
+    aesop
+
 lemma Wf.split {Γ} {Δ Δ1 Δ2 : Ctx Srt} :
     Merge Δ1 Δ2 Δ -> Γ ;; Δ ⊢ -> Γ ;; Δ1 ⊢ ∧ Γ ;; Δ2 ⊢ := by
   intro mrg wf
@@ -170,6 +181,8 @@ lemma Typed.toWf {Γ} {Δ : Ctx Srt} {A m} :
     apply Wf.merge mrg ih1 ih2
   case ite mrg _ _ _ _ ih1 ih2 _ =>
     apply Wf.merge mrg ih1 ih2
+  case weak wk _ wf =>
+    apply Wf.weaken wk wf
 
 lemma Wf.toStatic {Γ} {Δ : Ctx Srt} : Γ ;; Δ ⊢ -> Γ ⊢ := by
   intro wf; induction wf
