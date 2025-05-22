@@ -7,17 +7,17 @@ variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Erased.pi_canonical {A B C m : SStruct.Tm Srt} {m' r s} :
     [] ;; [] ⊢ m ▷ m' : C -> C === .pi A B r s -> Value m' ->
-    ∃ A n n' c, m = .lam A n r s ∧ m' = .lam n' c s := by
+    ∃ A n n', m = .lam A n r s ∧ m' = .lam n' s := by
   generalize e1: [] = Γ
   generalize e2: [] = Δ
   intro ty eq vl; induction ty <;> try trivial
   all_goals try false_conv
   case lam_im A B m m' _ _ _ _ _ _ _  =>
     have ⟨_, _, eqA, eqB⟩ := Static.Conv.pi_inj eq
-    subst_vars; exists A, m, m', .keep
-  case lam_ex A B m m' _ _ _ _ c rs _ _ _ _ =>
+    subst_vars; exists A, m, m'
+  case lam_ex A B m m' _ _ _ _ _ _ _ =>
     have ⟨_, _, eqA, eqB⟩ := Static.Conv.pi_inj eq
-    subst_vars; exists A, m, m', c
+    subst_vars; exists A, m, m'
   case conv ih =>
     apply ih <;> try assumption
     apply Conv.trans <;> assumption
@@ -64,70 +64,63 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
     match ih with
     | .inl ⟨m', _⟩ =>
       left; exists Tm.app m' .null
-      constructor; assumption
+      apply Step.app_M; assumption
     | .inr vl =>
-      have ⟨_, m, m', c, e1, e2⟩ := erm.pi_canonical Conv.R vl
+      have ⟨_, m, m', e1, e2⟩ := erm.pi_canonical Conv.R vl
       subst_vars; left; exists m'.[.null/]
-      constructor
-      constructor
-      cases c <;> simp
+      right; aesop
   case app_ex m m' n n' _ erm ern ihm ihn mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m', _⟩ =>
       left; exists Tm.app m' n'
-      constructor; assumption
+      apply Step.app_M; assumption
     | .inr vl =>
       match ihn with
       | .inl ⟨n', _⟩ =>
         left; exists Tm.app m' n'
-        constructor; assumption
+        apply Step.app_N; assumption
       | .inr _ =>
-        have ⟨_, m, m', c, e1, e2⟩ := erm.pi_canonical Conv.R vl
-        cases c with
-        | keep =>
-          subst_vars; left; exists m'.[n'/]
-          constructor; assumption; simp
-        | drop =>
-          subst_vars; left; exists m'.[.null/]
-          constructor; assumption; simp
+        have ⟨_, m, m', e1, e2⟩ := erm.pi_canonical Conv.R vl
+        subst_vars; left; exists m'.[n'/]
+        right; aesop
   case tup_im m m' n s _ _ _ _ ih =>
     simp_all
     match ih with
     | .inl ⟨m, _⟩ =>
       left; exists Tm.tup m .null s
-      constructor; assumption
+      apply Step.tup_M; assumption
     | .inr _ => right; aesop
   case tup_ex m m' n n' s _ _ _ _ ihm ihn mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
       left; exists Tm.tup m n' s
-      constructor; assumption
+      apply Step.tup_M; assumption
     | .inr _ =>
       match ihn with
       | .inl ⟨n, _⟩ =>
         left; exists Tm.tup m' n s
-        constructor; assumption
+        apply Step.tup_N; assumption
       | .inr _ => right; constructor <;> assumption
-  case prj_im C n n' _ _ _ _ _ _ c _ _ erm _ ihm _ mrg =>
+  case prj_im C m m' n n' _ _ _ _ _ _ erm _ ihm _ mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.prj m n' c .keep
-      constructor; assumption
+      left; exists Tm.prj m n'
+      apply Step.prj_M; assumption
     | .inr vl =>
       have ⟨m1, m1', m2, m2', _, _⟩ := erm.sig_canonical Conv.R vl
-      subst_vars; left; exists n'.[m2',c.ctrl m1'/]; aesop
-  case prj_ex C _ _ n n' _ _ _ _ _ _ _ c1 c2 _ _ _ erm _ ihm _ mrg =>
+      subst_vars; left; exists n'.[m2',m1'/]; right; aesop
+  case prj_ex C m m' n n' _ _ _ _ _ _ erm _ ihm _ mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.prj m n' c1 c2
-      constructor; assumption
+      left; exists Tm.prj m n'
+      apply Step.prj_M; assumption
     | .inr vl =>
       have ⟨m1, m1', m2, m2', _, _⟩ := erm.sig_canonical Conv.R vl
-      subst_vars; left; exists n'.[c2.ctrl m2',c1.ctrl m1'/]; aesop
+      subst_vars; left; exists n'.[m2',m1'/]; right; aesop
   case tt => right; constructor
   case ff => right; constructor
   case ite A m m' n1 n1' n2 n2' _ _ _ erm _ _ ihm _ _ mrg =>
@@ -135,11 +128,13 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
     match ihm with
     | .inl ⟨m', _⟩ =>
       left; exists Tm.ite m' n1' n2'
-      constructor; assumption
+      apply Step.ite_M; assumption
     | .inr vl =>
       match erm.bool_canonical Conv.R vl with
-      | .inl ⟨e1, e2⟩ => subst_vars; left; exists n1'; constructor
-      | .inr ⟨e1, e2⟩ => subst_vars; left; exists n2'; constructor
+      | .inl ⟨e1, e2⟩ => subst_vars; left; exists n1'; right; constructor
+      | .inr ⟨e1, e2⟩ => subst_vars; left; exists n2'; right; constructor
   case rw m n _ _ _ _ _ _ _ _ =>
-    left; exists m; apply Step.rw_elim
+    left; exists m; right; aesop
+  case drop m m' n n' _ _ _ _ _ _ _ _ _ _ =>
+    left; exists n'; left; constructor
   case conv ih => aesop

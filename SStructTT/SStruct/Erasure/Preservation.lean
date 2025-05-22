@@ -13,8 +13,48 @@ lemma Erased.value_preimage {Γ Δ} {A m1 : SStruct.Tm Srt} {m2} :
   case tup_im => intro vl; cases vl; constructor; aesop
   case tup_ex => intro vl; cases vl; constructor <;> aesop
 
-theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
-    [] ;; [] ⊢ m1 ▷ m2 : A -> m2 ~>> m2' ->
+theorem Erased.preservation0 {A m1 : SStruct.Tm Srt} {m2 m2'} :
+    [] ;; [] ⊢ m1 ▷ m2 : A -> Step0 m2 m2' ->
+    [] ;; [] ⊢ m1 ▷ m2' : A := by
+  generalize e1: [] = Γ
+  generalize e2: [] = Δ
+  intro erm st; induction erm generalizing m2'
+  all_goals try trivial
+  case app_im st tyn erm ihm =>
+    subst_vars; simp_all; cases st
+    case app_M => constructor <;> aesop
+    case app_N st => cases st
+  case app_ex mrg erm ern ihm ihn =>
+    subst_vars; simp_all; cases mrg; cases st
+    case app_M => constructor <;> aesop
+    case app_N => constructor <;> aesop
+  case tup_im erm tyn ihm =>
+    subst_vars; simp_all; cases st
+    case tup_M => constructor <;> aesop
+    case tup_N st => cases st
+  case tup_ex mrg tyS erm ern ihm ihn =>
+    subst_vars; simp_all; cases mrg; cases st
+    case tup_M => constructor <;> aesop
+    case tup_N => constructor <;> aesop
+  case prj_im mrg tyC erm ern ihm ihn =>
+    subst_vars; simp_all; cases mrg; cases st
+    constructor <;> aesop
+  case prj_ex mrg tyC erm ern ihm ihn =>
+    subst_vars; simp_all; cases mrg; cases st
+    constructor <;> aesop
+  case ite mrg tyA erm ern1 ern2 ihm ihn1 ihn2 =>
+    subst_vars; simp_all; cases mrg; cases st
+    constructor <;> aesop
+  case drop mrg lw h erm ern ihm ihn =>
+    subst_vars; cases mrg; cases st
+    assumption
+  case conv eq _ tyB ihm =>
+    subst_vars
+    have erm := ihm rfl rfl st
+    apply erm.conv eq tyB
+
+theorem Erased.preservation1 {A m1 : SStruct.Tm Srt} {m2 m2'} :
+    [] ;; [] ⊢ m1 ▷ m2 : A -> Step1 m2 m2' ->
     ∃ m1', m1 ~>> m1' ∧ [] ;; [] ⊢ m1' ▷ m2' : A := by
   generalize e1: [] = Γ
   generalize e2: [] = Δ
@@ -232,30 +272,27 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
     . assumption
     . apply erm'.conv eq tyB
 
-theorem Erased.preservation' {A m1 : SStruct.Tm Srt} {m2 m2'} :
-    [] ;; [] ⊢ m1 ▷ m2 : A -> m2 ~>>* m2' ->
+theorem Erased.preservation1' {A m1 : SStruct.Tm Srt} {m2 m2'} :
+    [] ;; [] ⊢ m1 ▷ m2 : A -> Star Step1 m2 m2' ->
     ∃ m1', m1 ~>>* m1' ∧ [] ;; [] ⊢ m1' ▷ m2' : A := by
   intro er rd
   induction rd generalizing A m1
   case R => exists m1; and_intros <;> aesop
   case SE rd st ih =>
     have ⟨m2', rd', er'⟩ := ih er
-    have ⟨m3', st', erm'⟩ := er'.preservation st
+    have ⟨m3', st', erm'⟩ := er'.preservation1 st
     exists m3'; and_intros
     . apply Star.SE <;> assumption
     . assumption
 
-theorem Erased.preservtion_drop {A m1 : SStruct.Tm Srt} {m2 m2'} :
-    [] ;; [] ⊢ m1 ▷ m2 : A -> StepDrop m2 m2' ->
-    [] ;; [] ⊢ m1 ▷ m2' : A := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
-  intro erm st; induction erm generalizing m2'
-  all_goals try trivial
-  case drop mrg lw h erm ern ihm ihn =>
-    subst_vars; cases mrg; cases st
-    assumption
-  case conv eq _ tyB ihm =>
-    subst_vars
-    have erm := ihm rfl rfl st
-    apply erm.conv eq tyB
+theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
+    [] ;; [] ⊢ m1 ▷ m2 : A -> m2 ~>> m2' ->
+    ∃ m1', [] ;; [] ⊢ m1' ▷ m2' : A := by
+  intro erm st
+  cases st with
+  | inl st =>
+    exists m1
+    apply Erased.preservation0 <;> assumption
+  | inr st =>
+    have ⟨m1', _, erm'⟩ := Erased.preservation1 erm st
+    exists m1'
