@@ -74,50 +74,124 @@ inductive Step1 : Tm Srt -> Tm Srt -> Prop where
   | rw_elim m :
     Step1 (.rw m) m
 
-def Step (m : Tm Srt) (n : Tm Srt) : Prop :=
-  Step0 m n ∨ Step1 m n
+inductive Step (m : Tm Srt) : Tm Srt -> Prop where
+  | intro {m' n} : Star Step0 m m' -> Step1 m' n -> Step m n
 
 notation:50 m:50 " ~>> " n:50 => Step m n
 notation:50 m:50 " ~>>* " n:50 => ARS.Star Step m n
 
-lemma Step.app_M {m m' n : Tm Srt} :
-    m ~>> m' -> .app m n ~>> .app m' n := by
-  intro st
-  cases st with
-  | inl st => left; constructor; assumption
-  | inr st => right; constructor; assumption
+lemma Red0.var_inv {x} {t : Tm Srt} :
+    Star Step0 (.var x) t -> t = .var x := by
+  intro rd; induction rd
+  case R => simp
+  case SE st ih =>
+    subst_vars; cases st
 
-lemma Step.app_N {m n n' : Tm Srt} :
-    n ~>> n' -> .app m n ~>> .app m n' := by
-  intro st
-  cases st with
-  | inl st => left; constructor; assumption
-  | inr st => right; constructor; assumption
+lemma Red0.lam_inv {m t : Tm Srt} {s} :
+    Star Step0 (.lam m s) t -> t = .lam m s := by
+  intro rd; induction rd
+  case R => simp
+  case SE st e => subst_vars; cases st
 
-lemma Step.tup_M {m m' n : Tm Srt} {s} :
-    m ~>> m' -> .tup m n s ~>> .tup m' n s := by
-  intro st
-  cases st with
-  | inl st => left; constructor; assumption
-  | inr st => right; constructor; assumption
+lemma Red0.app_inv {m n t : Tm Srt} :
+    Star Step0 (.app m n) t ->
+    ∃ m' n', t = .app m' n' ∧ Star Step0 m m' ∧ Star Step0 n n' := by
+  intro rd; induction rd
+  case R => exists m, n; aesop
+  case SE st ih =>
+    have ⟨m', n', e, rd1, rd2⟩  := ih
+    subst_vars
+    cases st
+    case app_M mx st =>
+      exists mx, n'; simp; and_intros
+      . apply Star.SE rd1 st
+      . assumption
+    case app_N nx st =>
+      exists m', nx; simp; and_intros
+      . assumption
+      . apply Star.SE rd2 st
 
-lemma Step.tup_N {m n n' : Tm Srt} {s} :
-    n ~>> n' -> .tup m n s ~>> .tup m n' s := by
-  intro st
-  cases st with
-  | inl st => left; constructor; assumption
-  | inr st => right; constructor; assumption
+lemma Red0.tup_inv {m n t : Tm Srt} {s} :
+    Star Step0 (.tup m n s) t ->
+    ∃ m' n', t = .tup m' n' s ∧ Star Step0 m m' ∧ Star Step0 n n' := by
+  intro rd; induction rd
+  case R => exists m, n; aesop
+  case SE st ih =>
+    have ⟨m', n', e, rd1, rd2⟩  := ih
+    subst_vars
+    cases st
+    case tup_M mx st =>
+      exists mx, n'; simp; and_intros
+      . apply Star.SE rd1 st
+      . assumption
+    case tup_N nx st =>
+      exists m', nx; simp; and_intros
+      . assumption
+      . apply Star.SE rd2 st
 
-lemma Step.prj_M {m m' n : Tm Srt} :
-    m ~>> m' -> .prj m n ~>> .prj m' n := by
-  intro st
-  cases st with
-  | inl st => left; constructor; assumption
-  | inr st => right; constructor; assumption
+lemma Red0.prj_inv {m n t : Tm Srt} :
+    Star Step0 (.prj m n) t ->
+    ∃ m', t = .prj m' n ∧ Star Step0 m m' := by
+  intro rd; induction rd
+  case R => exists m; aesop
+  case SE st ih =>
+    have ⟨m', e, rd⟩  := ih
+    subst_vars
+    cases st
+    case prj_M mx st =>
+      exists mx; simp
+      apply Star.SE rd st
 
-lemma Step.ite_M {m m' n1 n2 : Tm Srt} :
-    m ~>> m' -> .ite m n1 n2 ~>> .ite m' n1 n2 := by
-  intro st
-  cases st with
-  | inl st => left; constructor; assumption
-  | inr st => right; constructor; assumption
+lemma Red0.tt_inv {t : Tm Srt} : Star Step0 .tt t -> t = .tt := by
+  intro rd; induction rd
+  case R => simp
+  case SE st ih => subst_vars; cases st
+
+lemma Red0.ff_inv {t : Tm Srt} : Star Step0 .ff t -> t = .ff := by
+  intro rd; induction rd
+  case R => simp
+  case SE st ih => subst_vars; cases st
+
+lemma Red0.ite_inv {m n1 n2 t : Tm Srt} :
+    Star Step0 (.ite m n1 n2) t ->
+    ∃ m', t = .ite m' n1 n2 ∧ Star Step0 m m' := by
+  intro rd; induction rd
+  case R => exists m; aesop
+  case SE st ih =>
+    have ⟨m', e, rd⟩  := ih
+    subst_vars
+    cases st
+    case ite_M mx st =>
+      exists mx; simp
+      apply Star.SE rd st
+
+lemma Red0.rw_inv {m t : Tm Srt} : Star Step0 (.rw m) t -> t = .rw m := by
+  intro rd; induction rd
+  case R => simp
+  case SE st ih => subst_vars; cases st
+
+lemma Red0.drop_inv {m n a b : Tm Srt} :
+    Star Step0 (.drop m n) a -> Step0 a b -> Star Step0 n b := by
+  intro rd st; induction rd generalizing b
+  case R =>
+    cases st
+    constructor
+  case SE st ih =>
+    apply Star.SE
+    . apply ih
+      assumption
+    . assumption
+
+lemma Red0.ptr_inv {l} {t : Tm Srt} :
+    Star Step0 (.ptr l) t -> t = .ptr l := by
+  intro rd; induction rd
+  case R => simp
+  case SE st ih =>
+    subst_vars; cases st
+
+lemma Red0.null_inv {t : Tm Srt} :
+    Star Step0 .null t -> t = .null := by
+  intro rd; induction rd
+  case R => simp
+  case SE st ih =>
+    subst_vars; cases st
