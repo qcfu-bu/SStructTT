@@ -225,10 +225,6 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
       . apply Static.Conv.compat; assumption
       . assumption
       . assumption
-  case drop mrg lw h erm ern ihm ihn =>
-    subst_vars; cases mrg; cases st
-    apply ihn <;> try simp
-    sorry
   case conv eq _ tyB ihm =>
     subst_vars
     have ⟨m', st', erm'⟩ := ihm rfl rfl st
@@ -248,3 +244,18 @@ theorem Erased.preservation' {A m1 : SStruct.Tm Srt} {m2 m2'} :
     exists m3'; and_intros
     . apply Star.SE <;> assumption
     . assumption
+
+theorem Erased.preservtion_drop {A m1 : SStruct.Tm Srt} {m2 m2'} :
+    [] ;; [] ⊢ m1 ▷ m2 : A -> StepDrop m2 m2' ->
+    [] ;; [] ⊢ m1 ▷ m2' : A := by
+  generalize e1: [] = Γ
+  generalize e2: [] = Δ
+  intro erm st; induction erm generalizing m2'
+  all_goals try trivial
+  case drop mrg lw h erm ern ihm ihn =>
+    subst_vars; cases mrg; cases st
+    assumption
+  case conv eq _ tyB ihm =>
+    subst_vars
+    have erm := ihm rfl rfl st
+    apply erm.conv eq tyB

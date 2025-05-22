@@ -50,8 +50,10 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
     Step (.ite .ff n1 n2) n2
   | rw_elim m :
     Step (.rw m) m
-  | drop_elim m n :
-    Step (.drop m n) n
 
 notation:50 m:50 " ~>> " n:50 => Step m n
 notation:50 m:50 " ~>>* " n:50 => ARS.Star Step m n
+
+inductive StepDrop : Tm Srt -> Tm Srt -> Prop where
+  | drop_elim m n :
+    StepDrop (.drop m n) n
