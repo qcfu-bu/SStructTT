@@ -18,10 +18,10 @@ inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
     HLower H ord.e ->
     Resolve H (.var x) (.var x)
 
-  | lam {H m m' c s} :
+  | lam {H m m' s} :
     HLower H s ->
     Resolve H m m' ->
-    Resolve H (.lam m c s) (.lam m' c s)
+    Resolve H (.lam m s) (.lam m' s)
 
   | app {H1 H2 H3 m m' n n'} :
     HMerge H1 H2 H3 ->
@@ -35,11 +35,11 @@ inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
     Resolve H2 n n' ->
     Resolve H3 (.tup m n s) (.tup m' n' s)
 
-  | prj {H1 H2 H3 m m' n n' c1 c2} :
+  | prj {H1 H2 H3 m m' n n'} :
     HMerge H1 H2 H3 ->
     Resolve H1 m m' ->
     Resolve H2 n n' ->
-    Resolve H3 (.prj m n c1 c2) (.prj m' n' c1 c2)
+    Resolve H3 (.prj m n) (.prj m' n')
 
   | tt {H} :
     HLower H ord.e ->
@@ -60,6 +60,12 @@ inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
     Resolve H m m' ->
     Resolve H (.rw m) (.rw m')
 
+  | drop {H1 H2 H3 m m' n n'} :
+    HMerge H1 H2 H3 ->
+    Resolve H1 m m' ->
+    Resolve H2 n n' ->
+    Resolve H3 (.drop m n) (.drop m' n')
+
   | ptr {H H' l m m'} :
     HLookup H l m H' ->
     Resolve H' m m' ->
@@ -73,14 +79,15 @@ notation:50 H:50 " ;; " m:51 " ▷ " m':51 => Resolve H m m'
 
 @[simp]def IsResolved : Tm Srt -> Prop
   | .var _ => True
-  | .lam m _ _ => IsResolved m
+  | .lam m _ => IsResolved m
   | .app m n => IsResolved m ∧ IsResolved n
   | .tup m n _ => IsResolved m ∧ IsResolved n
-  | .prj m n _ _ => IsResolved m ∧ IsResolved n
+  | .prj m n => IsResolved m ∧ IsResolved n
   | .tt => True
   | .ff => True
   | .ite m n1 n2 => IsResolved m ∧ IsResolved n1 ∧ IsResolved n2
   | .rw m => IsResolved m
+  | .drop m n => IsResolved m ∧ IsResolved n
   | .ptr _ => False
   | .null => True
 
@@ -254,6 +261,20 @@ lemma Resolve.weaken {H : Heap Srt} {m m' n l} :
       repeat rw[Finmap.lookup_insert_of_ne _ ne]
       apply mrg
   case rw => constructor; aesop
+  case drop mrg erm ern ihm ihn =>
+    have ⟨h1, h2⟩ := mrg.split_none h
+    replace ihm := ihm h1
+    replace ihn := ihn h2
+    apply Resolve.drop _ ihm ihn
+    intro x
+    cases x.decEq l with
+    | isTrue =>
+      subst_vars
+      rw[Finmap.lookup_insert]; simp
+      apply ord.e_contra
+    | isFalse ne =>
+      repeat rw[Finmap.lookup_insert_of_ne _ ne]
+      apply mrg
   case ptr lw erm ih =>
     constructor
     . apply HLookup.insert
@@ -318,6 +339,9 @@ lemma Erased.resolve_refl {Γ Δ} {H : Heap Srt} {m n A} :
     have mrg := lw.merge_refl
     constructor <;> aesop
   case rw => constructor; aesop
+  case drop ih =>
+    have mrg := lw.merge_refl
+    constructor <;> aesop
   case conv => aesop
 
 lemma Erased.resolve_id {Γ Δ} {H : Heap Srt} {x y z A} :
@@ -342,6 +366,7 @@ lemma Erased.resolve_id {Γ Δ} {H : Heap Srt} {x y z A} :
   case ff => cases rs; simp
   case ite => cases rs; aesop
   case rw => cases rs; aesop
+  case drop => cases rs; aesop
   case conv => aesop
 
 lemma HLookup.insert_lookup {H H' : Heap Srt} {m n l s} :
@@ -470,14 +495,15 @@ lemma HLookup.resolve {H1 H2 H3 H3' : Heap Srt} {l m n} :
 
 @[simp]def NF (i : Nat) : Tm Srt -> Prop
   | .var x => x < i
-  | .lam m _ _ => NF (i + 1) m
+  | .lam m _ => NF (i + 1) m
   | .app m n => NF i m ∧ NF i n
   | .tup m n _ => NF i m ∧ NF i n
-  | .prj m n _ _ => NF i m ∧ NF (i + 2) n
+  | .prj m n => NF i m ∧ NF (i + 2) n
   | .tt => True
   | .ff => True
   | .ite m n1 n2 => NF i m ∧ NF i n1 ∧ NF i n2
   | .rw m => NF i m
+  | .drop m n => NF i m ∧ NF i n
   | .ptr _ => True
   | .null => True
 
@@ -485,7 +511,7 @@ def WR (H : Heap Srt) : Prop :=
   ∀ l,
     match H.lookup l with
     | none => True
-    | some ⟨.lam m _ s1, s2⟩ => NF 1 m ∧ s1 = s2
+    | some ⟨.lam m s1, s2⟩ => NF 1 m ∧ s1 = s2
     | some ⟨.tup (.ptr _) .null s1, s2⟩ => s1 = s2
     | some ⟨.tup (.ptr _) (.ptr _) s1, s2⟩ => s1 = s2
     | some ⟨.tt, s⟩ => s = ord.e
@@ -592,6 +618,10 @@ lemma Resolve.nf_image {H : Heap Srt} {m m' i} :
     have ⟨nfm, nfn⟩ := nf
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     aesop
+  case drop mrg erm ern ihm ihn =>
+    have ⟨nfm, nfn⟩ := nf
+    have ⟨wr1, wr2⟩ := mrg.split_wr wr
+    aesop
   case ptr lk erm ihm =>
     have wr' := lk.wr_image wr
     have nf0 := lk.nf wr
@@ -616,6 +646,10 @@ lemma Resolve.nf_preimage {H : Heap Srt} {m m' i} :
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     aesop
   case ite mrg erm ern1 ern2 ihm ihn1 ihn2 =>
+    have ⟨nfm, nfn⟩ := nf
+    have ⟨wr1, wr2⟩ := mrg.split_wr wr
+    aesop
+  case drop mrg erm ern ihm ihn =>
     have ⟨nfm, nfn⟩ := nf
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     aesop
@@ -650,8 +684,8 @@ lemma HLookup.not_wr_null {H H' : Heap Srt} {l} :
     replace wr := wr l
     simp_rw[h] at wr
 
-lemma HLookup.contra_lam {H H' : Heap Srt} {l m c s} :
-    HLookup H l (.lam m c s) H' -> WR H ->
+lemma HLookup.contra_lam {H H' : Heap Srt} {l m s} :
+    HLookup H l (.lam m s) H' -> WR H ->
       if s ∈ ord.contra_set then H = H' else H' = H.erase l := by
   intro lk wr
   unfold HLookup at lk
@@ -694,9 +728,9 @@ lemma Resolve.var_inv {H : Heap Srt} {m x} :
     . exfalso; apply lkm.not_wr_var wr
     . exfalso; apply lkm.not_wr_ptr wr
 
-lemma Resolve.lam_inv {H : Heap Srt} {m m' c s} :
-    H ;; m ▷ .lam m' c s -> WR H -> HLower H s := by
-  generalize e: Tm.lam m' c s = t
+lemma Resolve.lam_inv {H : Heap Srt} {m m' s} :
+    H ;; m ▷ .lam m' s -> WR H -> HLower H s := by
+  generalize e: Tm.lam m' s = t
   intro rs wr; induction rs <;> try trivial
   case lam => cases e; assumption
   case ptr H H' l m m' lkm rsm ih =>
