@@ -68,12 +68,12 @@ where
 
   | tt {Γ Δ} :
     Wf Γ Δ ->
-    Lower Δ ord.e ->
+    Implicit Δ ->
     Erased Γ Δ .tt .tt .bool
 
   | ff {Γ Δ} :
     Wf Γ Δ ->
-    Lower Δ ord.e ->
+    Implicit Δ ->
     Erased Γ Δ .ff .ff .bool
 
   | ite {Γ Δ1 Δ2 Δ A m m' n1 n1' n2 n2' s i} :

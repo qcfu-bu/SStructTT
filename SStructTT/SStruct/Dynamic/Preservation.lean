@@ -231,8 +231,8 @@ theorem Typed.preservation {A m m' : Tm Srt} :
       rw[show .srt s i = (.srt s i).[n,b/] by asimp]
       apply Static.Typed.substitution
       . assumption
-      . apply AgreeSubst.wk; asimp; assumption
-        apply AgreeSubst.wk; asimp; assumption
+      . apply AgreeSubst.intro; asimp; assumption
+        apply AgreeSubst.intro; asimp; assumption
         apply Static.AgreeSubst.refl
         apply tyn.toWf
     cases st

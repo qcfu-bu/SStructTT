@@ -53,6 +53,13 @@ lemma AgreeSubst.refl {Γ} {Δ : Ctx Srt} : Γ ;; Δ ⊢ -> AgreeSubst ids Γ Δ
     replace agr := agr.cons r ty
     asimp at agr; assumption
 
+@[aesop safe (rule_sets := [subst])]
+lemma AgreeSubst.implicit_image {Γ Γ'} {Δ Δ' : Ctx Srt} {σ} :
+    AgreeSubst σ Γ Δ Γ' Δ' -> Implicit Δ -> Implicit Δ' := by
+  intro agr im; induction agr
+  all_goals try aesop
+
+@[aesop safe (rule_sets := [subst])]
 lemma AgreeSubst.lower_image {Γ Γ'} {Δ Δ' : Ctx Srt} {s σ} :
     AgreeSubst σ Γ Δ Γ' Δ' -> Lower Δ s -> Lower Δ' s := by
   intro agr lw; induction agr generalizing s
@@ -74,11 +81,11 @@ lemma AgreeSubst.has {Γ Γ'} {Δ Δ' : Ctx Srt} {A x s σ} :
   case cons A r s i σ tyA agr ih =>
     cases r with
     | ex =>
-      rcases hs with ⟨lw⟩; asimp
+      rcases hs with ⟨im⟩; asimp
       constructor
       . assumption
       . rw[show A.[σ !> shift 1] = A.[σ].[shift 1] by asimp]
-        constructor; apply agr.lower_image lw
+        constructor; apply agr.implicit_image im
     | im =>
       rcases wf with _ | ⟨_, wf⟩
       rcases hs with _ | @⟨_, A, x, s, hs⟩; asimp
@@ -89,9 +96,9 @@ lemma AgreeSubst.has {Γ Γ'} {Δ Δ' : Ctx Srt} {A x s σ} :
     rcases hs with _ | @⟨_, A, x, s, hs⟩; asimp
     apply ih <;> assumption
   case intro_ex mrg lw tym agr ih =>
-    rcases hs with ⟨lw2⟩; asimp
-    replace lw2 := agr.lower_image lw2
-    apply Typed.drop_merge mrg lw2 ord.e_weaken tym
+    rcases hs with ⟨im⟩; asimp
+    replace im := agr.implicit_image im
+    rw[mrg.sym.implicit im]; assumption
   case conv r _ _  σ eq tyB tyB' agr ih =>
     cases r with
     | im =>
@@ -298,14 +305,14 @@ lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
     replace tyn := ihn ((agr2.cons .ex tyA).cons .ex tyB); asimp at tyn
     rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
     apply Typed.prj_ex <;> (asimp; assumption)
-  case tt lw ih =>
+  case tt im ih =>
     constructor
     apply ih <;> try assumption
-    apply agr.lower_image lw
-  case ff lw ih =>
+    apply agr.implicit_image im
+  case ff im ih =>
     constructor
     apply ih <;> try assumption
-    apply agr.lower_image lw
+    apply agr.implicit_image im
   case ite A m n1 n2 s i mrg tyA tym tyn1 tyn2 ihm ihn1 ihn2 =>
     have ⟨s, i, _, tyb⟩ := tyA.ctx_inv
     have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg

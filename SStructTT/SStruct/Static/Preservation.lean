@@ -142,7 +142,7 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
       rw[show C.[.tup m1 m2 r s/]
             = C.[.tup (.var 1) (.var 0) r s .: shift 2].[m2,m1/] by asimp]
       apply tyn.substitution
-      apply AgreeSubst.wk tym2
+      apply AgreeSubst.intro tym2
       constructor; asimp; assumption
       apply AgreeSubst.refl wf
   case ite tyA tym tyn1 tyn2 ihA ihm ihn1 ihn2 =>
@@ -214,18 +214,18 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
         rw[show .srt s i = (.srt s i).[.rfl a,a/] by asimp]
         apply Typed.substitution
         . apply ihA st
-        . apply AgreeSubst.wk
+        . apply AgreeSubst.intro
           asimp; constructor; assumption
-          apply AgreeSubst.wk
+          apply AgreeSubst.intro
           asimp; assumption
           apply AgreeSubst.refl; assumption
       have : Γ ⊢ A.[n,b/] : .srt s i := by
         rw[show .srt s i = (.srt s i).[n,b/] by asimp]
         apply Typed.substitution
         . assumption
-        . apply AgreeSubst.wk
+        . apply AgreeSubst.intro
           asimp; assumption
-          apply AgreeSubst.wk
+          apply AgreeSubst.intro
           asimp; assumption
           apply AgreeSubst.refl; assumption
       apply Typed.conv
@@ -249,9 +249,9 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
         rw[show .srt s i = (.srt s i).[n,b/] by asimp]
         apply Typed.substitution
         . assumption
-        . apply AgreeSubst.wk
+        . apply AgreeSubst.intro
           asimp; assumption
-          apply AgreeSubst.wk
+          apply AgreeSubst.intro
           asimp; assumption
           apply AgreeSubst.refl; assumption
       apply Typed.conv
@@ -271,9 +271,9 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
         rw[show .srt s i = (.srt s i).[.rfl c,b/] by asimp]
         apply Typed.substitution
         . assumption
-        . apply AgreeSubst.wk
+        . apply AgreeSubst.intro
           asimp; assumption
-          apply AgreeSubst.wk
+          apply AgreeSubst.intro
           asimp; assumption
           apply AgreeSubst.refl
           apply tyn.toWf

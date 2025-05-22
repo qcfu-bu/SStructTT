@@ -63,12 +63,12 @@ inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop 
 
   | tt {Γ Δ} :
     Wf Γ Δ ->
-    Lower Δ ord.e ->
+    Implicit Δ ->
     Typed Γ Δ .tt .bool
 
   | ff {Γ Δ} :
     Wf Γ Δ ->
-    Lower Δ ord.e ->
+    Implicit Δ ->
     Typed Γ Δ .ff .bool
 
   | ite {Γ Δ1 Δ2 Δ A m n1 n2 s i} :

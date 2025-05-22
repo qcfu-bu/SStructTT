@@ -35,14 +35,24 @@ inductive Lower : Ctx Srt -> Srt -> Prop where
     Lower Δ s ->
     Lower (A :⟨.im, s'⟩ Δ) s
 
+@[simp]def Implicit (Δ : Ctx Srt) : Prop :=
+  Δ.Forall (fun x => x.2.1 = .im)
+
 @[scoped aesop safe [constructors]]
 inductive Has : Ctx Srt -> Var -> Srt -> Tm Srt -> Prop where
   | nil {Δ A s} :
-    Lower Δ ord.e ->
+    Implicit Δ ->
     Has (A :⟨.ex, s⟩ Δ) 0 s A.[shift 1]
   | cons {Δ A B x s s'} :
     Has Δ x s A ->
     Has (B :⟨.im, s'⟩ Δ) (x + 1) s A.[shift 1]
+
+@[simp]def Ctx.toImplicit (Δ : Ctx Srt) : Ctx Srt :=
+  Δ.map fun ⟨m, _, s⟩ => ⟨m, .im, s⟩
+
+omit ord in
+lemma Implicit.toImplicit (Δ : Ctx Srt) : Implicit Δ.toImplicit := by
+  induction Δ <;> aesop
 
 lemma Lower.split_e {Δ : Ctx Srt} :
     Lower Δ ord.e -> ∃ Δ1 Δ2, Lower Δ1 ord.e ∧ Lower Δ2 ord.e ∧ Merge Δ1 Δ2 Δ := by
@@ -84,12 +94,20 @@ lemma Lower.trans {Δ : Ctx Srt} {s1 s2} :
     constructor
     apply ih le2
 
+lemma Lower.implicit {Δ : Ctx Srt} {s} : Implicit Δ -> Lower Δ s := by
+  intro im; induction Δ
+  case nil => constructor
+  case cons hd tl ih =>
+    have ⟨m, r, s⟩ := hd
+    simp at im; have ⟨e, ih⟩ := im
+    subst_vars; constructor; aesop
+
 lemma Has.lower {Δ : Ctx Srt} {x s A} :
     Has Δ x s A -> Lower Δ s := by
   intro hs; induction hs
   case nil ih =>
     constructor; simp
-    apply Lower.trans ih (ord.e_min _)
+    apply Lower.implicit ih
   case cons => constructor; assumption
 
 lemma Merge.lower_image {Δ1 Δ2 Δ : Ctx Srt} {s} :
@@ -116,6 +134,18 @@ lemma Merge.lower_image {Δ1 Δ2 Δ : Ctx Srt} {s} :
     intro l1 l2; cases l1; cases l2
     apply Lower.im
     apply ih <;> assumption
+
+lemma Merge.self {Δ : Ctx Srt} : Merge Δ Δ.toImplicit Δ := by
+  induction Δ
+  case nil => simp; constructor
+  case cons hd _ _ =>
+    have ⟨m, r, s⟩ := hd
+    cases r <;> aesop
+
+lemma Merge.implicit {Δ1 Δ2 Δ3 : Ctx Srt} :
+    Merge Δ1 Δ2 Δ3 -> Implicit Δ1 -> Δ3 = Δ2 := by
+  intro mrg im; induction mrg
+  all_goals try aesop
 
 lemma Merge.sym {Δ1 Δ2 Δ : Ctx Srt} : Merge Δ1 Δ2 Δ -> Merge Δ2 Δ1 Δ := by
   intro mrg; induction mrg
@@ -314,20 +344,3 @@ lemma Merge.distr {Δ1 Δ2 Δ Δ11 Δ12 Δ21 Δ22 : Ctx Srt} :
       | im _ _ mrg3 =>
         have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
         exists A :⟨.im, s⟩ Δ1', A :⟨.im, s⟩ Δ2'; aesop
-
-@[simp]def Ctx.toImplicit (Δ : Ctx Srt) : Ctx Srt :=
-  Δ.map fun ⟨m, _, s⟩ => ⟨m, .im, s⟩
-
-lemma Merge.implicit {Δ : Ctx Srt} : Merge Δ Δ.toImplicit Δ := by
-  induction Δ
-  case nil => simp; constructor
-  case cons hd _ _ =>
-    have ⟨m, r, s⟩ := hd
-    cases r <;> aesop
-
-lemma Lower.implicit {Δ : Ctx Srt} {s} : Lower Δ.toImplicit s := by
-  induction Δ
-  case nil => simp; constructor
-  case cons hd _ _ =>
-    have ⟨m, r, s⟩ := hd
-    cases r <;> aesop

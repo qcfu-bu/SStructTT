@@ -35,6 +35,11 @@ lemma AgreeRen.refl {Γ} {Δ : Ctx Srt} :
     asimp at agr; assumption
 
 @[aesop safe (rule_sets := [rename])]
+lemma AgreeRen.implicit_image {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ} :
+    AgreeRen ξ Γ Δ Γ' Δ' -> Implicit Δ -> Implicit Δ' := by
+  intro agr im; induction agr <;> try (solve| aesop)
+
+@[aesop safe (rule_sets := [rename])]
 lemma AgreeRen.lower_image {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ s} :
     AgreeRen ξ Γ Δ Γ' Δ' -> Lower Δ s -> Lower Δ' s := by
   intro agr lw; induction agr <;> try (solve| aesop)
@@ -50,8 +55,8 @@ lemma AgreeRen.has {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ x s A} :
   case cons A r _ _ ξ _ agr ih =>
     cases r with
     | ex =>
-      rcases hs with ⟨lw⟩
-      have lw := agr.lower_image lw; asimp
+      rcases hs with ⟨im⟩
+      have lw := agr.implicit_image im; asimp
       rw[show A.[ren ξ !> shift 1] = A.[ren ξ].[shift 1] by asimp]
       constructor; assumption
     | im =>
@@ -215,8 +220,14 @@ lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
     rw[SubstLemmas.upren_up] at tyn
     have ty := Typed.prj_ex mrg tyC tym tyn
     asimp at ty; assumption
-  case tt h ih => constructor <;> aesop (rule_sets := [rename])
-  case ff h ih => constructor <;> aesop (rule_sets := [rename])
+  case tt im ih =>
+    constructor
+    aesop (rule_sets := [rename])
+    apply agr.implicit_image im
+  case ff im ih =>
+    constructor
+    aesop (rule_sets := [rename])
+    apply agr.implicit_image im
   case ite A _ _ _ _ _  mrg tyA tym tyn1 tyn2 ihm ihn1 ihn2 =>
     have ⟨s, i, _, tyb⟩ := tyA.ctx_inv
     have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg
@@ -277,12 +288,12 @@ lemma Typed.weaken_ex {Γ} {Δ : Ctx Srt} {A B m s i} :
     B :: Γ ;; B :⟨.ex, s⟩ Δ ⊢ m.[shift 1] : A.[shift 1] := by
   intro tym tyB h
   have mrg : Merge (B :⟨.im, s⟩ Δ) (B :⟨.ex, s⟩ Δ.toImplicit) (B :⟨.ex, s⟩ Δ) := by
-    constructor; apply Merge.implicit
+    constructor; apply Merge.self
   replace tym := tym.weaken_im tyB
   have ⟨i, wf, tyB⟩ := tym.ctx_inv
   apply Typed.drop mrg.sym _ h
   . assumption
-  . constructor; simp; apply Lower.implicit
+  . constructor; simp; apply Lower.implicit (Implicit.toImplicit _)
 
 lemma Typed.eweaken_im {Γ Γ'} {Δ Δ' : Ctx Srt} {A A' B m m' s i} :
     Γ' = B :: Γ ->
@@ -347,9 +358,9 @@ lemma Merge.toSpine {Δ1 Δ2 Δ3 : Ctx Srt} {s} :
     have sp := @Spine.extend _ _ _ _ A .im s (ih lw)
     replace mrg : Merge (A :⟨.im, s⟩ Δ3) (A :⟨.ex, s⟩ Δ3.toImplicit) (A :⟨.ex, s⟩ Δ3) := by
       constructor
-      apply Merge.implicit
+      apply Merge.self
     have hs : Has (A :⟨.ex, s⟩ Δ3.toImplicit) 0 s A.[shift 1] := by
-      constructor; apply Lower.implicit
+      constructor; apply Implicit.toImplicit
     constructor
     . apply mrg
     . apply ord.weaken_set.lower le

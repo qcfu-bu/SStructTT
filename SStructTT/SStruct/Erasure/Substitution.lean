@@ -18,11 +18,11 @@ where
     Γ ⊢ A : .srt s i ->
     AgreeSubst σ σ' Γ Δ Γ' Δ' ->
     AgreeSubst (up σ) (up σ') (A :: Γ) (A :⟨r, s⟩ Δ) (A.[σ] :: Γ') (A.[σ] :⟨r, s⟩ Δ')
-  | wk_im {Γ Γ' Δ Δ' A m m' s σ σ'} :
+  | intro_im {Γ Γ' Δ Δ' A m m' s σ σ'} :
     Γ' ⊢ m : A.[σ] ->
     AgreeSubst σ σ' Γ Δ Γ' Δ' ->
     AgreeSubst (m .: σ) (m' .: σ') (A :: Γ) (A :⟨.im, s⟩ Δ) Γ' Δ'
-  | wk_ex {Γ Γ' Δ Δ' Δa Δb A m m' s σ σ'} :
+  | intro_ex {Γ Γ' Δ Δ' Δa Δb A m m' s σ σ'} :
     Merge Δa Δb Δ' ->
     Lower Δa s ->
     Γ' ;; Δa ⊢ m ▷ m' : A.[σ] ->
@@ -40,8 +40,8 @@ lemma AgreeSubst.toDynamic {Γ Γ'} {Δ Δ' : Ctx Srt} {σ σ'} :
   intro agr
   induction agr <;> try aesop (rule_sets := [subst])
   case cons => constructor <;> assumption
-  case wk_im => constructor <;> assumption
-  case wk_ex tym agr ih =>
+  case intro_im => constructor <;> assumption
+  case intro_ex tym agr ih =>
     constructor <;> try assumption
     apply tym.toDynamic
 
@@ -59,15 +59,14 @@ lemma AgreeSubst.refl {Γ} {Δ : Ctx Srt} : Γ ;; Δ ⊢ -> AgreeSubst ids ids �
     asimp at agr; assumption
 
 @[aesop safe (rule_sets := [subst])]
-lemma AgreeSubst.implicit {Γ Γ'} {Δ Δ' : Ctx Srt} {σ σ'} :
-    AgreeSubst σ σ' Γ Δ Γ' Δ' ->
-    Δ.Forall (∃ A s, . = (A, .im, s)) ->
-    Δ'.Forall (∃ A s, . = (A, .im, s)) := by
-  intro agr; apply agr.toDynamic.implicit
+lemma AgreeSubst.implicit_image {Γ Γ'} {Δ Δ' : Ctx Srt} {σ σ'} :
+    AgreeSubst σ σ' Γ Δ Γ' Δ' -> Implicit Δ -> Implicit Δ' := by
+  intro agr; apply agr.toDynamic.implicit_image
 
-lemma AgreeSubst.lower {Γ Γ'} {Δ Δ' : Ctx Srt} {s σ σ'} :
+@[aesop safe (rule_sets := [subst])]
+lemma AgreeSubst.lower_image {Γ Γ'} {Δ Δ' : Ctx Srt} {s σ σ'} :
     AgreeSubst σ σ' Γ Δ Γ' Δ' -> Lower Δ s -> Lower Δ' s := by
-  intro agr; apply agr.toDynamic.lower
+  intro agr; apply agr.toDynamic.lower_image
 
 lemma AgreeSubst.has {Γ Γ'} {Δ Δ' : Ctx Srt} {A x s σ σ'} :
     AgreeSubst σ σ' Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢ ->
@@ -77,24 +76,24 @@ lemma AgreeSubst.has {Γ Γ'} {Δ Δ' : Ctx Srt} {A x s σ σ'} :
   case cons A r s i σ σ' tyA agr ih =>
     cases r with
     | ex =>
-      rcases hs with ⟨h⟩; asimp
+      rcases hs with ⟨im⟩; asimp
       constructor
       . assumption
       . rw[show A.[σ !> shift 1] = A.[σ].[shift 1] by asimp]
-        constructor; apply agr.implicit h
+        constructor; apply agr.implicit_image im
     | im =>
       rcases wf with _ | ⟨_, wf⟩
       rcases hs with _ | @⟨_, A, x, s, hs⟩; asimp
       rw[show A.[σ !> shift 1] = A.[σ].[shift 1] by asimp]
       apply Erased.eweaken <;> try first | rfl | assumption
       apply ih <;> assumption
-  case wk_im ih =>
+  case intro_im ih =>
     rcases hs with _ | @⟨_, A, x, s, hs⟩; asimp
     apply ih <;> assumption
-  case wk_ex mrg _ _ agr ih =>
-    rcases hs with ⟨h⟩; asimp
-    rw[<-mrg.sym.implicit (agr.implicit h)]
-    assumption
+  case intro_ex mrg _ _ agr ih =>
+    rcases hs with ⟨im⟩; asimp
+    replace im := agr.implicit_image im
+    rw[mrg.sym.implicit im]; assumption
   case conv r _ _  σ σ' eq tyB tyB' agr ih =>
     cases r with
     | im =>
@@ -137,7 +136,7 @@ lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ σ'} :
       have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
       exists A.[σ] :⟨.im, s⟩ Δa', A.[σ] :⟨.im, s⟩ Δb'; and_intros
       all_goals constructor <;> assumption
-  case wk_im agr ih =>
+  case intro_im agr ih =>
     cases mrg with
     | im _ _ mrg =>
       have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
@@ -145,7 +144,7 @@ lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ σ'} :
       . assumption
       . constructor <;> assumption
       . constructor <;> assumption
-  case wk_ex mrg1 lw tym agr ih =>
+  case intro_ex mrg1 lw tym agr ih =>
     cases mrg with
     | contra _ _ h mrg =>
       have ⟨Δa', Δb', mrg2, agr1, agr2⟩ := ih mrg
@@ -153,12 +152,12 @@ lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ σ'} :
       have ⟨Δc2, mrg5, mrg6⟩ := mrg1.sym.split mrg2.sym
       exists Δc1, Δc2; and_intros
       . apply Merge.compose <;> assumption
-      . apply AgreeSubst.wk_ex
+      . apply AgreeSubst.intro_ex
         . exact mrg3.sym
         . exact lw
         . exact tym
         . exact agr1
-      . apply AgreeSubst.wk_ex
+      . apply AgreeSubst.intro_ex
         . exact mrg5.sym
         . exact lw
         . exact tym
@@ -168,12 +167,12 @@ lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ σ'} :
       have ⟨Δc1, mrg3, mrg4⟩ := mrg1.sym.split mrg2
       exists Δc1, Δb'; and_intros
       . exact mrg4
-      . apply AgreeSubst.wk_ex
+      . apply AgreeSubst.intro_ex
         . exact mrg3.sym
         . exact lw
         . exact tym
         . exact agr1
-      . apply AgreeSubst.wk_im
+      . apply AgreeSubst.intro_im
         . exact tym.toStatic
         . exact agr2
     | right _ _ mrg =>
@@ -181,10 +180,10 @@ lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ σ'} :
       have ⟨Δc1, mrg3, mrg4⟩ := mrg1.sym.split mrg2.sym
       exists Δa', Δc1; and_intros
       . exact mrg4.sym
-      . apply AgreeSubst.wk_im
+      . apply AgreeSubst.intro_im
         . exact tym.toStatic
         . exact agr1
-      . apply AgreeSubst.wk_ex
+      . apply AgreeSubst.intro_ex
         . exact mrg3.sym
         . exact lw
         . exact tym
@@ -218,13 +217,12 @@ lemma Erased.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m m' σ σ'} :
     apply agr.has (agr.wf wf) hs
   case lam_im lw tyA erm ihm =>
     apply Erased.lam_im
-    . apply agr.lower lw
+    . apply agr.lower_image lw
     . apply tyA.substitution agr.toStatic
     . apply ihm; constructor <;> assumption
-  case lam_ex A B m rA s sA i rs lw tyA erm ih =>
+  case lam_ex A B m s sA i lw tyA erm ih =>
     apply Erased.lam_ex
-    . assumption
-    . apply agr.lower lw
+    . apply agr.lower_image lw
     . apply tyA.substitution agr.toStatic
     . apply ih; constructor <;> assumption
   case app_im erm tyn ih =>
@@ -251,32 +249,30 @@ lemma Erased.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m m' σ σ'} :
     replace ern := ihn agr2; asimp at ern
     rw[show B.[m.[σ] .: σ] = B.[up σ].[m.[σ]/] by asimp] at ern
     have er := Erased.tup_ex mrg tyS erm ern; assumption
-  case prj_im A B C m m' n n' rA s sA sB sC iC c rs mrg tyC erm ern ihm ihn =>
+  case prj_im A B C m m' n n' s sA sB sC iC mrg tyC erm ern ihm ihn =>
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
     obtain ⟨_, _ | ⟨tyA, _⟩, tyB⟩ := ern.ctx_inv
     have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
     replace tyC := tyC.substitution (agr.toStatic.cons tyS); asimp at tyC
     replace erm := ihm agr1; asimp at erm
-    replace ern := ihn ((agr2.cons rA tyA).cons .im tyB); asimp at ern
+    replace ern := ihn ((agr2.cons .ex tyA).cons .im tyB); asimp at ern
     rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
     apply Erased.prj_im <;> (asimp; assumption)
-  case prj_ex C m m' n n' rA rB s sA sB sC i c1 c2 rs1 rs2 mrg tyC erm ern ihm ihn =>
+  case prj_ex C m m' n n' s sA sB sC i mrg tyC erm ern ihm ihn =>
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
     obtain ⟨_, _ | ⟨tyA, _⟩, tyB⟩ := ern.ctx_inv
     have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
     replace tyC := tyC.substitution (agr.toStatic.cons tyS); asimp at tyC
     replace erm := ihm agr1; asimp at erm
-    replace ern := ihn ((agr2.cons rA tyA).cons rB tyB); asimp at ern
+    replace ern := ihn ((agr2.cons .ex tyA).cons .ex tyB); asimp at ern
     rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
     apply Erased.prj_ex
-    . apply rs1
-    . apply rs2
     . assumption
     . assumption
     . assumption
     . asimp; assumption
-  case tt h ih => constructor; apply agr.wf h; apply agr.implicit ih
-  case ff h ih => constructor; apply agr.wf h; apply agr.implicit ih
+  case tt wf im => constructor; apply agr.wf wf; apply agr.implicit_image im
+  case ff wf im => constructor; apply agr.wf wf; apply agr.implicit_image im
   case ite A m m' n1 n1' n2 n2' s i mrg tyA erm ern1 ern2 ihm ihn1 ihn2 =>
     have ⟨s, i, _, tyb⟩ := tyA.ctx_inv
     have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg
@@ -300,6 +296,12 @@ lemma Erased.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m m' σ σ'} :
          by asimp] at erm
     have := Erased.rw tyA erm tyn
     asimp at this; assumption
+  case drop mrg lw h erm ern ihm ihn =>
+    have ⟨Δa', Δb', mrg', agr1, agr2⟩ := agr.split mrg
+    replace ihm := ihm agr1
+    replace ihn := ihn agr2
+    have lw' := agr1.lower_image lw
+    apply Erased.drop mrg' lw' h ihm ihn
   case conv eq erm tyB ih =>
     replace tyB := tyB.substitution agr.toStatic
     replace erm := ih agr
@@ -315,7 +317,7 @@ lemma Erased.subst_im {Γ} {Δ : Ctx Srt} {A B m m' n s} :
   intro erm tyn
   obtain ⟨_, _, _⟩ := erm.ctx_inv
   apply erm.substitution
-  apply AgreeSubst.wk_im
+  apply AgreeSubst.intro_im
   . asimp; assumption
   . apply AgreeSubst.refl; assumption
 
@@ -327,7 +329,7 @@ lemma Erased.subst_ex {Γ} {Δ1 Δ2 Δ : Ctx Srt} {A B m m' n n' s} :
   intro lw mrg tym tyn
   obtain ⟨_, _, _⟩ := tym.ctx_inv
   apply tym.substitution
-  apply AgreeSubst.wk_ex
+  apply AgreeSubst.intro_ex
   . apply mrg.sym
   . assumption
   . asimp; assumption

@@ -74,8 +74,14 @@ lemma Erased.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m m' ξ} :
     rw[SubstLemmas.upren_up] at ern
     have er := Erased.prj_ex mrg tyC erm ern
     asimp at er; assumption
-  case tt h ih => constructor <;> aesop (rule_sets := [rename])
-  case ff h ih => constructor <;> aesop (rule_sets := [rename])
+  case tt im =>
+    constructor
+    aesop (rule_sets := [rename])
+    apply agr.implicit_image im
+  case ff im =>
+    constructor
+    aesop (rule_sets := [rename])
+    apply agr.implicit_image im
   case ite A _ _ _ _ _ _ _ _  mrg tyA erm ern1 ern2 ihm ihn1 ihn2 =>
     have ⟨s, i, _, tyb⟩ := tyA.ctx_inv
     have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg

@@ -10,7 +10,7 @@ inductive AgreeSubst : (Var -> Tm) -> Ctx -> Ctx -> Prop where
     Γ ⊢ A : .ty i ->
     AgreeSubst σ Γ Γ' ->
     AgreeSubst (up σ) (A :: Γ) (A.[σ] :: Γ')
-  | wk {Γ Γ' A m σ} :
+  | intro {Γ Γ' A m σ} :
     Γ' ⊢ m : A.[σ] ->
     AgreeSubst σ Γ Γ' ->
     AgreeSubst (m .: σ) (A :: Γ) Γ'
@@ -47,7 +47,7 @@ lemma AgreeSubst.has {Γ Γ' A x σ} :
       rw[show A.[σ !> shift 1] = A.[σ].[shift 1] by asimp]
       apply Typed.eweaken <;> try first | rfl | assumption
       apply ih <;> assumption
-  case wk _ _ ih  =>
+  case intro _ _ ih  =>
     cases hs with
     | zero => asimp; assumption
     | succ => asimp; apply ih <;> assumption
@@ -81,7 +81,7 @@ lemma AgreeSubst.wf_cons {Γ Γ' A σ} :
     constructor
     . exact ty
     . apply h1; assumption
-  case wk =>
+  case intro =>
     intro _ h1 h2
     apply h1; assumption
   case conv ty' _ =>
@@ -191,7 +191,7 @@ lemma Typed.subst {Γ A B m n} :
   intro tym tyn
   apply Typed.substitution
   . assumption
-  . apply AgreeSubst.wk
+  . apply AgreeSubst.intro
     asimp; assumption
     exact AgreeSubst.refl tyn.toWf
 
