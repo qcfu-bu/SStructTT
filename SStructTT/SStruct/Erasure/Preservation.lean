@@ -13,8 +13,8 @@ lemma Erased.value_preimage {Γ Δ} {A m1 : SStruct.Tm Srt} {m2} :
   case tup_im => intro vl; cases vl; constructor; aesop
   case tup_ex => intro vl; cases vl; constructor <;> aesop
 
-theorem Erased.step0 {A m1 : SStruct.Tm Srt} {m2 m2'} :
-    [] ;; [] ⊢ m1 ▷ m2 : A -> Step0 m2 m2' ->
+theorem Erased.preserve_drop {A m1 : SStruct.Tm Srt} {m2 m2'} :
+    [] ;; [] ⊢ m1 ▷ m2 : A -> Drop m2 m2' ->
     [] ;; [] ⊢ m1 ▷ m2' : A := by
   generalize e1: [] = Γ
   generalize e2: [] = Δ
@@ -53,12 +53,12 @@ theorem Erased.step0 {A m1 : SStruct.Tm Srt} {m2 m2'} :
     have erm := ihm rfl rfl st
     apply erm.conv eq tyB
 
-theorem Erased.red0 {A m1 : SStruct.Tm Srt} {m2 m2'} :
-    [] ;; [] ⊢ m1 ▷ m2 : A -> Star Step0 m2 m2' ->
+theorem Erased.preserve_drops {A m1 : SStruct.Tm Srt} {m2 m2'} :
+    [] ;; [] ⊢ m1 ▷ m2 : A -> Drops m2 m2' ->
     [] ;; [] ⊢ m1 ▷ m2' : A := by
   intro erm rd; induction rd
   case R => assumption
-  case SE st ih => apply ih.step0 st
+  case SE st ih => apply ih.preserve_drop st
 
 theorem Erased.preservation1 {A m1 : SStruct.Tm Srt} {m2 m2'} :
     [] ;; [] ⊢ m1 ▷ m2 : A -> m2 ~>> m2' ->
@@ -68,22 +68,19 @@ theorem Erased.preservation1 {A m1 : SStruct.Tm Srt} {m2 m2'} :
   intro ty st; induction ty generalizing m2'
   case var =>
     rcases st with ⟨rd, st⟩
-    rw[Red0.var_inv rd] at st
-    cases st
+    rw[rd.var_inv] at st; cases st
   case lam_im =>
     rcases st with ⟨rd, st⟩
-    rw[Red0.lam_inv rd] at st
-    cases st
+    rw[rd.lam_inv] at st; cases st
   case lam_ex =>
     rcases st with ⟨rd, st⟩
-    rw[Red0.lam_inv rd] at st
-    cases st
+    rw[rd.lam_inv] at st; cases st
   case app_im m' n s erm tyn ih =>
     subst_vars
     rcases st with ⟨rd, st⟩
-    have ⟨mx, nx, e, rd1, rd2⟩ := Red0.app_inv rd
-    replace erm := erm.red0 rd1
-    have e := Red0.null_inv rd2
+    have ⟨mx, nx, e, rd1, rd2⟩ := rd.app_inv
+    replace erm := erm.preserve_drops rd1
+    have e := rd2.null_inv
     subst_vars; cases st
     case app_M st =>
       have ⟨m, st, erm⟩ := ih rfl rfl (Step.intro rd1 st)
@@ -106,9 +103,9 @@ theorem Erased.preservation1 {A m1 : SStruct.Tm Srt} {m2 m2'} :
   case app_ex m1 m1' n1 n1' s mrg erm ern ihm ihn =>
     subst_vars; cases mrg
     rcases st with ⟨rd, st⟩
-    have ⟨mx, nx, e, rd1, rd2⟩ := Red0.app_inv rd
-    replace erm := erm.red0 rd1
-    replace ern := ern.red0 rd2
+    have ⟨mx, nx, e, rd1, rd2⟩ := rd.app_inv
+    replace erm := erm.preserve_drops rd1
+    replace ern := ern.preserve_drops rd2
     subst_vars; cases st
     case app_M st' =>
       have ⟨m2, st, erm⟩ := ihm rfl rfl (Step.intro rd1 st')
@@ -146,9 +143,9 @@ theorem Erased.preservation1 {A m1 : SStruct.Tm Srt} {m2 m2'} :
   case tup_im m m' n s _ tyS erm tyn ih =>
     subst_vars
     rcases st with ⟨rd, st⟩
-    have ⟨mx, nx, e, rd1, rd2⟩ := Red0.tup_inv rd
-    replace erm := erm.red0 rd1
-    have e := Red0.null_inv rd2
+    have ⟨mx, nx, e, rd1, rd2⟩ := rd.tup_inv
+    replace erm := erm.preserve_drops rd1
+    have e := rd2.null_inv
     subst_vars; cases st
     case tup_M st' =>
       have ⟨m1, st, erm1⟩ := ih rfl rfl (Step.intro rd1 st')
@@ -168,9 +165,9 @@ theorem Erased.preservation1 {A m1 : SStruct.Tm Srt} {m2 m2'} :
     have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
     subst_vars; cases mrg
     rcases st with ⟨rd, st⟩
-    have ⟨mx, nx, e, rd1, rd2⟩ := Red0.tup_inv rd
-    replace erm := erm.red0 rd1
-    replace ern := ern.red0 rd2
+    have ⟨mx, nx, e, rd1, rd2⟩ := rd.tup_inv
+    replace erm := erm.preserve_drops rd1
+    replace ern := ern.preserve_drops rd2
     subst_vars; cases st
     case tup_M st =>
       have ⟨m1, st, erm1⟩ := ihm rfl rfl (Step.intro rd1 st)
@@ -194,8 +191,8 @@ theorem Erased.preservation1 {A m1 : SStruct.Tm Srt} {m2 m2'} :
   case prj_im C m m' n n' s sA sB sC iC mrg tyC erm ern ihm _ =>
     subst_vars; cases mrg
     rcases st with ⟨rd, st⟩
-    have ⟨mx, e, rd1⟩ := Red0.prj_inv rd
-    replace erm := erm.red0 rd1
+    have ⟨mx, e, rd1⟩ := rd.prj_inv
+    replace erm := erm.preserve_drops rd1
     subst_vars; cases st
     case prj_M st' =>
       have ⟨m1, st, erm1⟩ := ihm rfl rfl (Step.intro rd1 st')
@@ -228,8 +225,8 @@ theorem Erased.preservation1 {A m1 : SStruct.Tm Srt} {m2 m2'} :
   case prj_ex C m m' n n' s sA sB sC iC mrg tyC erm ern ihm ihn =>
     subst_vars; cases mrg
     rcases st with ⟨rd, st⟩
-    have ⟨mx, e, rd1⟩ := Red0.prj_inv rd
-    replace erm := erm.red0 rd1
+    have ⟨mx, e, rd1⟩ := rd.prj_inv
+    replace erm := erm.preserve_drops rd1
     subst_vars; cases st
     case prj_M st' =>
       have ⟨m1, st, erm1⟩ := ihm rfl rfl (Step.intro rd1 st')
@@ -263,17 +260,15 @@ theorem Erased.preservation1 {A m1 : SStruct.Tm Srt} {m2 m2'} :
           apply AgreeSubst.refl Wf.nil
   case tt =>
     rcases st with ⟨rd, st⟩
-    rw[Red0.tt_inv rd] at st
-    cases st
+    rw[rd.tt_inv] at st; cases st
   case ff =>
     rcases st with ⟨rd, st⟩
-    rw[Red0.ff_inv rd] at st
-    cases st
+    rw[rd.ff_inv] at st; cases st
   case ite A m m' n1 n1' n2 n2' _ _ mrg tyA erm ern1 ern2 ihm ihn1 ihn2 =>
     subst_vars; cases mrg
     rcases st with ⟨rd, st⟩
-    have ⟨mx, e, rd1⟩ := Red0.ite_inv rd
-    replace erm := erm.red0 rd1
+    have ⟨mx, e, rd1⟩ := rd.ite_inv
+    replace erm := erm.preserve_drops rd1
     subst_vars; cases st
     case ite_M st =>
       have ⟨m1, st, erm1⟩ := ihm rfl rfl (Step.intro rd1 st)
@@ -317,7 +312,7 @@ theorem Erased.preservation1 {A m1 : SStruct.Tm Srt} {m2 m2'} :
         apply Static.AgreeSubst.refl
         apply tyn.toWf
     rcases st with ⟨rd, st⟩
-    have e := Red0.rw_inv rd; subst_vars
+    have e := rd.rw_inv; subst_vars
     cases st
     exists m; and_intros
     . constructor
@@ -331,7 +326,7 @@ theorem Erased.preservation1 {A m1 : SStruct.Tm Srt} {m2 m2'} :
     cases rd
     case R => cases st
     case SE rd st0 =>
-      replace rd := Red0.drop_inv rd st0
+      replace rd := Drops.drop_inv rd st0
       apply ihn; constructor <;> assumption
   case conv eq _ tyB ihm =>
     subst_vars
