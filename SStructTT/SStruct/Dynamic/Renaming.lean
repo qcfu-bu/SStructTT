@@ -276,11 +276,6 @@ lemma Typed.weaken_im {Γ} {Δ : Ctx Srt} {A B m s i} :
   . assumption
   . exact AgreeRen.refl tym.toWf
 
-lemma Wf.implicit {Γ} {Δ : Ctx Srt} : Γ ;; Δ ⊢ -> Γ ;; Δ.toImplicit ⊢ := by
-  intro wf; induction wf <;> try trivial
-  case nil => simp; constructor
-  case cons => simp; constructor <;> aesop
-
 lemma Typed.weaken_ex {Γ} {Δ : Ctx Srt} {A B m s i} :
     Γ ;; Δ ⊢ m : A ->
     Γ ⊢ B : .srt s i ->
@@ -386,11 +381,3 @@ lemma Typed.drop_spine {Γ} {Δ1 Δ3 : Ctx Srt} {A m} :
     . apply hs.lower
     . apply h
     . assumption
-
-lemma Typed.drop_merge {Γ} {Δ1 Δ2 Δ3 : Ctx Srt} {A m s} :
-    Merge Δ1 Δ2 Δ3 -> Lower Δ2 s -> s ∈ ord.weaken_set ->
-    Γ ;; Δ1 ⊢ m : A ->
-    Γ ;; Δ3 ⊢ m : A := by
-  intro mrg lw h tym
-  have sp := mrg.toSpine lw h
-  apply tym.drop_spine sp

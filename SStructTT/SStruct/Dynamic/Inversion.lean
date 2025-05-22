@@ -25,7 +25,7 @@ lemma Typed.lam_im_inv' {Γ} {Δ : Ctx Srt} {A T m s} :
   case drop mrg lw h tyn ihn =>
     have ⟨B, sA, tym, eq2⟩ := ihn e
     exists B, sA; and_intros
-    . apply Typed.drop_merge (mrg.sym.im _ _) _ h tym
+    . apply Typed.drop (mrg.im _ _) _ h tym
       constructor; assumption
     . assumption
   case conv eq1 _ _ ih =>
@@ -50,7 +50,7 @@ lemma Typed.lam_ex_inv' {Γ} {Δ : Ctx Srt} {A T m s} :
   case drop mrg lw h tyn ihn =>
     have ⟨B, sA, tym, eq2⟩ := ihn e
     exists B, sA; and_intros
-    . apply Typed.drop_merge (mrg.sym.left _ _) _ h tym
+    . apply Typed.drop (mrg.right _ _) _ h tym
       constructor; assumption
     . assumption
   case conv eq1 _ _ ih =>
@@ -76,7 +76,7 @@ lemma Typed.tup_im_inv' {Γ} {Δ : Ctx Srt} {T m n s} :
   case drop mrg lw h tyn ihn =>
     have ⟨A, B, tym, tyn, eq2⟩ := ihn e
     exists A, B; and_intros
-    . apply Typed.drop_merge mrg.sym _ h tym
+    . apply Typed.drop mrg _ h tym
       assumption
     . assumption
     . assumption
@@ -108,7 +108,7 @@ lemma Typed.tup_ex_inv' {Γ} {Δ : Ctx Srt} {T m n s} :
     exists Δ1, Δ3, A, B; and_intros
     . apply mrg2.sym
     . assumption
-    . apply Typed.drop_merge mrg1 lw h tyn
+    . apply Typed.drop mrg1.sym lw h tyn
     . assumption
   case conv eq1 _ _ ih =>
     have ⟨Δ1, Δ2, A, B, mrg, _, _, eq2⟩ := ih e

@@ -179,6 +179,11 @@ lemma Wf.hasStatic {Γ} {Δ : Ctx Srt} {A x s} :
   intro wf hs; induction wf generalizing x s A <;> try trivial
   cases hs <;> aesop (add safe Static.Has)
 
+lemma Wf.implicit {Γ} {Δ : Ctx Srt} : Γ ;; Δ ⊢ -> Γ ;; Δ.toImplicit ⊢ := by
+  intro wf; induction wf <;> try trivial
+  case nil => simp; constructor
+  case cons => simp; constructor <;> aesop
+
 lemma Wf.has_typed {Γ} {Δ : Ctx Srt} {A x s} :
     Γ ;; Δ ⊢ -> Has Δ x s A -> ∃ i, Γ ⊢ A : .srt s i := by
   intro wf hs; induction hs generalizing Γ
