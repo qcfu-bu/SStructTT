@@ -44,11 +44,11 @@ import SStructTT.SStruct.Dynamic.Preservation
 import SStructTT.SStruct.Dynamic.Progress
 import SStructTT.SStruct.Dynamic.Normalize
 
--- import SStructTT.SStruct.Erasure.Syntax
--- import SStructTT.SStruct.Erasure.Step
--- import SStructTT.SStruct.Erasure.Erased
--- import SStructTT.SStruct.Erasure.Renaming
--- import SStructTT.SStruct.Erasure.Substitution
+import SStructTT.SStruct.Erasure.Syntax
+import SStructTT.SStruct.Erasure.Step
+import SStructTT.SStruct.Erasure.Erased
+import SStructTT.SStruct.Erasure.Renaming
+import SStructTT.SStruct.Erasure.Substitution
 -- import SStructTT.SStruct.Erasure.Inversion
 -- import SStructTT.SStruct.Erasure.Preservation
 -- import SStructTT.SStruct.Erasure.Progress

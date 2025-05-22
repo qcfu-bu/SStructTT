@@ -32,13 +32,12 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
       have ⟨A, m, r, e⟩ := erm.lam_preimage; subst e
       cases r with
       | im =>
-        replace ⟨sA, erm, e⟩ := erm.lam_im_inv; subst e
+        replace ⟨sA, erm⟩ := erm.lam_im_inv
         exists m.[n/]; and_intros
         . aesop
-        . simp at e0; subst e0
-          apply erm.subst_im tyn
+        . apply erm.subst_im tyn
       | ex =>
-        have ⟨_, _, _, _, _, eq⟩ := erm.toDynamic.lam_ex_inv'
+        have ⟨_, _, _, eq⟩ := erm.toDynamic.lam_ex_inv'
         have ⟨e, _⟩ := Static.Conv.pi_inj eq
         contradiction
   case app_ex m1 m1' n1 n1' s mrg erm ern ihm ihn =>
@@ -63,7 +62,7 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
         . assumption
         . assumption
         . apply tyB.subst ern.toStatic
-    case beta vl' e0 =>
+    case beta vl' =>
       have ⟨A, m, r, e⟩ := erm.lam_preimage; subst e
       cases r with
       | im =>
@@ -71,19 +70,11 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
         have ⟨e, _⟩ := Static.Conv.pi_inj eq
         contradiction
       | ex =>
-        replace ⟨rA, sA, rs, erm⟩ := erm.lam_ex_inv
+        replace ⟨sA, erm⟩ := erm.lam_ex_inv
         have vl := ern.value_preimage vl'
-        cases rs with
-        | extend =>
-          exists m.[n1/]; and_intros
-          . constructor; aesop
-          . simp at e0; subst e0
-            apply erm.subst_ex (Lower.nil sA) Merge.nil ern
-        | weaken =>
-          exists m.[n1/]; and_intros
-          . constructor; aesop
-          . simp at e0; subst e0
-            apply erm.subst_im ern.toStatic
+        exists m.[n1/]; and_intros
+        . constructor; aesop
+        . apply erm.subst_ex (Lower.nil sA) Merge.nil ern
   case tup_im m m' n s _ tyS erm tyn ih =>
     subst_vars; cases st
     case tup_M st' =>
@@ -122,7 +113,7 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
       constructor
       . assumption
       . constructor <;> aesop
-  case prj_im C m m' n n' rA s sA sB sC iC c rs mrg tyC erm ern ihm _ =>
+  case prj_im C m m' n n' s sA sB sC iC mrg tyC erm ern ihm _ =>
     subst_vars; cases mrg; cases st
     case prj_M st' =>
       have ⟨m1, st, erm1⟩ := ihm rfl rfl st'
@@ -131,9 +122,9 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
       . apply Erased.conv
         . apply Static.Conv.subst1
           apply (Star.conv (st.toStatic erm.toStatic)).sym
-        . apply Erased.prj_im rs Merge.nil tyC erm1 ern
+        . apply Erased.prj_im Merge.nil tyC erm1 ern
         . apply tyC.subst erm.toStatic
-    case prj_elim m1 m2 m1' m2' s vl' e1 e2 =>
+    case prj_elim m1 m2 s vl' =>
       have ⟨m1, m2, r, e⟩ := erm.tup_preimage; subst_vars
       cases r with
       | im =>
@@ -145,19 +136,14 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
         exists n.[m2,m1/]; and_intros
         . aesop
         . apply ern.substitution
-          apply AgreeSubst.wk_im erm2
-          cases rs with
-          | extend =>
-            apply AgreeSubst.wk_ex Merge.nil; constructor; asimp; assumption
-            apply AgreeSubst.refl Wf.nil
-          | weaken =>
-            apply AgreeSubst.wk_im; asimp; apply erm1.toStatic
-            apply AgreeSubst.refl Wf.nil
+          apply AgreeSubst.intro_im erm2
+          apply AgreeSubst.intro_ex Merge.nil; constructor; asimp; assumption
+          apply AgreeSubst.refl Wf.nil
       | ex =>
         have ⟨_, _, _, _, _, _, _, eq⟩ := erm.toDynamic.tup_ex_inv'
         have ⟨e, _⟩ := Static.Conv.sig_inj eq
         contradiction
-  case prj_ex C m m' n n' rA rB s sA sB sC iC c1 c2 rs1 rs2 mrg tyC erm ern ihm ihn =>
+  case prj_ex C m m' n n' s sA sB sC iC mrg tyC erm ern ihm ihn =>
     subst_vars; cases mrg; cases st
     case prj_M st' =>
       have ⟨m1, st, erm1⟩ := ihm rfl rfl st'
@@ -166,9 +152,9 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
       . apply Erased.conv
         . apply Static.Conv.subst1
           apply (Star.conv (st.toStatic erm.toStatic)).sym
-        . apply Erased.prj_ex rs1 rs2 Merge.nil tyC erm1 ern
+        . apply Erased.prj_ex Merge.nil tyC erm1 ern
         . apply tyC.subst erm.toStatic
-    case prj_elim m1' m2' s vl' e1 e2 =>
+    case prj_elim m1 m2 s vl' =>
       have ⟨m1, m2, r, e⟩ := erm.tup_preimage; subst_vars
       cases r with
       | im =>
@@ -186,27 +172,9 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
         exists n.[m2,m1/]; and_intros
         . aesop
         . apply ern.substitution
-          cases rs1 with
-          | extend =>
-            cases rs2 with
-            | extend =>
-              apply AgreeSubst.wk_ex Merge.nil; constructor; assumption
-              apply AgreeSubst.wk_ex Merge.nil; constructor; asimp; assumption
-              apply AgreeSubst.refl Wf.nil
-            | weaken =>
-              apply AgreeSubst.wk_im; apply erm2.toStatic
-              apply AgreeSubst.wk_ex Merge.nil; constructor; asimp; assumption
-              apply AgreeSubst.refl Wf.nil
-          | weaken =>
-            cases rs2 with
-            | extend =>
-              apply AgreeSubst.wk_ex Merge.nil; constructor; assumption
-              apply AgreeSubst.wk_im; asimp; apply erm1.toStatic
-              apply AgreeSubst.refl Wf.nil
-            | weaken =>
-              apply AgreeSubst.wk_im; apply erm2.toStatic
-              apply AgreeSubst.wk_im; asimp; apply erm1.toStatic
-              apply AgreeSubst.refl Wf.nil
+          apply AgreeSubst.intro_ex Merge.nil; constructor; assumption
+          apply AgreeSubst.intro_ex Merge.nil; constructor; asimp; assumption
+          apply AgreeSubst.refl Wf.nil
   case ite A m m' n1 n1' n2 n2' _ _ mrg tyA erm ern1 ern2 ihm ihn1 ihn2 =>
     subst_vars; cases mrg; cases st
     case ite_M st =>
@@ -246,8 +214,8 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
       rw[show .srt s i = (.srt s i).[n,b/] by asimp]
       apply Static.Typed.substitution
       . assumption
-      . apply Static.AgreeSubst.wk; asimp; assumption
-        apply Static.AgreeSubst.wk; asimp; assumption
+      . apply Static.AgreeSubst.intro; asimp; assumption
+        apply Static.AgreeSubst.intro; asimp; assumption
         apply Static.AgreeSubst.refl
         apply tyn.toWf
     cases st
@@ -257,6 +225,10 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
       . apply Static.Conv.compat; assumption
       . assumption
       . assumption
+  case drop mrg lw h erm ern ihm ihn =>
+    subst_vars; cases mrg; cases st
+    apply ihn <;> try simp
+    sorry
   case conv eq _ tyB ihm =>
     subst_vars
     have ⟨m', st', erm'⟩ := ihm rfl rfl st
