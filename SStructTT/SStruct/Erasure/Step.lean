@@ -5,14 +5,10 @@ open ARS
 namespace SStruct.Erasure
 variable {Srt : Type}
 
-@[simp]def Ctrl.ctrl : Ctrl -> Tm Srt -> Tm Srt
-  | .keep => id
-  | .drop => fun _ => .null
-
 @[scoped aesop safe [constructors]]
 inductive Value : Tm Srt -> Prop where
-  | lam {m s c} :
-    Value (.lam m c s)
+  | lam {m s} :
+    Value (.lam m s)
   | tup {m n s} :
     Value m ->
     Value n ->
@@ -30,24 +26,21 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
   | app_N m {n n'} :
     Step n n' ->
     Step (.app m n) (.app m n')
-  | beta m n n' c s :
+  | beta m n s :
     Value n ->
-    c.ctrl n = n' ->
-    Step (.app (.lam m c s) n) m.[n'/]
+    Step (.app (.lam m s) n) m.[n/]
   | tup_M {m m'} n s :
     Step m m' ->
     Step (.tup m n s) (.tup m' n s)
   | tup_N m {n n'} s :
     Step n n' ->
     Step (.tup m n s) (.tup m n' s)
-  | prj_M {m m'} n c1 c2 :
+  | prj_M {m m'} n :
     Step m m' ->
-    Step (.prj m n c1 c2) (.prj m' n c1 c2)
-  | prj_elim {m1 m2 m1' m2'} n c1 c2 {s} :
+    Step (.prj m n) (.prj m' n)
+  | prj_elim {m1 m2} n {s} :
     Value (.tup m1 m2 s) ->
-    c1.ctrl m1 = m1' ->
-    c2.ctrl m2 = m2' ->
-    Step (.prj (.tup m1 m2 s) n c1 c2) n.[m2',m1'/]
+    Step (.prj (.tup m1 m2 s) n) n.[m2,m1/]
   | ite_M {m m'} n1 n2 :
     Step m m' ->
     Step (.ite m n1 n2) (.ite m' n1 n2)
@@ -57,6 +50,8 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
     Step (.ite .ff n1 n2) n2
   | rw_elim m :
     Step (.rw m) m
+  | drop_elim m n :
+    Step (.drop m n) n
 
 notation:50 m:50 " ~>> " n:50 => Step m n
 notation:50 m:50 " ~>>* " n:50 => ARS.Star Step m n

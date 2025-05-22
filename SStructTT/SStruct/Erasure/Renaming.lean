@@ -99,7 +99,12 @@ lemma Erased.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m m' ξ} :
          by asimp] at erm
     have := Erased.rw tyA erm tyn
     asimp at this; assumption
-  case drop => sorry
+  case drop mrg lw h erm ern ihm ihn =>
+    have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg
+    replace erm := ihm agr1; asimp at erm
+    replace ern := ihn agr2; asimp at ern
+    have lw' := agr1.lower_image lw
+    apply Erased.drop mrg lw' h erm ern
   case conv eq erm tyB ih =>
     replace tyB := tyB.renaming agr.toStatic
     replace erm := ih agr

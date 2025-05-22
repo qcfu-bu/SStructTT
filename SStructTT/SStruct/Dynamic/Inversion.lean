@@ -22,7 +22,7 @@ lemma Typed.lam_im_inv' {Γ} {Δ : Ctx Srt} {A T m s} :
   case lam_im B _ _ sA _ _ _ _ _ =>
     cases e; exists B, sA; aesop
   case lam_ex => cases e
-  case drop mrg lw h tym tyn ihm ihn =>
+  case drop mrg lw h tyn ihn =>
     have ⟨B, sA, tym, eq2⟩ := ihn e
     exists B, sA; and_intros
     . apply Typed.drop_merge (mrg.sym.im _ _) _ h tym
@@ -47,7 +47,7 @@ lemma Typed.lam_ex_inv' {Γ} {Δ : Ctx Srt} {A T m s} :
   case lam_im => cases e
   case lam_ex B _ _ sA _ _ _ _ _ =>
     cases e; exists B, sA; aesop
-  case drop mrg lw h tym tyn ihm ihn =>
+  case drop mrg lw h tyn ihn =>
     have ⟨B, sA, tym, eq2⟩ := ihn e
     exists B, sA; and_intros
     . apply Typed.drop_merge (mrg.sym.left _ _) _ h tym
@@ -73,7 +73,7 @@ lemma Typed.tup_im_inv' {Γ} {Δ : Ctx Srt} {T m n s} :
   case tup_im A B _ _ _ _ _ _ _ _ =>
     cases e; exists A, B; aesop
   case tup_ex => cases e
-  case drop mrg lw h tym tyn ihm ihn =>
+  case drop mrg lw h tyn ihn =>
     have ⟨A, B, tym, tyn, eq2⟩ := ihn e
     exists A, B; and_intros
     . apply Typed.drop_merge mrg.sym _ h tym
@@ -102,7 +102,7 @@ lemma Typed.tup_ex_inv' {Γ} {Δ : Ctx Srt} {T m n s} :
   case tup_im => cases e
   case tup_ex Δ1 Δ2 Δ A B _ _ _ _ _ _ _ _ _ _ =>
     cases e; exists Δ1, Δ2, A, B; aesop
-  case drop mrg lw h tym tyn ihm ihn =>
+  case drop mrg lw h tyn ihn =>
     have ⟨Δ1, Δ2, A, B, mrg', tym, tyn, eq2⟩ := ihn e
     have ⟨Δ3, mrg1, mrg2⟩ := mrg.sym.split mrg'.sym
     exists Δ1, Δ3, A, B; and_intros

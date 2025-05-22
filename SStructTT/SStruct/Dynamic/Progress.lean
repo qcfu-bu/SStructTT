@@ -19,7 +19,7 @@ lemma Typed.pi_canonical {A B C m : Tm Srt} {r s} :
   case lam_ex A B m _ _ _ _ _ _ _ =>
     have ⟨_, _, eqA, eqB⟩ := Conv.pi_inj eq
     subst_vars; exists A, m
-  case drop mrg _ _ _ _ _ _ =>
+  case drop mrg _ _ _ _ =>
     subst_vars; cases mrg; aesop
   case conv ih =>
     apply ih <;> try assumption
@@ -38,7 +38,7 @@ lemma Typed.sig_canonical {A B C m : Tm Srt} {r s} :
   case tup_ex A0 B0 m n _ _ _ _ _ _ _ _ =>
     have ⟨_, _, _, _⟩ := Conv.sig_inj eq
     subst_vars; exists m, n
-  case drop mrg _ _ _ _ _ _ =>
+  case drop mrg _ _ _ _ =>
     subst_vars; cases mrg; aesop
   case conv ihm =>
     apply ihm <;> try assumption
@@ -52,7 +52,7 @@ lemma Typed.bool_canonical {C m : Tm Srt} :
   all_goals try false_conv
   case tt => simp
   case ff => simp
-  case drop mrg _ _ _ _ _ _ =>
+  case drop mrg _ _ _ _ =>
     subst_vars; cases mrg; aesop
   case conv ihm =>
     apply ihm <;> try assumption
@@ -64,7 +64,7 @@ lemma Typed.idn_canonical {A C m a b : Tm Srt} :
   generalize e2: [] = Δ
   intro ty eq vl; induction ty <;> try trivial
   all_goals try false_conv
-  case drop mrg _ _ _ _ _ _ =>
+  case drop mrg _ _ _ _ =>
     subst_vars; cases mrg; aesop
   case conv ihm =>
     apply ihm <;> try assumption

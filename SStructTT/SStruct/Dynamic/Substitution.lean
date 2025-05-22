@@ -329,12 +329,11 @@ lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
          by asimp] at tym
     have := Typed.rw tyA tym tyn
     asimp at this; assumption
-  case drop Δ1 Δ2 Δ3 m n A B s i mrg lw h tym tyn ihm ihn =>
+  case drop Δ1 Δ2 Δ3 n A s i mrg lw h tyn ihn =>
     have ⟨Δ1', Δ2', mrg', agr1, agr2⟩ := agr.split mrg
     replace lw := agr1.lower_image lw
-    specialize ihm agr1
     specialize ihn agr2
-    apply Typed.drop mrg' lw h ihm ihn
+    apply Typed.drop mrg' lw h ihn
   case conv eq tym tyB ih =>
     replace tyB := tyB.substitution agr.toStatic
     replace tym := ih agr
