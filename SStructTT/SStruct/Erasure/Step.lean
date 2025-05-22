@@ -198,3 +198,91 @@ lemma Drops.null_inv {t : Tm Srt} :
   case R => simp
   case SE st ih =>
     subst_vars; cases st
+
+lemma Drops.app {m m' n n' : Tm Srt} :
+    Drops m m' -> Drops n n' -> Drops (.app m n) (.app m' n') := by
+  intro rm rn
+  apply (@Star.trans _ _ (.app m' n))
+  apply Star.hom _ _ rm; aesop
+  apply Star.hom _ _ rn; aesop
+
+lemma Drops.tup {m m' n n' : Tm Srt} {s} :
+    Drops m m' -> Drops n n' -> Drops (.tup m n s) (.tup m' n' s) := by
+  intro rm rn
+  apply (@Star.trans _ _ (.tup m' n s))
+  apply Star.hom _ _ rm; aesop
+  apply Star.hom _ _ rn; aesop
+
+lemma Drops.prj {m m' n : Tm Srt} :
+    Drops m m' -> Drops (.prj m n) (.prj m' n) := by
+  intro rm; apply Star.hom _ _ rm; aesop
+
+lemma Drops.ite {m m' n1 n2 : Tm Srt} :
+    Drops m m' -> Drops (.ite m n1 n2) (.ite m' n1 n2) := by
+  intro rm; apply Star.hom _ _ rm; aesop
+
+lemma Step.app_M {m m' n : Tm Srt} :
+    m ~>> m' -> .app m n ~>> .app m' n := by
+  intro st
+  rcases st with ⟨rd, st⟩
+  constructor
+  . apply Drops.app rd Star.R
+  . constructor; assumption
+
+lemma Step.app_N {m n n' : Tm Srt} :
+    n ~>> n' -> .app m n ~>> .app m n' := by
+  intro st
+  rcases st with ⟨rd, st⟩
+  constructor
+  . apply Drops.app Star.R rd
+  . constructor; assumption
+
+lemma Step.tup_M {m m' n : Tm Srt} {s} :
+    m ~>> m' -> .tup m n s ~>> .tup m' n s := by
+  intro st
+  rcases st with ⟨rd, st⟩
+  constructor
+  . apply Drops.tup rd Star.R
+  . constructor; assumption
+
+lemma Step.tup_N {m n n' : Tm Srt} {s} :
+    n ~>> n' -> .tup m n s ~>> .tup m n' s := by
+  intro st
+  rcases st with ⟨rd, st⟩
+  constructor
+  . apply Drops.tup Star.R rd
+  . constructor; assumption
+
+lemma Step.prj_M {m m' n : Tm Srt} :
+    m ~>> m' -> .prj m n ~>> .prj m' n := by
+  intro st
+  rcases st with ⟨rd, st⟩
+  constructor
+  . apply Drops.prj rd
+  . constructor; assumption
+
+lemma Step.ite_M {m m' n1 n2 : Tm Srt} :
+    m ~>> m' -> .ite m n1 n2 ~>> .ite m' n1 n2 := by
+  intro st
+  rcases st with ⟨rd, st⟩
+  constructor
+  . apply Drops.ite rd
+  . constructor; assumption
+
+lemma Step.drop {m n n' : Tm Srt} :
+    n ~>> n' -> .drop m n ~>> n' := by
+  intro st
+  rcases st with ⟨rd, st⟩
+  cases rd
+  case R =>
+    constructor
+    . apply Star.one
+      constructor
+    . assumption
+  case SE rd st0 =>
+    have rd := Star.SE rd st0
+    constructor
+    . apply Star.trans _ rd
+      apply Star.one
+      constructor
+    . assumption
