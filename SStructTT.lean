@@ -49,10 +49,10 @@ import SStructTT.SStruct.Erasure.Step
 import SStructTT.SStruct.Erasure.Erased
 import SStructTT.SStruct.Erasure.Renaming
 import SStructTT.SStruct.Erasure.Substitution
--- import SStructTT.SStruct.Erasure.Inversion
--- import SStructTT.SStruct.Erasure.Preservation
--- import SStructTT.SStruct.Erasure.Progress
--- import SStructTT.SStruct.Erasure.Normalize
+import SStructTT.SStruct.Erasure.Inversion
+import SStructTT.SStruct.Erasure.Preservation
+import SStructTT.SStruct.Erasure.Progress
+import SStructTT.SStruct.Erasure.Normalize
 
 -- import SStructTT.SStruct.Runtime.Heap
 -- import SStructTT.SStruct.Runtime.Resolution
