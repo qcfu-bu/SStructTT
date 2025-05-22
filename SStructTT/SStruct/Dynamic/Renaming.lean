@@ -240,12 +240,11 @@ lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
          by asimp] at tym
     have := Typed.rw tyA tym tyn
     asimp at this; assumption
-  case drop mrg lw h _ _ ihm ihn =>
+  case drop mrg lw h _ ihn =>
     have ⟨Δ1', Δ2', mrg', agr1, agr2⟩ := agr.split mrg
-    replace ihm := ihm agr1
     replace ihn := ihn agr2
     replace lw :=  agr1.lower_image lw
-    apply Typed.drop mrg' lw h ihm ihn
+    apply Typed.drop mrg' lw h ihn
   case conv eq tym tyB ih =>
     replace tyB := tyB.renaming agr.toStatic
     replace tym := ih agr
@@ -282,9 +281,6 @@ lemma Typed.weaken_ex {Γ} {Δ : Ctx Srt} {A B m s i} :
   replace tym := tym.weaken_im tyB
   have ⟨i, wf, tyB⟩ := tym.ctx_inv
   apply Typed.drop mrg.sym _ h
-  . apply Typed.var
-    constructor; assumption; apply wf.implicit
-    constructor; apply Lower.implicit
   . assumption
   . constructor; simp; apply Lower.implicit
 
@@ -378,7 +374,6 @@ lemma Typed.drop_spine {Γ} {Δ1 Δ3 : Ctx Srt} {A m} :
     apply Typed.drop mrg.sym
     . apply hs.lower
     . apply h
-    . apply tyn
     . assumption
 
 lemma Typed.drop_merge {Γ} {Δ1 Δ2 Δ3 : Ctx Srt} {A m s} :

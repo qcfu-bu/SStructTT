@@ -1,4 +1,4 @@
-import SStructTT.SStruct.Dynamic.Typed
+import SStructTT.SStruct.Dynamic.Renaming
 import SStructTT.SStruct.Erasure.Syntax
 
 namespace SStruct.Erasure
@@ -125,6 +125,33 @@ lemma Erased.ctx_inv {Γ} {Δ : Ctx Srt} {A B m m' r s} :
     A :: Γ ;; A :⟨r, s⟩ Δ ⊢ m ▷ m' : B -> ∃ i, Γ ;; Δ ⊢ ∧ Γ ⊢ A : .srt s i := by
   intro ty; apply ty.toDynamic.ctx_inv
 
+lemma Erased.drop_spine {Γ} {Δ1 Δ3 : Ctx Srt} {A m m'} :
+    Spine Δ1 Δ3 ->
+    Γ ;; Δ1 ⊢ m ▷ m' : A ->
+    ∃ m', Γ ;; Δ3 ⊢ m ▷ m' : A := by
+  intro sp erm; induction sp
+  case refl => aesop
+  case cons Δ1 Δ2 Δ3 x s A mrg h hs sp ih =>
+    replace ⟨m', ih⟩ := ih
+    have ⟨wf1, wf2⟩ := ih.toWf.merge mrg
+    have ⟨i, tyA⟩ := wf1.has_typed hs
+    have ern : Γ ;; Δ2 ⊢ .var x ▷ .var x : A := by
+      constructor <;> assumption
+    exists .drop (.var x) m'
+    apply Erased.drop mrg.sym
+    . apply hs.lower
+    . apply h
+    . assumption
+    . assumption
+
+lemma Erased.drop_merge {Γ} {Δ1 Δ2 Δ3 : Ctx Srt} {A m m' s} :
+    Merge Δ1 Δ2 Δ3 -> Lower Δ2 s -> s ∈ ord.weaken_set ->
+    Γ ;; Δ1 ⊢ m ▷ m' : A ->
+    ∃ m', Γ ;; Δ3 ⊢ m ▷ m' : A := by
+  intro mrg lw h tym
+  have sp := mrg.toSpine lw h
+  apply tym.drop_spine sp
+
 end SStruct.Erasure
 
 namespace SStruct.Dynamic
@@ -183,11 +210,9 @@ lemma Typed.toErased {Γ} {Δ : Ctx Srt} {A m} :
   case rw ihm =>
     have ⟨m', erm⟩ := ihm
     exists (.rw m'); constructor <;> aesop
-  case drop ihm ihn =>
-    have ⟨m', erm⟩ := ihm
+  case drop mrg lw h tyn ihn =>
     have ⟨n', ern⟩ := ihn
-    exists .drop m' n'
-    constructor <;> aesop
+    apply ern.drop_merge mrg.sym lw h
   case conv ihm =>
     have ⟨m', erm⟩ := ihm
     exists m'; constructor <;> assumption

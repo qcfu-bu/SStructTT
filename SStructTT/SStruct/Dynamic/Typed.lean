@@ -85,12 +85,11 @@ inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop 
     Γ ⊢ n : .idn B a b ->
     Typed Γ Δ (.rw A m n) A.[n,b/]
 
-  | drop {Γ Δ1 Δ2 Δ3 m n A B s} :
+  | drop {Γ Δ1 Δ2 Δ3 n A s} :
     Merge Δ1 Δ2 Δ3 ->
     Lower Δ1 s -> s ∈ ord.weaken_set ->
-    Typed Γ Δ1 m A ->
-    Typed Γ Δ2 n B ->
-    Typed Γ Δ3 n B
+    Typed Γ Δ2 n A ->
+    Typed Γ Δ3 n A
 
   | conv {Γ Δ A B m s i} :
     A === B ->
@@ -168,8 +167,8 @@ lemma Typed.toWf {Γ} {Δ : Ctx Srt} {A m} :
     apply (Wf.merge mrg ih1).right
   case ite mrg _ _ _ _ ih1 ih2 _ =>
     apply (Wf.merge mrg ih1).right
-  case drop mrg _ _ _ _ ih1 ih2 =>
-    apply (Wf.merge mrg ih1).right
+  case drop mrg _ _ _ ih =>
+    apply (Wf.merge mrg.sym ih).right
 
 lemma Wf.toStatic {Γ} {Δ : Ctx Srt} : Γ ;; Δ ⊢ -> Γ ⊢ := by
   intro wf; induction wf
