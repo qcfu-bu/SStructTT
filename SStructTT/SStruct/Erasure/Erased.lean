@@ -5,17 +5,6 @@ namespace SStruct.Erasure
 open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-@[scoped aesop safe [constructors]]
-inductive Weaken : Ctx Srt -> Ctx Srt -> Prop where
-  | nil : Weaken [] []
-  | cons {Δ1 Δ2} A r s :
-    Weaken Δ1 Δ2 ->
-    Weaken (A :⟨r, s⟩ Δ1) (A :⟨r, s⟩ Δ2)
-  | weak {Δ1 Δ2} A r s :
-    s ∈ ord.weaken_set ->
-    Weaken Δ1 Δ2 ->
-    Weaken (A :⟨r, s⟩ Δ1) (A :⟨.ex, s⟩ Δ2)
-
 inductive Erased :
   Static.Ctx Srt -> Dynamic.Ctx Srt ->
   SStruct.Tm Srt -> Erasure.Tm Srt ->
@@ -79,12 +68,12 @@ where
 
   | tt {Γ Δ} :
     Wf Γ Δ ->
-    Δ.Forall (∃ A s, . = (A, .im, s)) ->
+    Lower Δ ord.e ->
     Erased Γ Δ .tt .tt .bool
 
   | ff {Γ Δ} :
     Wf Γ Δ ->
-    Δ.Forall (∃ A s, . = (A, .im, s)) ->
+    Lower Δ ord.e ->
     Erased Γ Δ .ff .ff .bool
 
   | ite {Γ Δ1 Δ2 Δ A m m' n1 n1' n2 n2' s i} :
@@ -101,10 +90,12 @@ where
     Γ ⊢ n : .idn B a b ->
     Erased Γ Δ (.rw A m n) (.rw m') A.[n,b/]
 
-  | weak {Γ Δ1 Δ2 ms m m' A} :
-    Weaken Δ1 Δ2 ->
+  | drop {Γ Δ1 Δ2 Δ3 m m' n n' A B s} :
+    Merge Δ1 Δ2 Δ3 ->
+    Lower Δ1 s -> s ∈ ord.weaken_set ->
     Erased Γ Δ1 m m' A ->
-    Erased Γ Δ2 m (.drop ms m') A
+    Erased Γ Δ2 n n' B ->
+    Erased Γ Δ3 n (.drop m' n') B
 
   | conv {Γ Δ A B m m' s i} :
     A === B ->
@@ -115,57 +106,12 @@ where
 notation:50 Γ:50 " ;; " Δ:51 " ⊢ " m:51 " ▷ " m':51 " : " A:51 =>
   Erased Γ Δ m m' A
 
-/-
 lemma Erased.toDynamic {Γ} {Δ : Ctx Srt} {A m m'} :
     Γ ;; Δ ⊢ m ▷ m' : A -> Γ ;; Δ ⊢ m : A := by
   intro ty; induction ty
   all_goals try (constructor <;> assumption)
-  case lam_ex sA _ _ rs _ _ _ ihm =>
-    cases rs with
-    | extend =>
-      constructor
-      apply Dynamic.RSrt.extend sA
-      all_goals aesop
-    | weaken h =>
-      constructor
-      apply Dynamic.RSrt.weaken h
-      all_goals aesop
-  case prj_im sA _ _ _ _ rs _ _ _ _ ihm ihn =>
-    cases rs with
-    | extend =>
-      constructor
-      apply Dynamic.RSrt.extend sA
-      all_goals aesop
-    | weaken h =>
-      constructor
-      apply Dynamic.RSrt.weaken h
-      all_goals aesop
-  case prj_ex sA sB _ _ _ _ rsA rsB _ _ _ _ ihm ihn =>
-    cases rsA with
-    | extend =>
-      cases rsB with
-      | extend =>
-        constructor
-        apply Dynamic.RSrt.extend sA
-        apply Dynamic.RSrt.extend sB
-        all_goals aesop
-      | weaken h =>
-        constructor
-        apply Dynamic.RSrt.extend sA
-        apply Dynamic.RSrt.weaken h
-        all_goals aesop
-    | weaken hA =>
-      cases rsB with
-      | extend =>
-        constructor
-        apply Dynamic.RSrt.weaken hA
-        apply Dynamic.RSrt.extend sB
-        all_goals aesop
-      | weaken hB =>
-        constructor
-        apply Dynamic.RSrt.weaken hA
-        apply Dynamic.RSrt.weaken hB
-        all_goals aesop
+  apply Typed.conv <;> assumption
+
 
 lemma Erased.toStatic {Γ} {Δ : Ctx Srt} {A m m'} :
     Γ ;; Δ ⊢ m ▷ m' : A -> Γ ⊢ m : A := by
@@ -192,29 +138,24 @@ lemma Typed.toErased {Γ} {Δ : Ctx Srt} {A m} :
     exists (.var x); constructor <;> aesop
   case lam_im s _ _ _ _ _ ihm =>
     have ⟨m', erm⟩ := ihm
-    exists (.lam m' .keep s)
+    exists .lam m' s
     constructor <;> aesop
-  case lam_ex s sA _ rs _ _ _ ihm =>
+  case lam_ex s sA _ _ _ _ ihm =>
     have ⟨m', erm⟩ := ihm
-    cases rs with
-    | extend =>
-      exists (.lam m' .keep s); constructor
-      apply Erasure.RSrt.extend sA; all_goals aesop
-    | weaken h =>
-      exists (.lam m' .drop s); constructor
-      apply Erasure.RSrt.weaken h; all_goals aesop
+    exists .lam m' s; constructor
+    all_goals aesop
   case app_im ihm =>
     have ⟨m', erm⟩ := ihm
-    exists (.app m' .null)
+    exists .app m' .null
     constructor <;> aesop
   case app_ex ihm ihn =>
     have ⟨m', erm⟩ := ihm
     have ⟨n', ern⟩ := ihn
-    exists (.app m' n')
+    exists .app m' n'
     constructor <;> aesop
   case tup_im s _ _  _ _ ihm =>
     have ⟨m', erm⟩ := ihm
-    exists (.tup m' .null s)
+    exists .tup m' .null s
     constructor <;> aesop
   case tup_ex s _ _ _ _ _ ihm ihn =>
     have ⟨m', erm⟩ := ihm
@@ -224,41 +165,13 @@ lemma Typed.toErased {Γ} {Δ : Ctx Srt} {A m} :
   case prj_im sA SB _ _ rs _ _ _ _ ihm ihn =>
     have ⟨m', erm⟩ := ihm
     have ⟨n', ern⟩ := ihn
-    cases rs with
-    | extend =>
-      exists (.prj m' n' .keep .keep); constructor
-      apply Erasure.RSrt.extend sA; all_goals aesop
-    | weaken h =>
-      exists (.prj m' n' .drop .keep); constructor
-      apply Erasure.RSrt.weaken h; all_goals aesop
+    exists .prj m' n'; constructor
+    all_goals aesop
   case prj_ex sA sB _ _ rsA rsB _ _ _ _ ihm ihn =>
     have ⟨m', erm⟩ := ihm
     have ⟨n', ern⟩ := ihn
-    cases rsA with
-    | extend =>
-      cases rsB with
-      | extend =>
-        exists (.prj m' n' .keep .keep); constructor
-        apply Erasure.RSrt.extend sA
-        apply Erasure.RSrt.extend sB
-        all_goals aesop
-      | weaken h =>
-        exists (.prj m' n' .keep .drop); constructor
-        apply Erasure.RSrt.extend sA
-        apply Erasure.RSrt.weaken h
-        all_goals aesop
-    | weaken hA =>
-      cases rsB with
-      | extend =>
-        exists (.prj m' n' .drop .keep); constructor
-        apply Erasure.RSrt.weaken hA
-        apply Erasure.RSrt.extend sB
-        all_goals aesop
-      | weaken hB =>
-        exists (.prj m' n' .drop .drop); constructor
-        apply Erasure.RSrt.weaken hA
-        apply Erasure.RSrt.weaken hB
-        all_goals aesop
+    exists .prj m' n'; constructor
+    all_goals aesop
   case tt => exists .tt; constructor <;> aesop
   case ff => exists .ff; constructor <;> aesop
   case ite ihm ihn1 ihn2 =>
@@ -270,10 +183,14 @@ lemma Typed.toErased {Γ} {Δ : Ctx Srt} {A m} :
   case rw ihm =>
     have ⟨m', erm⟩ := ihm
     exists (.rw m'); constructor <;> aesop
+  case drop ihm ihn =>
+    have ⟨m', erm⟩ := ihm
+    have ⟨n', ern⟩ := ihn
+    exists .drop m' n'
+    constructor <;> aesop
   case conv ihm =>
     have ⟨m', erm⟩ := ihm
     exists m'; constructor <;> assumption
   all_goals trivial
 
 end SStruct.Dynamic
--/
