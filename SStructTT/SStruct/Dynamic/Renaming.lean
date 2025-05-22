@@ -40,32 +40,6 @@ lemma AgreeRen.lower_image {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ s} :
   intro agr lw; induction agr <;> try (solve| aesop)
   cases lw <;> constructor <;> aesop
 
-lemma AgreeRen.weaken_pullback {Γ Γ'} {Δ0 Δ1 Δ2 : Ctx Srt} {ξ} :
-    AgreeRen ξ Γ Δ1 Γ' Δ2 -> Weaken Δ0 Δ1 ->
-    ∃ Δ3, AgreeRen ξ Γ Δ0 Γ' Δ3 ∧ Weaken Δ3 Δ2 := by
-  intro agr wk; induction agr generalizing Δ0
-  case nil =>
-    cases wk; exists []; and_intros
-    . constructor
-    . constructor
-  case cons A r s i ξ tyA agr ih =>
-    cases wk
-    case cons wk =>
-      replace ⟨Δ3, agr, wk⟩ := ih wk
-      exists A.[ren ξ] :⟨r, s⟩ Δ3; and_intros
-      . constructor <;> assumption
-      . apply Weaken.cons; assumption
-    case weak r h wk =>
-      replace ⟨Δ3, agr, wk⟩ := ih wk
-      exists A.[ren ξ] :⟨r, s⟩ Δ3; and_intros
-      . constructor <;> assumption
-      . apply Weaken.weak <;> assumption
-  case intro A s _ _ _ _ ih =>
-    replace ⟨Δ3, agr, wk⟩ := ih wk
-    exists A :⟨.im, s⟩ Δ3; and_intros
-    . constructor <;> assumption
-    . constructor; assumption
-
 lemma AgreeRen.has {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ x s A} :
     AgreeRen ξ Γ Δ Γ' Δ' ->
     Has Δ x s A ->
@@ -266,11 +240,12 @@ lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
          by asimp] at tym
     have := Typed.rw tyA tym tyn
     asimp at this; assumption
-  case weak Γ Δ1 Δ2 m A wk tym ih =>
-    have ⟨Δ3, agr', wk'⟩ := agr.weaken_pullback wk
-    apply Typed.weak
-    . apply wk'
-    . apply ih agr'
+  case drop mrg lw h _ _ ihm ihn =>
+    have ⟨Δ1', Δ2', mrg', agr1, agr2⟩ := agr.split mrg
+    replace ihm := ihm agr1
+    replace ihn := ihn agr2
+    replace lw :=  agr1.lower_image lw
+    apply Typed.drop mrg' lw h ihm ihn
   case conv eq tym tyB ih =>
     replace tyB := tyB.renaming agr.toStatic
     replace tym := ih agr
@@ -291,17 +266,27 @@ lemma Typed.weaken_im {Γ} {Δ : Ctx Srt} {A B m s i} :
   . assumption
   . exact AgreeRen.refl tym.toWf
 
+lemma Wf.implicit {Γ} {Δ : Ctx Srt} : Γ ;; Δ ⊢ -> Γ ;; Δ.toImplicit ⊢ := by
+  intro wf; induction wf <;> try trivial
+  case nil => simp; constructor
+  case cons => simp; constructor <;> aesop
+
 lemma Typed.weaken_ex {Γ} {Δ : Ctx Srt} {A B m s i} :
     Γ ;; Δ ⊢ m : A ->
     Γ ⊢ B : .srt s i ->
     s ∈ ord.weaken_set ->
     B :: Γ ;; B :⟨.ex, s⟩ Δ ⊢ m.[shift 1] : A.[shift 1] := by
   intro tym tyB h
+  have mrg : Merge (B :⟨.im, s⟩ Δ) (B :⟨.ex, s⟩ Δ.toImplicit) (B :⟨.ex, s⟩ Δ) := by
+    constructor; apply Merge.implicit
   replace tym := tym.weaken_im tyB
-  apply Typed.weak _ tym
-  constructor
+  have ⟨i, wf, tyB⟩ := tym.ctx_inv
+  apply Typed.drop mrg.sym _ h
+  . apply Typed.var
+    constructor; assumption; apply wf.implicit
+    constructor; apply Lower.implicit
   . assumption
-  . apply Weaken.refl
+  . constructor; simp; apply Lower.implicit
 
 lemma Typed.eweaken_im {Γ Γ'} {Δ Δ' : Ctx Srt} {A A' B m m' s i} :
     Γ' = B :: Γ ->
@@ -325,3 +310,81 @@ lemma Typed.eweaken_ex {Γ Γ'} {Δ Δ' : Ctx Srt} {A A' B m m' s i} :
     Γ' ;; Δ' ⊢ m' : A' := by
   intros; subst_vars
   apply Typed.weaken_ex <;> assumption
+
+inductive Spine (Δ0 : Ctx Srt) : Ctx Srt -> Prop where
+  | refl : Spine Δ0 Δ0
+  | cons {Δ1 Δ2 Δ3 x s A} :
+    Merge Δ1 Δ2 Δ3 ->
+    s ∈ ord.weaken_set ->
+    Has Δ2 x s A ->
+    Spine Δ0 Δ1 ->
+    Spine Δ0 Δ3
+
+lemma Spine.extend {Δ1 Δ2 : Ctx Srt} {A r s} :
+    Spine Δ1 Δ2 -> Spine (A :⟨r, s⟩ Δ1) (A :⟨r, s⟩ Δ2) := by
+  intro sp; induction sp
+  case refl => constructor
+  case cons Δ1 Δ2 Δ3 x _ _ mrg h hs sp ih =>
+    replace mrg : Merge (A :⟨r, s⟩ Δ1) (A :⟨.im, s⟩ Δ2) (A :⟨r, s⟩ Δ3) := by
+      cases r
+      . constructor; assumption
+      . constructor; assumption
+    constructor
+    . apply mrg
+    . assumption
+    . constructor
+      assumption
+    . assumption
+
+lemma Merge.toSpine {Δ1 Δ2 Δ3 : Ctx Srt} {s} :
+    Merge Δ1 Δ2 Δ3 -> Lower Δ2 s -> s ∈ ord.weaken_set -> Spine Δ1 Δ3 := by
+  intro mrg lw h; induction mrg
+  case nil => constructor
+  case contra ih =>
+    cases lw; case ex lw =>
+    apply (ih lw).extend
+  case left ih =>
+    cases lw; case im lw =>
+    apply (ih lw).extend
+  case right Δ1 Δ2 Δ3 A s mrg ih =>
+    cases lw; case ex le lw =>
+    have sp := @Spine.extend _ _ _ _ A .im s (ih lw)
+    replace mrg : Merge (A :⟨.im, s⟩ Δ3) (A :⟨.ex, s⟩ Δ3.toImplicit) (A :⟨.ex, s⟩ Δ3) := by
+      constructor
+      apply Merge.implicit
+    have hs : Has (A :⟨.ex, s⟩ Δ3.toImplicit) 0 s A.[shift 1] := by
+      constructor; apply Lower.implicit
+    constructor
+    . apply mrg
+    . apply ord.weaken_set.lower le
+      assumption
+    . apply hs
+    . apply (ih lw).extend
+  case im ih =>
+    cases lw; case im lw =>
+    apply (ih lw).extend
+
+lemma Typed.drop_spine {Γ} {Δ1 Δ3 : Ctx Srt} {A m} :
+    Spine Δ1 Δ3 ->
+    Γ ;; Δ1 ⊢ m : A ->
+    Γ ;; Δ3 ⊢ m : A := by
+  intro sp tym; induction sp
+  case refl => assumption
+  case cons Δ1 Δ2 Δ3 x s A mrg h hs sp ih =>
+    have ⟨wf1, wf2⟩ := ih.toWf.merge mrg
+    have ⟨i, tyA⟩ := wf1.has_typed hs
+    have tyn : Γ ;; Δ2 ⊢ .var x : A := by
+      constructor <;> assumption
+    apply Typed.drop mrg.sym
+    . apply hs.lower
+    . apply h
+    . apply tyn
+    . assumption
+
+lemma Typed.drop_merge {Γ} {Δ1 Δ2 Δ3 : Ctx Srt} {A m s} :
+    Merge Δ1 Δ2 Δ3 -> Lower Δ2 s -> s ∈ ord.weaken_set ->
+    Γ ;; Δ1 ⊢ m : A ->
+    Γ ;; Δ3 ⊢ m : A := by
+  intro mrg lw h tym
+  have sp := mrg.toSpine lw h
+  apply tym.drop_spine sp

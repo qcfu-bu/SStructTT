@@ -240,9 +240,8 @@ theorem Typed.preservation {A m m' : Tm Srt} :
     . apply Conv.compat; assumption
     . assumption
     . assumption
-  case weak wk tym ihm =>
-    subst_vars; cases wk
-    apply ihm rfl rfl st
+  case drop mrg lw h tym tyn ihm ihn =>
+    subst_vars; cases mrg; aesop
   case conv eq _ tyB ihm =>
     subst_vars; have tym := ihm rfl rfl st
     apply tym.conv eq tyB

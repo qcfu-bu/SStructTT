@@ -1,4 +1,4 @@
-import SStructTT.SStruct.Static.Typed
+import SStructTT.SStruct.Static.Renaming
 import SStructTT.SStruct.Dynamic.Context
 
 namespace SStruct.Dynamic
@@ -85,10 +85,12 @@ inductive Typed : Static.Ctx Srt -> Dynamic.Ctx Srt -> Tm Srt -> Tm Srt -> Prop 
     Γ ⊢ n : .idn B a b ->
     Typed Γ Δ (.rw A m n) A.[n,b/]
 
-  | weak {Γ Δ1 Δ2 m A} :
-    Weaken Δ1 Δ2 ->
+  | drop {Γ Δ1 Δ2 Δ3 m n A B s} :
+    Merge Δ1 Δ2 Δ3 ->
+    Lower Δ1 s -> s ∈ ord.weaken_set ->
     Typed Γ Δ1 m A ->
-    Typed Γ Δ2 m A
+    Typed Γ Δ2 n B ->
+    Typed Γ Δ3 n B
 
   | conv {Γ Δ A B m s i} :
     A === B ->
@@ -124,29 +126,14 @@ lemma Wf.size {Γ} {Δ : Ctx Srt} :
   all_goals aesop
 
 lemma Wf.merge {Γ} {Δ Δ1 Δ2 : Ctx Srt} :
-    Merge Δ1 Δ2 Δ -> Γ ;; Δ1 ⊢ -> Γ ;; Δ2 ⊢ -> Γ ;; Δ ⊢ := by
-  intro mrg wf1 wf2
+    Merge Δ1 Δ2 Δ -> Γ ;; Δ1 ⊢ -> Γ ;; Δ2 ⊢ ∧ Γ ;; Δ ⊢ := by
+  intro mrg wf1
   induction mrg generalizing Γ
-  case nil       => cases wf1; aesop
-  case contra ih => cases wf1; cases wf2; aesop (add safe Wf)
-  case left ih   => cases wf1; cases wf2; aesop (add safe Wf)
-  case right ih  => cases wf1; cases wf2; aesop (add safe Wf)
-  case im ih     => cases wf1; cases wf2; aesop (add safe Wf)
-
-lemma Wf.weaken {Γ} {Δ1 Δ2 : Ctx Srt} :
-    Weaken Δ1 Δ2 -> Γ ;; Δ1 ⊢ -> Γ ;; Δ2 ⊢ := by
-  intro wk agr; induction wk generalizing Γ
-  case nil => assumption
-  case cons =>
-    cases agr
-    constructor
-    assumption
-    aesop
-  case weak =>
-    cases agr
-    constructor
-    assumption
-    aesop
+  case nil       => aesop
+  case contra ih => cases wf1; aesop (add safe Wf)
+  case left ih   => cases wf1; aesop (add safe Wf)
+  case right ih  => cases wf1; aesop (add safe Wf)
+  case im ih     => cases wf1; aesop (add safe Wf)
 
 lemma Wf.split {Γ} {Δ Δ1 Δ2 : Ctx Srt} :
     Merge Δ1 Δ2 Δ -> Γ ;; Δ ⊢ -> Γ ;; Δ1 ⊢ ∧ Γ ;; Δ2 ⊢ := by
@@ -168,21 +155,21 @@ lemma Typed.toWf {Γ} {Δ : Ctx Srt} {A m} :
   case lam_ex ih =>
     cases ih; assumption
   case app_ex mrg _ _ ih1 ih2 =>
-    apply Wf.merge mrg ih1 ih2
+    apply (Wf.merge mrg ih1).right
   case tup_ex mrg _ _ _ ih1 ih2 =>
-    apply Wf.merge mrg ih1 ih2
+    apply (Wf.merge mrg ih1).right
   case prj_im rs mrg _ _ _ ih1 ih2 =>
     rcases ih2 with _ | ⟨_, ih2⟩
     rcases ih2 with _ | ⟨_, ih2⟩
-    apply Wf.merge mrg ih1 ih2
+    apply (Wf.merge mrg ih1).right
   case prj_ex rs1 rs2 mrg _ _ _ ih1 ih2 =>
     rcases ih2 with _ | ⟨_, ih2⟩
     rcases ih2 with _ | ⟨_, ih2⟩
-    apply Wf.merge mrg ih1 ih2
+    apply (Wf.merge mrg ih1).right
   case ite mrg _ _ _ _ ih1 ih2 _ =>
-    apply Wf.merge mrg ih1 ih2
-  case weak wk _ wf =>
-    apply Wf.weaken wk wf
+    apply (Wf.merge mrg ih1).right
+  case drop mrg _ _ _ _ ih1 ih2 =>
+    apply (Wf.merge mrg ih1).right
 
 lemma Wf.toStatic {Γ} {Δ : Ctx Srt} : Γ ;; Δ ⊢ -> Γ ⊢ := by
   intro wf; induction wf
@@ -192,6 +179,17 @@ lemma Wf.hasStatic {Γ} {Δ : Ctx Srt} {A x s} :
     Γ ;; Δ ⊢ -> Dynamic.Has Δ x s A -> Static.Has Γ x A := by
   intro wf hs; induction wf generalizing x s A <;> try trivial
   cases hs <;> aesop (add safe Static.Has)
+
+lemma Wf.has_typed {Γ} {Δ : Ctx Srt} {A x s} :
+    Γ ;; Δ ⊢ -> Has Δ x s A -> ∃ i, Γ ⊢ A : .srt s i := by
+  intro wf hs; induction hs generalizing Γ
+  case nil wf =>
+    cases wf; case cons i tyA _ =>
+    exists i; apply tyA.weaken tyA
+  case cons wf ih =>
+    cases wf; case cons i tyB wf =>
+    have ⟨i, tyA⟩ := ih wf
+    exists i; apply tyA.weaken tyB
 
 lemma Typed.toStatic {Γ} {Δ : Ctx Srt} {m A} :
     Γ ;; Δ ⊢ m : A -> Γ ⊢ m : A := by

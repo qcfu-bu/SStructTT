@@ -67,72 +67,6 @@ lemma AgreeSubst.lower_image {Γ Γ'} {Δ Δ' : Ctx Srt} {s σ} :
     . aesop
   case conv ih => cases lw <;> aesop
 
-lemma AgreeSubst.weaken_pullback {Γ Γ'} {Δ0 Δ1 Δ2 : Ctx Srt} {ξ} :
-    AgreeSubst ξ Γ Δ1 Γ' Δ2 -> Weaken Δ0 Δ1 ->
-    ∃ Δ3, AgreeSubst ξ Γ Δ0 Γ' Δ3 ∧ Weaken Δ3 Δ2 := by
-  intro agr wk; induction agr generalizing Δ0
-  case nil =>
-    cases wk
-    exists []; and_intros
-    . constructor
-    . constructor
-  case cons A r s i σ tyA agr ih =>
-    cases wk
-    case cons wk =>
-      replace ⟨Δ3, agr, wk⟩ := ih wk
-      exists A.[σ] :⟨r, s⟩ Δ3; and_intros
-      . constructor <;> assumption
-      . constructor; assumption
-    case weak r h wk =>
-      replace ⟨Δ3, agr, wk⟩ := ih wk
-      exists A.[σ] :⟨r, s⟩ Δ3; and_intros
-      . constructor <;> assumption
-      . constructor <;> assumption
-  case intro_im ih =>
-    cases wk
-    case cons wk =>
-      replace ⟨Δ3, agr, wk⟩ := ih wk
-      exists Δ3; and_intros
-      . constructor <;> assumption
-      . assumption
-  case intro_ex mrg lw tym agr ih =>
-    cases wk
-    case cons Δ2 wk =>
-      replace ⟨Δ3, agr, wk⟩ := ih wk
-      have ⟨Δw, mrg, wk⟩ := mrg.sym.weaken_pullback wk
-      exists Δw; and_intros
-      . apply AgreeSubst.intro_ex mrg.sym <;> assumption
-      . assumption
-    case weak Δ0 r h wk =>
-      replace ⟨Δ3, agr, wk⟩ := ih wk
-      cases r with
-      | im =>
-        have wk := mrg.sym.lower_weaken_compose lw h wk
-        exists Δ3; and_intros
-        . constructor
-          apply tym.toStatic
-          assumption
-        . assumption
-      | ex =>
-        have ⟨Δw, mrg, wk⟩ := mrg.sym.weaken_pullback wk
-        exists Δw; and_intros
-        . apply AgreeSubst.intro_ex mrg.sym <;> assumption
-        . assumption
-  case conv Δ Δ' A B r s i σ eq tyB tyB' agr ih =>
-    cases wk
-    case cons Δw wk =>
-      replace wk := wk.cons A r s
-      replace ⟨Δw, agr, wk⟩ := ih wk
-      exists Δw; and_intros
-      . apply AgreeSubst.conv eq tyB tyB' agr
-      . assumption
-    case weak Δw r h wk =>
-      replace wk := wk.weak A r s h
-      replace ⟨Δw, agr, wk⟩ := ih wk
-      exists Δw; and_intros
-      . apply AgreeSubst.conv eq tyB tyB' agr
-      . assumption
-
 lemma AgreeSubst.has {Γ Γ'} {Δ Δ' : Ctx Srt} {A x s σ} :
     AgreeSubst σ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢ -> Has Δ x s A -> Γ' ;; Δ' ⊢ (σ x) : A.[σ] := by
   intro agr wf hs; induction agr generalizing x A
@@ -154,11 +88,10 @@ lemma AgreeSubst.has {Γ Γ'} {Δ Δ' : Ctx Srt} {A x s σ} :
   case intro_im ih =>
     rcases hs with _ | @⟨_, A, x, s, hs⟩; asimp
     apply ih <;> assumption
-  case intro_ex mrg _ tym agr ih =>
+  case intro_ex mrg lw tym agr ih =>
     rcases hs with ⟨lw2⟩; asimp
     replace lw2 := agr.lower_image lw2
-    have wk := mrg.sym.lower_weaken lw2
-    apply Typed.weak wk tym
+    apply Typed.drop_merge mrg lw2 ord.e_weaken tym
   case conv r _ _  σ eq tyB tyB' agr ih =>
     cases r with
     | im =>
@@ -292,7 +225,7 @@ lemma AgreeSubst.wf_cons {Γ Γ'} {Δ Δ' : Ctx Srt} {A r s σ} :
     apply h agr
   case intro_ex mrg lw tym agr ih =>
     cases e1; cases e2
-    apply Wf.merge mrg tym.toWf (h agr)
+    apply (Wf.merge mrg tym.toWf).right
   case conv ih =>
     cases e1; cases e2
     apply ih rfl rfl wf h
@@ -396,10 +329,12 @@ lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
          by asimp] at tym
     have := Typed.rw tyA tym tyn
     asimp at this; assumption
-  case weak Δ1 Δ2 m A wk tym ih =>
-    replace ⟨Δ3, agr, wk⟩ := agr.weaken_pullback wk
-    apply Typed.weak wk
-    apply ih agr
+  case drop Δ1 Δ2 Δ3 m n A B s i mrg lw h tym tyn ihm ihn =>
+    have ⟨Δ1', Δ2', mrg', agr1, agr2⟩ := agr.split mrg
+    replace lw := agr1.lower_image lw
+    specialize ihm agr1
+    specialize ihn agr2
+    apply Typed.drop mrg' lw h ihm ihn
   case conv eq tym tyB ih =>
     replace tyB := tyB.substitution agr.toStatic
     replace tym := ih agr

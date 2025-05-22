@@ -19,8 +19,8 @@ lemma Typed.pi_canonical {A B C m : Tm Srt} {r s} :
   case lam_ex A B m _ _ _ _ _ _ _ =>
     have ⟨_, _, eqA, eqB⟩ := Conv.pi_inj eq
     subst_vars; exists A, m
-  case weak wk _ _ =>
-    subst_vars; cases wk; aesop
+  case drop mrg _ _ _ _ _ _ =>
+    subst_vars; cases mrg; aesop
   case conv ih =>
     apply ih <;> try assumption
     apply Conv.trans <;> assumption
@@ -38,8 +38,8 @@ lemma Typed.sig_canonical {A B C m : Tm Srt} {r s} :
   case tup_ex A0 B0 m n _ _ _ _ _ _ _ _ =>
     have ⟨_, _, _, _⟩ := Conv.sig_inj eq
     subst_vars; exists m, n
-  case weak wk _ _ =>
-    subst_vars; cases wk; aesop
+  case drop mrg _ _ _ _ _ _ =>
+    subst_vars; cases mrg; aesop
   case conv ihm =>
     apply ihm <;> try assumption
     apply Conv.trans <;> assumption
@@ -52,8 +52,8 @@ lemma Typed.bool_canonical {C m : Tm Srt} :
   all_goals try false_conv
   case tt => simp
   case ff => simp
-  case weak wk _ _ =>
-    subst_vars; cases wk; aesop
+  case drop mrg _ _ _ _ _ _ =>
+    subst_vars; cases mrg; aesop
   case conv ihm =>
     apply ihm <;> try assumption
     apply Conv.trans <;> assumption
@@ -64,8 +64,8 @@ lemma Typed.idn_canonical {A C m a b : Tm Srt} :
   generalize e2: [] = Δ
   intro ty eq vl; induction ty <;> try trivial
   all_goals try false_conv
-  case weak wk _ _ =>
-    subst_vars; cases wk; aesop
+  case drop mrg _ _ _ _ _ _ =>
+    subst_vars; cases mrg; aesop
   case conv ihm =>
     apply ihm <;> try assumption
     apply Conv.trans <;> assumption
@@ -150,6 +150,6 @@ theorem Typed.progress {m A : Tm Srt} :
       cases tym.bool_canonical Conv.R vl with
       | inl => subst_vars; left; exists n1; constructor
       | inr => subst_vars; left; exists n2; constructor
-  case weak wk => cases wk; aesop
+  case drop mrg => cases mrg; aesop
   case rw m _ _ _ _ _ _ _ _ _ =>
     left; exists m; apply Step.rw_elim

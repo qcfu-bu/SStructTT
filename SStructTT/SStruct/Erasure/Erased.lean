@@ -102,7 +102,7 @@ where
     Erased Γ Δ (.rw A m n) (.rw m') A.[n,b/]
 
   | weak {Γ Δ1 Δ2 ms m m' A} :
-    Weaken Δ1 Δ2 ms ->
+    Weaken Δ1 Δ2 ->
     Erased Γ Δ1 m m' A ->
     Erased Γ Δ2 m (.drop ms m') A
 

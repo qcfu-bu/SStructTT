@@ -22,12 +22,11 @@ lemma Typed.lam_im_inv' {Γ} {Δ : Ctx Srt} {A T m s} :
   case lam_im B _ _ sA _ _ _ _ _ =>
     cases e; exists B, sA; aesop
   case lam_ex => cases e
-  case weak wk _ ih =>
-    have ⟨B, sA, tym, eq2⟩ := ih e
+  case drop mrg lw h tym tyn ihm ihn =>
+    have ⟨B, sA, tym, eq2⟩ := ihn e
     exists B, sA; and_intros
-    . apply Typed.weak
+    . apply Typed.drop_merge (mrg.sym.im _ _) _ h tym
       constructor; assumption
-      assumption
     . assumption
   case conv eq1 _ _ ih =>
     have ⟨B, sA, tym, eq2⟩ := ih e
@@ -48,12 +47,11 @@ lemma Typed.lam_ex_inv' {Γ} {Δ : Ctx Srt} {A T m s} :
   case lam_im => cases e
   case lam_ex B _ _ sA _ _ _ _ _ =>
     cases e; exists B, sA; aesop
-  case weak wk _ ih =>
-    have ⟨B, sA, tym, eq2⟩ := ih e
+  case drop mrg lw h tym tyn ihm ihn =>
+    have ⟨B, sA, tym, eq2⟩ := ihn e
     exists B, sA; and_intros
-    . apply Typed.weak
+    . apply Typed.drop_merge (mrg.sym.left _ _) _ h tym
       constructor; assumption
-      assumption
     . assumption
   case conv eq1 _ _ ih =>
     have ⟨B, sA, tym, eq2⟩ := ih e
@@ -75,11 +73,10 @@ lemma Typed.tup_im_inv' {Γ} {Δ : Ctx Srt} {T m n s} :
   case tup_im A B _ _ _ _ _ _ _ _ =>
     cases e; exists A, B; aesop
   case tup_ex => cases e
-  case weak wk _ ih =>
-    have ⟨A, B, _, _, eq2⟩ := ih e
+  case drop mrg lw h tym tyn ihm ihn =>
+    have ⟨A, B, tym, tyn, eq2⟩ := ihn e
     exists A, B; and_intros
-    . apply Typed.weak
-      assumption
+    . apply Typed.drop_merge mrg.sym _ h tym
       assumption
     . assumption
     . assumption
@@ -91,68 +88,6 @@ lemma Typed.tup_im_inv' {Γ} {Δ : Ctx Srt} {T m n s} :
     . apply Conv.trans
       apply Conv.sym eq1
       apply eq2
-
-lemma Merge.split_weaken {Δ1 Δ2 Δ3 Δ3' : Ctx Srt} :
-    Merge Δ1 Δ2 Δ3 -> Weaken Δ3 Δ3' ->
-    ∃ Δ1' Δ2', Merge Δ1' Δ2' Δ3' ∧ Weaken Δ1 Δ1' ∧ Weaken Δ2 Δ2' := by
-  intro mrg wk; induction mrg generalizing Δ3'
-  case nil => cases wk; exists [], []; aesop
-  case contra A s h mrg ih =>
-    cases wk
-    case cons Δw wk =>
-      have ⟨Δ1', Δ2', mrg', wk1, wk2⟩ := ih wk
-      exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; and_intros
-      . constructor <;> assumption
-      . constructor; assumption
-      . constructor; assumption
-    case weak Δw h wk =>
-      have ⟨Δ1', Δ2', mrg', wk1, wk2⟩ := ih wk
-      exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; and_intros
-      . constructor <;> assumption
-      . constructor; assumption
-      . constructor; assumption
-  case left A s mrg ih =>
-    cases wk
-    case cons Δw wk =>
-      have ⟨Δ1', Δ2', mrg', wk1, wk2⟩ := ih wk
-      exists A :⟨.ex, s⟩ Δ1', A :⟨.im, s⟩ Δ2'; and_intros
-      . constructor; assumption
-      . constructor; assumption
-      . constructor; assumption
-    case weak Δw h wk =>
-      have ⟨Δ1', Δ2', mrg', wk1, wk2⟩ := ih wk
-      exists A :⟨.ex, s⟩ Δ1', A :⟨.im, s⟩ Δ2'; and_intros
-      . constructor; assumption
-      . constructor; assumption
-      . constructor; assumption
-  case right A s mrg ih =>
-    cases wk
-    case cons Δw wk =>
-      have ⟨Δ1', Δ2', mrg', wk1, wk2⟩ := ih wk
-      exists A :⟨.im, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; and_intros
-      . constructor; assumption
-      . constructor; assumption
-      . constructor; assumption
-    case weak Δw h wk =>
-      have ⟨Δ1', Δ2', mrg', wk1, wk2⟩ := ih wk
-      exists A :⟨.im, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; and_intros
-      . constructor; assumption
-      . constructor; assumption
-      . constructor; assumption
-  case im A s mrg ih =>
-    cases wk
-    case cons Δw wk =>
-      have ⟨Δ1', Δ2', mrg', wk1, wk2⟩ := ih wk
-      exists A :⟨.im, s⟩ Δ1', A :⟨.im, s⟩ Δ2'; and_intros
-      . constructor; assumption
-      . constructor; assumption
-      . constructor; assumption
-    case weak Δw h wk =>
-      have ⟨Δ1', Δ2', mrg', wk1, wk2⟩ := ih wk
-      exists A :⟨.im, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; and_intros
-      . constructor; assumption
-      . constructor; assumption
-      . constructor <;> assumption
 
 lemma Typed.tup_ex_inv' {Γ} {Δ : Ctx Srt} {T m n s} :
     Γ ;; Δ ⊢ .tup m n .ex s : T ->
@@ -167,15 +102,13 @@ lemma Typed.tup_ex_inv' {Γ} {Δ : Ctx Srt} {T m n s} :
   case tup_im => cases e
   case tup_ex Δ1 Δ2 Δ A B _ _ _ _ _ _ _ _ _ _ =>
     cases e; exists Δ1, Δ2, A, B; aesop
-  case weak wk _ ih =>
-    have ⟨Δ1, Δ2, A, B, mrg, tym, tyn, eq2⟩ := ih e
-    have ⟨Δ1', Δ2', mrg', wk1, wk2⟩ := mrg.split_weaken wk
-    exists Δ1', Δ2', A, B; and_intros
+  case drop mrg lw h tym tyn ihm ihn =>
+    have ⟨Δ1, Δ2, A, B, mrg', tym, tyn, eq2⟩ := ihn e
+    have ⟨Δ3, mrg1, mrg2⟩ := mrg.sym.split mrg'.sym
+    exists Δ1, Δ3, A, B; and_intros
+    . apply mrg2.sym
     . assumption
-    . apply Typed.weak wk1
-      assumption
-    . apply Typed.weak wk2
-      assumption
+    . apply Typed.drop_merge mrg1 lw h tyn
     . assumption
   case conv eq1 _ _ ih =>
     have ⟨Δ1, Δ2, A, B, mrg, _, _, eq2⟩ := ih e
