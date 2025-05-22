@@ -287,12 +287,17 @@ theorem Erased.preservation1' {A m1 : SStruct.Tm Srt} {m2 m2'} :
 
 theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
     [] ;; [] ⊢ m1 ▷ m2 : A -> m2 ~>> m2' ->
-    ∃ m1', [] ;; [] ⊢ m1' ▷ m2' : A := by
+    ∃ m1', (m1 ~>> m1' ∨ (m1 = m1' ∧ Step0 m2 m2')) ∧ [] ;; [] ⊢ m1' ▷ m2' : A := by
   intro erm st
   cases st with
   | inl st =>
     exists m1
-    apply Erased.preservation0 <;> assumption
+    have erm := Erased.preservation0 erm st
+    simp; and_intros
+    . right; assumption
+    . assumption
   | inr st =>
-    have ⟨m1', _, erm'⟩ := Erased.preservation1 erm st
-    exists m1'
+    have ⟨m1', st, erm'⟩ := Erased.preservation1 erm st
+    exists m1'; and_intros
+    . left; assumption
+    . assumption

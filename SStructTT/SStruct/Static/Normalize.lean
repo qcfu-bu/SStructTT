@@ -145,8 +145,7 @@ lemma interp_sn' {m : MartinLof.Tm} :
     ∀ {n : Tm Srt}, [| n |] = m -> SN Step n := by
   intro sn; induction sn
   case intro ih =>
-    apply Classical.byContradiction
-    intro h; simp at h
+    by_contra h; simp at h
     have ⟨x, _, nn⟩ := h; subst_vars
     have ⟨y, st, nn⟩ := SN.negate nn
     have sn := ih (interp_step st) rfl

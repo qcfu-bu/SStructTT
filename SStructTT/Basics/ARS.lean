@@ -224,9 +224,14 @@ lemma SN.preimage {x} (f : T -> T) :
 
 lemma SN.negate {x} :
     ¬SN e x -> ∃ y, e x y ∧ ¬SN e y := by
-  intro sn; apply Classical.byContradiction
-  intro h; simp at h; apply sn
+  intro sn; by_contra h
+  simp at h; apply sn
   constructor; assumption
+
+lemma SN.ofAcc {x} : Acc (flip e) x -> SN e x := by
+  intro acc; induction acc
+  constructor
+  assumption
 
 lemma Normal.star {x y} : Star e x y -> Normal e x -> x = y := by
   intro h1 h2
