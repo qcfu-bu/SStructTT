@@ -13,6 +13,30 @@ def HLookup (H1 : Heap Srt) (l : Nat) (m : Tm Srt) (H2 : Heap Srt) : Prop :=
     m = n ∧ if s ∈ ord.contra_set then H1 = H2 else H2 = H1.erase l
   | none => False
 
+@[simp]def NF (i : Nat) : Tm Srt -> Prop
+  | .var x => x < i
+  | .lam m _ => NF (i + 1) m
+  | .app m n => NF i m ∧ NF i n
+  | .tup m n _ => NF i m ∧ NF i n
+  | .prj m n => NF i m ∧ NF (i + 2) n
+  | .tt => True
+  | .ff => True
+  | .ite m n1 n2 => NF i m ∧ NF i n1 ∧ NF i n2
+  | .drop m n => NF i m ∧ NF i n
+  | .ptr _ => True
+  | .null => True
+
+def WR (H : Heap Srt) : Prop :=
+  ∀ l,
+    match H.lookup l with
+    | none => True
+    | some ⟨.lam m s1, s2⟩ => NF 1 m ∧ s1 = s2
+    | some ⟨.tup (.ptr _) .null s1, s2⟩ => s1 = s2
+    | some ⟨.tup (.ptr _) (.ptr _) s1, s2⟩ => s1 = s2
+    | some ⟨.tt, s⟩ => s = ord.e
+    | some ⟨.ff, s⟩ => s = ord.e
+    | _ => False
+
 inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
   | var {H x} :
     HLower H ord.e ->
@@ -91,15 +115,17 @@ lemma Resolve.is_resolved {H : Heap Srt} {m m'} : H ;; m ▷ m' -> IsResolved m'
   all_goals aesop
 
 inductive Resolved :
-  Heap Srt -> SStruct.Tm Srt -> Tm Srt -> Tm Srt -> SStruct.Tm Srt -> Prop
+  Static.Ctx Srt -> Dynamic.Ctx Srt -> Heap Srt ->
+  SStruct.Tm Srt -> Tm Srt -> Tm Srt -> SStruct.Tm Srt -> Prop
 where
-  | intro {H x y z A} :
-    [] ;; [] ⊢ x ▷ y : A ->
+  | intro {Γ Δ H x y z A} :
+    Γ ;; Δ ⊢ x ▷ y : A ->
     H ;; z ▷ y ->
-    Resolved H x y z A
+    WR H ->
+    Resolved Γ Δ H x y z A
 
-notation:50 H:50 " ;; " x:51 " ▷ " y:51 " ◁ " z:51 " : " A:51 =>
-  Resolved H x y z A
+notation:50 Γ:50 " ;; " Δ:51 " ;; " H:51 " ⊢ " x:51 " ▷ " y:51 " ◁ " z:51 " : " A:51 =>
+  Resolved Γ Δ H x y z A
 
 lemma HLookup.not_mem {H1 H2 : Heap Srt} {l1 l2 m} :
     HLookup H1 l1 m H2 -> l2 ∉ H1.keys -> l2 ∉ H2.keys := by
@@ -353,30 +379,6 @@ lemma HLookup.resolve {H1 H2 H3 H3' : Heap Srt} {l m n} :
   case ptr H1' _ lk2 erm =>
     have ⟨_, mrg'⟩ := lk1.collision mrg lk2; subst_vars
     exists H1'
-
-@[simp]def NF (i : Nat) : Tm Srt -> Prop
-  | .var x => x < i
-  | .lam m _ => NF (i + 1) m
-  | .app m n => NF i m ∧ NF i n
-  | .tup m n _ => NF i m ∧ NF i n
-  | .prj m n => NF i m ∧ NF (i + 2) n
-  | .tt => True
-  | .ff => True
-  | .ite m n1 n2 => NF i m ∧ NF i n1 ∧ NF i n2
-  | .drop m n => NF i m ∧ NF i n
-  | .ptr _ => True
-  | .null => True
-
-def WR (H : Heap Srt) : Prop :=
-  ∀ l,
-    match H.lookup l with
-    | none => True
-    | some ⟨.lam m s1, s2⟩ => NF 1 m ∧ s1 = s2
-    | some ⟨.tup (.ptr _) .null s1, s2⟩ => s1 = s2
-    | some ⟨.tup (.ptr _) (.ptr _) s1, s2⟩ => s1 = s2
-    | some ⟨.tt, s⟩ => s = ord.e
-    | some ⟨.ff, s⟩ => s = ord.e
-    | _ => False
 
 lemma Erased.nf {Γ Δ} {m A : SStruct.Tm Srt} {m'} :
     Γ ;; Δ ⊢ m ▷ m' : A -> NF (Γ.length) m' := by
@@ -876,14 +878,12 @@ lemma Resolve.ff_inv {H : Heap Srt} {m} :
       exfalso; apply lkm.not_wr_ptr wr
 
 theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
-    H ;; x ▷ y ◁ z : A ->
-    [] ⊢ A : .srt s i ->
-    Value y -> WR H -> HLower H s := by
-  intro ⟨er, rs⟩
-  revert er
+    [] ;; [] ;; H ⊢ x ▷ y ◁ z : A ->
+    [] ⊢ A : .srt s i -> Value y -> HLower H s := by
+  intro ⟨er, rs, wr⟩; revert er
   generalize e1: [] = Γ
   generalize e2: [] = Δ
-  intro er ty vl wr; induction er generalizing H z s i
+  intro er ty vl; induction er generalizing H z s i
   all_goals subst_vars; try (solve | cases vl)
   case lam_im =>
     have ⟨_, _, _, _, rd⟩ := ty.pi_inv
@@ -901,7 +901,7 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
     cases z <;> cases rs
     case tup mrg rsm rsn =>
       have ⟨wr1, wr2⟩ := mrg.split_wr wr
-      have lw1 := ihm rsm tyA vl1 wr1
+      have lw1 := ihm rsm wr1 tyA vl1
       have ⟨lw2, _⟩ := rsn.null_inv wr2; subst_vars
       replace lw1 := lw1.weaken le
       replace lw2 := lw2.weaken (ord.e_min s)
@@ -911,7 +911,7 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
       case tup H1 H2 mrg rsm rsn =>
         have wr' := lk.wr_image wr
         have ⟨wr1, wr2⟩ := mrg.split_wr wr'
-        have lw1 := ihm rsm tyA vl1 wr1
+        have lw1 := ihm rsm wr1 tyA vl1
         have ⟨lw2, _⟩ := rsn.null_inv wr2; subst_vars
         replace lw1 := lw1.weaken le
         replace lw2 := lw2.weaken (ord.e_min s)
@@ -946,8 +946,8 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
     cases z <;> cases rs
     case tup mrg rsm rsn =>
       have ⟨wr1, wr2⟩ := mrg.split_wr wr
-      have lw1 := ihm rsm tyA wr1
-      have lw2 := ihn rsn (tyB.subst erm.toStatic) wr2
+      have lw1 := ihm rsm wr1 tyA
+      have lw2 := ihn rsn wr2 (tyB.subst erm.toStatic)
       replace lw1 := lw1.weaken le1
       replace lw2 := lw2.weaken le2
       apply mrg.lower_image lw1 lw2
@@ -956,8 +956,8 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
       case tup H1 H2 mrg rsm rsn =>
         have wr' := lk.wr_image wr
         have ⟨wr1, wr2⟩ := mrg.split_wr wr'
-        have lw1 := ihm rsm tyA wr1
-        have lw2 := ihn rsn (tyB.subst erm.toStatic) wr2
+        have lw1 := ihm rsm wr1 tyA
+        have lw2 := ihn rsn wr2 (tyB.subst erm.toStatic)
         replace lw1 := lw1.weaken le1
         replace lw2 := lw2.weaken le2
         have lw := mrg.lower_image lw1 lw2

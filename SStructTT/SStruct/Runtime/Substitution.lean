@@ -279,3 +279,29 @@ lemma AgreeSubst.split {Δ1 Δ2 Δ3 : Ctx Srt} {H3 σ σ' x} :
       . apply mrg2'.sym
       . apply AgreeSubst.intro_im agr2
       . apply AgreeSubst.intro_ex wr2 lw2 mrg1' rsm agr1
+
+lemma Resolve.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
+    Γ ;; Δ ;; H1 ⊢ m ▷ n ◁ n' : A -> HMerge H1 H2 H3 -> AgreeSubst σ σ' x Δ H2 ->
+    H3 ;; n'.[σ] ▷ n.[σ] := by
+  intro ⟨erm, rsm, wr⟩ mrg agr
+  induction erm generalizing H1 H2 H3 σ σ' n' x
+  case rw ih => aesop
+  case drop mrg0 _ _ _ _ ihm ihn =>
+    asimp; cases rsm
+    case drop mrg1 rsm rsn =>
+      have ⟨wr1, wr2⟩ := mrg1.split_wr wr
+      have ⟨Ha, Hb, mrg2, agr1, agr2⟩ := agr.split mrg0
+      have ⟨H1', H2', mrg3, mrg1', mrg2'⟩ := mrg.distr mrg1 mrg2
+      replace ihm := ihm rsm wr1 mrg1' agr1
+      replace ihn := ihn rsn wr2 mrg2' agr2
+      asimp; apply Resolve.drop mrg3 ihm ihn
+    case ptr lk rsm =>
+      cases rsm
+      case drop => have vl := lk.wr_value wr; cases vl
+      case ptr => exfalso; apply lk.not_wr_ptr wr
+  all_goals sorry
+
+-- lemma Resolve.subst_im {H : Heap Srt} {Γ Δ m m' n n' A B x s} :
+--     A :: Γ ;; A :⟨.im, s⟩ Δ ⊢ m ▷ n : B -> H ;; n' ▷ n ->
+--     H3 ;; n'.[σ] ▷ n.[σ] := by
+--   sorry
