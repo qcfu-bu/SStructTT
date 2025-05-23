@@ -16,10 +16,10 @@ where
   | cons {Δ H σ σ' A x r s} :
     AgreeSubst σ σ' x Δ H ->
     AgreeSubst (up σ) (up σ') (x + 1) (A :⟨r, s⟩ Δ) H
-  | wk_im {Δ H σ σ' A m m' s} :
+  | intro_im {Δ H σ σ' A m m' s} :
     AgreeSubst σ σ' 0 Δ H ->
     AgreeSubst (m .: σ) (m' .: σ') 0 (A :⟨.im, s⟩ Δ) H
-  | wk_ex {Δ H1 H2 H3 σ σ' m m' A s} :
+  | intro_ex {Δ H1 H2 H3 σ σ' m m' A s} :
     WR H2 ->
     HLower H2 s ->
     HMerge H1 H2 H3 ->
@@ -27,18 +27,29 @@ where
     AgreeSubst σ σ' 0 Δ H1 ->
     AgreeSubst (m .: σ) (m' .: σ') 0 (A :⟨.ex, s⟩ Δ) H3
 
+lemma AgreeSubst.implicit_image {Δ : Ctx Srt} {H σ σ' x} :
+    AgreeSubst σ σ' x Δ H -> Implicit Δ -> HLower H ord.e := by
+  intro agr im; induction agr
+  case nil => assumption
+  case cons ih =>
+    simp at im; replace ⟨e, im⟩ := im; subst_vars
+    apply ih; apply im
+  case intro_im ih =>
+    simp at im
+    apply ih; apply im
+  case intro_ex => simp at im
+
 lemma AgreeSubst.lower_image {Δ : Ctx Srt} {H σ σ' x s} :
     AgreeSubst σ σ' x Δ H -> Lower Δ s -> HLower H s := by
   intro agr lw; induction agr generalizing s
   case nil hw =>
-    apply hw.trans
-    apply ord.e_min
+    apply hw.weaken (ord.e_min _)
   case cons => cases lw <;> aesop
-  case wk_im => cases lw; aesop
-  case wk_ex wr hw2 mrg erm agr ih =>
+  case intro_im => cases lw; aesop
+  case intro_ex wr hw2 mrg erm agr ih =>
     cases lw; case ex le lw =>
     have hw1 := ih lw
-    replace hw2 := hw2.trans le
+    replace hw2 := hw2.weaken le
     apply mrg.lower_image hw1 hw2
 
 lemma AgreeSubst.subst_var {Δ : Ctx Srt} {H σ σ' i x} :
@@ -84,7 +95,7 @@ lemma AgreeSubst.wr_heap {Δ : Ctx Srt} {H σ σ' i} :
     AgreeSubst σ σ' i Δ H -> WR H := by
   intro agr; induction agr
   all_goals try aesop
-  case wk_ex wr2 _ mrg _ _ wr1 =>
+  case intro_ex wr2 _ mrg _ _ wr1 =>
     apply mrg.merge_wr wr1 wr2
 
 def IdRename (i : Var) (ξ : Var -> Var) : Prop := ∀ x, x < i -> ξ x = x
@@ -124,19 +135,73 @@ lemma NF.id_rename {m : Tm Srt} {i ξ} :
   case ite =>
     have ⟨nf1, nf2⟩ := nf
     asimp; aesop
-  case rw => asimp; aesop
+  case drop =>
+    have ⟨nf1, nf2⟩ := nf
+    asimp; aesop
 
 lemma Resolve.id_rename {H : Heap Srt} {m m' i ξ} :
     H ;; m ▷ m' -> WR H -> IdRename i ξ -> H ;; m.[ren ξ] ▷ m'.[ren ξ] := by
   intro rs wr idr; induction rs generalizing i ξ
-  case var => sorry
-  case lam => sorry
-  case app => sorry
-  case tup => sorry
-  case prj => sorry
-  case tt => sorry
-  case ff => sorry
-  case ite => sorry
-  case rw => sorry
-  case ptr => sorry
-  case null => sorry
+  case var => asimp; constructor; aesop
+  case lam lw _ ih =>
+    asimp; apply Resolve.lam lw
+    replace ih := ih wr idr.up
+    asimp at ih; apply ih
+  case app mrg rsm rsn ihm ihn =>
+    have ⟨wr1, wr2⟩ := mrg.split_wr wr
+    replace ihm := ihm wr1 idr
+    replace ihn := ihn wr2 idr
+    asimp; apply Resolve.app mrg ihm ihn
+  case tup mrg rsm rsn ihm ihn =>
+    have ⟨wr1, wr2⟩ := mrg.split_wr wr
+    replace ihm := ihm wr1 idr
+    replace ihn := ihn wr2 idr
+    asimp; apply Resolve.tup mrg ihm ihn
+  case prj mrg rsm rsn ihm ihn =>
+    have ⟨wr1, wr2⟩ := mrg.split_wr wr
+    replace ihm := ihm wr1 idr
+    replace ihn := ihn wr2 idr.up.up; asimp at ihn
+    asimp; apply Resolve.prj mrg ihm ihn
+  case tt => asimp; constructor; assumption
+  case ff => asimp; constructor; assumption
+  case ite mrg rsm rsn1 rsn2 ihm ihn1 ihn2 =>
+    have ⟨wr1, wr2⟩ := mrg.split_wr wr
+    replace ihm := ihm wr1 idr
+    replace ihn1 := ihn1 wr2 idr
+    replace ihn2 := ihn2 wr2 idr
+    asimp; apply Resolve.ite mrg ihm ihn1 ihn2
+  case drop mrg rsm rsn ihm ihn =>
+    have ⟨wr1, wr2⟩ := mrg.split_wr wr
+    replace ihm := ihm wr1 idr
+    replace ihn := ihn wr2 idr
+    asimp; apply Resolve.drop mrg ihm ihn
+  case ptr lk erm ihm =>
+    asimp
+    have nfm := lk.nf wr
+    have wr' := lk.wr_image wr
+    have nfm' := (erm.nf_image wr' nfm).weaken (zero_le i)
+    rw[<-nfm'.id_rename idr]
+    constructor <;> assumption
+  case null => asimp; constructor; assumption
+
+lemma AgreeSubst.has {Δ : Ctx Srt} {H σ σ' x i s A} :
+    AgreeSubst σ σ' i Δ H -> Has Δ x s A -> H ;; σ x ▷ σ' x := by
+  intro agr hs; induction agr generalizing x s A
+  case nil => cases hs
+  case cons agr ih =>
+    cases hs
+    case nil im =>
+      have lw := agr.implicit_image im
+      asimp; constructor; assumption
+    case cons =>
+      asimp; apply Resolve.id_rename
+      . aesop
+      . apply agr.wr_heap
+      . apply IdRename.zero
+  case intro_im =>
+    cases hs; asimp; aesop
+  case intro_ex wr lw mrg rsm agr ih =>
+    cases hs; case nil im =>
+    asimp
+    have lw := agr.implicit_image im
+    apply rsm.weaken_merge mrg.sym lw

@@ -153,139 +153,6 @@ lemma HLookup.insert {H1 H2 : Heap Srt} {l1 l2 m n s} :
         repeat rw[Finmap.lookup_erase_ne ne1]
         rw[Finmap.lookup_insert_of_ne _ ne2]
 
-lemma Resolve.weaken {H : Heap Srt} {m m' n l} :
-    H ;; m ▷ m' -> l ∉ H.keys -> H.insert l ⟨n, ord.e⟩ ;; m ▷ m' := by
-  intro rs h
-  induction rs generalizing l
-  case var lw =>
-    constructor
-    intro x
-    cases x.decEq l with
-    | isTrue =>
-      subst_vars
-      rw[Finmap.lookup_insert]
-    | isFalse ne =>
-      rw[Finmap.lookup_insert_of_ne _ ne]
-      apply lw
-  case lam lw erm ih =>
-    constructor <;> try aesop
-    intro x
-    cases x.decEq l with
-    | isTrue =>
-      subst_vars
-      rw[Finmap.lookup_insert]; simp
-      apply ord.e_min
-    | isFalse ne =>
-      rw[Finmap.lookup_insert_of_ne _ ne]
-      apply lw
-  case app mrg erm ern ihm ihn =>
-    have ⟨h1, h2⟩ := mrg.split_none h
-    replace ihm := ihm h1
-    replace ihn := ihn h2
-    apply Resolve.app _ ihm ihn
-    intro x
-    cases x.decEq l with
-    | isTrue =>
-      subst_vars
-      rw[Finmap.lookup_insert]; simp
-      apply ord.e_contra
-    | isFalse ne =>
-      repeat rw[Finmap.lookup_insert_of_ne _ ne]
-      apply mrg
-  case tup mrg erm ern ihm ihn =>
-    have ⟨h1, h2⟩ := mrg.split_none h
-    replace ihm := ihm h1
-    replace ihn := ihn h2
-    apply Resolve.tup _ ihm ihn
-    intro x
-    cases x.decEq l with
-    | isTrue =>
-      subst_vars
-      rw[Finmap.lookup_insert]; simp
-      apply ord.e_contra
-    | isFalse ne =>
-      repeat rw[Finmap.lookup_insert_of_ne _ ne]
-      apply mrg
-  case prj mrg erm ern ihm ihn =>
-    have ⟨h1, h2⟩ := mrg.split_none h
-    replace ihm := ihm h1
-    replace ihn := ihn h2
-    apply Resolve.prj _ ihm ihn
-    intro x
-    cases x.decEq l with
-    | isTrue =>
-      subst_vars
-      rw[Finmap.lookup_insert]; simp
-      apply ord.e_contra
-    | isFalse ne =>
-      repeat rw[Finmap.lookup_insert_of_ne _ ne]
-      apply mrg
-  case tt lw =>
-    constructor
-    intro x
-    cases x.decEq l with
-    | isTrue =>
-      subst_vars
-      rw[Finmap.lookup_insert]
-    | isFalse ne =>
-      repeat rw[Finmap.lookup_insert_of_ne _ ne]
-      apply lw
-  case ff lw =>
-    constructor
-    intro x
-    cases x.decEq l with
-    | isTrue =>
-      subst_vars
-      rw[Finmap.lookup_insert]
-    | isFalse ne =>
-      repeat rw[Finmap.lookup_insert_of_ne _ ne]
-      apply lw
-  case ite mrg erm ern1 ern2 ihm ihn1 ihn2 =>
-    have ⟨h1, h2⟩ := mrg.split_none h
-    replace ihm := ihm h1
-    replace ihn1 := ihn1 h2
-    replace ihn2 := ihn2 h2
-    apply Resolve.ite _ ihm ihn1 ihn2
-    intro x
-    cases x.decEq l with
-    | isTrue =>
-      subst_vars
-      repeat rw[Finmap.lookup_insert]; simp
-      apply ord.e_contra
-    | isFalse ne =>
-      repeat rw[Finmap.lookup_insert_of_ne _ ne]
-      apply mrg
-  case drop mrg erm ern ihm ihn =>
-    have ⟨h1, h2⟩ := mrg.split_none h
-    replace ihm := ihm h1
-    replace ihn := ihn h2
-    apply Resolve.drop _ ihm ihn
-    intro x
-    cases x.decEq l with
-    | isTrue =>
-      subst_vars
-      rw[Finmap.lookup_insert]; simp
-      apply ord.e_contra
-    | isFalse ne =>
-      repeat rw[Finmap.lookup_insert_of_ne _ ne]
-      apply mrg
-  case ptr lw erm ih =>
-    constructor
-    . apply HLookup.insert
-      assumption
-      assumption
-    . apply ih
-      apply lw.not_mem h
-  case null lw =>
-    constructor
-    intro x
-    cases x.decEq l with
-    | isTrue =>
-      subst_vars
-      repeat rw[Finmap.lookup_insert]
-    | isFalse ne =>
-      rw[Finmap.lookup_insert_of_ne _ ne]
-      apply lw
 
 lemma Erased.resolve_refl {Γ Δ} {H : Heap Srt} {m n A} :
     Γ ;; Δ ⊢ m ▷ n : A -> HLower H ord.e -> H ;; n ▷ n := by
@@ -295,11 +162,11 @@ lemma Erased.resolve_refl {Γ Δ} {H : Heap Srt} {m n A} :
     constructor; assumption
   case lam_im ih =>
     constructor
-    apply lw.trans (ord.e_min _)
+    apply lw.weaken (ord.e_min _)
     apply ih lw
   case lam_ex ih =>
     constructor
-    apply lw.trans (ord.e_min _)
+    apply lw.weaken (ord.e_min _)
     apply ih lw
   case app_im ih =>
     have mrg := lw.merge_refl
@@ -647,6 +514,195 @@ lemma Resolve.nf_preimage {H : Heap Srt} {m m' i} :
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     aesop
 
+lemma Resolve.weaken_insert {H : Heap Srt} {m m' n l} :
+    H ;; m ▷ m' -> l ∉ H.keys -> H.insert l ⟨n, ord.e⟩ ;; m ▷ m' := by
+  intro rs h
+  induction rs generalizing l
+  case var lw =>
+    constructor
+    intro x
+    cases x.decEq l with
+    | isTrue =>
+      subst_vars
+      rw[Finmap.lookup_insert]
+    | isFalse ne =>
+      rw[Finmap.lookup_insert_of_ne _ ne]
+      apply lw
+  case lam lw erm ih =>
+    constructor <;> try aesop
+    intro x
+    cases x.decEq l with
+    | isTrue =>
+      subst_vars
+      rw[Finmap.lookup_insert]; simp
+      apply ord.e_min
+    | isFalse ne =>
+      rw[Finmap.lookup_insert_of_ne _ ne]
+      apply lw
+  case app mrg erm ern ihm ihn =>
+    have ⟨h1, h2⟩ := mrg.split_none h
+    replace ihm := ihm h1
+    replace ihn := ihn h2
+    apply Resolve.app _ ihm ihn
+    intro x
+    cases x.decEq l with
+    | isTrue =>
+      subst_vars
+      rw[Finmap.lookup_insert]; simp
+      apply ord.e_contra
+    | isFalse ne =>
+      repeat rw[Finmap.lookup_insert_of_ne _ ne]
+      apply mrg
+  case tup mrg erm ern ihm ihn =>
+    have ⟨h1, h2⟩ := mrg.split_none h
+    replace ihm := ihm h1
+    replace ihn := ihn h2
+    apply Resolve.tup _ ihm ihn
+    intro x
+    cases x.decEq l with
+    | isTrue =>
+      subst_vars
+      rw[Finmap.lookup_insert]; simp
+      apply ord.e_contra
+    | isFalse ne =>
+      repeat rw[Finmap.lookup_insert_of_ne _ ne]
+      apply mrg
+  case prj mrg erm ern ihm ihn =>
+    have ⟨h1, h2⟩ := mrg.split_none h
+    replace ihm := ihm h1
+    replace ihn := ihn h2
+    apply Resolve.prj _ ihm ihn
+    intro x
+    cases x.decEq l with
+    | isTrue =>
+      subst_vars
+      rw[Finmap.lookup_insert]; simp
+      apply ord.e_contra
+    | isFalse ne =>
+      repeat rw[Finmap.lookup_insert_of_ne _ ne]
+      apply mrg
+  case tt lw =>
+    constructor
+    intro x
+    cases x.decEq l with
+    | isTrue =>
+      subst_vars
+      rw[Finmap.lookup_insert]
+    | isFalse ne =>
+      repeat rw[Finmap.lookup_insert_of_ne _ ne]
+      apply lw
+  case ff lw =>
+    constructor
+    intro x
+    cases x.decEq l with
+    | isTrue =>
+      subst_vars
+      rw[Finmap.lookup_insert]
+    | isFalse ne =>
+      repeat rw[Finmap.lookup_insert_of_ne _ ne]
+      apply lw
+  case ite mrg erm ern1 ern2 ihm ihn1 ihn2 =>
+    have ⟨h1, h2⟩ := mrg.split_none h
+    replace ihm := ihm h1
+    replace ihn1 := ihn1 h2
+    replace ihn2 := ihn2 h2
+    apply Resolve.ite _ ihm ihn1 ihn2
+    intro x
+    cases x.decEq l with
+    | isTrue =>
+      subst_vars
+      repeat rw[Finmap.lookup_insert]; simp
+      apply ord.e_contra
+    | isFalse ne =>
+      repeat rw[Finmap.lookup_insert_of_ne _ ne]
+      apply mrg
+  case drop mrg erm ern ihm ihn =>
+    have ⟨h1, h2⟩ := mrg.split_none h
+    replace ihm := ihm h1
+    replace ihn := ihn h2
+    apply Resolve.drop _ ihm ihn
+    intro x
+    cases x.decEq l with
+    | isTrue =>
+      subst_vars
+      rw[Finmap.lookup_insert]; simp
+      apply ord.e_contra
+    | isFalse ne =>
+      repeat rw[Finmap.lookup_insert_of_ne _ ne]
+      apply mrg
+  case ptr lw erm ih =>
+    constructor
+    . apply HLookup.insert
+      assumption
+      assumption
+    . apply ih
+      apply lw.not_mem h
+  case null lw =>
+    constructor
+    intro x
+    cases x.decEq l with
+    | isTrue =>
+      subst_vars
+      repeat rw[Finmap.lookup_insert]
+    | isFalse ne =>
+      rw[Finmap.lookup_insert_of_ne _ ne]
+      apply lw
+
+lemma Resolve.weaken_merge {H1 H2 H3 : Heap Srt} {m m'} :
+    HMerge H1 H2 H3 -> HLower H2 ord.e -> H1 ;; m ▷ m' -> H3 ;; m ▷ m' := by
+  intro mrg lw2 rsm; induction rsm generalizing H2 H3
+  case var H1 x lw1 =>
+    have lw := mrg.lower_image lw1 lw2
+    constructor; assumption
+  case lam lw1 rsm ihm =>
+    have lw := mrg.lower_image lw1 (lw2.weaken (ord.e_min _))
+    replace ihm := ihm mrg lw2
+    constructor <;> assumption
+  case app Ha Hb H1 _ _ _ _ mrg1 rsm rsn ihm ihn =>
+    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower
+    have ⟨H1', H2', mrg', mrga, mrgb⟩ := mrg.distr mrg1 mrg2
+    replace ihm := ihm mrga lwa
+    replace ihn := ihn mrgb lwb
+    constructor <;> assumption
+  case tup Ha Hb H1 _ _ _ _ mrg1 rsm rsn ihm ihn =>
+    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower
+    have ⟨H1', H2', mrg', mrga, mrgb⟩ := mrg.distr mrg1 mrg2
+    replace ihm := ihm mrga lwa
+    replace ihn := ihn mrgb lwb
+    constructor <;> assumption
+  case prj Ha Hb H1 _ _ _ _ mrg1 rsm rsn ihm ihn =>
+    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower
+    have ⟨H1', H2', mrg', mrga, mrgb⟩ := mrg.distr mrg1 mrg2
+    replace ihm := ihm mrga lwa
+    replace ihn := ihn mrgb lwb
+    constructor <;> assumption
+  case tt lw1 =>
+    have lw := mrg.lower_image lw1 lw2
+    constructor; assumption
+  case ff lw1 =>
+    have lw := mrg.lower_image lw1 lw2
+    constructor; assumption
+  case ite Ha Hb H1 _ _ _ _ _ _ mrg1 rsm rsn1 rsn2 ihm ihn1 ihn2 =>
+    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower
+    have ⟨H1', H2', mrg', mrga, mrgb⟩ := mrg.distr mrg1 mrg2
+    replace ihm := ihm mrga lwa
+    replace ihn1 := ihn1 mrgb lwb
+    replace ihn2 := ihn2 mrgb lwb
+    constructor <;> assumption
+  case drop Ha Hb H1 _ _ _ _ mrg1 rsm rsn ihm ihn =>
+    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower
+    have ⟨H1', H2', mrg', mrga, mrgb⟩ := mrg.distr mrg1 mrg2
+    replace ihm := ihm mrga lwa
+    replace ihn := ihn mrgb lwb
+    constructor <;> assumption
+  case ptr H1 H1' _ _ _ lk rsm ih =>
+    have ⟨H3', lk', mrg'⟩  := lk.merge mrg
+    replace ih := ih mrg' lw2
+    constructor <;> assumption
+  case null lw1 =>
+    have lw := mrg.lower_image lw1 lw2
+    constructor; assumption
+
 lemma HLookup.not_wr_ptr {H H' : Heap Srt} {l i} :
     HLookup H l (.ptr i) H' -> ¬ WR H := by
   intro lk wr
@@ -847,8 +903,8 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
       have ⟨wr1, wr2⟩ := mrg.split_wr wr
       have lw1 := ihm rsm tyA vl1 wr1
       have ⟨lw2, _⟩ := rsn.null_inv wr2; subst_vars
-      replace lw1 := lw1.trans le
-      replace lw2 := lw2.trans (ord.e_min s)
+      replace lw1 := lw1.weaken le
+      replace lw2 := lw2.weaken (ord.e_min s)
       apply mrg.lower_image lw1 lw2
     case ptr l _ m lk rs =>
       cases m <;> cases rs
@@ -857,8 +913,8 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
         have ⟨wr1, wr2⟩ := mrg.split_wr wr'
         have lw1 := ihm rsm tyA vl1 wr1
         have ⟨lw2, _⟩ := rsn.null_inv wr2; subst_vars
-        replace lw1 := lw1.trans le
-        replace lw2 := lw2.trans (ord.e_min s)
+        replace lw1 := lw1.weaken le
+        replace lw2 := lw2.weaken (ord.e_min s)
         have lw := mrg.lower_image lw1 lw2
         unfold HLookup at lk
         split at lk <;> try trivial
@@ -892,8 +948,8 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
       have ⟨wr1, wr2⟩ := mrg.split_wr wr
       have lw1 := ihm rsm tyA wr1
       have lw2 := ihn rsn (tyB.subst erm.toStatic) wr2
-      replace lw1 := lw1.trans le1
-      replace lw2 := lw2.trans le2
+      replace lw1 := lw1.weaken le1
+      replace lw2 := lw2.weaken le2
       apply mrg.lower_image lw1 lw2
     case ptr l _ m lk rs =>
       cases m <;> cases rs
@@ -902,8 +958,8 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
         have ⟨wr1, wr2⟩ := mrg.split_wr wr'
         have lw1 := ihm rsm tyA wr1
         have lw2 := ihn rsn (tyB.subst erm.toStatic) wr2
-        replace lw1 := lw1.trans le1
-        replace lw2 := lw2.trans le2
+        replace lw1 := lw1.weaken le1
+        replace lw2 := lw2.weaken le2
         have lw := mrg.lower_image lw1 lw2
         unfold HLookup at lk
         split at lk <;> try trivial
@@ -936,10 +992,10 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
         exfalso; apply lk.not_wr_ptr wr
   case tt =>
     have lw := rs.tt_inv wr
-    apply lw.trans (ord.e_min s)
+    apply lw.weaken (ord.e_min s)
   case ff =>
     have lw := rs.ff_inv wr
-    apply lw.trans (ord.e_min s)
+    apply lw.weaken (ord.e_min s)
   case rw tyA tyn erm ihm =>
     have ⟨eq, _⟩ := tyn.closed_idn tyA
     have ⟨s, i, ty'⟩ := erm.validity

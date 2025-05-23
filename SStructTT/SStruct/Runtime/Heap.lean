@@ -40,7 +40,7 @@ def HLower (H : Heap Srt) (s0 : Srt) : Prop :=
     | some (_, s) => s <= s0
     | none => True
 
-lemma HLower.trans {H : Heap Srt} {s1 s2 : Srt} :
+lemma HLower.weaken {H : Heap Srt} {s1 s2 : Srt} :
     HLower H s1 -> s1 ≤ s2 -> HLower H s2 := by
   intro lw le x
   split <;> try simp
@@ -205,7 +205,7 @@ lemma HMerge.insert_left {H1 H2 H3 : Heap Srt} {m l s} :
     simp[Finmap.lookup_insert_of_ne _ ne]
     apply mrg
 
-lemma HMerge.split_lower {H3 : Heap Srt} :
+lemma HLower.split_lower {H3 : Heap Srt} :
     HLower H3 ord.e ->
     ∃ H1 H2, HLower H1 ord.e ∧ HLower H2 ord.e ∧ HMerge H1 H2 H3 := by
   intro lw
