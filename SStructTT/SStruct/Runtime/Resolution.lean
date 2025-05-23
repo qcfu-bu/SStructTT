@@ -127,6 +127,8 @@ where
 notation:50 Γ:50 " ;; " Δ:51 " ;; " H:51 " ⊢ " x:51 " ▷ " y:51 " ◁ " z:51 " : " A:51 =>
   Resolved Γ Δ H x y z A
 
+lemma WR.empty : @WR Srt _ ∅ := by intro l; simp
+
 lemma HLookup.not_mem {H1 H2 : Heap Srt} {l1 l2 m} :
     HLookup H1 l1 m H2 -> l2 ∉ H1.keys -> l2 ∉ H2.keys := by
   intro lk h

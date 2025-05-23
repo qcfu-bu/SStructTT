@@ -52,6 +52,16 @@ lemma AgreeSubst.lower_image {Δ : Ctx Srt} {H σ σ' x s} :
     replace hw2 := hw2.weaken le
     apply mrg.lower_image hw1 hw2
 
+lemma AgreeSubst.ids {Δ : Ctx Srt} {H x} :
+    WR H -> HLower H ord.e -> x = Δ.length -> AgreeSubst ids ids x Δ H := by
+  intro wr lw e; subst e
+  induction Δ
+  case nil => constructor <;> assumption
+  case cons hd tl ih =>
+    simp; have ⟨A, r, s⟩ := hd
+    replace ih := ih.cons (A := A) (r := r) (s := s)
+    asimp at ih; apply ih
+
 lemma AgreeSubst.subst_var {Δ : Ctx Srt} {H σ σ' i x} :
     AgreeSubst σ σ' i Δ H -> x < i -> .var x = σ x := by
   intro agr le; induction agr generalizing x
@@ -493,7 +503,21 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
       case ptr => exfalso; apply lk.not_wr_ptr wr
   case conv => aesop
 
--- lemma Resolved.subst_im {H : Heap Srt} {Γ Δ m n n' A B s} :
---     A :: Γ ;; A :⟨.im, s⟩ Δ ;; H ⊢ m ▷ n ◁ n' : B ->
---     H ;; n'.[.null/] ▷ n.[.null/] := by
---   sorry
+lemma Resolved.subst_im {H : Heap Srt} {m n n' A B s} :
+    A :: [] ;; A :⟨.im, s⟩ [] ;; H ⊢ m ▷ n ◁ n' : B ->
+    H ;; n'.[.null/] ▷ n.[.null/] := by
+  intro rsm
+  apply rsm.substitution HMerge.empty
+  apply AgreeSubst.intro_im
+  apply AgreeSubst.ids WR.empty HLower.empty (by simp)
+
+lemma Resolved.subst_ex {H1 H2 H3 : Heap Srt} {m n n' t t' A B s} :
+    WR H2 -> HLower H2 s -> HMerge H1 H2 H3 ->
+    A :: [] ;; A :⟨.ex, s⟩ [] ;; H1 ⊢ m ▷ n ◁ n' : B ->
+    H2 ;; t' ▷ t ->
+    H3 ;; n'.[t'/] ▷ n.[t/] := by
+  intro wr lw mrg rsm rst
+  apply rsm.substitution mrg
+  apply AgreeSubst.intro_ex wr lw HMerge.empty.sym
+  . assumption
+  . apply AgreeSubst.ids WR.empty HLower.empty (by simp)

@@ -40,6 +40,9 @@ def HLower (H : Heap Srt) (s0 : Srt) : Prop :=
     | some (_, s) => s <= s0
     | none => True
 
+lemma HLower.empty {s : Srt} : HLower ∅ s := by
+  intro l; simp
+
 lemma HLower.weaken {H : Heap Srt} {s1 s2 : Srt} :
     HLower H s1 -> s1 ≤ s2 -> HLower H s2 := by
   intro lw le x
@@ -116,6 +119,15 @@ lemma HLower.merge_refl {H : Heap Srt} {s} :
     apply ord.contra_set.lower lw1
     apply h
   case h_2 => aesop
+
+lemma HMerge.empty {H : Heap Srt} : HMerge H ∅ H := by
+  intro l; split <;> try simp_all
+  case h_5 h1 h2 =>
+    revert h1 h2
+    generalize Finmap.lookup l H = opt
+    cases opt
+    . simp
+    . aesop
 
 lemma HMerge.lower_image {H1 H2 H3 : Heap Srt} {s} :
     HMerge H1 H2 H3 -> HLower H1 s -> HLower H2 s -> HLower H3 s := by
