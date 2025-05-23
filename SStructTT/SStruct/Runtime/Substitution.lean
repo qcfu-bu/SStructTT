@@ -205,3 +205,77 @@ lemma AgreeSubst.has {Δ : Ctx Srt} {H σ σ' x i s A} :
     asimp
     have lw := agr.implicit_image im
     apply rsm.weaken_merge mrg.sym lw
+
+lemma AgreeSubst.split {Δ1 Δ2 Δ3 : Ctx Srt} {H3 σ σ' x} :
+    AgreeSubst σ σ' x Δ3 H3 -> Merge Δ1 Δ2 Δ3 ->
+    ∃ H1 H2,
+      HMerge H1 H2 H3 ∧
+      AgreeSubst σ σ' x Δ1 H1 ∧
+      AgreeSubst σ σ' x Δ2 H2 := by
+  intro agr mrg; induction agr generalizing Δ1 Δ2
+  case nil wr lw =>
+    cases mrg
+    have ⟨H1, H2, lw1, lw2, mrg⟩ := lw.split_lower ord.e_contra
+    have ⟨wr1, wr2⟩ := mrg.split_wr wr
+    exists H1, H2; and_intros
+    . assumption
+    . constructor <;> assumption
+    . constructor <;> assumption
+  case cons agr ih =>
+    cases mrg
+    case contra mrg =>
+      have ⟨H1, H2, mrg, agr1, agr2⟩ := ih mrg
+      exists H1, H2; and_intros
+      . assumption
+      . constructor; assumption
+      . constructor; assumption
+    case left mrg =>
+      have ⟨H1, H2, mrg, agr1, agr2⟩ := ih mrg
+      exists H1, H2; and_intros
+      . assumption
+      . constructor; assumption
+      . constructor; assumption
+    case right mrg =>
+      have ⟨H1, H2, mrg, agr1, agr2⟩ := ih mrg
+      exists H1, H2; and_intros
+      . assumption
+      . constructor; assumption
+      . constructor; assumption
+    case im mrg =>
+      have ⟨H1, H2, mrg, agr1, agr2⟩ := ih mrg
+      exists H1, H2; and_intros
+      . assumption
+      . constructor; assumption
+      . constructor; assumption
+  case intro_im ih =>
+    cases mrg
+    case im mrg =>
+      have ⟨H1, H2, mrg, agr1, agr2⟩ := ih mrg
+      exists H1, H2; and_intros
+      . assumption
+      . constructor; assumption
+      . constructor; assumption
+  case intro_ex A s wr2 lw2 mrg1 rsm agr ih =>
+    cases mrg
+    case contra h mrg =>
+      have ⟨H1, H2, mrg2, agr1, agr2⟩ := ih mrg
+      have mrg3 := lw2.merge_refl h
+      have ⟨H1', H2', mrg', mrg1', mrg2'⟩ := mrg1.distr mrg2 mrg3
+      exists H1', H2'; and_intros
+      . apply mrg'
+      . apply AgreeSubst.intro_ex wr2 lw2 mrg1' rsm agr1
+      . apply AgreeSubst.intro_ex wr2 lw2 mrg2' rsm agr2
+    case left mrg =>
+      have ⟨H1, H2, mrg2, agr1, agr2⟩ := ih mrg
+      have ⟨Ha, mrg1', mrg2'⟩ := mrg1.split mrg2
+      exists Ha, H2; and_intros
+      . apply mrg2'
+      . apply AgreeSubst.intro_ex wr2 lw2 mrg1' rsm agr1
+      . apply AgreeSubst.intro_im agr2
+    case right  mrg =>
+      have ⟨H1, H2, mrg2, agr1, agr2⟩ := ih mrg.sym
+      have ⟨Ha, mrg1', mrg2'⟩ := mrg1.split mrg2
+      exists H2, Ha; and_intros
+      . apply mrg2'.sym
+      . apply AgreeSubst.intro_im agr2
+      . apply AgreeSubst.intro_ex wr2 lw2 mrg1' rsm agr1

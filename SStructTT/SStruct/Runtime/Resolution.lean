@@ -169,39 +169,39 @@ lemma Erased.resolve_refl {Γ Δ} {H : Heap Srt} {m n A} :
     apply lw.weaken (ord.e_min _)
     apply ih lw
   case app_im ih =>
-    have mrg := lw.merge_refl
+    have mrg := lw.merge_refl ord.e_contra
     constructor
     . apply mrg
     . apply ih lw
     . constructor
       assumption
   case app_ex =>
-    have mrg := lw.merge_refl
+    have mrg := lw.merge_refl ord.e_contra
     constructor <;> aesop
   case tup_im ih =>
-    have mrg := lw.merge_refl
+    have mrg := lw.merge_refl ord.e_contra
     constructor
     . apply mrg
     . apply ih lw
     . constructor
       assumption
   case tup_ex =>
-    have mrg := lw.merge_refl
+    have mrg := lw.merge_refl ord.e_contra
     constructor <;> aesop
   case prj_im =>
-    have mrg := lw.merge_refl
+    have mrg := lw.merge_refl ord.e_contra
     constructor <;> aesop
   case prj_ex =>
-    have mrg := lw.merge_refl
+    have mrg := lw.merge_refl ord.e_contra
     constructor <;> aesop
   case tt => constructor; assumption
   case ff => constructor; assumption
   case ite =>
-    have mrg := lw.merge_refl
+    have mrg := lw.merge_refl ord.e_contra
     constructor <;> aesop
   case rw => aesop
   case drop ih =>
-    have mrg := lw.merge_refl
+    have mrg := lw.merge_refl ord.e_contra
     constructor <;> aesop
   case conv => aesop
 
@@ -659,19 +659,19 @@ lemma Resolve.weaken_merge {H1 H2 H3 : Heap Srt} {m m'} :
     replace ihm := ihm mrg lw2
     constructor <;> assumption
   case app Ha Hb H1 _ _ _ _ mrg1 rsm rsn ihm ihn =>
-    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower
+    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower ord.e_contra
     have ⟨H1', H2', mrg', mrga, mrgb⟩ := mrg.distr mrg1 mrg2
     replace ihm := ihm mrga lwa
     replace ihn := ihn mrgb lwb
     constructor <;> assumption
   case tup Ha Hb H1 _ _ _ _ mrg1 rsm rsn ihm ihn =>
-    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower
+    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower ord.e_contra
     have ⟨H1', H2', mrg', mrga, mrgb⟩ := mrg.distr mrg1 mrg2
     replace ihm := ihm mrga lwa
     replace ihn := ihn mrgb lwb
     constructor <;> assumption
   case prj Ha Hb H1 _ _ _ _ mrg1 rsm rsn ihm ihn =>
-    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower
+    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower ord.e_contra
     have ⟨H1', H2', mrg', mrga, mrgb⟩ := mrg.distr mrg1 mrg2
     replace ihm := ihm mrga lwa
     replace ihn := ihn mrgb lwb
@@ -683,14 +683,14 @@ lemma Resolve.weaken_merge {H1 H2 H3 : Heap Srt} {m m'} :
     have lw := mrg.lower_image lw1 lw2
     constructor; assumption
   case ite Ha Hb H1 _ _ _ _ _ _ mrg1 rsm rsn1 rsn2 ihm ihn1 ihn2 =>
-    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower
+    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower ord.e_contra
     have ⟨H1', H2', mrg', mrga, mrgb⟩ := mrg.distr mrg1 mrg2
     replace ihm := ihm mrga lwa
     replace ihn1 := ihn1 mrgb lwb
     replace ihn2 := ihn2 mrgb lwb
     constructor <;> assumption
   case drop Ha Hb H1 _ _ _ _ mrg1 rsm rsn ihm ihn =>
-    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower
+    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower ord.e_contra
     have ⟨H1', H2', mrg', mrga, mrgb⟩ := mrg.distr mrg1 mrg2
     replace ihm := ihm mrga lwa
     replace ihn := ihn mrgb lwb

@@ -106,17 +106,15 @@ def HMerge (H1 H2 H3 : Heap Srt) : Prop :=
     | none, none, none => True
     | _, _, _ => False
 
-lemma HLower.merge_refl {H : Heap Srt} :
-    HLower H ord.e -> HMerge H H H := by
-  intro lw1 x
+lemma HLower.merge_refl {H : Heap Srt} {s} :
+    HLower H s -> s ∈ ord.contra_set -> HMerge H H H := by
+  intro lw1 h x
   replace lw1 := lw1 x
   split at lw1
   case h_1 opt m s e =>
     rw[e]; simp
-    have lw2 := ord.e_min s
-    have e := ord.le_antisymm _ _ lw1 lw2
-    subst e
-    apply ord.e_contra
+    apply ord.contra_set.lower lw1
+    apply h
   case h_2 => aesop
 
 lemma HMerge.lower_image {H1 H2 H3 : Heap Srt} {s} :
@@ -205,14 +203,14 @@ lemma HMerge.insert_left {H1 H2 H3 : Heap Srt} {m l s} :
     simp[Finmap.lookup_insert_of_ne _ ne]
     apply mrg
 
-lemma HLower.split_lower {H3 : Heap Srt} :
-    HLower H3 ord.e ->
-    ∃ H1 H2, HLower H1 ord.e ∧ HLower H2 ord.e ∧ HMerge H1 H2 H3 := by
-  intro lw
+lemma HLower.split_lower {H3 : Heap Srt} {s} :
+    HLower H3 s -> s ∈ ord.contra_set ->
+    ∃ H1 H2, HLower H1 s ∧ HLower H2 s ∧ HMerge H1 H2 H3 := by
+  intro lw h
   exists H3, H3; and_intros
   . assumption
   . assumption
-  . apply lw.merge_refl
+  . apply lw.merge_refl h
 
 lemma HMerge.lookup_collision {H1 H2 H3 : Heap Srt} {l} :
     HMerge H1 H2 H3 -> l ∈ H1.keys -> H1.lookup l = H3.lookup l := by
