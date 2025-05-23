@@ -14,12 +14,16 @@ inductive Star (x : T) : T -> Prop where
   | R : Star x x
   | SE {y z} : Star x y -> e y z -> Star x z
 
+inductive Star1 (x : T) : T -> Prop where
+  | E  {y} :  e x y -> Star1 x y
+  | SE {y z} : Star1 x y -> e y z -> Star1 x z
+
 inductive Conv (x : T) : T -> Prop where
   | R : Conv x x
   | SE  {y z} : Conv x y -> e y z -> Conv x z
   | SEi {y z} : Conv x y -> e z y -> Conv x z
 
-attribute [aesop safe] Star.R Conv.R
+attribute [aesop safe] Star.R Star1.E Conv.R
 
 def Com (R S : Rel T) := ∀ {x y z}, R x y -> S x z -> ∃ u, S y u ∧ R z u
 def Joinable (R : Rel T) x y := ∃ z, R x z ∧ R y z
@@ -98,6 +102,110 @@ lemma Star.monotone {e1 e2 : Rel T} : e1 <=2 e2 -> Star e1 <=2 Star e2 := by
   intros x y h2
   specialize h1 h2
   apply Star.one h1
+
+lemma Star.subrelation {e1 e2 : Rel T} :
+    Subrelation e1 e2 -> Subrelation (Star e1) (Star e2) := by
+  intro h x y rd
+  induction rd
+  case R => constructor
+  case SE st ih =>
+    apply Star.SE ih (h st)
+
+lemma Star1.trans {y x z} : Star1 e x y -> Star1 e y z -> Star1 e x z := by
+  intros h1 h2
+  induction h2 with
+  | E => apply Star1.SE <;> assumption
+  | SE => apply Star1.SE <;> assumption
+
+lemma Star1.ES {y x z} : e x y -> Star1 e y z -> Star1 e x z := by
+  intro h
+  apply Star1.trans
+  apply Star1.E
+  assumption
+
+lemma Star1.conv {x y} : Star1 e x y -> Conv e x y := by
+  intro h
+  induction h with
+  | E h => apply Conv.SE Conv.R h
+  | SE _ rel ih => apply Conv.SE ih rel
+
+lemma Star1.img {T1 T2 e1 e2} {f : T1 -> T2} :
+    (∀ {x y}, e1 x y -> Star1 e2 (f x) (f y)) ->
+    (∀ {x y}, Star1 e1 x y -> Star1 e2 (f x) (f y)) := by
+  intros h1 x y h2
+  induction h2 with
+  | E => aesop
+  | @SE y z _ rel ih => apply Star1.trans ih (h1 rel)
+
+lemma Star1.hom {T1 T2 e1 e2} (f : T1 -> T2) :
+    (∀ {x y}, e1 x y -> e2 (f x) (f y)) ->
+    (∀ {x y}, Star1 e1 x y -> Star1 e2 (f x) (f y)) := by
+  intro h; apply Star1.img
+  intros x y h0
+  specialize h h0
+  apply Star1.E h
+
+lemma Star1.closure {e1 e2 : Rel T} : e1 <=2 Star1 e2 -> Star1 e1 <=2 Star1 e2 := by
+  apply Star1.img
+
+lemma Star1.monotone {e1 e2 : Rel T} : e1 <=2 e2 -> Star1 e1 <=2 Star1 e2 := by
+  intro h1; apply Star1.closure
+  intros x y h2
+  specialize h1 h2
+  apply Star1.E h1
+
+lemma Star1.subrelation {e1 e2 : Rel T} :
+    Subrelation e1 e2 -> Subrelation (Star1 e1) (Star1 e2) := by
+  intro h x y rd
+  induction rd
+  case E => constructor; aesop
+  case SE st ih =>
+    apply Star1.SE ih (h st)
+
+lemma Star1.toStar {x y} :
+    Star1 e x y -> Star e x y := by
+  intro rd; induction rd
+  case E => apply Star.one; assumption
+  case SE st ih => apply Star.SE ih st
+
+lemma Star1.SE_join {x y z} :
+    Star e x y -> e y z -> Star1 e x z := by
+  intro rd st; induction rd generalizing z
+  case R => constructor; assumption
+  case SE st1 ih => apply Star1.SE (ih st1) st
+
+lemma Star1.ES_join {x y z} :
+    e x y -> Star e y z -> Star1 e x z := by
+  intro st rd; induction rd generalizing x
+  case R => constructor; assumption
+  case SE st1 ih => apply Star1.SE (ih st) st1
+
+lemma Star1.SE_split {x z} :
+    Star1 e x z -> ∃ y, Star e x y ∧ e y z := by
+  intro rd; induction rd
+  case E y rd =>
+    exists x; and_intros
+    apply Star.R
+    assumption
+  case SE a b rd st ih =>
+    have ⟨y, rd, st⟩ := ih
+    exists a; and_intros
+    . apply Star.SE rd st
+    . assumption
+
+lemma Star1.ES_split {x z} :
+    Star1 e x z -> ∃ y, e x y ∧ Star e y z := by
+  intro rd; induction rd
+  case E y rd =>
+    exists y; and_intros
+    assumption
+    apply Star.R
+  case SE a b rd st ih =>
+    have ⟨y, _, rd⟩ := ih
+    exists y; and_intros
+    . assumption
+    . apply Star.SE rd st
+
 
 lemma Conv.one {x y} : e x y -> Conv e x y := by
   intro h; apply Conv.SE Conv.R h
@@ -232,6 +340,19 @@ lemma SN.ofAcc {x} : Acc (flip e) x -> SN e x := by
   intro acc; induction acc
   constructor
   assumption
+
+lemma SN.star1 {x} : SN e x -> SN (Star1 e) x := by
+  intro sn; induction sn
+  case intro h ih =>
+    constructor
+    intro y rd
+    induction rd
+    case a.E =>
+      apply ih; assumption
+    case a.SE st ih =>
+      have ⟨h⟩ := ih
+      apply h
+      apply Star1.E st
 
 lemma Normal.star {x y} : Star e x y -> Normal e x -> x = y := by
   intro h1 h2

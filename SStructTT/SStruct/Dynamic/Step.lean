@@ -70,3 +70,66 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
 
 notation:50 m:50 " ~>> " n:50 => Step m n
 notation:50 m:50 " ~>>* " n:50 => ARS.Star Step m n
+notation:50 m:50 " ~>>1 " n:50 => ARS.Star1 Step m n
+
+lemma Red.app_im {m m' n : Tm Srt} :
+    m ~>>* m' -> .app m n .im ~>>* .app m' n .im := by
+  intro rm; apply Star.hom _ _ rm; aesop
+
+lemma Red.app_ex {m m' n n' : Tm Srt} :
+    m ~>>* m' -> n ~>>* n' -> .app m n .ex ~>>* .app m' n' .ex := by
+  intro rm rn;
+  apply @Star.trans _ _ (.app m' n .ex)
+  apply Star.hom _ _ rm; aesop
+  apply Star.hom _ _ rn; aesop
+
+lemma Red.tup_im {m m' n : Tm Srt} {s} :
+    m ~>>* m' -> .tup m n .im s ~>>* .tup m' n .im s := by
+  intro rm; apply Star.hom _ _ rm; aesop
+
+lemma Red.tup_ex {m m' n n' : Tm Srt} {s} :
+    m ~>>* m' -> n ~>>* n' -> .tup m n .ex s ~>>* .tup m' n' .ex s := by
+  intro rm rn;
+  apply @Star.trans _ _ (.tup m' n .ex s)
+  apply Star.hom _ _ rm; aesop
+  apply Star.hom _ _ rn; aesop
+
+lemma Red.prj {A m m' n : Tm Srt} {r} :
+    m ~>>* m' -> .prj A m n r ~>>* .prj A m' n r := by
+  intro rm; apply Star.hom _ _ rm; cases r <;> aesop
+
+lemma Red.ite {A m m' n1 n2 : Tm Srt} :
+    m ~>>* m' -> .ite A m n1 n2 ~>>* .ite A m' n1 n2 := by
+  intro rm; apply Star.hom _ _ rm; aesop
+
+lemma Red1.app_im {m m' n : Tm Srt} :
+    m ~>>1 m' -> .app m n .im ~>>1 .app m' n .im := by
+  intro rm; apply Star1.hom _ _ rm; aesop
+
+lemma Red1.app_ex_M {m m' n : Tm Srt} :
+    m ~>>1 m' -> .app m n .ex ~>>1 .app m' n .ex := by
+  intro rm; apply Star1.hom _ _ rm; aesop
+
+lemma Red1.app_ex_N {m n n' : Tm Srt} :
+    n ~>>1 n' -> .app m n .ex ~>>1 .app m n' .ex := by
+  intro rn; apply Star1.hom _ _ rn; aesop
+
+lemma Red1.tup_im {m m' n : Tm Srt} {s} :
+    m ~>>1 m' -> .tup m n .im s ~>>1 .tup m' n .im s := by
+  intro rm; apply Star1.hom _ _ rm; aesop
+
+lemma Red1.tup_ex_M {m m' n : Tm Srt} {s} :
+    m ~>>1 m' -> .tup m n .ex s ~>>1 .tup m' n .ex s := by
+  intro rm; apply Star1.hom _ _ rm; aesop
+
+lemma Red1.tup_ex_N {m n n' : Tm Srt} {s} :
+    n ~>>1 n' -> .tup m n .ex s ~>>1 .tup m n' .ex s := by
+  intro rn; apply Star1.hom _ _ rn; aesop
+
+lemma Red1.prj {A m m' n : Tm Srt} {r} :
+    m ~>>1 m' -> .prj A m n r ~>>1 .prj A m' n r := by
+  intro rm; apply Star1.hom _ _ rm; cases r <;> aesop
+
+lemma Red1.ite {A m m' n1 n2 : Tm Srt} :
+    m ~>>1 m' -> .ite A m n1 n2 ~>>1 .ite A m' n1 n2 := by
+  intro rm; apply Star1.hom _ _ rm; aesop

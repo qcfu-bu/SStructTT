@@ -6,15 +6,88 @@ open ARS SStruct.Dynamic
 namespace SStruct.Erasure
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-lemma Erased.value_preimage {Γ Δ} {A m1 : SStruct.Tm Srt} {m2} :
-    Γ ;; Δ ⊢ m1 ▷ m2 : A -> Value m2 -> Dynamic.Value m1 := by
-  intro ty; induction ty
-  all_goals try (solve | intro vl; cases vl | aesop)
-  case tup_im => intro vl; cases vl; constructor; aesop
-  case tup_ex => intro vl; cases vl; constructor <;> aesop
+lemma Erased.value_preimage {A m1 : SStruct.Tm Srt} {m2} :
+    [] ;; [] ⊢ m1 ▷ m2 : A -> Value m2 ->
+    ∃ v, m1 ~>>* v ∧ Dynamic.Value v ∧ [] ;; [] ⊢ v ▷ m2 : A := by
+  generalize e1: [] = Γ
+  generalize e2: [] = Γ
+  intro erm vl; induction erm
+  all_goals try trivial
+  case lam_im A B m m' s sA i lw tyA erm ihm =>
+    subst_vars; simp_all
+    exists .lam A m .im s; and_intros
+    . apply Star.R
+    . constructor
+    . constructor <;> assumption
+  case lam_ex A B m m' s sA i lw tyA erm ihm =>
+    subst_vars; simp_all
+    exists .lam A m .ex s; and_intros
+    . apply Star.R
+    . constructor
+    . constructor <;> assumption
+  case tup_im A B m m' n s i tyA erm tyn ihm =>
+    subst_vars; simp_all
+    cases vl; case tup vl1 vl2 =>
+    have ⟨v, rd, vl, erv⟩ := ihm vl1
+    have ⟨_, _, _, tyB, _⟩ := tyA.sig_inv
+    have rd0 := Red.toStatic erm.toStatic rd
+    exists .tup v n .im s; and_intros
+    . apply Red.tup_im rd
+    . constructor; assumption
+    . apply Erased.tup_im tyA erv
+      apply Static.Typed.conv
+      apply Static.Conv.subst1
+      apply Star.conv rd0
+      assumption
+      apply tyB.subst erv.toStatic
+  case tup_ex A B m m' n n' s i mrg tyA erm ern ihm ihn =>
+    subst_vars; cases mrg; simp_all
+    cases vl; case tup vl1 vl2 =>
+    have ⟨v1, rd1, vl1, erv1⟩ := ihm vl1
+    have ⟨v2, rd2, vl2, erv2⟩ := ihn vl2
+    have ⟨_, _, _, tyB, _⟩ := tyA.sig_inv
+    have rd0 := Red.toStatic erm.toStatic rd1
+    exists .tup v1 v2 .ex s; and_intros
+    . apply Red.tup_ex rd1 rd2
+    . constructor <;> assumption
+    . apply Erased.tup_ex Merge.nil tyA erv1
+      apply Erased.conv
+      apply Static.Conv.subst1
+      apply Star.conv rd0
+      assumption
+      apply tyB.subst erv1.toStatic
+  case tt =>
+    subst_vars; simp_all
+    exists .tt; and_intros
+    . apply Star.R
+    . constructor
+    . constructor <;> aesop
+  case ff =>
+    subst_vars; simp_all
+    exists .ff; and_intros
+    . apply Star.R
+    . constructor
+    . constructor <;> aesop
+  case rw A B m m' n a b s i tyA erm tyn ih =>
+    subst_vars; simp_all
+    have ⟨eq, tyA⟩ := tyn.closed_idn tyA
+    have ⟨v, rd, vl, erv⟩ := ih
+    exists v; and_intros
+    . apply Star.ES
+      constructor
+      assumption
+    . assumption
+    . apply Erased.conv <;> assumption
+  case conv ih =>
+    subst_vars; simp_all
+    have ⟨v, rd, vl, erv⟩ := ih
+    exists v; and_intros
+    . assumption
+    . assumption
+    . apply Erased.conv <;> assumption
 
-theorem Erased.preserve_drop {A m1 : SStruct.Tm Srt} {m2 m2'} :
-    [] ;; [] ⊢ m1 ▷ m2 : A -> Drop m2 m2' ->
+lemma Erased.preservation0 {A m1 : SStruct.Tm Srt} {m2 m2'} :
+    [] ;; [] ⊢ m1 ▷ m2 : A -> Step0 m2 m2' ->
     [] ;; [] ⊢ m1 ▷ m2' : A := by
   generalize e1: [] = Γ
   generalize e2: [] = Δ
@@ -48,21 +121,27 @@ theorem Erased.preserve_drop {A m1 : SStruct.Tm Srt} {m2 m2'} :
   case drop mrg lw h erm ern ihm ihn =>
     subst_vars; cases mrg; cases st
     assumption
+  case rw tyA erm tyn ihm =>
+    subst_vars
+    have ⟨eq, tyA⟩ := tyn.closed_idn tyA
+    have erm := ihm rfl rfl st
+    have erm := Erased.conv eq erm tyA
+    constructor <;> assumption
   case conv eq _ tyB ihm =>
     subst_vars
     have erm := ihm rfl rfl st
     apply erm.conv eq tyB
 
-theorem Erased.preserve_drops {A m1 : SStruct.Tm Srt} {m2 m2'} :
-    [] ;; [] ⊢ m1 ▷ m2 : A -> Drops m2 m2' ->
+lemma Erased.preservation0' {A m1 : SStruct.Tm Srt} {m2 m2'} :
+    [] ;; [] ⊢ m1 ▷ m2 : A -> Red0 m2 m2' ->
     [] ;; [] ⊢ m1 ▷ m2' : A := by
   intro erm rd; induction rd
   case R => assumption
-  case SE st ih => apply ih.preserve_drop st
+  case SE st ih => apply ih.preservation0 st
 
-theorem Erased.preservation1 {A m1 : SStruct.Tm Srt} {m2 m2'} :
+theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
     [] ;; [] ⊢ m1 ▷ m2 : A -> m2 ~>> m2' ->
-    ∃ m1', m1 ~>> m1' ∧ [] ;; [] ⊢ m1' ▷ m2' : A := by
+    ∃ m1', m1 ~>>1 m1' ∧ [] ;; [] ⊢ m1' ▷ m2' : A := by
   generalize e1: [] = Γ
   generalize e2: [] = Δ
   intro ty st; induction ty generalizing m2'
@@ -76,188 +155,238 @@ theorem Erased.preservation1 {A m1 : SStruct.Tm Srt} {m2 m2'} :
     rcases st with ⟨rd, st⟩
     rw[rd.lam_inv] at st; cases st
   case app_im m' n s erm tyn ih =>
-    subst_vars
+    subst_vars; simp_all
     rcases st with ⟨rd, st⟩
     have ⟨mx, nx, e, rd1, rd2⟩ := rd.app_inv
-    replace erm := erm.preserve_drops rd1
+    replace erm := erm.preservation0' rd1
     have e := rd2.null_inv
     subst_vars; cases st
     case app_M st =>
-      have ⟨m, st, erm⟩ := ih rfl rfl (Step.intro rd1 st)
+      have ⟨m, st, erm⟩ := ih (Step.intro rd1 st)
       exists .app m n .im; and_intros
-      . constructor; assumption
+      . apply Red1.app_im st
       . apply Erased.app_im erm tyn
     case app_N st => cases st
     case beta vl e0 =>
-      have ⟨A, m, r, e⟩ := erm.lam_preimage; subst e
+      have ⟨A, m, r, rd, erm⟩ := erm.lam_preimage
       cases r with
       | im =>
         replace ⟨sA, erm⟩ := erm.lam_im_inv
         exists m.[n/]; and_intros
-        . aesop
+        . apply Star1.SE_join
+          apply Red.app_im rd
+          constructor
         . apply erm.subst_im tyn
       | ex =>
         have ⟨_, _, _, eq⟩ := erm.toDynamic.lam_ex_inv'
         have ⟨e, _⟩ := Static.Conv.pi_inj eq
         contradiction
   case app_ex m1 m1' n1 n1' s mrg erm ern ihm ihn =>
-    subst_vars; cases mrg
+    subst_vars; cases mrg; simp_all;
     rcases st with ⟨rd, st⟩
     have ⟨mx, nx, e, rd1, rd2⟩ := rd.app_inv
-    replace erm := erm.preserve_drops rd1
-    replace ern := ern.preserve_drops rd2
+    replace erm := erm.preservation0' rd1
+    replace ern := ern.preservation0' rd2
     subst_vars; cases st
     case app_M st' =>
-      have ⟨m2, st, erm⟩ := ihm rfl rfl (Step.intro rd1 st')
+      have ⟨m2, st, erm⟩ := ihm (Step.intro rd1 st')
       exists (.app m2 n1 .ex); and_intros
-      . apply Step.app_ex_M; assumption
+      . apply Red1.app_ex_M st
       . apply Erased.app_ex Merge.nil erm ern
     case app_N st' =>
       have ⟨_, _, tyP⟩ := erm.validity
       have ⟨_, _, _, tyB, _⟩ := tyP.pi_inv
-      have ⟨n2, st, ern2⟩ := ihn rfl rfl (Step.intro rd2 st')
-      have rd := st.toStatic ern.toStatic
+      have ⟨n2, st, ern2⟩ := ihn (Step.intro rd2 st')
+      have rd := Red.toStatic ern.toStatic st.toStar
       exists (.app m1 n2 .ex); and_intros
-      . constructor; assumption
+      . apply Red1.app_ex_N st
       . apply Erased.conv
         apply Static.Conv.subst1
-        apply (Star.conv (st.toStatic ern.toStatic)).sym
+        apply (Star.conv (Red.toStatic ern.toStatic st.toStar)).sym
         apply Erased.app_ex
         . apply Merge.nil
         . assumption
         . assumption
         . apply tyB.subst ern.toStatic
     case beta vl' =>
-      have ⟨A, m, r, e⟩ := erm.lam_preimage; subst e
+      have ⟨A, m, r, rd, erm⟩ := erm.lam_preimage
       cases r with
       | im =>
         have ⟨_, _, _, eq⟩ := erm.toDynamic.lam_im_inv'
         have ⟨e, _⟩ := Static.Conv.pi_inj eq
         contradiction
       | ex =>
-        have vl := ern.value_preimage vl'
+        have ⟨v, st, vl, tyv⟩ := ern.value_preimage vl'
+        have st0 := Red.toStatic ern.toStatic st
         replace ⟨sA, erm⟩ := erm.lam_ex_inv
-        exists m.[n1/]; and_intros
-        . constructor; aesop
-        . apply erm.subst_ex (Lower.nil sA) Merge.nil ern
+        have ⟨s, i, tyB⟩ := erm.validity
+        exists m.[v/]; and_intros
+        . apply Star1.SE_join
+          apply Red.app_ex rd st
+          constructor; aesop
+        . have ty := erm.subst_ex (Lower.nil sA) Merge.nil tyv
+          apply Erased.conv
+          apply Static.Conv.subst1
+          apply (Star.conv st0).sym
+          assumption
+          apply tyB.subst ern.toStatic
   case tup_im m m' n s _ tyS erm tyn ih =>
-    subst_vars
+    subst_vars; simp_all
     rcases st with ⟨rd, st⟩
     have ⟨mx, nx, e, rd1, rd2⟩ := rd.tup_inv
-    replace erm := erm.preserve_drops rd1
+    replace erm := erm.preservation0' rd1
     have e := rd2.null_inv
     subst_vars; cases st
     case tup_M st' =>
-      have ⟨m1, st, erm1⟩ := ih rfl rfl (Step.intro rd1 st')
+      have ⟨m1, st, erm1⟩ := ih (Step.intro rd1 st')
       have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
       exists .tup m1 n .im s; and_intros
-      . constructor; assumption
+      . apply Red1.tup_im st
       . constructor
         . assumption
         . assumption
         . apply Static.Typed.conv
           apply Static.Conv.subst1
-          apply Star.conv (st.toStatic erm.toStatic)
+          apply Star.conv (Red.toStatic erm.toStatic st.toStar)
           assumption
           apply tyB.subst erm1.toStatic
     case tup_N st' => cases st'
   case tup_ex m m' n n' s _ mrg tyS erm ern ihm ihn =>
     have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
-    subst_vars; cases mrg
+    subst_vars; cases mrg; simp_all
     rcases st with ⟨rd, st⟩
     have ⟨mx, nx, e, rd1, rd2⟩ := rd.tup_inv
-    replace erm := erm.preserve_drops rd1
-    replace ern := ern.preserve_drops rd2
+    replace erm := erm.preservation0' rd1
+    replace ern := ern.preservation0' rd2
     subst_vars; cases st
     case tup_M st =>
-      have ⟨m1, st, erm1⟩ := ihm rfl rfl (Step.intro rd1 st)
+      have ⟨m1, st, erm1⟩ := ihm (Step.intro rd1 st)
       exists .tup m1 n .ex s; and_intros
-      . constructor; assumption
+      . apply Red1.tup_ex_M st
       . constructor
         . constructor
         . assumption
         . assumption
         . apply Erased.conv
           apply Static.Conv.subst1
-          apply Star.conv (st.toStatic erm.toStatic)
+          apply Star.conv (Red.toStatic erm.toStatic st.toStar)
           assumption
           apply tyB.subst erm1.toStatic
     case tup_N st =>
-      have ⟨n1, st, ern1⟩ := ihn rfl rfl (Step.intro rd2 st)
+      have ⟨n1, st, ern1⟩ := ihn (Step.intro rd2 st)
       exists .tup m n1 .ex s; and_intros
-      constructor
-      . assumption
+      . apply Red1.tup_ex_N st
       . constructor <;> aesop
-  case prj_im C m m' n n' s sA sB sC iC mrg tyC erm ern ihm _ =>
-    subst_vars; cases mrg
+  case prj_im B C m m' n n' s sA sB sC iC mrg tyC erm ern ihm _ =>
+    subst_vars; cases mrg; simp_all
     rcases st with ⟨rd, st⟩
     have ⟨mx, e, rd1⟩ := rd.prj_inv
-    replace erm := erm.preserve_drops rd1
+    replace erm := erm.preservation0' rd1
     subst_vars; cases st
     case prj_M st' =>
-      have ⟨m1, st, erm1⟩ := ihm rfl rfl (Step.intro rd1 st')
+      have ⟨m1, st, erm1⟩ := ihm (Step.intro rd1 st')
       exists .prj C m1 n .im; and_intros
-      . constructor; assumption
+      . apply Red1.prj st
       . apply Erased.conv
         . apply Static.Conv.subst1
-          apply (Star.conv (st.toStatic erm.toStatic)).sym
+          apply (Star.conv (Red.toStatic erm.toStatic st.toStar)).sym
         . apply Erased.prj_im Merge.nil tyC erm1 ern
         . apply tyC.subst erm.toStatic
     case prj_elim m1 m2 s vl' =>
-      have ⟨m1, m2, r, e⟩ := erm.tup_preimage; subst_vars
+      have ⟨_, _, ty⟩ := erm.toStatic.validity
+      have ⟨_, _, _, tyB, _⟩ := ty.sig_inv
+      have ⟨m1, m2, r, rdm, er⟩ := erm.tup_preimage
       cases r with
       | im =>
-        have ⟨erm1, erm2, _, _⟩ := erm.tup_im_inv; subst_vars
+        have ⟨erm1, erm2, _, _⟩ := er.tup_im_inv; subst_vars
         cases vl'; case tup vl' _ =>
-        have vl := erm1.value_preimage vl'
-        rw[show C.[.tup m1 m2 .im s/]
-              = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[m2,m1/] by asimp]
-        exists n.[m2,m1/]; and_intros
-        . aesop
-        . apply ern.substitution
+        have ⟨v, rdv, vl, erv⟩ := erm1.value_preimage vl'
+        have rdv0 := Red.toStatic erm1.toStatic rdv
+        have eq : m === (.tup v m2 .im s) := by
+          apply Star.conv
+          apply Star.trans (Red.toStatic erm.toStatic rdm)
+          apply Static.Red.tup _ _ rdv0
+          apply Star.R
+        have erm2 : [] ⊢ m2 : B.[v/] := by
+          apply Static.Typed.conv
+          apply Static.Conv.subst1
+          apply Star.conv rdv0
+          assumption
+          apply tyB.subst erv.toStatic
+        exists n.[m2,v/]; and_intros
+        . apply Star1.SE_join
+          apply Star.trans (Red.prj rdm)
+          apply Red.prj (Red.tup_im rdv)
+          constructor; aesop
+        . apply Erased.conv
+          apply Static.Conv.subst1 _ eq.sym
+          rw[show C.[.tup v m2 .im s/]
+                = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[m2,v/] by asimp]
+          apply ern.substitution
           apply AgreeSubst.intro_im erm2
           apply AgreeSubst.intro_ex Merge.nil; constructor; asimp; assumption
           apply AgreeSubst.refl Wf.nil
+          apply tyC.subst erm.toStatic
       | ex =>
-        have ⟨_, _, _, _, _, _, _, eq⟩ := erm.toDynamic.tup_ex_inv'
+        have ⟨_, _, _, _, _, _, _, eq⟩ := er.toDynamic.tup_ex_inv'
         have ⟨e, _⟩ := Static.Conv.sig_inj eq
         contradiction
-  case prj_ex C m m' n n' s sA sB sC iC mrg tyC erm ern ihm ihn =>
-    subst_vars; cases mrg
+  case prj_ex B C m m' n n' s sA sB sC iC mrg tyC erm ern ihm ihn =>
+    subst_vars; cases mrg; simp_all
     rcases st with ⟨rd, st⟩
     have ⟨mx, e, rd1⟩ := rd.prj_inv
-    replace erm := erm.preserve_drops rd1
+    replace erm := erm.preservation0' rd1
     subst_vars; cases st
     case prj_M st' =>
-      have ⟨m1, st, erm1⟩ := ihm rfl rfl (Step.intro rd1 st')
+      have ⟨m1, st, erm1⟩ := ihm (Step.intro rd1 st')
       exists .prj C m1 n .ex; and_intros
-      . constructor; assumption
+      . apply Red1.prj st
       . apply Erased.conv
         . apply Static.Conv.subst1
-          apply (Star.conv (st.toStatic erm.toStatic)).sym
+          apply (Star.conv (Red.toStatic erm.toStatic st.toStar)).sym
         . apply Erased.prj_ex Merge.nil tyC erm1 ern
         . apply tyC.subst erm.toStatic
     case prj_elim m1 m2 s vl' =>
-      have ⟨m1, m2, r, e⟩ := erm.tup_preimage; subst_vars
+      have ⟨n1, n2, r, rdm, er⟩ := erm.tup_preimage
       cases r with
       | im =>
-        have ⟨_, _, _, _, eq⟩ := erm.toDynamic.tup_im_inv'
+        have ⟨_, _, _, _, eq⟩ := er.toDynamic.tup_im_inv'
         have ⟨e, _⟩ := Static.Conv.sig_inj eq
         contradiction
       | ex =>
-        have ⟨Δ1, Δ2, mrg, erm1, erm2, _⟩ := erm.tup_ex_inv; subst_vars
+        have ⟨_, _, ty⟩ := erm.toStatic.validity
+        have ⟨_, _, _, tyB, _⟩ := ty.sig_inv
+        have ⟨Δ1, Δ2, mrg, erm1, erm2, _⟩ := er.tup_ex_inv
+        cases mrg; subst_vars
         cases vl'; case tup vl1' vl2' =>
-        have vl1 := erm1.value_preimage vl1'
-        have vl2 := erm2.value_preimage vl2'
-        cases mrg
-        rw[show C.[.tup m1 m2 .ex s/]
-              = C.[.tup (.var 1) (.var 0) .ex s .: shift 2].[m2,m1/] by asimp]
-        exists n.[m2,m1/]; and_intros
-        . aesop
-        . apply ern.substitution
-          apply AgreeSubst.intro_ex Merge.nil; constructor; assumption
+        have ⟨v1, rdv1, vl1, erv1⟩ := erm1.value_preimage vl1'
+        have ⟨v2, rdv2, vl2, erv2⟩ := erm2.value_preimage vl2'
+        have rdv1' := Red.toStatic erm1.toStatic rdv1
+        have rdv2' := Red.toStatic erm2.toStatic rdv2
+        have eq : m === (.tup v1 v2 .ex s) := by
+          apply Star.conv
+          apply Star.trans (Red.toStatic erm.toStatic rdm)
+          apply Static.Red.tup _ _ rdv1' rdv2'
+        have erm2 : [] ;; [] ⊢ v2 ▷ m2 : B.[v1/] := by
+          apply Erased.conv
+          apply Static.Conv.subst1
+          apply Star.conv rdv1'
+          apply erv2
+          apply tyB.subst erv1.toStatic
+        exists n.[v2,v1/]; and_intros
+        . apply Star1.SE_join
+          apply Star.trans (Red.prj rdm)
+          apply Red.prj (Red.tup_ex rdv1 rdv2)
+          constructor; aesop
+        . apply Erased.conv
+          apply Static.Conv.subst1 _ eq.sym
+          rw[show C.[.tup v1 v2 .ex s/]
+                = C.[.tup (.var 1) (.var 0) .ex s .: shift 2].[v2,v1/] by asimp]
+          apply ern.substitution
+          apply AgreeSubst.intro_ex Merge.nil (Lower.nil _) erm2
           apply AgreeSubst.intro_ex Merge.nil; constructor; asimp; assumption
           apply AgreeSubst.refl Wf.nil
+          apply tyC.subst erm.toStatic
   case tt =>
     rcases st with ⟨rd, st⟩
     rw[rd.tt_inv] at st; cases st
@@ -265,68 +394,58 @@ theorem Erased.preservation1 {A m1 : SStruct.Tm Srt} {m2 m2'} :
     rcases st with ⟨rd, st⟩
     rw[rd.ff_inv] at st; cases st
   case ite A m m' n1 n1' n2 n2' _ _ mrg tyA erm ern1 ern2 ihm ihn1 ihn2 =>
-    subst_vars; cases mrg
+    subst_vars; cases mrg; simp_all
     rcases st with ⟨rd, st⟩
     have ⟨mx, e, rd1⟩ := rd.ite_inv
-    replace erm := erm.preserve_drops rd1
+    replace erm := erm.preservation0' rd1
     subst_vars; cases st
     case ite_M st =>
-      have ⟨m1, st, erm1⟩ := ihm rfl rfl (Step.intro rd1 st)
+      have ⟨m1, st, erm1⟩ := ihm (Step.intro rd1 st)
       exists .ite A m1 n1 n2; and_intros
-      . aesop
+      . apply Red1.ite st
       . apply Erased.conv
         . apply Static.Conv.subst1
-          apply (Star.conv (st.toStatic erm.toStatic)).sym
-        . constructor
-          . apply Merge.nil
-          . assumption
-          . assumption
-          . assumption
-          . assumption
+          apply (Star.conv (Red.toStatic erm.toStatic st.toStar)).sym
+        . apply Erased.ite Merge.nil tyA erm1 ern1 ern2
         . apply tyA.subst erm.toStatic
-    case ite_tt => have e := erm.tt_preimage; subst e; aesop
-    case ite_ff => have e := erm.ff_preimage; subst e; aesop
+    case ite_tt =>
+      have rd := erm.tt_preimage
+      exists n1; and_intros
+      . apply Star1.SE_join
+        apply Red.ite rd
+        constructor
+      . apply Erased.conv
+        apply Static.Conv.subst1
+        apply (Star.conv (Red.toStatic erm.toStatic rd)).sym
+        assumption
+        apply tyA.subst erm.toStatic
+    case ite_ff =>
+      have rd := erm.ff_preimage
+      exists n2; and_intros
+      . apply Star1.SE_join
+        apply Red.ite rd
+        constructor
+      . apply Erased.conv
+        apply Static.Conv.subst1
+        apply (Star.conv (Red.toStatic erm.toStatic rd)).sym
+        assumption
+        apply tyA.subst erm.toStatic
   case rw A B m m' n a b s i tyA erm tyn ih =>
-    subst_vars
-    have ⟨n', vl, rd⟩ := Static.Typed.red_value tyn
-    have tyn' := tyn.preservation' rd
-    have ⟨a', _⟩ := tyn'.idn_canonical Conv.R vl; subst_vars
-    have ⟨_, _, tyI⟩ := tyn.validity
-    have ⟨_, tya, tyb, eq⟩ := tyI.idn_inv
-    have ⟨_, _⟩ := Static.Conv.srt_inj eq; subst_vars
-    have ⟨tya', eq1, eq2⟩ := tyn'.rfl_inv
-    have sc : Static.SConv (.rfl a .: a .: ids) (n .: b .: ids) := by
-      intro x; match x with
-      | .zero =>
-        asimp; apply Conv.trans;
-        apply (Static.Conv.rfl eq1).sym
-        apply (Star.conv rd).sym
-      | .succ .zero => asimp; apply Conv.trans eq1.sym eq2
-      | .succ (.succ _) => asimp; constructor
-    have tyA : [] ⊢ A.[n,b/] : .srt s i := by
-      rw[show .srt s i = (.srt s i).[n,b/] by asimp]
-      apply Static.Typed.substitution
-      . assumption
-      . apply Static.AgreeSubst.intro; asimp; assumption
-        apply Static.AgreeSubst.intro; asimp; assumption
-        apply Static.AgreeSubst.refl
-        apply tyn.toWf
-    rcases st with ⟨rd, st⟩
-    have e := rd.rw_inv; subst_vars
-    cases st
+    subst_vars; simp_all
+    have ⟨eq, tyA⟩ := tyn.closed_idn tyA
+    have ⟨m, rd, erm⟩ := ih st
     exists m; and_intros
-    . constructor
-    . apply Erased.conv
-      . apply Static.Conv.compat; assumption
-      . assumption
-      . assumption
+    . apply Star1.ES
+      constructor
+      assumption
+    . apply Erased.conv <;> assumption
   case drop mrg lw h erm ern ihm ihn =>
     subst_vars; cases mrg; simp_all
     rcases st with ⟨rd, st⟩
     cases rd
     case R => cases st
     case SE rd st0 =>
-      replace rd := Drops.drop_inv rd st0
+      replace rd := Red0.drop_inv rd st0
       apply ihn; constructor <;> assumption
   case conv eq _ tyB ihm =>
     subst_vars

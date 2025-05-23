@@ -35,9 +35,9 @@ variable [ord : SrtOrder Srt]
 theorem Erased.normalize {A m : SStruct.Tm Srt} {m'} :
     [] ;; [] ⊢ m ▷ m' : A -> SN Step m' := by
   intro er
-  have sn := er.toDynamic.normalize
+  have sn := er.toDynamic.normalize.star1
   induction sn generalizing m'
   case intro m h ih =>
   constructor; intro n' st'
-  have ⟨n, st, ern⟩ := er.preservation1 st'
+  have ⟨n, st, ern⟩ := er.preservation st'
   apply ih <;> assumption

@@ -56,10 +56,6 @@ inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
     Resolve H2 n2 n2' ->
     Resolve H3 (.ite m n1 n2) (.ite m' n1' n2')
 
-  | rw {H m m'} :
-    Resolve H m m' ->
-    Resolve H (.rw m) (.rw m')
-
   | drop {H1 H2 H3 m m' n n'} :
     HMerge H1 H2 H3 ->
     Resolve H1 m m' ->
@@ -86,7 +82,6 @@ notation:50 H:50 " ;; " m:51 " ▷ " m':51 => Resolve H m m'
   | .tt => True
   | .ff => True
   | .ite m n1 n2 => IsResolved m ∧ IsResolved n1 ∧ IsResolved n2
-  | .rw m => IsResolved m
   | .drop m n => IsResolved m ∧ IsResolved n
   | .ptr _ => False
   | .null => True
@@ -260,7 +255,6 @@ lemma Resolve.weaken {H : Heap Srt} {m m' n l} :
     | isFalse ne =>
       repeat rw[Finmap.lookup_insert_of_ne _ ne]
       apply mrg
-  case rw => constructor; aesop
   case drop mrg erm ern ihm ihn =>
     have ⟨h1, h2⟩ := mrg.split_none h
     replace ihm := ihm h1
@@ -338,7 +332,7 @@ lemma Erased.resolve_refl {Γ Δ} {H : Heap Srt} {m n A} :
   case ite =>
     have mrg := lw.merge_refl
     constructor <;> aesop
-  case rw => constructor; aesop
+  case rw => aesop
   case drop ih =>
     have mrg := lw.merge_refl
     constructor <;> aesop
@@ -365,7 +359,7 @@ lemma Erased.resolve_id {Γ Δ} {H : Heap Srt} {x y z A} :
   case tt => cases rs; simp
   case ff => cases rs; simp
   case ite => cases rs; aesop
-  case rw => cases rs; aesop
+  case rw => aesop
   case drop => cases rs; aesop
   case conv => aesop
 
@@ -502,7 +496,6 @@ lemma HLookup.resolve {H1 H2 H3 H3' : Heap Srt} {l m n} :
   | .tt => True
   | .ff => True
   | .ite m n1 n2 => NF i m ∧ NF i n1 ∧ NF i n2
-  | .rw m => NF i m
   | .drop m n => NF i m ∧ NF i n
   | .ptr _ => True
   | .null => True
@@ -947,6 +940,14 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
   case ff =>
     have lw := rs.ff_inv wr
     apply lw.trans (ord.e_min s)
+  case rw tyA tyn erm ihm =>
+    have ⟨eq, _⟩ := tyn.closed_idn tyA
+    have ⟨s, i, ty'⟩ := erm.validity
+    have ⟨x, rd1, rd2⟩ := Static.Step.cr eq.sym
+    have ty1 := ty.preservation' rd1
+    have ty2 := ty'.preservation' rd2
+    have e := Static.Typed.unique ty1 ty2
+    simp_all; apply ihm <;> try assumption
   case conv eq _ erm ih =>
     simp_all
     have ⟨s, i, tyA⟩ := erm.validity

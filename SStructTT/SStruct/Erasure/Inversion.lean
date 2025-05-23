@@ -1,52 +1,14 @@
+import SStructTT.SStruct.Static.Normalize
 import SStructTT.SStruct.Dynamic.Inversion
 import SStructTT.SStruct.Erasure.Substitution
+import SStructTT.SStruct.Dynamic.Step
 open ARS
 
 namespace SStruct.Erasure
 open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-lemma Erased.null_preimage {Γ} {Δ : Ctx Srt} {t B} :
-    Γ ;; Δ ⊢ t ▷ .null : B -> False := by
-  generalize e: Tm.null = k
-  intro er; induction er <;> trivial
-
-lemma Erased.var_preimage {Γ} {Δ : Ctx Srt} {B t x} :
-    Γ ;; Δ ⊢ t ▷ .var x : B -> ∃ x, t = .var x := by
-  generalize e: Tm.var x = k
-  intro er; induction er <;> try trivial
-  case var => cases e; exists x
-  case conv ih => subst_vars; simp[ih]
-
-lemma Erased.lam_preimage {Γ} {Δ : Ctx Srt} {B t m' s} :
-    Γ ;; Δ ⊢ t ▷ .lam m' s : B ->
-    ∃ A m r, t = .lam A m r s := by
-  generalize e: Tm.lam m' s = k
-  intro er; induction er <;> try trivial
-  case lam_im => cases e; aesop
-  case lam_ex => cases e; aesop
-  case conv ih => subst_vars; simp[ih]
-
-lemma Erased.tup_preimage {Γ} {Δ : Ctx Srt} {B m' n' t s} :
-    Γ ;; Δ ⊢ t ▷ .tup m' n' s : B ->
-    ∃ m n r, t = .tup m n r s := by
-  generalize e: Tm.tup m' n' s = k
-  intro er; induction er <;> try trivial
-  case tup_im => cases e; aesop
-  case tup_ex => cases e; aesop
-  case conv ih => subst_vars; simp[ih]
-
-lemma Erased.tt_preimage {Γ} {Δ : Ctx Srt} {B t} :
-    Γ ;; Δ ⊢ t ▷ .tt : B -> t = .tt := by
-  generalize e: Tm.tt = k
-  intro er; induction er <;> try trivial
-  case conv ih => subst_vars; simp[ih]
-
-lemma Erased.ff_preimage {Γ} {Δ : Ctx Srt} {B t} :
-    Γ ;; Δ ⊢ t ▷ .ff : B -> t = .ff := by
-  generalize e: Tm.ff = k
-  intro er; induction er <;> try trivial
-  case conv ih => subst_vars; simp[ih]
+inductive Rw
 
 theorem Erased.validity {Γ} {Δ : Ctx Srt} {A m m'} :
     Γ ;; Δ ⊢ m ▷ m' : A -> ∃ s i, Γ ⊢ A : .srt s i := by
@@ -222,3 +184,102 @@ lemma Erased.tup_ex_inv {Γ} {Δ : Ctx Srt} {A B m m' n n' s s'} :
     apply Static.Conv.subst _ eqB.sym
     assumption
     assumption
+
+lemma Erased.null_preimage {Γ} {Δ : Ctx Srt} {t B} :
+    Γ ;; Δ ⊢ t ▷ .null : B -> False := by
+  generalize e: Tm.null = k
+  intro er; induction er <;> trivial
+
+lemma Erased.lam_preimage {B t : SStruct.Tm Srt} {m' s} :
+    [] ;; [] ⊢ t ▷ .lam m' s : B ->
+    ∃ A m r, t ~>>* .lam A m r s ∧ [] ;; [] ⊢ .lam A m r s ▷ .lam m' s : B := by
+  generalize e1: [] = Γ
+  generalize e2: [] = Δ
+  generalize e3: Tm.lam m' s = Δ
+  intro er; induction er <;> try trivial
+  case lam_im A _ m _ _ _ _ _ _ _ _ =>
+    subst_vars; cases e3
+    exists A, m, .im; and_intros
+    . apply Star.R
+    . constructor <;> assumption
+  case lam_ex A B m s _ _ _ _ _ _ _ =>
+    subst_vars; cases e3
+    exists A, m, .ex; and_intros
+    . apply Star.R
+    . constructor <;> assumption
+  case rw A B m m' n a b s i tyA erm tyn ih =>
+    subst_vars; simp_all
+    have ⟨eq, tyA⟩ := tyn.closed_idn tyA
+    have ⟨A, m, r, rd, er⟩ := ih
+    exists A, m, r; and_intros
+    . apply Star.ES
+      constructor
+      assumption
+    . apply Erased.conv <;> assumption
+  case conv ih =>
+    subst_vars; simp_all
+    have ⟨A, m, r, td, er⟩ := ih
+    exists A, m, r; and_intros
+    . assumption
+    . apply Erased.conv <;> assumption
+
+lemma Erased.tup_preimage {B t : SStruct.Tm Srt} {m' n' s} :
+    [] ;; [] ⊢ t ▷ .tup m' n' s : B ->
+    ∃ m n r, t ~>>* .tup m n r s ∧ [] ;; [] ⊢ .tup m n r s ▷ .tup m' n' s : B := by
+  generalize e1: [] = Γ
+  generalize e2: [] = Δ
+  generalize e3: Tm.tup m' n' s = k
+  intro er; induction er <;> try trivial
+  case tup_im A _ m _ n _ _ _ _ _ _ =>
+    subst_vars; cases e3
+    exists m, n, .im; and_intros
+    . apply Star.R
+    . constructor <;> assumption
+  case tup_ex A _ m _ n _ _ _ _ _ _ _ _ _ =>
+    subst_vars; cases e3
+    exists m, n, .ex; and_intros
+    . apply Star.R
+    . constructor <;> assumption
+  case rw A B m m' n a b s i tyA erm tyn ih =>
+    subst_vars; simp_all
+    have ⟨eq, tyA⟩ := tyn.closed_idn tyA
+    have ⟨A, m, r, rd, er⟩ := ih
+    exists A, m, r; and_intros
+    . apply Star.ES
+      constructor
+      assumption
+    . apply Erased.conv <;> assumption
+  case conv ih =>
+    subst_vars; simp_all
+    have ⟨A, m, r, td, er⟩ := ih
+    exists A, m, r; and_intros
+    . assumption
+    . apply Erased.conv <;> assumption
+
+lemma Erased.tt_preimage {B t : SStruct.Tm Srt} :
+    [] ;; [] ⊢ t ▷ .tt : B -> t ~>>* .tt := by
+  generalize e1: [] = Γ
+  generalize e2: [] = Δ
+  generalize e3: Tm.tt = k
+  intro er; induction er <;> try trivial
+  case tt => subst_vars; apply Star.R
+  case rw A B m m' n a b s i tyA erm tyn ih =>
+    subst_vars; simp_all
+    apply Star.ES
+    constructor
+    assumption
+  case conv ih => subst_vars; simp[ih]
+
+lemma Erased.ff_preimage {B t : SStruct.Tm Srt} :
+    [] ;; [] ⊢ t ▷ .ff : B -> t ~>>* .ff := by
+  generalize e1: [] = Γ
+  generalize e2: [] = Δ
+  generalize e3: Tm.ff = k
+  intro er; induction er <;> try trivial
+  case ff => subst_vars; apply Star.R
+  case rw A B m m' n a b s i tyA erm tyn ih =>
+    subst_vars; simp_all
+    apply Star.ES
+    constructor
+    assumption
+  case conv ih => subst_vars; simp[ih]

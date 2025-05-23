@@ -12,7 +12,6 @@ inductive Tm where
   | prj  (m n : Tm)
   | tt | ff
   | ite  (m n1 n2 : Tm)
-  | rw   (m : Tm)
   | drop (m n : Tm)
   | ptr  (l : Nat)
   | null
@@ -34,7 +33,6 @@ def rename_rec (ξ : Var -> Var) (m : Tm Srt) : Tm Srt :=
   | tt => tt
   | ff => ff
   | ite m n1 n2 => ite (rename_rec ξ m) (rename_rec ξ n1) (rename_rec ξ n2)
-  | rw m => rw (rename_rec ξ m)
   | drop m n => drop (rename_rec ξ m) (rename_rec ξ n)
   | ptr l => ptr l
   | null => null
@@ -53,7 +51,6 @@ variable (ξ : Var -> Var) (A B m n n1 n2 : Tm Srt) (ms : List (Tm Srt)) (x i l 
 @[asimp]lemma tt   : rename ξ (@tt Srt) = tt := by rfl
 @[asimp]lemma ff   : rename ξ (@ff Srt) = ff := by rfl
 @[asimp]lemma ite  : rename ξ (ite m n1 n2) = ite (rename ξ m) (rename ξ n1) (rename ξ n2) := by rfl
-@[asimp]lemma rw   : rename ξ (rw m) = rw (rename ξ m) := by rfl
 @[asimp]lemma drop : rename ξ (drop m n) = drop (rename ξ m) (rename ξ n) := by rfl
 @[asimp]lemma ptr  : rename ξ (@ptr Srt l) = ptr l := by rfl
 @[asimp]lemma null : rename ξ (@null Srt) = null := by rfl
@@ -70,7 +67,6 @@ def subst_rec (σ : Var -> Tm Srt) (m : Tm Srt) : Tm Srt :=
   | tt => tt
   | ff => ff
   | ite m n1 n2 => ite (subst_rec σ m) (subst_rec σ n1) (subst_rec σ n2)
-  | rw m => rw (subst_rec σ m)
   | ptr l => ptr l
   | drop m n => drop (subst_rec σ m) (subst_rec σ n)
   | null => null
@@ -89,7 +85,6 @@ variable (σ : Var -> Tm Srt) (A B m n n1 n2 : Tm Srt) (ms : List (Tm Srt)) (x i
 @[asimp]lemma tt   : subst σ (@tt Srt) = tt := by rfl
 @[asimp]lemma ff   : subst σ (@ff Srt) = ff := by rfl
 @[asimp]lemma ite  : subst σ (ite m n1 n2) = ite (subst σ m) (subst σ n1) (subst σ n2) := by rfl
-@[asimp]lemma rw   : subst σ (rw m) = rw (subst σ m) := by rfl
 @[asimp]lemma drop : subst σ (drop m n) = drop (subst σ m) (subst σ n) := by rfl
 @[asimp]lemma ptr  : subst σ (@ptr Srt l) = ptr l := by rfl
 @[asimp]lemma null : subst σ (@null Srt) = null := by rfl
@@ -111,7 +106,6 @@ lemma rename_subst ξ (m : Tm Srt) : rename ξ m = m.[ren ξ] := by
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_upren, ihm, ihn1, ihn2]
-  | rw m ihm => asimp[ihm]
   | drop m n ihm ihn => asimp[up_upren, ihm, ihn]
   | ptr l => asimp
   | null => asimp
@@ -132,7 +126,6 @@ lemma subst_id (m : Tm Srt) : m.[ids] = m := by
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_ids, ihm, ihn1, ihn2]
-  | rw m ihm => asimp[ihm]
   | drop m n ihm ihn => asimp[ihm, ihn]
   | ptr l => asimp
   | null => asimp
@@ -154,7 +147,6 @@ lemma ren_subst_comp ξ σ (m : Tm Srt) : m.[ren ξ].[σ] = m.[ξ !>> σ] := by
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_upren, up_comp_upren, ihm, ihn1, ihn2]
-  | rw m ihm => asimp[ihm]
   | drop m n ihm ihn => asimp[ihm, ihn]
   | ptr l => asimp
   | null => asimp
@@ -180,7 +172,6 @@ lemma subst_ren_comp σ ξ (m : Tm Srt) : m.[σ].[ren ξ] = m.[σ !>> rename ξ]
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_upren, up_comp_ren, ihm, ihn1, ihn2]
-  | rw m ihm => asimp[ihm]
   | drop m n ihm ihn => asimp[ihm, ihn]
   | ptr l => asimp
   | null => asimp
@@ -206,7 +197,6 @@ lemma subst_comp (σ τ : Var -> Tm Srt) m : m.[σ].[τ] = m.[σ !> τ] := by
   | tt => asimp
   | ff => asimp
   | ite m n1 n2 ihm ihn1 ihn2 => asimp[up_comp, ihm, ihn1, ihn2]
-  | rw m ihm => asimp[ihm]
   | drop m n ihm ihn => asimp[ihm, ihn]
   | ptr l => asimp
   | null => asimp

@@ -54,12 +54,12 @@ lemma Step.toStatic' {A m n : Tm Srt} :
       have ⟨m', st, rd⟩ := ihm rfl st
       exists Tm.prj C m' n .im; and_intros
       . constructor; assumption
-      . apply Red.prj <;> aesop
+      . apply Static.Red.prj <;> aesop
     case prj_ex_M st _ _ _ _ =>
       have ⟨m', st, rd⟩ := ihm rfl st
       exists Tm.prj C m' n .ex; and_intros
       . constructor; assumption
-      . apply Red.prj <;> aesop
+      . apply Static.Red.prj <;> aesop
     case prj_im_elim m1 m2 _ _ _ _ _ _ =>
       exists n.[m2,m1/]; and_intros <;> constructor
     case prj_ex_elim m1 m2 _ _ _ _ _ _ =>
@@ -70,7 +70,7 @@ lemma Step.toStatic' {A m n : Tm Srt} :
       have ⟨m', st, rd⟩ := ihm rfl st
       exists Tm.ite A m' n1 n2; and_intros
       . constructor; assumption
-      . apply Red.ite <;> aesop
+      . apply Static.Red.ite <;> aesop
     case ite_tt => exists n1; and_intros <;> constructor
     case ite_ff => exists n2; and_intros <;> constructor
   case rw A B m n _ _ _ _ _ _ tyn _ ihm ihn =>
@@ -94,6 +94,16 @@ lemma Step.toStatic {A m n : Tm Srt} :
   intro ty st
   have ⟨x, st, rd⟩ := st.toStatic' ty
   apply Star.ES <;> assumption
+
+lemma Red.toStatic {A m n : Tm Srt} :
+    [] ⊢ m : A -> m ~>>* n -> m ~>* n := by
+  intro tym rd
+  induction rd
+  case R => constructor
+  case SE st ih =>
+  have ty := tym.preservation' ih
+  have rd := Step.toStatic ty st
+  apply Star.trans ih rd
 
 theorem Typed.preservation {A m m' : Tm Srt} :
     [] ;; [] ⊢ m : A -> m ~>> m' -> [] ;; [] ⊢ m' : A := by
@@ -212,34 +222,9 @@ theorem Typed.preservation {A m m' : Tm Srt} :
     case ite_ff => assumption
   case rw A B m n a b s i tyA tym tyn ih =>
     subst_vars
-    have ⟨n', vl, rd⟩ := Static.Typed.red_value tyn
-    have tyn' := tyn.preservation' rd
-    have ⟨a', _⟩ := tyn'.idn_canonical Conv.R vl; subst_vars
-    have ⟨_, _, tyI⟩ := tyn.validity
-    have ⟨_, tya, tyb, eq⟩ := tyI.idn_inv
-    have ⟨_, _⟩ := Conv.srt_inj eq; subst_vars
-    have ⟨tya', eq1, eq2⟩ := tyn'.rfl_inv
-    have sc : SConv (.rfl a .: a .: ids) (n .: b .: ids) := by
-      intro x; match x with
-      | .zero =>
-        asimp; apply Conv.trans;
-        apply (Conv.rfl eq1).sym
-        apply (Star.conv rd).sym
-      | .succ .zero => asimp; apply Conv.trans eq1.sym eq2
-      | .succ (.succ _) => asimp; constructor
-    have : [] ⊢ A.[n,b/] : .srt s i := by
-      rw[show .srt s i = (.srt s i).[n,b/] by asimp]
-      apply Static.Typed.substitution
-      . assumption
-      . apply AgreeSubst.intro; asimp; assumption
-        apply AgreeSubst.intro; asimp; assumption
-        apply Static.AgreeSubst.refl
-        apply tyn.toWf
+    have ⟨eq, ty⟩ := tyn.closed_idn tyA
     cases st
-    apply Typed.conv
-    . apply Conv.compat; assumption
-    . assumption
-    . assumption
+    apply Typed.conv <;> assumption
   case drop mrg lw h tyn ihn =>
     subst_vars; cases mrg; aesop
   case conv eq _ tyB ihm =>

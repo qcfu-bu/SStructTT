@@ -88,7 +88,7 @@ where
     .idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ ⊢ A : .srt s i ->
     Erased Γ Δ m m' A.[.rfl a,a/] ->
     Γ ⊢ n : .idn B a b ->
-    Erased Γ Δ (.rw A m n) (.rw m') A.[n,b/]
+    Erased Γ Δ (.rw A m n) m' A.[n,b/]
 
   | drop {Γ Δ1 Δ2 Δ3 m m' n n' A B s} :
     Merge Δ1 Δ2 Δ3 ->
@@ -209,7 +209,7 @@ lemma Typed.toErased {Γ} {Δ : Ctx Srt} {A m} :
     constructor <;> aesop
   case rw ihm =>
     have ⟨m', erm⟩ := ihm
-    exists (.rw m'); constructor <;> aesop
+    exists m'; constructor <;> aesop
   case drop mrg lw h tyn ihn =>
     have ⟨n', ern⟩ := ihn
     apply ern.drop_merge mrg.sym lw h

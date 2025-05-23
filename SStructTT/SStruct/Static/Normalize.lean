@@ -228,3 +228,35 @@ lemma Typed.red_value {A m : Tm Srt} :
       exists n; and_intros
       . assumption
       . apply Star.R
+
+lemma Typed.closed_idn {A B m a b : Tm Srt} {s i} :
+    [] ⊢ m : B.idn a b ->
+    [.idn B.[shift 1] a.[shift 1] (.var 0), B] ⊢ A : Tm.srt s i ->
+    A.[.rfl a,a/] === A.[m,b/] ∧ [] ⊢ A.[m, b/] : .srt s i := by
+  intro tym tyA
+  have ⟨m', vl, rd⟩ := Typed.red_value tym
+  have tym' := tym.preservation' rd
+  have ⟨a', _⟩ := tym'.idn_canonical Conv.R vl; subst_vars
+  have ⟨_, _, tyI⟩ := tym.validity
+  have ⟨_, tya, tyb, eq⟩ := tyI.idn_inv
+  have ⟨_, _⟩ := Conv.srt_inj eq; subst_vars
+  have ⟨tya', eq1, eq2⟩ := tym'.rfl_inv
+  have sc : SConv (.rfl a .: a .: ids) (m .: b .: ids) := by
+    intro x; match x with
+    | .zero =>
+      asimp; apply Conv.trans;
+      apply (Conv.rfl eq1).sym
+      apply (Star.conv rd).sym
+    | .succ .zero => asimp; apply Conv.trans eq1.sym eq2
+    | .succ (.succ _) => asimp; constructor
+  have tyA : [] ⊢ A.[m, b/] : .srt s i := by
+    rw[show .srt s i = (.srt s i).[m,b/] by asimp]
+    apply Typed.substitution
+    . assumption
+    . apply AgreeSubst.intro; asimp; assumption
+      apply AgreeSubst.intro; asimp; assumption
+      apply AgreeSubst.refl
+      apply tym.toWf
+  and_intros
+  . apply Conv.compat _ sc
+  . assumption
