@@ -179,7 +179,6 @@ lemma HLookup.insert {H1 H2 : Heap Srt} {l1 l2 m n s} :
         repeat rw[Finmap.lookup_erase_ne ne1]
         rw[Finmap.lookup_insert_of_ne _ ne2]
 
-
 lemma Erased.resolve_refl {Γ Δ} {H : Heap Srt} {m n A} :
     Γ ;; Δ ⊢ m ▷ n : A -> HLower H ord.e -> H ;; n ▷ n := by
   intro er lw

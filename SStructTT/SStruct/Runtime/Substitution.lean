@@ -280,14 +280,206 @@ lemma AgreeSubst.split {Δ1 Δ2 Δ3 : Ctx Srt} {H3 σ σ' x} :
       . apply AgreeSubst.intro_im agr2
       . apply AgreeSubst.intro_ex wr2 lw2 mrg1' rsm agr1
 
-lemma Resolve.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
+lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
     Γ ;; Δ ;; H1 ⊢ m ▷ n ◁ n' : A -> HMerge H1 H2 H3 -> AgreeSubst σ σ' x Δ H2 ->
-    H3 ;; n'.[σ] ▷ n.[σ] := by
-  intro ⟨erm, rsm, wr⟩ mrg agr
-  induction erm generalizing H1 H2 H3 σ σ' n' x
+    H3 ;; n'.[σ] ▷ n.[σ'] := by
+  intro ⟨er, rs, wr⟩ mrg agr
+  induction er generalizing H1 H2 H3 σ σ' n' x
+  case var hs =>
+    asimp; cases rs
+    case var lw =>
+      asimp
+      apply Resolve.weaken_merge mrg.sym lw
+      apply agr.has hs
+    case ptr lk rsm =>
+      cases rsm
+      case var => exfalso; apply lk.not_wr_var wr
+      case ptr => exfalso; apply lk.not_wr_ptr wr
+  case lam_im Δ A B m m' s sA iA lw tyA erm ihm =>
+    have lw2 := agr.lower_image lw
+    asimp; cases rs
+    case lam erm lw1 =>
+      asimp
+      have lw3 := mrg.lower_image lw1 lw2
+      replace ihm := ihm erm wr mrg agr.cons
+      apply Resolve.lam lw3 ihm
+    case ptr lk rsm =>
+      cases rsm
+      case lam erm lw1 =>
+        asimp
+        have nf := lk.nf wr; simp at nf
+        have wr := lk.wr_image wr
+        have ⟨H3, lk, mrg⟩ := lk.merge mrg
+        apply Resolve.ptr lk
+        apply Resolve.lam (mrg.lower_image lw1 lw2)
+        have agr : AgreeSubst (up σ) (up σ') (x + 1) (A :⟨.im, sA⟩ Δ) H2 := by
+          apply AgreeSubst.cons; assumption
+        rw[agr.nf_subst nf (by simp)]; aesop
+      case ptr => exfalso; apply lk.not_wr_ptr wr
+  case lam_ex Δ A B m m' s sA iA lw tyA erm ihm =>
+    have lw2 := agr.lower_image lw
+    asimp; cases rs
+    case lam erm lw1 =>
+      asimp
+      have lw3 := mrg.lower_image lw1 lw2
+      replace ihm := ihm erm wr mrg agr.cons
+      apply Resolve.lam lw3 ihm
+    case ptr lk rsm =>
+      cases rsm
+      case lam erm lw1 =>
+        asimp
+        have nf := lk.nf wr; simp at nf
+        have wr := lk.wr_image wr
+        have ⟨H3, lk, mrg⟩ := lk.merge mrg
+        apply Resolve.ptr lk
+        apply Resolve.lam (mrg.lower_image lw1 lw2)
+        have agr : AgreeSubst (up σ) (up σ') (x + 1) (A :⟨.ex, sA⟩ Δ) H2 := by
+          apply AgreeSubst.cons; assumption
+        rw[agr.nf_subst nf (by simp)]; aesop
+      case ptr => exfalso; apply lk.not_wr_ptr wr
+  case app_im A B m m' n s erm tyn ihm =>
+    asimp; cases rs
+    case app mrg1 rsm rsn =>
+      have ⟨wr1, wr2⟩ := mrg1.split_wr wr
+      have ⟨H2', mrg2, mrg'⟩ := mrg.split mrg1
+      have ⟨lw, e⟩ := rsn.null_inv wr2; subst e
+      asimp; apply Resolve.app mrg'
+      . apply ihm rsm wr1 mrg2 agr
+      . assumption
+    case ptr lk rsm =>
+      cases rsm
+      case app => have vl := lk.wr_value wr; cases vl
+      case ptr => exfalso; apply lk.not_wr_ptr wr
+  case app_ex mrg0 erm ern ihm ihn =>
+    asimp; cases rs
+    case app mrg1 rsm rsn =>
+      have ⟨wr1, wr2⟩ := mrg1.split_wr wr
+      have ⟨Ha, Hb, mrg2, agr1, agr2⟩ := agr.split mrg0
+      have ⟨H1', H2', mrg3, mrg1', mrg2'⟩ := mrg.distr mrg1 mrg2
+      replace ihm := ihm rsm wr1 mrg1' agr1
+      replace ihn := ihn rsn wr2 mrg2' agr2
+      asimp; apply Resolve.app mrg3 ihm ihn
+    case ptr lk rsm =>
+      cases rsm
+      case app => have vl := lk.wr_value wr; cases vl
+      case ptr => exfalso; apply lk.not_wr_ptr wr
+  case tup_im ty erm tyn ihm =>
+    asimp; cases rs
+    case tup mrg1 rsm rsn =>
+      have ⟨wr1, wr2⟩ := mrg1.split_wr wr
+      have ⟨H2', mrg2, mrg'⟩ := mrg.split mrg1
+      have ⟨lw, e⟩ := rsn.null_inv wr2; subst e
+      asimp; apply Resolve.tup mrg'
+      . apply ihm rsm wr1 mrg2 agr
+      . assumption
+    case ptr lk rsm =>
+      cases rsm
+      case tup mrg1 rsm1 rsm2 =>
+        asimp
+        have nf := lk.nf wr; simp at nf; have ⟨nf1, nf2⟩ := nf
+        have wr := lk.wr_image wr
+        have ⟨wr1, wr2⟩ := mrg1.split_wr wr
+        have ⟨lw2, e⟩ := rsm2.null_inv wr2; subst e
+        have ⟨H3', lk', mrg3'⟩ := lk.merge mrg
+        have ⟨H2', mrg2', mrg3'⟩ := mrg3'.split mrg1
+        apply Resolve.ptr lk'
+        apply Resolve.tup mrg3'
+        . rw[agr.nf_subst nf1 (by simp)]
+          apply ihm rsm1 wr1 mrg2' agr
+        . assumption
+      case ptr => exfalso; apply lk.not_wr_ptr wr
+  case tup_ex mrg0 ty erm ern ihm ihn =>
+    asimp; cases rs
+    case tup mrg1 rsm rsn =>
+      have ⟨wr1, wr2⟩ := mrg1.split_wr wr
+      have ⟨Ha, Hb, mrg2, agr1, agr2⟩ := agr.split mrg0
+      have ⟨H1', H2', mrg3, mrg1', mrg2'⟩ := mrg.distr mrg1 mrg2
+      replace ihm := ihm rsm wr1 mrg1' agr1
+      replace ihn := ihn rsn wr2 mrg2' agr2
+      asimp; apply Resolve.tup mrg3 ihm ihn
+    case ptr lk rsm =>
+      cases rsm
+      case tup mrg1 rsm1 rsm2 =>
+        asimp
+        have nf := lk.nf wr; simp at nf; have ⟨nf1, nf2⟩ := nf
+        have ⟨H3', lk', mrg'⟩ := lk.merge mrg
+        have ⟨Ha, Hb, mrg2, agr1, agr2⟩ := agr.split mrg0
+        have ⟨H1', H2', mrg3', mrg1', mrg2'⟩ := mrg'.distr mrg1 mrg2
+        have ⟨wr1, wr2⟩ := mrg1.split_wr (lk.wr_image wr)
+        apply Resolve.ptr lk'
+        apply Resolve.tup mrg3'
+        . rw[agr.nf_subst nf1 (by simp)]
+          apply ihm rsm1 wr1 mrg1' agr1
+        . rw[agr.nf_subst nf2 (by simp)]
+          apply ihn rsm2 wr2 mrg2' agr2
+      case ptr => exfalso; apply lk.not_wr_ptr wr
+  case prj_im mrg0 tyC erm ern ihm ihn =>
+    asimp; cases rs
+    case prj mrg1 rsm rsn =>
+      have ⟨wr1, wr2⟩ := mrg1.split_wr wr
+      have ⟨Ha, Hb, mrg2, agr1, agr2⟩ := agr.split mrg0
+      have ⟨H1', H2', mrg3, mrg1', mrg2'⟩ := mrg.distr mrg1 mrg2
+      replace ihm := ihm rsm wr1 mrg1' agr1
+      replace ihn := ihn rsn wr2 mrg2' agr2.cons.cons
+      asimp; apply Resolve.prj mrg3 ihm ihn
+    case ptr lk rsm =>
+      cases rsm
+      case prj => have vl := lk.wr_value wr; cases vl
+      case ptr => exfalso; apply lk.not_wr_ptr wr
+  case prj_ex mrg0 tyC erm ern ihm ihn =>
+    asimp; cases rs
+    case prj mrg1 rsm rsn =>
+      have ⟨wr1, wr2⟩ := mrg1.split_wr wr
+      have ⟨Ha, Hb, mrg2, agr1, agr2⟩ := agr.split mrg0
+      have ⟨H1', H2', mrg3, mrg1', mrg2'⟩ := mrg.distr mrg1 mrg2
+      replace ihm := ihm rsm wr1 mrg1' agr1
+      replace ihn := ihn rsn wr2 mrg2' agr2.cons.cons
+      asimp; apply Resolve.prj mrg3 ihm ihn
+    case ptr lk rsm =>
+      cases rsm
+      case prj => have vl := lk.wr_value wr; cases vl
+      case ptr => exfalso; apply lk.not_wr_ptr wr
+  case tt im =>
+    have lw2 := agr.implicit_image im
+    asimp; cases rs
+    case tt lw1 =>
+      asimp; apply Resolve.tt (mrg.lower_image lw1 lw2)
+    case ptr lk rsm =>
+      cases rsm
+      case tt lw1 =>
+        have ⟨H3', lk', mrg'⟩ := lk.merge mrg
+        asimp; apply Resolve.ptr lk'
+        apply Resolve.tt (mrg'.lower_image lw1 lw2)
+      case ptr => exfalso; apply lk.not_wr_ptr wr
+  case ff im =>
+    have lw2 := agr.implicit_image im
+    asimp; cases rs
+    case ff lw1 =>
+      asimp; apply Resolve.ff (mrg.lower_image lw1 lw2)
+    case ptr lk rsm =>
+      cases rsm
+      case ff lw1 =>
+        have ⟨H3', lk', mrg'⟩ := lk.merge mrg
+        asimp; apply Resolve.ptr lk'
+        apply Resolve.ff (mrg'.lower_image lw1 lw2)
+      case ptr => exfalso; apply lk.not_wr_ptr wr
+  case ite mrg0 tyA erm ern1 ern2 ihm ihn1 ihn2 =>
+    asimp; cases rs
+    case ite mrg1 rsm rsn1 rsn2 =>
+      have ⟨wr1, wr2⟩ := mrg1.split_wr wr
+      have ⟨Ha, Hb, mrg2, agr1, agr2⟩ := agr.split mrg0
+      have ⟨H1', H2', mrg3, mrg1', mrg2'⟩ := mrg.distr mrg1 mrg2
+      replace ihm := ihm rsm wr1 mrg1' agr1
+      replace ihn1 := ihn1 rsn1 wr2 mrg2' agr2
+      replace ihn2 := ihn2 rsn2 wr2 mrg2' agr2
+      asimp; apply Resolve.ite mrg3 ihm ihn1 ihn2
+    case ptr lk rsm =>
+      cases rsm
+      case ite => have vl := lk.wr_value wr; cases vl
+      case ptr => exfalso; apply lk.not_wr_ptr wr
   case rw ih => aesop
   case drop mrg0 _ _ _ _ ihm ihn =>
-    asimp; cases rsm
+    asimp; cases rs
     case drop mrg1 rsm rsn =>
       have ⟨wr1, wr2⟩ := mrg1.split_wr wr
       have ⟨Ha, Hb, mrg2, agr1, agr2⟩ := agr.split mrg0
@@ -299,9 +491,9 @@ lemma Resolve.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
       cases rsm
       case drop => have vl := lk.wr_value wr; cases vl
       case ptr => exfalso; apply lk.not_wr_ptr wr
-  all_goals sorry
+  case conv => aesop
 
--- lemma Resolve.subst_im {H : Heap Srt} {Γ Δ m m' n n' A B x s} :
---     A :: Γ ;; A :⟨.im, s⟩ Δ ⊢ m ▷ n : B -> H ;; n' ▷ n ->
---     H3 ;; n'.[σ] ▷ n.[σ] := by
+-- lemma Resolved.subst_im {H : Heap Srt} {Γ Δ m n n' A B s} :
+--     A :: Γ ;; A :⟨.im, s⟩ Δ ;; H ⊢ m ▷ n ◁ n' : B ->
+--     H ;; n'.[.null/] ▷ n.[.null/] := by
 --   sorry
