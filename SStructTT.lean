@@ -55,5 +55,6 @@ import SStructTT.SStruct.Erasure.Progress
 import SStructTT.SStruct.Erasure.Normalize
 
 import SStructTT.SStruct.Runtime.Heap
-import SStructTT.SStruct.Runtime.Resolution
 import SStructTT.SStruct.Runtime.Step
+import SStructTT.SStruct.Runtime.Resolution
+import SStructTT.SStruct.Dynamic.Substitution
