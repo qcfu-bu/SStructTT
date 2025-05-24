@@ -40,14 +40,14 @@ inductive Drop : Heap Srt -> Tm Srt -> Heap Srt -> Prop where
   | null {H} : Drop H .null H -- free(NULL) in C does nothing
 
 @[scoped aesop safe [constructors]]
-inductive Nullable : Tm Srt -> Prop where
-  | ptr {l} : Nullable (.ptr l)
-  | null    : Nullable .null
+inductive Nullptr : Tm Srt -> Prop where
+  | ptr {l} : Nullptr (.ptr l)
+  | null    : Nullptr .null
 
 @[scoped aesop safe [constructors]]
 inductive HValue : Tm Srt -> Srt -> Prop where
   | lam {m s}   : HValue (.lam m s) s
-  | tup {l p s} : Nullable p -> HValue (.tup (.ptr l) p s) s
+  | tup {l p s} : Nullptr p -> HValue (.tup (.ptr l) p s) s
   | tt : HValue .tt ord.e
   | ff : HValue .ff ord.e
 
@@ -63,7 +63,7 @@ inductive Step : Heap Srt -> Tm Srt -> Heap Srt -> Tm Srt -> Prop where
     Step H n H' n' ->
     Step H (.app m n) H' (.app m n')
   | beta {H1 H2 m s lf p} :
-    Nullable p ->
+    Nullptr p ->
     HLookup H1 lf (.lam m s) H2 ->
     Step H1 (.app (.ptr lf) p) H2 m.[p/]
   | tup_M {H H' m m' n s} :
@@ -76,7 +76,7 @@ inductive Step : Heap Srt -> Tm Srt -> Heap Srt -> Tm Srt -> Prop where
     Step H m H' m' ->
     Step H (.prj m n) H' (.prj m' n)
   | prj_elim {H1 H2 H3 n s l l1 p} :
-    Nullable p ->
+    Nullptr p ->
     HLookup H1 l (.tup (.ptr l1) p s) H2 ->
     Step H1 (.prj (.ptr l) n) H3 n.[p,.ptr l1/]
   | ite_M {H H' m m' n1 n2} :
