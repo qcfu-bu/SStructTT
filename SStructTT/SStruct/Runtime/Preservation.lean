@@ -1,0 +1,88 @@
+import SStructTT.SStruct.Erasure.Preservation
+import SStructTT.SStruct.Runtime.Step
+import SStructTT.SStruct.Runtime.Resolution
+open ARS
+
+namespace SStruct.Erasure
+namespace Runtime
+open Dynamic
+variable {Srt : Type} [ord : SrtOrder Srt]
+
+lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
+    HMerge H1 H2 H3 -> WR H2 ->
+    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step0 (H3, c) (H3', c') ->
+    ∃ H1' b',
+      HMerge H1' H2 H3' ∧
+      [] ;; [] ;; H1' ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Step0 c c' := by
+  generalize e1: [] = Γ
+  generalize e2: [] = Δ
+  intro mrg0 wr2 ⟨er, rs, wr1⟩ st; induction er generalizing H1 H2 H3 H3' c c'
+  case var wf hs =>
+    subst_vars; cases hs
+  case lam_im =>
+    subst_vars; cases rs
+    case lam => cases st
+    case ptr => cases st
+  case lam_ex =>
+    subst_vars; cases rs
+    case lam => cases st
+    case ptr => cases st
+  case app_im ih =>
+    subst_vars; cases rs
+    case app =>
+      cases st
+      case app_M mrg rsm rsn mx st =>
+        have ⟨wr1', wr2'⟩ := mrg.split_wr wr1
+        have ⟨Hx, mrg1, mrg2⟩ := mrg0.split mrg.sym
+        have wrx := mrg1.merge_wr wr2' wr2
+        have ⟨H1', mx', mrgx, ⟨erx, rsx, wrx⟩, stx⟩ := ih rfl rfl mrg2.sym wrx rsm wr1' st
+        have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg1
+        exists Hx, .app mx' .null; and_intros
+        . assumption
+        . constructor
+          . constructor <;> assumption
+          . constructor
+            apply mrg1.sym
+            assumption
+            assumption
+          . apply mrg1.merge_wr wr2' wrx
+        . constructor; assumption
+      case app_N => sorry
+    case ptr => cases st
+  case drop m m' n n' A B s mrg lw h erm ern ihm ihn =>
+    subst_vars; cases mrg; cases rs
+    case drop H1' H2' m m' lw1 h1 mrg1 rsm rsn =>
+      cases st; case drop_elim dp =>
+      have wr3 := mrg0.merge_wr wr1 wr2
+      have wr3' := dp.wr_image wr3
+      have ⟨H0, mrg1, mrg2⟩ := mrg0.split mrg1.sym
+      have ⟨Hx, mrgx, lwx⟩ := dp.resolve mrg2.sym lw1 h1 rsm
+      have ⟨Hy, mrg1', mrg2'⟩ := mrgx.sym.split mrg1
+      have rsn := rsn.weaken_merge mrg1' lwx
+      have ⟨wry, _⟩ := mrg2'.split_wr wr3'
+      exists Hy, n'; and_intros
+      . assumption
+      . constructor <;> assumption
+      . constructor
+    case ptr => cases st
+  case rw ih =>
+    subst_vars
+    replace ih := ih rfl rfl mrg0 wr2 rs wr1 st
+    rcases ih with ⟨H1', b', mrg', ⟨er', rs', wr'⟩, st⟩
+    exists H1', b'; and_intros
+    . assumption
+    . constructor
+      . constructor <;> assumption
+      . assumption
+      . assumption
+    . assumption
+  all_goals sorry
+
+lemma Resolved.preservation0 {H1 H2 : Heap Srt} {a b c c' A} :
+    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step0 (H1, c) (H2, c') ->
+    ∃ b',
+      [] ;; [] ;; H2 ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Step0 c c' := by
+  intro rs st
+  have ⟨H1, b', mrg, rs, er⟩ := rs.preservation0X HMerge.empty WR.empty st
+  have e := mrg.empty_inv; subst e
+  exists b'

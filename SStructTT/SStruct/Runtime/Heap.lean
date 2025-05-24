@@ -125,6 +125,12 @@ lemma HLower.merge_refl {H : Heap Srt} {s} :
     apply InterSet.contra lw1 h
   case h_2 => aesop
 
+lemma HMerge.sym {H1 H2 H3 : Heap Srt} :
+    HMerge H1 H2 H3 -> HMerge H2 H1 H3 := by
+  intro mrg x
+  replace mrg := mrg x
+  split at mrg <;> aesop
+
 lemma HMerge.empty {H : Heap Srt} : HMerge H ∅ H := by
   intro l; split <;> try simp_all
   case h_5 h1 h2 =>
@@ -133,6 +139,13 @@ lemma HMerge.empty {H : Heap Srt} : HMerge H ∅ H := by
     cases opt
     . simp
     . aesop
+
+lemma HMerge.empty_inv {H1 H2 : Heap Srt} : HMerge H1 ∅ H2 -> H1 = H2 := by
+  intro mrg
+  apply Finmap.ext_lookup
+  intro l
+  replace mrg := mrg l; split at mrg
+  all_goals aesop
 
 lemma HMerge.lower_image {H1 H2 H3 : Heap Srt} {s} :
     HMerge H1 H2 H3 -> HLower H1 s -> HLower H2 s -> HLower H3 s := by
@@ -155,11 +168,23 @@ lemma HMerge.lower_image {H1 H2 H3 : Heap Srt} {s} :
       replace lw2 := lw2 x; simp_rw[h2] at lw2
       assumption
 
-lemma HMerge.sym {H1 H2 H3 : Heap Srt} :
-    HMerge H1 H2 H3 -> HMerge H2 H1 H3 := by
-  intro mrg x
-  replace mrg := mrg x
-  split at mrg <;> aesop
+lemma HMerge.split_lower' {H1 H2 H3 : Heap Srt} {s} :
+    HMerge H1 H2 H3 -> HLower H3 s -> HLower H1 s := by
+  intro mrg wr l
+  replace mrg := mrg l; split at mrg <;> try (solve|aesop)
+  case h_1 h1 h2 h3 =>
+    replace wr := wr l
+    rw[h3] at wr; simp_all
+  case h_2 h1 h2 h3 =>
+    replace wr := wr l
+    rw[h3] at wr; simp_all
+
+lemma HMerge.split_lower {H1 H2 H3 : Heap Srt} {s} :
+    HMerge H1 H2 H3 -> HLower H3 s -> HLower H1 s ∧ HLower H2 s := by
+  intro mrg lw
+  have lw1 := mrg.split_lower' lw
+  have lw2 := mrg.sym.split_lower' lw
+  aesop
 
 lemma HMerge.split_none {H1 H2 H3 : Heap Srt} {l} :
     HMerge H1 H2 H3 -> l ∉ H3.keys -> l ∉ H1.keys ∧ l ∉ H2.keys := by

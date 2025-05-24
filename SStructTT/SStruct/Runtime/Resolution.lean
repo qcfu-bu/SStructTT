@@ -80,8 +80,9 @@ inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
     Resolve H2 n2 n2' ->
     Resolve H3 (.ite m n1 n2) (.ite m' n1' n2')
 
-  | drop {H1 H2 H3 m m' n n'} :
+  | drop {H1 H2 H3 m m' n n' s} :
     HMerge H1 H2 H3 ->
+    HLower H1 s -> s ∈ ord.weaken_set ->
     Resolve H1 m m' ->
     Resolve H2 n n' ->
     Resolve H3 (.drop m n) (.drop m' n')
@@ -95,7 +96,7 @@ inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
     HLower H ord.e ->
     Resolve H .null .null
 
-notation:50 H:50 " ;; " m:51 " ▷ " m':51 => Resolve H m m'
+notation:50 H:50 " ⊢ " m:51 " ▷ " m':51 => Resolve H m m'
 
 @[simp]def IsResolved : Tm Srt -> Prop
   | .var _ => True
@@ -110,7 +111,7 @@ notation:50 H:50 " ;; " m:51 " ▷ " m':51 => Resolve H m m'
   | .ptr _ => False
   | .null => True
 
-lemma Resolve.is_resolved {H : Heap Srt} {m m'} : H ;; m ▷ m' -> IsResolved m' := by
+lemma Resolve.is_resolved {H : Heap Srt} {m m'} : H ⊢ m ▷ m' -> IsResolved m' := by
   intro rs; induction rs
   all_goals aesop
 
@@ -120,7 +121,7 @@ inductive Resolved :
 where
   | intro {Γ Δ H x y z A} :
     Γ ;; Δ ⊢ x ▷ y : A ->
-    H ;; z ▷ y ->
+    H ⊢ z ▷ y ->
     WR H ->
     Resolved Γ Δ H x y z A
 
@@ -182,7 +183,7 @@ lemma HLookup.insert {H1 H2 : Heap Srt} {l1 l2 m n s} :
         rw[Finmap.lookup_insert_of_ne _ ne2]
 
 lemma Erased.resolve_refl {Γ Δ} {H : Heap Srt} {m n A} :
-    Γ ;; Δ ⊢ m ▷ n : A -> HLower H ord.e -> H ;; n ▷ n := by
+    Γ ;; Δ ⊢ m ▷ n : A -> HLower H ord.e -> H ⊢ n ▷ n := by
   intro er lw
   induction er generalizing H
   case var =>
@@ -229,11 +230,16 @@ lemma Erased.resolve_refl {Γ Δ} {H : Heap Srt} {m n A} :
   case rw => aesop
   case drop ih =>
     have mrg := lw.merge_refl ord.e_contra
-    constructor <;> aesop
+    constructor
+    . assumption
+    . assumption
+    . apply ord.e_weaken
+    . aesop
+    . aesop
   case conv => aesop
 
 lemma Erased.resolve_id {Γ Δ} {H : Heap Srt} {x y z A} :
-    Γ ;; Δ ⊢ x ▷ y : A -> H ;; y ▷ z -> y = z := by
+    Γ ;; Δ ⊢ x ▷ y : A -> H ⊢ y ▷ z -> y = z := by
   intro ty rs; induction ty generalizing H z
   case var => cases rs; simp
   case lam_im => cases rs; aesop
@@ -374,8 +380,8 @@ lemma HLookup.collision {H1 H1' H2 H3 H3' : Heap Srt} {m n l} :
       assumption
 
 lemma HLookup.resolve {H1 H2 H3 H3' : Heap Srt} {l m n} :
-    HLookup H3 l m H3' -> H1 ;; .ptr l ▷ n -> HMerge H1 H2 H3 ->
-    ∃ H1', HMerge H1' H2 H3' ∧ H1' ;; m ▷ n := by
+    HLookup H3 l m H3' -> H1 ⊢ .ptr l ▷ n -> HMerge H1 H2 H3 ->
+    ∃ H1', HMerge H1' H2 H3' ∧ H1' ⊢ m ▷ n := by
   intro lk1 rs mrg; cases rs
   case ptr H1' _ lk2 erm =>
     have ⟨_, mrg'⟩ := lk1.collision mrg lk2; subst_vars
@@ -462,7 +468,7 @@ lemma NF.weaken {m : Tm Srt} {i j} : NF i m -> i ≤ j -> NF j m := by
     apply h1.trans_le h2
 
 lemma Resolve.nf_image {H : Heap Srt} {m m' i} :
-    H ;; m ▷ m' -> WR H -> NF i m -> NF i m' := by
+    H ⊢ m ▷ m' -> WR H -> NF i m -> NF i m' := by
   intro rs wr nf; induction rs generalizing i
   all_goals try (solve | aesop)
   case app mrg erm ern ihm ihn =>
@@ -481,7 +487,7 @@ lemma Resolve.nf_image {H : Heap Srt} {m m' i} :
     have ⟨nfm, nfn⟩ := nf
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     aesop
-  case drop mrg erm ern ihm ihn =>
+  case drop mrg lw h erm ern ihm ihn =>
     have ⟨nfm, nfn⟩ := nf
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     aesop
@@ -493,7 +499,7 @@ lemma Resolve.nf_image {H : Heap Srt} {m m' i} :
     simp
 
 lemma Resolve.nf_preimage {H : Heap Srt} {m m' i} :
-    H ;; m ▷ m' -> WR H -> NF i m' -> NF i m := by
+    H ⊢ m ▷ m' -> WR H -> NF i m' -> NF i m := by
   intro rs wr nf; induction rs generalizing i
   all_goals try (solve | aesop)
   case app mrg erm ern ihm ihn =>
@@ -512,13 +518,13 @@ lemma Resolve.nf_preimage {H : Heap Srt} {m m' i} :
     have ⟨nfm, nfn⟩ := nf
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     aesop
-  case drop mrg erm ern ihm ihn =>
+  case drop mrg lw h erm ern ihm ihn =>
     have ⟨nfm, nfn⟩ := nf
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     aesop
 
 lemma Resolve.weaken_insert {H : Heap Srt} {m m' n l} :
-    H ;; m ▷ m' -> l ∉ H.keys -> H.insert l ⟨n, ord.e⟩ ;; m ▷ m' := by
+    H ⊢ m ▷ m' -> l ∉ H.keys -> H.insert l ⟨n, ord.e⟩ ⊢ m ▷ m' := by
   intro rs h
   induction rs generalizing l
   case var lw =>
@@ -622,20 +628,29 @@ lemma Resolve.weaken_insert {H : Heap Srt} {m m' n l} :
     | isFalse ne =>
       repeat rw[Finmap.lookup_insert_of_ne _ ne]
       apply mrg
-  case drop mrg erm ern ihm ihn =>
+  case drop s mrg lw mem erm ern ihm ihn =>
     have ⟨h1, h2⟩ := mrg.split_none h
     replace ihm := ihm h1
     replace ihn := ihn h2
-    apply Resolve.drop _ ihm ihn
-    intro x
-    cases x.decEq l with
-    | isTrue =>
-      subst_vars
-      rw[Finmap.lookup_insert]; simp
-      apply ord.e_contra
-    | isFalse ne =>
-      repeat rw[Finmap.lookup_insert_of_ne _ ne]
-      apply mrg
+    apply Resolve.drop _ _ mem ihm ihn
+    . intro x
+      cases x.decEq l with
+      | isTrue =>
+        subst_vars
+        rw[Finmap.lookup_insert]; simp
+        apply ord.e_contra
+      | isFalse ne =>
+        repeat rw[Finmap.lookup_insert_of_ne _ ne]
+        apply mrg
+    . intro x
+      cases x.decEq l with
+      | isTrue =>
+        subst_vars
+        rw[Finmap.lookup_insert]; simp
+        apply InterSet.min_mem
+      | isFalse ne =>
+        repeat rw[Finmap.lookup_insert_of_ne _ ne]
+        apply lw
   case ptr lw erm ih =>
     constructor
     . apply HLookup.insert
@@ -656,7 +671,7 @@ lemma Resolve.weaken_insert {H : Heap Srt} {m m' n l} :
       apply lw
 
 lemma Resolve.weaken_merge {H1 H2 H3 : Heap Srt} {m m'} :
-    HMerge H1 H2 H3 -> HLower H2 ord.e -> H1 ;; m ▷ m' -> H3 ;; m ▷ m' := by
+    HMerge H1 H2 H3 -> HLower H2 ord.e -> H1 ⊢ m ▷ m' -> H3 ⊢ m ▷ m' := by
   intro mrg lw2 rsm; induction rsm generalizing H2 H3
   case var H1 x lw1 =>
     have lw := mrg.lower_image lw1 lw2
@@ -696,11 +711,12 @@ lemma Resolve.weaken_merge {H1 H2 H3 : Heap Srt} {m m'} :
     replace ihn1 := ihn1 mrgb lwb
     replace ihn2 := ihn2 mrgb lwb
     constructor <;> assumption
-  case drop Ha Hb H1 _ _ _ _ mrg1 rsm rsn ihm ihn =>
+  case drop Ha Hb H1 _ _ _ _ mrg1 lw mem rsm rsn ihm ihn =>
     have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower ord.e_contra
     have ⟨H1', H2', mrg', mrga, mrgb⟩ := mrg.distr mrg1 mrg2
     replace ihm := ihm mrga lwa
     replace ihn := ihn mrgb lwb
+    have lw' := mrga.lower_image lw (lwa.weaken (ord.e_min _))
     constructor <;> assumption
   case ptr H1 H1' _ _ _ lk rsm ih =>
     have ⟨H3', lk', mrg'⟩  := lk.merge mrg
@@ -775,7 +791,7 @@ lemma HLookup.contra_ff {H H' : Heap Srt} {l} :
   assumption
 
 lemma Resolve.var_inv {H : Heap Srt} {m x} :
-    H ;; m ▷ .var x -> WR H -> HLower H ord.e := by
+    H ⊢ m ▷ .var x -> WR H -> HLower H ord.e := by
   generalize e: Tm.var x = m'
   intro rs wr; induction rs <;> try trivial
   case ptr H H' l m m' lkm rsm ih =>
@@ -785,7 +801,7 @@ lemma Resolve.var_inv {H : Heap Srt} {m x} :
     . exfalso; apply lkm.not_wr_ptr wr
 
 lemma Resolve.lam_inv {H : Heap Srt} {m m' s} :
-    H ;; m ▷ .lam m' s -> WR H -> HLower H s := by
+    H ⊢ m ▷ .lam m' s -> WR H -> HLower H s := by
   generalize e: Tm.lam m' s = t
   intro rs wr; induction rs <;> try trivial
   case lam => cases e; assumption
@@ -816,7 +832,7 @@ lemma Resolve.lam_inv {H : Heap Srt} {m m' s} :
       exfalso; apply lkm.not_wr_ptr wr
 
 lemma Resolve.tt_inv {H : Heap Srt} {m} :
-    H ;; m ▷ .tt -> WR H -> HLower H ord.e := by
+    H ⊢ m ▷ .tt -> WR H -> HLower H ord.e := by
   generalize e: Tm.tt = t
   intro rs wr; induction rs <;> try trivial
   case ptr H H' l m m' lkm rsm ih =>
@@ -846,7 +862,7 @@ lemma Resolve.tt_inv {H : Heap Srt} {m} :
       exfalso; apply lkm.not_wr_ptr wr
 
 lemma Resolve.null_inv {H : Heap Srt} {m} :
-    H ;; m ▷ .null -> WR H -> HLower H ord.e ∧ m = .null := by
+    H ⊢ m ▷ .null -> WR H -> HLower H ord.e ∧ m = .null := by
   generalize e: Tm.null = t
   intro rs wr; induction rs <;> try trivial
   case ptr H H' l m m' lkm rsm ih =>
@@ -859,7 +875,7 @@ lemma Resolve.null_inv {H : Heap Srt} {m} :
       exfalso; apply lkm.not_wr_ptr wr
 
 lemma Resolve.ff_inv {H : Heap Srt} {m} :
-    H ;; m ▷ .ff -> WR H -> HLower H ord.e := by
+    H ⊢ m ▷ .ff -> WR H -> HLower H ord.e := by
   generalize e: Tm.ff = t
   intro rs wr; induction rs <;> try trivial
   case ptr H H' l m m' lkm rsm ih =>
@@ -1041,7 +1057,7 @@ lemma HLookup.wr_value {H H' : Heap Srt} {m l} :
   split <;> aesop
 
 lemma Resolve.value_image {H : Heap Srt} {m m'} :
-    H ;; m ▷ m' -> WR H -> Value m -> Value m' := by
+    H ⊢ m ▷ m' -> WR H -> Value m -> Value m' := by
   intro rsm wr vl; induction rsm <;> try (solve|aesop)
   all_goals try (solve|cases vl)
   case tup mrg rsm rsn ihm ihn =>
@@ -1056,7 +1072,7 @@ lemma Resolve.value_image {H : Heap Srt} {m m'} :
     apply ih wr vl
 
 lemma Resolve.ptr_value {H : Heap Srt} {n l} :
-    H ;; .ptr l ▷ n -> WR H -> Value n := by
+    H ⊢ .ptr l ▷ n -> WR H -> Value n := by
   intro rs wr; cases rs
   case ptr lk rs =>
     apply rs.value_image (lk.wr_image wr)

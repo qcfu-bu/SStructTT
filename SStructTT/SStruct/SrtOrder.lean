@@ -70,6 +70,34 @@ lemma InterSet.trans {s1 s2 s3 : Srt} :
   case left  => intro h; cases h1; cases h2; aesop
   case right => intro h; cases h1; cases h2; aesop
 
+lemma InterSet.intersect_contra {s1 s2 : Srt} :
+    s1 ∈ ord.contra_set -> s2 ∈ ord.contra_set ->
+    ∃ s3, s3 ∈ ord.contra_set ∧ s1 ∈ InterSet s3 ∧ s2 ∈ InterSet s3 := by
+  intro h1 h2
+  cases ord.weaken_dec s1 with
+  | isTrue _ =>
+    cases ord.weaken_dec s2 with
+    | isTrue _  => exists s1; and_intros <;> aesop
+    | isFalse _ => exists s2; and_intros <;> aesop
+  | isFalse _ =>
+    cases ord.weaken_dec s2 with
+    | isTrue _  => exists s1; and_intros <;> aesop
+    | isFalse _ => exists s2; and_intros <;> aesop
+
+lemma InterSet.intersect_weaken {s1 s2 : Srt} :
+    s1 ∈ ord.weaken_set -> s2 ∈ ord.weaken_set ->
+    ∃ s3, s3 ∈ ord.weaken_set ∧ s1 ∈ InterSet s3 ∧ s2 ∈ InterSet s3 := by
+  intro h1 h2
+  cases ord.contra_dec s1 with
+  | isTrue _ =>
+    cases ord.contra_dec s2 with
+    | isTrue _  => exists s1; and_intros <;> aesop
+    | isFalse _ => exists s2; and_intros <;> aesop
+  | isFalse _ =>
+    cases ord.contra_dec s2 with
+    | isTrue _  => exists s1; and_intros <;> aesop
+    | isFalse _ => exists s2; and_intros <;> aesop
+
 end InterSet
 
 namespace SO4 -- 4 Sorted

@@ -18,6 +18,7 @@ inductive Value : Tm Srt -> Prop where
   | ptr {l} : Value (.ptr l)
   | null : Value .null
 
+/- Drop-reductions. -/
 @[scoped aesop safe [constructors]]
 inductive Step0 : Tm Srt -> Tm Srt -> Prop where
   | app_M {m m'} n :
@@ -41,6 +42,7 @@ inductive Step0 : Tm Srt -> Tm Srt -> Prop where
   | drop_elim m n :
     Step0 (.drop m n) n
 
+/- Core-reductions. -/
 @[scoped aesop safe [constructors]]
 inductive Step1 : Tm Srt -> Tm Srt -> Prop where
   | app_M {m m'} n :
