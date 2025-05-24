@@ -260,87 +260,19 @@ lemma Merge.split {Δ1 Δ2 Δ Δa Δb : Ctx Srt} :
     have ⟨Δc, mrg1, mrg2⟩ := ih mrg
     exists A :⟨.im, s⟩ Δc; aesop
 
-lemma Merge.distr {Δ1 Δ2 Δ Δ11 Δ12 Δ21 Δ22 : Ctx Srt} :
-    Merge Δ1 Δ2 Δ ->
+lemma Merge.distr {Δ1 Δ2 Δ3 Δ11 Δ12 Δ21 Δ22 : Ctx Srt} :
+    Merge Δ1 Δ2 Δ3 ->
     Merge Δ11 Δ12 Δ1 ->
     Merge Δ21 Δ22 Δ2 ->
     ∃ Δ1' Δ2',
-      Merge Δ1' Δ2' Δ ∧
+      Merge Δ1' Δ2' Δ3 ∧
       Merge Δ11 Δ21 Δ1' ∧
       Merge Δ12 Δ22 Δ2' := by
-  intro mrg1 mrg2 mrg3; induction mrg1 generalizing Δ11 Δ12 Δ21 Δ22
-  case nil =>
-    cases mrg2; cases mrg3
-    exists [], []; aesop
-  case contra A s h mrg ih =>
-    cases mrg2 with
-    | contra _ _ _ mrg2 =>
-      cases mrg3 with
-      | contra _ _ _ mrg3 =>
-        have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
-      | left _ _ mrg3 =>
-        have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
-      | right _ _ mrg3 =>
-        have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
-    | left _ _ mrg2 =>
-      cases mrg3 with
-      | contra _ _ _ mrg3 =>
-        have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
-      | left _ _ mrg3 =>
-        have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨.ex, s⟩ Δ1', A :⟨.im, s⟩ Δ2'; aesop
-      | right _ _ mrg3 =>
-        have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
-    | right _ _ mrg2 =>
-      cases mrg3 with
-      | contra _ _ _ mrg3 =>
-        have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
-      | left _ _ mrg3 =>
-        have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
-      | right _ _ mrg3 =>
-        have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨.im, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
-  case left A s mrg ih =>
-    cases mrg2 with
-    | contra _ _ _ mrg2 =>
-      cases mrg3 with
-      | im _ _ mrg3 =>
-        have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
-    | left _ _ mrg2 =>
-      cases mrg3 with
-      | im _ _ mrg3 =>
-        have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨.ex, s⟩ Δ1', A :⟨.im, s⟩ Δ2'; aesop
-    | right _ _ mrg2 =>
-      cases mrg3 with
-      | im _ _ mrg3 =>
-        have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨.im, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
-  case right A s mrg ih =>
-    cases mrg2 with
-    | im _ _ mrg2 =>
-      cases mrg3 with
-      | contra _ _ _ mrg3 =>
-        have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨.ex, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
-      | left _ _ mrg3 =>
-        have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨.ex, s⟩ Δ1', A :⟨.im, s⟩ Δ2'; aesop
-      | right _ _ mrg3 =>
-        have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨.im, s⟩ Δ1', A :⟨.ex, s⟩ Δ2'; aesop
-  case im A s mrg ih =>
-    cases mrg2 with
-    | im _ _ mrg2 =>
-      cases mrg3 with
-      | im _ _ mrg3 =>
-        have ⟨Δ1', Δ2', mrg1', mrg2', mrg3'⟩ := ih mrg2 mrg3
-        exists A :⟨.im, s⟩ Δ1', A :⟨.im, s⟩ Δ2'; aesop
+  intro mrg0 mrg1 mrg2
+  have ⟨Δ4, mrg3, mrg4⟩ := mrg0.split mrg1
+  have ⟨Δ5, mrg5, mrg6⟩ := mrg3.sym.split mrg2
+  have ⟨Δ6, mrg7, mrg8⟩ := mrg4.split mrg6.sym
+  exists Δ5, Δ6; and_intros
+  . apply mrg8.sym
+  . apply mrg5.sym
+  . apply mrg7.sym
