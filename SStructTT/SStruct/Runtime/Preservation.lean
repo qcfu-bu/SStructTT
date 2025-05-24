@@ -87,6 +87,82 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . apply mrg1.merge_wr wr1' wrx
         . constructor; assumption
     case ptr => cases st
+  case tup_im m m' n s i ty erm tyn ih =>
+    subst_vars; cases rs
+    case tup =>
+      cases st
+      case tup_M mrg rsm rsn mx st =>
+        have ⟨wr1', wr2'⟩ := mrg.split_wr wr1
+        have ⟨Hx, mrg1, mrg2⟩ := mrg0.split mrg.sym
+        have wrx := mrg1.merge_wr wr2' wr2
+        have ⟨H1', mx', mrgx, ⟨erx, rsx, wrx⟩, stx⟩ := ih rfl rfl mrg2.sym wrx rsm wr1' st
+        have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg1
+        exists Hx, .tup mx' .null s; and_intros
+        . assumption
+        . constructor
+          . constructor <;> assumption
+          . constructor
+            apply mrg1.sym
+            assumption
+            assumption
+          . apply mrg1.merge_wr wr2' wrx
+        . constructor; assumption
+      case tup_N mrg rsm rsn n0 dpf st =>
+        have ⟨wr1', wr2'⟩ := mrg.split_wr wr1
+        have ⟨lw, e⟩ := rsn.null_inv wr2'; subst e
+        cases st
+    case ptr => cases st
+  case tup_ex m m' n n' s i mrg ty erm ern ihm ihn =>
+    subst_vars; cases mrg; cases rs
+    case tup =>
+      cases st
+      case tup_M mrg rsm rsn mx st =>
+        clear ihn
+        have ⟨wr1', wr2'⟩ := mrg.split_wr wr1
+        have ⟨Hx, mrg1, mrg2⟩ := mrg0.split mrg.sym
+        have wrx := mrg1.merge_wr wr2' wr2
+        have ⟨H1', mx', mrgx, ⟨erx, rsx, wrx⟩, stx⟩ := ihm rfl rfl mrg2.sym wrx rsm wr1' st
+        clear ihm
+        have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg1
+        exists Hx, .tup mx' n' s; and_intros
+        . assumption
+        . constructor
+          . apply Erased.tup_ex Merge.nil ty erx ern
+          . apply Resolve.tup mrg1.sym rsx rsn
+          . apply mrg1.merge_wr wr2' wrx
+        . constructor; assumption
+      case tup_N mrg rsm rsn nx dpf st =>
+        clear ihm
+        have ⟨wr1', wr2'⟩ := mrg.split_wr wr1
+        have ⟨Hx, mrg1, mrg2⟩ := mrg0.split mrg
+        have wrx := mrg1.merge_wr wr1' wr2
+        have ⟨H1', nx', mrgx, ⟨erx, rsx, wrx⟩, stx⟩ := ihn rfl rfl mrg2.sym wrx rsn wr2' st
+        clear ihn
+        have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg1
+        exists Hx, .tup m' nx' s; and_intros
+        . assumption
+        . constructor
+          . apply Erased.tup_ex Merge.nil ty erm erx
+          . apply Resolve.tup mrg1 rsm rsx
+          . apply mrg1.merge_wr wr1' wrx
+        . constructor; assumption
+    case ptr => cases st
+  case prj_im => sorry
+  case prj_ex => sorry
+  case tt => sorry
+  case ff => sorry
+  case ite => sorry
+  case rw ih =>
+    subst_vars
+    replace ih := ih rfl rfl mrg0 wr2 rs wr1 st
+    rcases ih with ⟨H1', b', mrg', ⟨er', rs', wr'⟩, st⟩
+    exists H1', b'; and_intros
+    . assumption
+    . constructor
+      . constructor <;> assumption
+      . assumption
+      . assumption
+    . assumption
   case drop m m' n n' A B s mrg lw h erm ern ihm ihn =>
     subst_vars; cases mrg; cases rs
     case drop H1' H2' m m' lw1 h1 mrg1 rsm rsn =>
@@ -103,18 +179,16 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       . constructor <;> assumption
       . constructor
     case ptr => cases st
-  case rw ih =>
+  case conv eq erm tyB ih =>
     subst_vars
-    replace ih := ih rfl rfl mrg0 wr2 rs wr1 st
-    rcases ih with ⟨H1', b', mrg', ⟨er', rs', wr'⟩, st⟩
-    exists H1', b'; and_intros
+    have ⟨Hx, x, mrgx, ⟨erx, rsx, wrx⟩, stx⟩ := ih rfl rfl mrg0 wr2 rs wr1 st
+    exists Hx, x; and_intros
     . assumption
     . constructor
-      . constructor <;> assumption
-      . assumption
-      . assumption
+      apply Erased.conv eq erx tyB
+      assumption
+      assumption
     . assumption
-  all_goals sorry
 
 lemma Resolved.preservation0 {H1 H2 : Heap Srt} {a b c c' A} :
     [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step0 (H1, c) (H2, c') ->
