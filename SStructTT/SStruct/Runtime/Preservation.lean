@@ -197,3 +197,18 @@ lemma Resolved.preservation0 {H1 H2 : Heap Srt} {a b c c' A} :
   have ⟨H1, b', mrg, rs, er⟩ := rs.preservation0X HMerge.empty WR.empty st
   have e := mrg.empty_inv; subst e
   exists b'
+
+lemma Resolved.preservation0' {H1 H2 : Heap Srt} {a b c c' A} :
+    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Red0 (H1, c) (H2, c') ->
+    ∃ b', [] ;; [] ;; H2 ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Red0 b b' := by
+  generalize e: (H2, c') = t
+  intro rs rd; induction rd generalizing H2 c'
+  case R => cases e; exists b; aesop
+  case SE x y rd st ih =>
+    subst_vars
+    rcases x with ⟨H2, c'⟩
+    replace ⟨x, rs, rd⟩ := ih rfl
+    have ⟨y, rs, st⟩ := rs.preservation0 st
+    exists y; and_intros
+    . assumption
+    . apply Star.SE rd st
