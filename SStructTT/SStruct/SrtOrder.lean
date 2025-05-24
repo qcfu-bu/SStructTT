@@ -19,39 +19,39 @@ instance {S : Type} {s : S} [ord : SrtOrder S] : Decidable (s ∈ ord.weaken_set
 instance {S : Type} {s : S} [ord : SrtOrder S] : Decidable (s ∈ ord.contra_set) :=
   ord.contra_dec s
 
-section CoverSet
+section InterSet
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-def CoverSet (s : Srt) : Set Srt :=
+def InterSet (s : Srt) : Set Srt :=
   fun s' =>
     (s ∈ ord.weaken_set -> s' ∈ ord.weaken_set) ∧
     (s ∈ ord.contra_set -> s' ∈ ord.contra_set)
 
-lemma CoverSet.self_mem {s : Srt} : s ∈ CoverSet s := by
+lemma InterSet.self_mem {s : Srt} : s ∈ InterSet s := by
   constructor <;> simp
 
-lemma CoverSet.min_mem {s : Srt} : ord.e ∈ CoverSet s := by
+lemma InterSet.min_mem {s : Srt} : ord.e ∈ InterSet s := by
   constructor
   . intro; apply ord.e_weaken
   . intro; apply ord.e_contra
 
-lemma CoverSet.weaken {s1 s2 : Srt} :
-    s1 ∈ CoverSet s2 -> s2 ∈ ord.weaken_set -> s1 ∈ ord.weaken_set := by
+lemma InterSet.weaken {s1 s2 : Srt} :
+    s1 ∈ InterSet s2 -> s2 ∈ ord.weaken_set -> s1 ∈ ord.weaken_set := by
   intro h1 h2; cases h1; aesop
 
-lemma CoverSet.contra {s1 s2 : Srt} :
-    s1 ∈ CoverSet s2 -> s2 ∈ ord.contra_set -> s1 ∈ ord.contra_set := by
+lemma InterSet.contra {s1 s2 : Srt} :
+    s1 ∈ InterSet s2 -> s2 ∈ ord.contra_set -> s1 ∈ ord.contra_set := by
   intro h1 h2; cases h1; aesop
 
-lemma CoverSet.lower_mem {s1 s2 : Srt} :
-    s1 <= s2 -> s1 ∈ CoverSet s2 := by
+lemma InterSet.lower_mem {s1 s2 : Srt} :
+    s1 <= s2 -> s1 ∈ InterSet s2 := by
   intro le
   constructor
   case left  => intro h; apply ord.weaken_set.lower le h
   case right => intro h; apply ord.contra_set.lower le h
 
-lemma CoverSet.lower_subset {s1 s2 : Srt} :
-    s1 <= s2 -> CoverSet s1 ⊆ CoverSet s2 := by
+lemma InterSet.lower_subset {s1 s2 : Srt} :
+    s1 <= s2 -> InterSet s1 ⊆ InterSet s2 := by
   intro le s c1
   constructor
   case left =>
@@ -63,14 +63,14 @@ lemma CoverSet.lower_subset {s1 s2 : Srt} :
     have := ord.contra_set.lower le h
     aesop
 
-lemma CoverSet.trans {s1 s2 s3 : Srt} :
-    s2 ∈ CoverSet s1 -> s3 ∈ CoverSet s2 -> s3 ∈ CoverSet s1 := by
+lemma InterSet.trans {s1 s2 s3 : Srt} :
+    s2 ∈ InterSet s1 -> s3 ∈ InterSet s2 -> s3 ∈ InterSet s1 := by
   intro h1 h2
   constructor
   case left  => intro h; cases h1; cases h2; aesop
   case right => intro h; cases h1; cases h2; aesop
 
-end CoverSet
+end InterSet
 
 namespace SO4 -- 4 Sorted
 inductive Srt where

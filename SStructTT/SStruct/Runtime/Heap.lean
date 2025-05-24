@@ -37,23 +37,23 @@ variable [ord : SrtOrder Srt]
 def HLower (H : Heap Srt) (s0 : Srt) : Prop :=
   ∀ l,
     match H.lookup l with
-    | some (_, s) => s ∈ CoverSet s0
+    | some (_, s) => s ∈ InterSet s0
     | none => True
 
 lemma HLower.empty {s : Srt} : HLower ∅ s := by
   intro l; simp
 
 lemma HLower.cover {H : Heap Srt} {s1 s2 : Srt} :
-    HLower H s1 -> s1 ∈ CoverSet s2 -> HLower H s2 := by
+    HLower H s1 -> s1 ∈ InterSet s2 -> HLower H s2 := by
   intro lw h x
   replace lw := lw x
   split at lw <;> try simp
-  apply CoverSet.trans h lw
+  apply InterSet.trans h lw
 
 lemma HLower.weaken {H : Heap Srt} {s1 s2 : Srt} :
     HLower H s1 -> s1 ≤ s2 -> HLower H s2 := by
   intro lw h
-  apply lw.cover (CoverSet.lower_mem h)
+  apply lw.cover (InterSet.lower_mem h)
 
 lemma HLower.insert_lower {H} {m : Tm Srt} {l s1 s2} :
     HLower H s2 -> s1 ≤ s2 ->  HLower (H.insert l (m, s1)) s2 := by
@@ -64,7 +64,7 @@ lemma HLower.insert_lower {H} {m : Tm Srt} {l s1 s2} :
     | isTrue =>
       subst_vars
       rw[Finmap.lookup_insert] at e; cases e
-      apply CoverSet.lower_mem lw
+      apply InterSet.lower_mem lw
     | isFalse ne =>
       rw[Finmap.lookup_insert_of_ne _ ne] at e
       replace h := h x
@@ -94,7 +94,7 @@ lemma HLower.union {H1 H2 : Heap Srt} {s1 s2 : Srt} :
       simp at h
       replace lw1 := lw1 x
       simp_rw[h] at lw1
-      apply CoverSet.lower_subset lw lw1
+      apply InterSet.lower_subset lw lw1
     | .inr ⟨_, h⟩ =>
       simp at h
       replace lw2 := lw2 x
@@ -122,7 +122,7 @@ lemma HLower.merge_refl {H : Heap Srt} {s} :
   split at lw1
   case h_1 opt m s e =>
     rw[e]; simp
-    apply CoverSet.contra lw1 h
+    apply InterSet.contra lw1 h
   case h_2 => aesop
 
 lemma HMerge.empty {H : Heap Srt} : HMerge H ∅ H := by
@@ -259,7 +259,7 @@ lemma HMerge.compose {H1 H2 H3 Ha Hb Hx Hy : Heap Srt} {s} :
     split at mrg2 <;> simp_all
     case h_3 =>
       split at mrg3 <;> simp_all
-      apply CoverSet.contra lw h
+      apply InterSet.contra lw h
   case h_3 =>
     split at mrg2 <;> simp_all
     case h_2 =>

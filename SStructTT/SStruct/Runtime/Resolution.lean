@@ -528,7 +528,7 @@ lemma Resolve.weaken_insert {H : Heap Srt} {m m' n l} :
     | isTrue =>
       subst_vars
       simp_rw[Finmap.lookup_insert]
-      apply CoverSet.self_mem
+      apply InterSet.self_mem
     | isFalse ne =>
       rw[Finmap.lookup_insert_of_ne _ ne]
       apply lw
@@ -539,7 +539,7 @@ lemma Resolve.weaken_insert {H : Heap Srt} {m m' n l} :
     | isTrue =>
       subst_vars
       rw[Finmap.lookup_insert]; simp
-      apply CoverSet.min_mem
+      apply InterSet.min_mem
     | isFalse ne =>
       rw[Finmap.lookup_insert_of_ne _ ne]
       apply lw
@@ -592,7 +592,7 @@ lemma Resolve.weaken_insert {H : Heap Srt} {m m' n l} :
     | isTrue =>
       subst_vars
       rw[Finmap.lookup_insert]; simp
-      apply CoverSet.min_mem
+      apply InterSet.min_mem
     | isFalse ne =>
       repeat rw[Finmap.lookup_insert_of_ne _ ne]
       apply lw
@@ -603,7 +603,7 @@ lemma Resolve.weaken_insert {H : Heap Srt} {m m' n l} :
     | isTrue =>
       subst_vars
       rw[Finmap.lookup_insert]; simp
-      apply CoverSet.self_mem
+      apply InterSet.self_mem
     | isFalse ne =>
       repeat rw[Finmap.lookup_insert_of_ne _ ne]
       apply lw
@@ -650,7 +650,7 @@ lemma Resolve.weaken_insert {H : Heap Srt} {m m' n l} :
     | isTrue =>
       subst_vars
       repeat rw[Finmap.lookup_insert]; simp
-      apply CoverSet.min_mem
+      apply InterSet.min_mem
     | isFalse ne =>
       rw[Finmap.lookup_insert_of_ne _ ne]
       apply lw
@@ -808,7 +808,7 @@ lemma Resolve.lam_inv {H : Heap Srt} {m m' s} :
           cases x.decEq l with
           | isTrue =>
             subst_vars; rw[h]; simp
-            apply CoverSet.self_mem
+            apply InterSet.self_mem
           | isFalse ne =>
             rw[Finmap.lookup_erase_ne ne] at lw
             assumption
@@ -838,7 +838,7 @@ lemma Resolve.tt_inv {H : Heap Srt} {m} :
           cases x.decEq l with
           | isTrue =>
             subst_vars; rw[h]; simp
-            apply CoverSet.min_mem
+            apply InterSet.min_mem
           | isFalse ne =>
             rw[Finmap.lookup_erase_ne ne] at lw
             assumption
@@ -881,7 +881,7 @@ lemma Resolve.ff_inv {H : Heap Srt} {m} :
           cases x.decEq l with
           | isTrue =>
             subst_vars; rw[h]; simp
-            apply CoverSet.min_mem
+            apply InterSet.min_mem
           | isFalse ne =>
             rw[Finmap.lookup_erase_ne ne] at lw
             assumption
@@ -944,7 +944,7 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
               cases x.decEq l with
               | isTrue =>
                 subst_vars; rw[h]; simp
-                apply CoverSet.self_mem
+                apply InterSet.self_mem
               | isFalse ne =>
                 rw[Finmap.lookup_erase_ne ne] at lw
                 assumption
@@ -991,7 +991,7 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
               cases x.decEq l with
               | isTrue =>
                 subst_vars; rw[h]; simp
-                apply CoverSet.self_mem
+                apply InterSet.self_mem
               | isFalse ne =>
                 rw[Finmap.lookup_erase_ne ne] at lw
                 assumption
@@ -1001,7 +1001,7 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
               cases x.decEq l with
               | isTrue =>
                 subst_vars; rw[h]; simp
-                apply CoverSet.self_mem
+                apply InterSet.self_mem
               | isFalse ne =>
                 rw[Finmap.lookup_erase_ne ne] at lw
                 assumption
