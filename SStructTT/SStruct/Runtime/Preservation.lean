@@ -13,7 +13,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step0 (H3, c) (H3', c') ->
     ∃ H1' b',
       HMerge H1' H2 H3' ∧
-      [] ;; [] ;; H1' ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Step0 c c' := by
+      [] ;; [] ;; H1' ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Step0 b b' := by
   generalize e1: [] = Γ
   generalize e2: [] = Δ
   intro mrg0 wr2 ⟨er, rs, wr1⟩ st; induction er generalizing H1 H2 H3 H3' c c'
@@ -27,7 +27,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     subst_vars; cases rs
     case lam => cases st
     case ptr => cases st
-  case app_im ih =>
+  case app_im m m' n s erm tyn ih =>
     subst_vars; cases rs
     case app =>
       cases st
@@ -47,7 +47,10 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             assumption
           . apply mrg1.merge_wr wr2' wrx
         . constructor; assumption
-      case app_N => sorry
+      case app_N mrg rsm rsn n0 dpf st =>
+        have ⟨wr1', wr2'⟩ := mrg.split_wr wr1
+        have ⟨lw, e⟩ := rsn.null_inv wr2'; subst e
+        cases st
     case ptr => cases st
   case drop m m' n n' A B s mrg lw h erm ern ihm ihn =>
     subst_vars; cases mrg; cases rs
@@ -80,8 +83,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
 
 lemma Resolved.preservation0 {H1 H2 : Heap Srt} {a b c c' A} :
     [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step0 (H1, c) (H2, c') ->
-    ∃ b',
-      [] ;; [] ;; H2 ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Step0 c c' := by
+    ∃ b', [] ;; [] ;; H2 ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Step0 b b' := by
   intro rs st
   have ⟨H1, b', mrg, rs, er⟩ := rs.preservation0X HMerge.empty WR.empty st
   have e := mrg.empty_inv; subst e
