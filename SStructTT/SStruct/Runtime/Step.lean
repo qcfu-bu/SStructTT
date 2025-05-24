@@ -1,4 +1,5 @@
 import SStructTT.SStruct.Runtime.Resolution
+open ARS
 
 namespace SStruct.Erasure
 namespace Runtime
@@ -51,46 +52,75 @@ inductive HValue : Tm Srt -> Srt -> Prop where
   | tt : HValue .tt ord.e
   | ff : HValue .ff ord.e
 
-inductive Step : Heap Srt -> Tm Srt -> Heap Srt -> Tm Srt -> Prop where
+abbrev State Srt := Heap Srt × Tm Srt
+
+@[scoped aesop safe [constructors]]
+inductive Step0 : State Srt -> State Srt -> Prop where
+  | app_M {H1 H2 m m'} n :
+    Step0 (H1, m) (H2, m') ->
+    Step0 (H1, .app m n) (H2, .app m' n)
+  | app_N {H1 H2} m {n n'} :
+    Step0 (H1, n) (H2, n') ->
+    Step0 (H1, .app m n) (H2, .app m n')
+  | tup_M {H1 H2 m m'} n s :
+    Step0 (H1, m) (H2, m') ->
+    Step0 (H2, .tup m n s) (H2, .tup m' n s)
+  | tup_N {H1 H2} m {n n'} s :
+    Step0 (H1, n) (H2, n') ->
+    Step0 (H2, .tup m n s) (H2, .tup m n' s)
+  | prj_M {H1 H2 m m'} n :
+    Step0 (H1, m) (H2, m') ->
+    Step0 (H1, .prj m n) (H2, .prj m' n)
+  | ite_M {H1 H2 m m'} n1 n2 :
+    Step0 (H1, m) (H2, m') ->
+    Step0 (H1, .ite m n1 n2) (H2, .ite m' n1 n2)
   | alloc {H v s l} :
     l ∉ H.keys ->
     HValue v s ->
-    Step H v (H.insert l ⟨v, s⟩) (.ptr l)
+    Step0 (H, v) (H.insert l ⟨v, s⟩, .ptr l)
+  | drop_elim {H1 H2 m n} :
+    Drop H1 m H2 ->
+    Step0 (H1, .drop m n) (H2, n)
+
+@[scoped aesop safe [constructors]]
+inductive Step1 : State Srt -> State Srt -> Prop where
   | app_M {H H' m m' n} :
-    Step H m H' m' ->
-    Step H (.app m n) H' (.app m' n)
+    Step1 (H, m) (H', m') ->
+    Step1 (H, .app m n) (H', .app m' n)
   | app_N {H H' m n n'} :
-    Step H n H' n' ->
-    Step H (.app m n) H' (.app m n')
+    Step1 (H, n) (H', n') ->
+    Step1 (H, .app m n) (H', .app m n')
   | beta {H1 H2 m s lf p} :
     Nullptr p ->
     HLookup H1 lf (.lam m s) H2 ->
-    Step H1 (.app (.ptr lf) p) H2 m.[p/]
+    Step1 (H1, .app (.ptr lf) p) (H2, m.[p/])
   | tup_M {H H' m m' n s} :
-    Step H m H' m' ->
-    Step H (.tup m n s) H' (.tup m' n s)
+    Step1 (H, m) (H', m') ->
+    Step1 (H, .tup m n s) (H', .tup m' n s)
   | tup_N {H H' m n n' s} :
-    Step H n H' n' ->
-    Step H (.tup m n s) H' (.tup m n' s)
+    Step1 (H, n) (H', n') ->
+    Step1 (H, .tup m n s) (H', .tup m n' s)
   | prj_M {H H' m m' n} :
-    Step H m H' m' ->
-    Step H (.prj m n) H' (.prj m' n)
+    Step1 (H, m) (H', m') ->
+    Step1 (H, .prj m n) (H', .prj m' n)
   | prj_elim {H1 H2 H3 n s l l1 p} :
     Nullptr p ->
     HLookup H1 l (.tup (.ptr l1) p s) H2 ->
-    Step H1 (.prj (.ptr l) n) H3 n.[p,.ptr l1/]
+    Step1 (H1, .prj (.ptr l) n) (H3, n.[p,.ptr l1/])
   | ite_M {H H' m m' n1 n2} :
-    Step H m H' m' ->
-    Step H (.ite m n1 n2) H' (.ite m' n1 n2)
+    Step1 (H, m) (H', m') ->
+    Step1 (H, .ite m n1 n2) (H', .ite m' n1 n2)
   | ite_tt {H H' n1 n2 l} :
     HLookup H l .tt H' ->
-    Step H (.ite (.ptr l) n1 n2) H' n1
+    Step1 (H, .ite (.ptr l) n1 n2) (H', n1)
   | ite_ff {H H' n1 n2 l} :
     HLookup H l .ff H' ->
-    Step H (.ite (.ptr l) n1 n2) H' n2
-  | drop {H1 H2 m n} :
-    Drop H1 m H2 ->
-    Step H1 (.drop m n) H2 n
+    Step1 (H, .ite (.ptr l) n1 n2) (H', n2)
+
+abbrev Red0 (t1 t2 : @State Srt) : Prop := Star Step0 t1 t2
+
+inductive Step (m : State Srt) : State Srt -> Prop where
+  | intro {m' n} : Red0 m m' -> Step1 m' n -> Step m n
 
 notation:50 H:50 " ;; " m:51 " ~>> " H':51 " ;; " m':51 =>
-  Step H m H' m'
+  Step (H, m) (H', m')
