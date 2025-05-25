@@ -9,7 +9,7 @@ variable {Srt : Type} [ord : SrtOrder Srt]
 
 def HLookup (H1 : Heap Srt) (l : Nat) (m : Tm Srt) (H2 : Heap Srt) : Prop :=
   match H1.lookup l with
-  | some ⟨n, s⟩ =>
+  | some (n, s) =>
     m = n ∧ if s ∈ ord.contra_set then H1 = H2 else H2 = H1.erase l
   | none => False
 

@@ -233,7 +233,7 @@ lemma HMerge.insert_contra {H1 H2 H3 : Heap Srt} {m l s} :
     apply mrg
 
 lemma HMerge.insert_left {H1 H2 H3 : Heap Srt} {m l s} :
-    HMerge H1 H2 H3 -> l ∉ H3 ->
+    HMerge H1 H2 H3 -> l ∉ H3.keys ->
     HMerge (H1.insert l ⟨m, s⟩) H2 (H3.insert l ⟨m, s⟩) := by
   intro mrg h x
   have ⟨h1, h2⟩ := mrg.split_none h
