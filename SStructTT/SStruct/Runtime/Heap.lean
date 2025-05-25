@@ -232,6 +232,17 @@ lemma HMerge.insert_contra {H1 H2 H3 : Heap Srt} {m l s} :
     simp[Finmap.lookup_insert_of_ne _ ne]
     apply mrg
 
+lemma HMerge.insert_insert {H1 H2 H3 : Heap Srt} {m l s} :
+    HMerge (H1.insert l (m, s)) H2 H3 -> H3 = H3.insert l (m, s) := by
+  intro mrg
+  apply Finmap.ext_lookup; intro x
+  replace mrg := mrg x
+  cases x.decEq l with
+  | isTrue =>
+    subst_vars; simp
+    split at mrg <;> aesop
+  | isFalse ne => simp[ne]
+
 lemma HMerge.insert_left {H1 H2 H3 : Heap Srt} {m l s} :
     HMerge H1 H2 H3 -> l ∉ H3.keys ->
     HMerge (H1.insert l ⟨m, s⟩) H2 (H3.insert l ⟨m, s⟩) := by

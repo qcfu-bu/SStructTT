@@ -38,6 +38,12 @@ inductive Lower : Ctx Srt -> Srt -> Prop where
 @[simp]def Implicit (Δ : Ctx Srt) : Prop :=
   Δ.Forall (fun x => x.2.1 = .im)
 
+inductive Stack : Ctx Srt -> Nat -> Prop where
+  | nil {Δ n} : Implicit Δ -> Stack Δ n
+  | cons {Δ A r s x} :
+    Stack Δ x ->
+    Stack (A :⟨r, s⟩ Δ) (x + 1)
+
 @[scoped aesop safe [constructors]]
 inductive Has : Ctx Srt -> Var -> Srt -> Tm Srt -> Prop where
   | nil {Δ A s} :
@@ -53,6 +59,24 @@ inductive Has : Ctx Srt -> Var -> Srt -> Tm Srt -> Prop where
 omit ord in
 lemma Implicit.toImplicit (Δ : Ctx Srt) : Implicit Δ.toImplicit := by
   induction Δ <;> aesop
+
+omit ord in
+lemma Has.stack {Δ : Ctx Srt} {x s i A} :
+    Has Δ x s A -> x < i -> Stack Δ i := by
+  intro hs lt; induction hs generalizing i
+  case nil =>
+    cases i <;> try trivial
+    apply Stack.cons
+    constructor
+    assumption
+  case cons ih =>
+    cases i <;> try trivial
+    simp at lt
+    apply Stack.cons (ih lt)
+
+omit ord in
+lemma Stack.toImplicit {Δ : Ctx Srt} : Stack Δ 0 -> Implicit Δ := by
+  intro st; cases st; assumption
 
 lemma Lower.split_e {Δ : Ctx Srt} :
     Lower Δ ord.e -> ∃ Δ1 Δ2, Lower Δ1 ord.e ∧ Lower Δ2 ord.e ∧ Merge Δ1 Δ2 Δ := by
@@ -146,6 +170,69 @@ lemma Merge.implicit {Δ1 Δ2 Δ3 : Ctx Srt} :
     Merge Δ1 Δ2 Δ3 -> Implicit Δ1 -> Δ3 = Δ2 := by
   intro mrg im; induction mrg
   all_goals try aesop
+
+lemma Merge.implicit_image {Δ1 Δ2 Δ3 : Ctx Srt} :
+    Merge Δ1 Δ2 Δ3 -> Implicit Δ1 -> Implicit Δ2 -> Implicit Δ3 := by
+  intro mrg im1 im2; induction mrg
+  all_goals try aesop
+
+lemma Merge.stack_image {Δ1 Δ2 Δ3 : Ctx Srt} {i} :
+    Merge Δ1 Δ2 Δ3 -> Stack Δ1 i -> Stack Δ2 i -> Stack Δ3 i := by
+  intro mrg st1 st2; induction mrg generalizing i
+  case nil => constructor; simp
+  case contra ih =>
+    cases st1 <;> try aesop
+    cases st2 <;> try aesop
+    apply Stack.cons; aesop
+  case left ih =>
+    cases st1 <;> try aesop
+    cases st2
+    case nil im =>
+      simp at im
+      apply Stack.cons
+      apply ih
+      . assumption
+      . constructor
+        apply im
+    case cons =>
+      apply Stack.cons
+      apply ih <;> assumption
+  case right ih =>
+    cases st2 <;> try aesop
+    cases st1
+    case nil im =>
+      simp at im
+      apply Stack.cons
+      apply ih
+      . constructor
+        apply im
+      . assumption
+    case cons =>
+      apply Stack.cons
+      apply ih <;> assumption
+  case im =>
+    cases st1
+    case nil im1 =>
+      simp at im1
+      cases st2
+      case nil im2 =>
+        simp at im2
+        constructor; simp
+        apply Merge.implicit_image <;> assumption
+      case cons =>
+        apply Stack.cons
+        apply Stack.nil at im1
+        aesop
+    case cons =>
+      cases st2
+      case nil im2 =>
+        simp at im2
+        apply Stack.nil at im2
+        apply Stack.cons
+        aesop
+      case cons =>
+        apply Stack.cons
+        aesop
 
 lemma Merge.sym {Δ1 Δ2 Δ : Ctx Srt} : Merge Δ1 Δ2 Δ -> Merge Δ2 Δ1 Δ := by
   intro mrg; induction mrg
