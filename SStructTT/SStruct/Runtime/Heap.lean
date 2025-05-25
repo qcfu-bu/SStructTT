@@ -71,7 +71,7 @@ lemma HLower.insert_lower {H} {m : Tm Srt} {l s1 s2} :
       simp_rw[e] at h
       assumption
 
-lemma HLower.erase_lower {H : Heap Srt} {s l} :
+lemma HLower.erase_lower {H : Heap Srt} {s} l :
     HLower H s -> HLower (H.erase l) s := by
   intro lw x
   cases x.decEq l with
@@ -232,18 +232,13 @@ lemma HMerge.insert_contra {H1 H2 H3 : Heap Srt} {m l s} :
     simp[Finmap.lookup_insert_of_ne _ ne]
     apply mrg
 
-lemma HMerge.insert_insert {H1 H2 H3 : Heap Srt} {m l s} :
-    HMerge (H1.insert l (m, s)) H2 H3 -> H3 = H3.insert l (m, s) := by
+lemma HMerge.insert_lookup {H1 H2 H3 : Heap Srt} {m l s} :
+    HMerge (H1.insert l (m, s)) H2 H3 -> H3.lookup l = some (m, s) := by
   intro mrg
-  apply Finmap.ext_lookup; intro x
-  replace mrg := mrg x
-  cases x.decEq l with
-  | isTrue =>
-    subst_vars; simp
-    split at mrg <;> aesop
-  | isFalse ne => simp[ne]
+  replace mrg := mrg l
+  split at mrg <;> simp_all
 
-lemma HMerge.insert_left {H1 H2 H3 : Heap Srt} {m l s} :
+lemma HMerge.insert_left {H1 H2 H3 : Heap Srt} l m s :
     HMerge H1 H2 H3 -> l ∉ H3.keys ->
     HMerge (H1.insert l ⟨m, s⟩) H2 (H3.insert l ⟨m, s⟩) := by
   intro mrg h x
@@ -272,6 +267,29 @@ lemma HMerge.lookup_collision {H1 H2 H3 : Heap Srt} {l} :
   have ⟨⟨m, s⟩, e⟩ := h
   replace mrg := mrg l
   rw[e] at mrg; split at mrg <;> aesop
+
+lemma HMerge.insert_inv {H1 H2 H3 : Heap Srt} {m l s} :
+    HMerge (H1.insert l (m, s)) H2 H3 -> l ∉ H1 -> l ∉ H2 ->
+    ∃ H3', HMerge H1 H2 H3' ∧ H3 = H3'.insert l (m, s) ∧ l ∉ H3' := by
+  intro mrg h1 h2
+  have h3 := mrg.insert_lookup
+  exists H3.erase l; and_intros
+  . intro x
+    if dec: x = l then
+      subst_vars
+      rw[<-Finmap.lookup_eq_none] at h1
+      rw[<-Finmap.lookup_eq_none] at h2
+      simp[h1,h2]
+    else
+      simp[dec]
+      replace mrg := mrg x
+      simp[dec] at mrg; assumption
+  . apply Finmap.ext_lookup; intro x
+    if dec: x = l then
+      subst_vars; simp[h3]
+    else
+      simp[dec]
+  . simp
 
 lemma HMerge.compose {H1 H2 H3 Ha Hb Hx Hy : Heap Srt} {s} :
     HLower Ha s -> s ∈ ord.contra_set ->
