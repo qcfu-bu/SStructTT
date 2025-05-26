@@ -23,7 +23,7 @@ lemma Heap.erase_insert {H : Heap Srt} {l v} :
   intro h
   apply Finmap.ext_lookup
   intro x
-  cases Nat.decEq x l with
+  cases x.decEq l with
   | isTrue e =>
     subst e; simp
     rw [Finmap.mem_keys,<-Finmap.lookup_eq_none] at h
@@ -31,6 +31,43 @@ lemma Heap.erase_insert {H : Heap Srt} {l v} :
   | isFalse e =>
     rw [Finmap.lookup_erase_ne e]
     rw [Finmap.lookup_insert_of_ne _ e]
+
+lemma Heap.insert_erase {H : Heap Srt} {l v} :
+    H.lookup l = some v -> (H.erase l).insert l v = H := by
+  intro h
+  apply Finmap.ext_lookup; intro x
+  cases x.decEq l with
+  | isTrue => subst_vars; simp[h]
+  | isFalse ne => simp[ne]
+
+lemma Heap.erase_insert_comm {H : Heap Srt} {l1 l2 x} :
+    l1 ≠ l2 -> (H.insert l1 x).erase l2 = (H.erase l2).insert l1 x := by
+  intro ne
+  apply Finmap.ext_lookup; intro x
+  if dec1: x = l1 then
+    subst_vars; simp
+    if dec2: x = l2
+    then subst_vars; contradiction
+    else rw[Finmap.lookup_erase_ne ne]; simp
+  else
+    if dec2: x = l2
+    then
+      subst_vars; simp
+      rw[Finmap.lookup_insert_of_ne _ dec1]
+      rw[Finmap.lookup_erase]
+    else
+      rw[Finmap.lookup_insert_of_ne _ dec1]
+      rw[Finmap.lookup_erase_ne dec2]
+      rw[Finmap.lookup_erase_ne dec2]
+      rw[Finmap.lookup_insert_of_ne _ dec1]
+
+lemma Heap.insert_id {H : Heap Srt} {l t} :
+    H.lookup l = some t -> H.insert l t = H := by
+  intro h
+  apply Finmap.ext_lookup; intro x
+  cases x.decEq l with
+  | isTrue => subst_vars; simp[h]
+  | isFalse ne => simp[ne]
 
 variable [ord : SrtOrder Srt]
 
@@ -270,26 +307,56 @@ lemma HMerge.lookup_collision {H1 H2 H3 : Heap Srt} {l} :
 
 lemma HMerge.insert_inv {H1 H2 H3 : Heap Srt} {m l s} :
     HMerge (H1.insert l (m, s)) H2 H3 -> l ∉ H1 -> l ∉ H2 ->
-    ∃ H3', HMerge H1 H2 H3' ∧ H3 = H3'.insert l (m, s) ∧ l ∉ H3' := by
+    HMerge H1 H2 (H3.erase l) := by
   intro mrg h1 h2
   have h3 := mrg.insert_lookup
-  exists H3.erase l; and_intros
-  . intro x
-    if dec: x = l then
-      subst_vars
-      rw[<-Finmap.lookup_eq_none] at h1
-      rw[<-Finmap.lookup_eq_none] at h2
-      simp[h1,h2]
-    else
-      simp[dec]
-      replace mrg := mrg x
-      simp[dec] at mrg; assumption
-  . apply Finmap.ext_lookup; intro x
-    if dec: x = l then
-      subst_vars; simp[h3]
-    else
-      simp[dec]
-  . simp
+  intro x
+  if dec: x = l then
+    subst_vars
+    rw[<-Finmap.lookup_eq_none] at h1
+    rw[<-Finmap.lookup_eq_none] at h2
+    simp[h1,h2]
+  else
+    simp[dec]
+    replace mrg := mrg x
+    simp[dec] at mrg; assumption
+
+lemma HMerge.erase {H1 H2 H3 : Heap Srt} {m l s} :
+    HMerge (H1.insert l (m, s)) H2 H3 -> l ∉ H1 ->
+    HMerge H1 (H2.erase l) (H3.erase l) := by
+  intro mrg h x
+  rw[<-Finmap.lookup_eq_none] at h
+  replace mrg := mrg x
+  if dec: x = l then
+    subst_vars; simp[h]
+  else
+    simp[dec]
+    simp[dec] at mrg
+    assumption
+
+lemma HMerge.not_contra_inv {H1 H2 H3 : Heap Srt} {m s} l :
+    HMerge H1 H2 H3 -> H1.lookup l = some (m, s) ->
+    s ∉ ord.contra_set -> l ∉ H2 := by
+  intro mrg e h
+  replace mrg := mrg l
+  rw[e] at mrg
+  split at mrg <;> simp_all
+  . aesop
+  . rw[Finmap.mem_iff]; aesop
+
+lemma HMerge.shift {H1 H2 H3 : Heap Srt} {l t} :
+    HMerge (Finmap.insert l t H1) H2 H3 -> l ∉ H1 ->
+    HMerge H1 (Finmap.insert l t H2) H3 := by
+  intro mrg h x
+  replace mrg := mrg x
+  if dec: x = l then
+    subst_vars
+    simp_all
+    rw[<-Finmap.lookup_eq_none] at h
+    rw[h]; revert mrg
+    generalize e: Finmap.lookup x H3 = opt
+    split <;> try simp_all
+  else simp_all
 
 lemma HMerge.compose {H1 H2 H3 Ha Hb Hx Hy : Heap Srt} {s} :
     HLower Ha s -> s ∈ ord.contra_set ->

@@ -141,7 +141,7 @@ lemma AgreeSubst.wr_heap {Δ : Ctx Srt} {H σ σ' i} :
 lemma Resolve.id_rename {H : Heap Srt} {m m' i ξ} :
     H ⊢ m ▷ m' -> WR H -> IdRename i ξ -> H ⊢ m.[ren ξ] ▷ m'.[ren ξ] := by
   intro rs wr idr; induction rs generalizing i ξ
-  case var => asimp; constructor
+  case var => asimp; constructor; assumption
   case lam lw _ ih =>
     asimp; apply Resolve.lam lw
     replace ih := ih wr idr.up
@@ -161,8 +161,8 @@ lemma Resolve.id_rename {H : Heap Srt} {m m' i ξ} :
     replace ihm := ihm wr1 idr
     replace ihn := ihn wr2 idr.up.up; asimp at ihn
     asimp; apply Resolve.prj mrg ihm ihn
-  case tt => asimp; constructor
-  case ff => asimp; constructor
+  case tt => asimp; constructor; assumption
+  case ff => asimp; constructor; assumption
   case ite mrg rsm rsn1 rsn2 ihm ihn1 ihn2 =>
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     replace ihm := ihm wr1 idr
@@ -191,7 +191,7 @@ lemma AgreeSubst.has {Δ : Ctx Srt} {H σ σ' x i s A} :
     cases hs
     case nil im =>
       rw[agr.implicit_image im]
-      asimp; constructor
+      asimp; constructor; apply HLower.empty
     case cons =>
       asimp; apply Resolve.id_rename
       . aesop
@@ -287,7 +287,7 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
     asimp; cases rs
     case var lw =>
       asimp
-      have e := mrg.sym.empty_inv; subst_vars
+      apply Resolve.weaken_merge mrg.sym lw
       apply agr.has hs
     case ptr l m s h rsm =>
       cases rsm
@@ -455,23 +455,23 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
     have e := agr.implicit_image im; subst e
     have e := mrg.empty_inv; subst e
     asimp; cases rs
-    case tt => asimp; apply Resolve.tt
+    case tt => asimp; apply Resolve.tt; assumption
     case ptr l _ _ h rsm =>
       cases rsm
       case tt =>
         asimp; apply Resolve.ptr h
-        constructor
+        constructor; assumption
       case ptr => have wr := wr l; simp at wr
   case ff im =>
     have e := agr.implicit_image im; subst e
     have e := mrg.empty_inv; subst e
     asimp; cases rs
-    case ff => asimp; apply Resolve.ff
+    case ff => asimp; apply Resolve.ff; assumption
     case ptr l _ _ h rsm =>
       cases rsm
       case ff =>
         asimp; apply Resolve.ptr h
-        constructor
+        constructor; assumption
       case ptr => have wr := wr l; simp at wr
   case ite mrg0 tyA erm ern1 ern2 ihm ihn1 ihn2 =>
     asimp; cases rs

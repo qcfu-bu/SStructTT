@@ -523,116 +523,285 @@ lemma Drop.wr_image {H1 H2 : Heap Srt} {m} :
   all_goals try (solve|aesop)
   case ptr lk dp ih => have := lk.wr_image wr; aesop
 
--- n' : Tm Srt
--- s' : Srt
--- h1✝ : l ∉ Finmap.keys H1
--- H2 : Heap Srt
--- s : Srt
--- h0 : s ∈ SrtOrder.weaken_set
--- mx : Tm Srt
--- rsm : H1 ⊢ mx ▷ n'
--- ihm : ∀ {H2 H3 H3' : Heap Srt} {s : Srt},
---   HMerge H1 H2 H3 →
---     HLower H1 s → s ∈ SrtOrder.weaken_set → Drop H3 mx H3' → ∃ H1', HMerge H1' H2 H3' ∧ HLower H1' SrtOrder.e
--- lw0✝ : HLower (Finmap.insert l (mx, s') H1) s
--- lw0 : HLower H1 s
--- h : s' ∈ SrtOrder.contra_set
--- b : Bool
--- dec : l ∉ H2
--- H3x : Heap Srt
--- mrgx : HMerge H1 H2 H3x
--- h1 : l ∉ H3x
--- mrg0 : HMerge (Finmap.insert l (mx, s') H1) H2 (Finmap.insert l (mx, s') H3x)
--- H3y : Heap Srt
--- dp' : Drop H3x mx H3y
--- h2 : l ∉ H3y
--- dp : Drop (Finmap.insert l (mx, s') H3x) mx (Finmap.insert l (mx, s') H3y)
--- ⊢ ∃ H1', HMerge H1' H2 (Finmap.insert l (mx, s') H3y) ∧ HLower H1' SrtOrder.e
-
 def SubHeap (H1 H2 : Heap Srt) : Prop :=
   ∀ l, l ∈ H1 -> H1.lookup l = H2.lookup l
 
 omit ord in
-lemma Heap.erase_insert_comm {H : Heap Srt} {l1 l2 x} :
-    l1 ≠ l2 -> (H.insert l1 x).erase l2 = (H.erase l2).insert l1 x := by
-  intro ne
-  apply Finmap.ext_lookup; intro x
-  if dec1: x = l1 then
-    subst_vars; simp
-    if dec2: x = l2
-    then subst_vars; contradiction
-    else rw[Finmap.lookup_erase_ne ne]; simp
-  else
-    if dec2: x = l2
-    then
-      subst_vars; simp
-      rw[Finmap.lookup_insert_of_ne _ dec1]
-      rw[Finmap.lookup_erase]
-    else
-      rw[Finmap.lookup_insert_of_ne _ dec1]
-      rw[Finmap.lookup_erase_ne dec2]
-      rw[Finmap.lookup_erase_ne dec2]
-      rw[Finmap.lookup_insert_of_ne _ dec1]
+lemma SubHeap.insert_inv {H1 H2 : Heap Srt} {l x} :
+    SubHeap (Finmap.insert l x H1) H2 -> l ∉ H1 -> SubHeap H1 H2 := by
+  intro sb h0 l0 h1
+  have sb := sb l0
+  if e: l0 = l then
+    subst_vars; contradiction
+  else aesop
 
-lemma Drop.insert_inv {H0 H1 H2 : Heap Srt} {m m' x s l} :
-    H0 ⊢ m ▷ m' ->
-    Drop (H1.insert l (x, s)) m H2 ->
-    SubHeap H0 H1 ->  l ∉ H0 -> l ∉ H1 ->
-    ∃ H2', Drop H1 m H2' ∧ H2 = H2'.insert l (x, s) ∧ l ∉ H2' := by
-  intro rsm dp sb h0 h1; induction rsm generalizing H1 H2 x s l
-  case var =>
-    cases dp
-    exists H1; and_intros
-    . constructor
-    . rfl
-    . assumption
-  case lam ih =>
-    cases dp; case lam dp =>
-    have ⟨H2', dp, e, h2⟩ := ih dp sb h0 h1; subst e
-    exists H2'; and_intros
-    . constructor; assumption
-    . rfl
-    . assumption
-  case app =>
-    sorry
-  case ptr l0 m m' s h2 rsm ih =>
-    cases dp; case ptr H3 n lk dp =>
-    have sb0 := sb l0; simp at sb0
-    rw[Finmap.mem_insert] at h0; simp at h0
-    rcases h0 with ⟨h3, h4⟩
+omit ord in
+lemma SubHeap.erase {H1 H2 : Heap Srt} l :
+    SubHeap H1 H2 -> SubHeap (H1.erase l) (H2.erase l) := by
+  intro sb x h
+  if e: x = l then
+    subst_vars; simp
+  else
+    repeat rw[Finmap.lookup_erase_ne e]
+    apply sb; aesop
+
+omit ord in
+lemma SubHeap.preimage {H1 H2 : Heap Srt} {l} :
+    SubHeap H1 H2 -> l ∉ H2 -> l ∉ H1 := by
+  intro sb h1 h2
+  replace sb := sb l h2
+  rw[Finmap.mem_iff] at h1
+  rw[Finmap.mem_iff] at h2
+  rcases h2 with ⟨x, e⟩
+  rw[e] at sb
+  apply h1; exists x; simp[sb]
+
+lemma HMerge.split_subheap' {H1 H2 H3 H4 : Heap Srt} :
+    HMerge H1 H2 H3 -> SubHeap H3 H4 -> SubHeap H1 H4 := by
+  intro mrg sb x h
+  replace mrg := mrg x
+  replace sb := sb x
+  rw[Finmap.mem_iff] at h
+  rcases h with ⟨⟨m, s⟩, e⟩
+  rw[e] at mrg
+  if dec: x ∈ H3 then aesop
+  else
+    rw[Finmap.mem_iff] at dec
+    split at mrg <;> simp_all
+
+lemma HMerge.split_subheap {H1 H2 H3 H4 : Heap Srt} :
+    HMerge H1 H2 H3 -> SubHeap H3 H4 -> SubHeap H1 H4 ∧ SubHeap H2 H4 := by
+  intro mrg sb
+  have sb1 := mrg.split_subheap' sb
+  have sb2 := mrg.sym.split_subheap' sb
+  aesop
+
+-- lemma Drop.resolve {H1 H2 H3 H3' : Heap Srt} {m m' s} :
+--     HMerge H1 H2 H3 -> HLower H1 s -> s ∈ ord.weaken_set ->
+--     H1 ⊢ m ▷ m' -> Drop H3 m H3' ->
+--     ∃ H1', HMerge H1' H2 H3' ∧ HLower H1' ord.e := by
+
+lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
+    H1 ⊢ m ▷ m' ->
+    Drop H3 m H4 -> HMerge H1 H2 H3 ->
+    ∃ H0, HMerge H0 H2 H4 := by
+  intro rs dp mrg; induction rs generalizing H2 H3 H4
+  case app mrg0 rsm rsn ihm ihn =>
+    cases dp; case app dp1 dp2 =>
+    have ⟨Ha, mrg1, mrg2⟩ := mrg.split mrg0.sym
+    have ⟨Hb, mrg3⟩ := ihm dp1 mrg2.sym
+    have ⟨Hc, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
+    have ⟨Hd, mrg6⟩ := ihn dp2 mrg5.sym
+    have ⟨_, _⟩ := mrg6.sym.split mrg4.sym
+    aesop
+  case ptr l _ _ _  h rsm ih =>
+    cases dp; case ptr H5 n lk dp =>
+    have lk0 := mrg.insert_lookup
     unfold HLookup at lk
-    rw[Finmap.lookup_insert_of_ne _ (by aesop)] at lk
-    rw[<-sb0] at lk; simp at lk
+    rw[lk0] at lk; simp at lk
     rcases lk with ⟨e, lk⟩; subst e
     split_ifs at lk
     case pos =>
       subst_vars
-      have ⟨H2', dp, e, h⟩ := ih dp sorry h4 h1
-      exists H2'; and_intros
-      . constructor
-        pick_goal 2
-        apply dp
-        unfold HLookup
-        rw[<-sb0]; simp
-        intro
-        contradiction
-      . assumption
-      . assumption
-    case neg =>
+      if dec: l ∈ H2 then
+        rw[Finmap.mem_iff] at dec
+        rcases dec with ⟨⟨m, s⟩, e⟩
+        have mrg0 := mrg l; simp[lk0,e] at mrg0
+        rcases mrg0 with ⟨_, _, _, _, _⟩; subst_vars
+        replace mrg := HMerge.shift mrg h
+        have ⟨Ha, mrg1⟩ := ih dp mrg
+        simp[Heap.insert_idempotent e] at mrg1
+        aesop
+      else
+        replace mrg := HMerge.shift mrg h
+        have ⟨Ha, mrg1⟩ := ih dp mrg
+        have := (HMerge.shift mrg1.sym dec).sym
+        aesop
+    case neg mem =>
       subst_vars
-      rw[Heap.erase_insert_comm] at dp
-      have ⟨H2', dp, e, h⟩ := ih dp sorry h4 sorry
-      exists H2'; and_intros
-      . constructor
-        pick_goal 2
-        apply dp
-        unfold HLookup
-        rw[<-sb0]; simp
-        intro; contradiction
-      . assumption
-      . assumption
-      . assumption
+      have h1 := mrg.not_contra_inv l (by simp; rfl) mem
+      have mrg := mrg.insert_inv h h1
+      apply ih dp mrg
+  case drop mrg0 _ _ rsm rsn ihm ihn =>
+    cases dp; case drop dp1 dp2 =>
+    have ⟨Ha, mrg1, mrg2⟩ := mrg.split mrg0.sym
+    have ⟨Hb, mrg3⟩ := ihm dp1 mrg2.sym
+    have ⟨Hc, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
+    have ⟨Hd, mrg6⟩ := ihn dp2 mrg5.sym
+    have ⟨_, _⟩ := mrg6.sym.split mrg4.sym
+    aesop
   all_goals sorry
+
+
+-- lemma Heap.insert_comm {H1 : Heap Srt} {x1 x2 l1 l2} :
+--     l1 ≠ l2 -> (H1.insert l1 x1).insert l2 x2 = (H1.insert l2 x2).insert l1 x1 := by
+--   sorry
+
+-- lemma Drop.insert_inv {H0 H1 H2 : Heap Srt} {m m' l} :
+--     H0 ⊢ m ▷ m' -> Drop H1 m H2 ->
+--     SubHeap H0 H1 ->  l ∉ H0 -> l ∈ H1 ->
+--     Drop (H1.erase l) m (H2.erase l) := by
+--   intro rsm dp sb h0 h1; induction rsm generalizing H1 H2 l
+--   case app mrg rsm rsn ihm ihn =>
+--     cases dp; case app dp1 dp2 =>
+--     have ⟨sb1, sb2⟩ := mrg.split_subheap sb
+--     have ⟨h2, h3⟩ := mrg.split_none h0
+--     replace dp1 := ihm dp1 sb1 h2 h1
+--     have := ihn dp2 sb2
+
+
+--     sorry
+--   case ptr =>
+--     sorry
+--   sorry
+
+  -- intro rsm dp sb h0 h1; induction rsm generalizing H1 H2 x s l
+  -- case var =>
+  --   cases dp
+  --   exists H1; and_intros
+  --   . constructor
+  --   . rfl
+  --   . assumption
+  -- case lam ih =>
+  --   cases dp; case lam dp =>
+  --   have ⟨H2', dp, e, h2⟩ := ih dp sb h0 h1; subst e
+  --   exists H2'; and_intros
+  --   . constructor; assumption
+  --   . rfl
+  --   . assumption
+  -- case app mrg rsm rsn ihm ihn =>
+  --   sorry
+  -- case ptr l0 m m' s h2 rsm ih =>
+  --   cases dp; case ptr H3 n lk dp =>
+  --   have sb0 := sb l0; simp at sb0
+  --   rw[Finmap.mem_insert] at h0; simp at h0
+  --   rcases h0 with ⟨h3, h4⟩
+  --   unfold HLookup at lk
+  --   rw[Finmap.lookup_insert_of_ne _ (by aesop)] at lk
+  --   rw[<-sb0] at lk; simp at lk
+  --   rcases lk with ⟨e, lk⟩; subst e
+  --   split_ifs at lk
+  --   case pos =>
+  --     subst_vars
+  --     have sb := sb.insert_inv h2
+  --     have ⟨H2', dp, e, h⟩ := ih dp sb h4 h1
+  --     exists H2'; and_intros
+  --     . constructor
+  --       pick_goal 2
+  --       apply dp
+  --       unfold HLookup
+  --       rw[<-sb0]; simp
+  --       intro
+  --       contradiction
+  --     . assumption
+  --     . assumption
+  --   case neg =>
+  --     subst_vars
+  --     rw[Heap.erase_insert_comm] at dp
+  --     have sb := sb.erase l0; simp[Heap.erase_insert,h2] at sb
+  --     have ⟨H2', dp, e, h⟩ := ih dp sb h4 (by aesop)
+  --     exists H2'; and_intros
+  --     . constructor
+  --       pick_goal 2
+  --       apply dp
+  --       unfold HLookup
+  --       rw[<-sb0]; simp
+  --       intro; contradiction
+  --     . assumption
+  --     . assumption
+  --     . assumption
+  -- all_goals sorry
+
+-- lemma Drop.insert_inv' {H1 H2 H3 H4 : Heap Srt} {m m' v s l} :
+--     H1 ⊢ m ▷ m' ->
+--     Drop (H3.insert l (v, s)) m H4 ->
+--     HMerge H1 H2 H3 -> l ∉ H1 -> l ∉ H3 ->
+--     ∃ H2' H4',
+--       Drop H3 m H4' ∧ HMerge H1 H2' H4' ∧
+--       l ∉ H4' ∧ H4 = H4'.insert l (v, s) := by
+--   intro rsm dp mrg h1 h2; induction rsm generalizing H2 H3 H4 v s l
+--   case var =>
+--     cases dp
+--     exists H2, H3; and_intros
+--     . constructor
+--     . assumption
+--     . assumption
+--     . rfl
+--   case app mrg0 erm ern ihm ihn =>
+--     cases dp; case app dp1 dp2 =>
+--     have ⟨Ha, mrg1, mrg2⟩ := mrg.split mrg0.sym
+--     have ⟨Hb, Hc, dp3, mrg3, h3, e⟩ := ihm dp1 mrg2.sym sorry h2
+--     subst e; clear ihm
+--     have ⟨Hd, mrg4, mrg5⟩ := mrg2.split mrg1
+
+
+--     have := ihn dp2 mrg1
+--     sorry
+--   case ptr H0 x m m' s1 h rsm ih =>
+--     cases dp; case ptr H2' m' lk dp =>
+--     rw[Finmap.mem_insert] at h1; simp at h1
+--     rcases h1 with ⟨h3, h4⟩
+--     unfold HLookup at lk
+--     rw[Finmap.lookup_insert_of_ne _ (by aesop)] at lk
+--     rw[mrg.insert_lookup] at lk; simp at lk
+--     rcases lk with ⟨e, lk⟩; subst e
+--     split_ifs at lk
+--     case pos mem =>
+--       subst_vars
+--       if dec: x ∈ H2 then
+--         have mrg1 : HMerge H0 H2 H3 := by sorry
+--         have ⟨H2', H4', dp', mrg', h', e⟩ := ih dp mrg1 h4 h2
+--         subst e; clear ih
+--         exists H2', H4'; and_intros
+--         . constructor
+--           pick_goal 2
+--           assumption
+--           unfold HLookup
+--           rw[mrg.insert_lookup]; simp
+--           intro; contradiction
+--         . sorry
+--         . assumption
+--         . rfl
+--       else
+--         have mrg' : HMerge H0 (Finmap.insert x (m', s1) H2) H3 := by
+--           sorry
+--         have ⟨H2', H4', dp', mrg', h', e⟩ := ih dp mrg' h4 h2
+--         subst e
+--         exists H2', H4'; and_intros
+--         . constructor
+--           pick_goal 2
+--           assumption
+--           sorry
+--         .
+--           sorry
+--         . assumption
+--         . rfl
+--     case neg => sorry
+--   all_goals sorry
+
+
+
+--   intro dp sb; induction dp
+--   all_goals try (solve|aesop)
+--   case ptr Ha Hb Hc m l lk dp ih =>
+--     unfold HLookup at lk
+--     split at lk <;> try trivial
+--     case h_1 heq =>
+--       rcases lk with ⟨e, lk⟩; subst e
+--       split_ifs at lk
+--       . aesop
+--       .
+--         have : SubHeap Hb Ha := by sorry
+--         have : SubHeap Hc Hb := by sorry
+--         have : SubHeap Hc Ha := by sorry
+
+
+--         subst lk
+
+
+--         apply ih
+
+
 
 /-
 
@@ -732,5 +901,4 @@ lemma Drop.resolve {H1 H2 H3 H3' : Heap Srt} {m m' s} :
             constructor <;> aesop
           else simp[e]; apply lw'
     | isFalse => sorry
-
 -/

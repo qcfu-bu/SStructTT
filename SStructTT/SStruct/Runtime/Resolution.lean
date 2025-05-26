@@ -124,8 +124,9 @@ def WR (H : Heap Srt) : Prop :=
     | _ => False
 
 inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
-  | var {x} :
-    Resolve ∅ (.var x) (.var x)
+  | var {H x} :
+    HLower H ord.e ->
+    Resolve H (.var x) (.var x)
 
   | lam {H m m' s} :
     HLower H s ->
@@ -150,9 +151,13 @@ inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
     Resolve H2 n n' ->
     Resolve H3 (.prj m n) (.prj m' n')
 
-  | tt : Resolve ∅ .tt .tt
+  | tt {H} :
+    HLower H ord.e ->
+    Resolve H .tt .tt
 
-  | ff : Resolve ∅ .ff .ff
+  | ff {H} :
+    HLower H ord.e ->
+    Resolve H .ff .ff
 
   | ite {H1 H2 H3 m m' n1 n1' n2 n2'} :
     HMerge H1 H2 H3 ->
@@ -231,55 +236,70 @@ lemma WR.lookup {H : Heap Srt} l m s :
   rw[e] at wr
   split at wr <;> aesop
 
-lemma Erased.resolve_refl {Γ Δ} {m n A} :
-    Γ ;; Δ ⊢ m ▷ n : A -> (∅ : Heap Srt) ⊢ n ▷ n := by
-  intro er
+lemma Erased.resolve_refl {H : Heap Srt} {Γ Δ m n A} :
+    Γ ;; Δ ⊢ m ▷ n : A -> HLower H ord.e -> H ⊢ n ▷ n := by
+  intro er lw
   induction er
-  case var => constructor
+  case var => constructor; assumption
   case lam_im ih =>
     constructor
-    apply HLower.empty
+    apply HLower.weaken lw (ord.e_min _)
     apply ih
   case lam_ex ih =>
     constructor
-    apply HLower.empty
+    apply HLower.weaken lw (ord.e_min _)
     apply ih
   case app_im ih =>
-    have mrg := HMerge.empty (H := (∅ : Heap Srt))
     constructor
-    . apply mrg
+    . apply HMerge.empty
     . apply ih
     . constructor
-      assumption
+      apply HLower.empty
   case app_ex =>
-    have mrg := HMerge.empty (H := (∅ : Heap Srt))
-    constructor <;> aesop
+    constructor
+    . apply lw.merge_refl
+      apply ord.e_contra
+    . assumption
+    . assumption
   case tup_im ih =>
     have mrg := HMerge.empty (H := (∅ : Heap Srt))
     constructor
-    . apply mrg
+    . apply HMerge.empty
     . apply ih
     . constructor
       assumption
   case tup_ex =>
-    have mrg := HMerge.empty (H := (∅ : Heap Srt))
-    constructor <;> aesop
+    constructor
+    . apply lw.merge_refl
+      apply ord.e_contra
+    . assumption
+    . assumption
   case prj_im =>
-    have mrg := HMerge.empty (H := (∅ : Heap Srt))
-    constructor <;> aesop
+    constructor
+    . apply lw.merge_refl
+      apply ord.e_contra
+    . assumption
+    . assumption
   case prj_ex =>
-    have mrg := HMerge.empty (H := (∅ : Heap Srt))
-    constructor <;> aesop
-  case tt => constructor
-  case ff => constructor
+    constructor
+    . apply lw.merge_refl
+      apply ord.e_contra
+    . assumption
+    . assumption
+  case tt => constructor; assumption
+  case ff => constructor; assumption
   case ite =>
-    have mrg := HMerge.empty (H := (∅ : Heap Srt))
-    constructor <;> aesop
+    constructor
+    . apply lw.merge_refl
+      apply ord.e_contra
+    . assumption
+    . assumption
+    . assumption
   case rw => aesop
   case drop ih =>
-    have mrg := HMerge.empty (H := (∅ : Heap Srt))
     constructor
-    . assumption
+    . apply lw.merge_refl
+      apply ord.e_contra
     . assumption
     . apply ord.e_weaken
     . aesop
@@ -398,6 +418,64 @@ lemma Resolve.nf_preimage {H : Heap Srt} {m m' i} :
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     aesop
 
+lemma Resolve.weaken_merge {H1 H2 H3 : Heap Srt} {m m'} :
+    HMerge H1 H2 H3 -> HLower H2 ord.e -> H1 ⊢ m ▷ m' -> H3 ⊢ m ▷ m' := by
+  intro mrg lw2 rsm; induction rsm generalizing H2 H3
+  case var H1 x lw1 =>
+    have lw := mrg.lower_image lw1 lw2
+    constructor; assumption
+  case lam lw1 rsm ihm =>
+    have lw := mrg.lower_image lw1 (lw2.weaken (ord.e_min _))
+    replace ihm := ihm mrg lw2
+    constructor <;> assumption
+  case app Ha Hb H1 _ _ _ _ mrg1 rsm rsn ihm ihn =>
+    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower ord.e_contra
+    have ⟨H1', H2', mrg', mrga, mrgb⟩ := mrg.distr mrg1 mrg2
+    replace ihm := ihm mrga lwa
+    replace ihn := ihn mrgb lwb
+    constructor <;> assumption
+  case tup Ha Hb H1 _ _ _ _ mrg1 rsm rsn ihm ihn =>
+    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower ord.e_contra
+    have ⟨H1', H2', mrg', mrga, mrgb⟩ := mrg.distr mrg1 mrg2
+    replace ihm := ihm mrga lwa
+    replace ihn := ihn mrgb lwb
+    constructor <;> assumption
+  case prj Ha Hb H1 _ _ _ _ mrg1 rsm rsn ihm ihn =>
+    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower ord.e_contra
+    have ⟨H1', H2', mrg', mrga, mrgb⟩ := mrg.distr mrg1 mrg2
+    replace ihm := ihm mrga lwa
+    replace ihn := ihn mrgb lwb
+    constructor <;> assumption
+  case tt lw1 =>
+    have lw := mrg.lower_image lw1 lw2
+    constructor; assumption
+  case ff lw1 =>
+    have lw := mrg.lower_image lw1 lw2
+    constructor; assumption
+  case ite Ha Hb H1 _ _ _ _ _ _ mrg1 rsm rsn1 rsn2 ihm ihn1 ihn2 =>
+    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower ord.e_contra
+    have ⟨H1', H2', mrg', mrga, mrgb⟩ := mrg.distr mrg1 mrg2
+    replace ihm := ihm mrga lwa
+    replace ihn1 := ihn1 mrgb lwb
+    replace ihn2 := ihn2 mrgb lwb
+    constructor <;> assumption
+  case drop Ha Hb H1 _ _ _ _ mrg1 lw mem rsm rsn ihm ihn =>
+    have ⟨H2a, H2b, lwa, lwb, mrg2⟩ := lw2.split_lower ord.e_contra
+    have ⟨H1', H2', mrg', mrga, mrgb⟩ := mrg.distr mrg1 mrg2
+    replace ihm := ihm mrga lwa
+    replace ihn := ihn mrgb lwb
+    have lw' := mrga.lower_image lw (lwa.weaken (ord.e_min _))
+    constructor <;> assumption
+  case ptr l m m' s h rsm ih =>
+    have lk := mrg.insert_lookup
+    have mrg1 := mrg.erase h
+    have ih := ih mrg1 (lw2.erase_lower l)
+    rw[<-H3.insert_erase lk]; constructor
+    simp; assumption
+  case null lw1 =>
+    have lw := mrg.lower_image lw1 lw2
+    constructor; assumption
+
 lemma Resolve.var_inv {H : Heap Srt} {m x} :
     H ⊢ m ▷ .var x -> WR H -> HLower H ord.e := by
   generalize e: Tm.var x = m'
@@ -433,7 +511,7 @@ lemma Resolve.tt_inv {H : Heap Srt} {m} :
   intro rs wr; induction rs <;> try trivial
   case ptr l m m' s h rsm ih =>
     subst_vars; cases rsm
-    case tt =>
+    case tt lw =>
       have wr := wr l; simp at wr
       subst wr;
       intro x
@@ -441,7 +519,7 @@ lemma Resolve.tt_inv {H : Heap Srt} {m} :
       | isTrue =>
         subst_vars; simp
         apply InterSet.self_mem
-      | isFalse ne => simp[ne]
+      | isFalse ne => simp[ne]; apply lw
     case ptr =>
       have wr := wr l; simp at wr
 
@@ -451,7 +529,7 @@ lemma Resolve.ff_inv {H : Heap Srt} {m} :
   intro rs wr; induction rs <;> try trivial
   case ptr l m m' s h rsm ih =>
     subst_vars; cases rsm
-    case ff =>
+    case ff lw =>
       have wr := wr l; simp at wr
       subst wr;
       intro x
@@ -459,7 +537,7 @@ lemma Resolve.ff_inv {H : Heap Srt} {m} :
       | isTrue =>
         subst_vars; simp
         apply InterSet.self_mem
-      | isFalse ne => simp[ne]
+      | isFalse ne => simp[ne]; apply lw
     case ptr =>
       have wr := wr l; simp at wr
 
