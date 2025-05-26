@@ -266,7 +266,7 @@ lemma WR.insert_tt {H : Heap Srt} {l} :
   | isFalse ne => simp[ne]; apply wr
 
 lemma WR.insert_ff {H : Heap Srt} {l} :
-    WR H -> WR (H.insert l (.tt, ord.e)) := by
+    WR H -> WR (H.insert l (.ff, ord.e)) := by
   intro wr x
   cases x.decEq l with
   | isTrue => subst_vars; simp

@@ -110,10 +110,10 @@ inductive Step1 : State Srt -> State Srt -> Prop where
     Step1 (H1, .app (.ptr l) n) (H2, .app (.ptr l) n')
   | tup_M {H1 H2 m m'} n s :
     Step1 (H1, m) (H2, m') ->
-    Step1 (H2, .tup m n s) (H2, .tup m' n s)
+    Step1 (H1, .tup m n s) (H2, .tup m' n s)
   | tup_N {H1 H2} l {n n'} s :
     Step1 (H1, n) (H2, n') ->
-    Step1 (H2, .tup (.ptr l) n s) (H2, .tup (.ptr l) n' s)
+    Step1 (H1, .tup (.ptr l) n s) (H2, .tup (.ptr l) n' s)
   | prj_M {H1 H2 m m'} n :
     Step1 (H1, m) (H2, m') ->
     Step1 (H1, .prj m n) (H2, .prj m' n)
