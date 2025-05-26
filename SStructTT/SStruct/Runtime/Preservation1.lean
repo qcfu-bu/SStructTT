@@ -1,4 +1,6 @@
-import SStructTT.SStruct.Runtime.Preservation0
+import SStructTT.SStruct.Erasure.Preservation
+import SStructTT.SStruct.Runtime.Step
+import SStructTT.SStruct.Runtime.Resolution
 open ARS
 
 namespace SStruct.Erasure

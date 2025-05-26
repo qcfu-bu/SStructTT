@@ -17,7 +17,7 @@ lemma Resolved.preservation0 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
   generalize e1: [] = Γ
   generalize e2: [] = Δ
   intro mrg0 wr2 ⟨er, rs, wr1⟩ st; induction er generalizing H1 H2 H3 H3' c c'
-  case var wf hs =>
+  case var hs =>
     subst_vars; cases hs
   case lam_im =>
     subst_vars; cases rs

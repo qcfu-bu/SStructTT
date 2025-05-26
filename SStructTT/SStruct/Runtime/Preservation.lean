@@ -1,0 +1,22 @@
+
+-- lemma Resolved.preservation {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
+--     HMerge H1 H2 H3 -> WR H2 ->
+--     [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> (H3, c) ~>> (H3', c') ->
+--     ∃ H1' a' b',
+--       HMerge H1' H2 H3' ∧
+--       [] ;; [] ;; H1' ⊢ a' ▷ b' ◁ c' : A ∧ a ~>>1 a' ∧ b ~>> b' := by
+--   intro mrg wr rs st
+--   cases st
+--   case intro a b rd0 rd1 st =>
+--   rcases a with ⟨H1, a⟩
+--   rcases b with ⟨H2, b⟩
+--   have ⟨H, c, mrg, rs, rd⟩ := rs.preservation0' mrg wr rd0
+--   have ⟨H, mrg, rs⟩ := rs.preservation1' mrg wr rd1
+--   have ⟨H, a, b, mrg, rs, st1, st2⟩ := rs.preservation2 mrg wr st
+--   exists H, a, b; and_intros
+--   . assumption
+--   . assumption
+--   . assumption
+--   . constructor
+--     assumption
+--     assumption
