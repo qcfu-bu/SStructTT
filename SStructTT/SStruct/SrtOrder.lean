@@ -43,6 +43,10 @@ lemma InterSet.contra {s1 s2 : Srt} :
     s1 ∈ InterSet s2 -> s2 ∈ ord.contra_set -> s1 ∈ ord.contra_set := by
   intro h1 h2; cases h1; aesop
 
+lemma InterSet.weaken_contra {s : Srt} :
+    s ∈ ord.weaken_set -> s ∈ ord.contra_set -> s ∈ InterSet ord.e := by
+  intro h1 h2; constructor <;> aesop
+
 lemma InterSet.lower_mem {s1 s2 : Srt} :
     s1 <= s2 -> s1 ∈ InterSet s2 := by
   intro le

@@ -80,6 +80,19 @@ def HLower (H : Heap Srt) (s0 : Srt) : Prop :=
 lemma HLower.empty {s : Srt} : HLower ∅ s := by
   intro l; simp
 
+lemma HLower.insert {H : Heap Srt} {l v s s'} :
+    HLower H s -> s' ∈ InterSet s -> HLower (H.insert l (v, s')) s := by
+  intro lw h x
+  cases x.decEq l with
+  | isTrue => subst_vars; simp[h]
+  | isFalse ne => simp[ne]; apply lw
+
+lemma HLower.invert {H : Heap Srt} {l v s s'} :
+    HLower (H.insert l (v, s')) s -> s' ∈ InterSet s := by
+  intro lw
+  replace lw := lw l
+  simp at lw; assumption
+
 lemma HLower.cover {H : Heap Srt} {s1 s2 : Srt} :
     HLower H s1 -> s1 ∈ InterSet s2 -> HLower H s2 := by
   intro lw h x
