@@ -213,7 +213,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       have wr3 := mrg0.merge_wr wr1 wr2
       have wr3' := dp.wr_image wr3
       have ⟨H0, mrg1, mrg2⟩ := mrg0.split mrg1.sym
-      have ⟨Hx, mrgx, lwx⟩ := dp.resolve mrg2.sym lw1 h1 rsm
+      have ⟨Hx, mrgx, lwx⟩ := dp.resolve rsm mrg2.sym lw1 h1
       have ⟨Hy, mrg1', mrg2'⟩ := mrgx.sym.split mrg1
       have rsn := rsn.weaken_merge mrg1' lwx
       have ⟨wry, _⟩ := mrg2'.split_wr wr3'
