@@ -8,7 +8,7 @@ namespace Runtime
 open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
+lemma Resolved.preservation0 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     HMerge H1 H2 H3 -> WR H2 ->
     [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step0 (H3, c) (H3', c') ->
     ∃ H1' b',
@@ -233,25 +233,21 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       assumption
     . assumption
 
-lemma Resolved.preservation0 {H1 H2 : Heap Srt} {a b c c' A} :
-    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step0 (H1, c) (H2, c') ->
-    ∃ b', [] ;; [] ;; H2 ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Step0 b b' := by
-  intro rs st
-  have ⟨H1, b', mrg, rs, er⟩ := rs.preservation0X HMerge.empty WR.empty st
-  have e := mrg.empty_inv; subst e
-  exists b'
-
-lemma Resolved.preservation0' {H1 H2 : Heap Srt} {a b c c' A} :
-    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Red0 (H1, c) (H2, c') ->
-    ∃ b', [] ;; [] ;; H2 ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Red0 b b' := by
-  generalize e: (H2, c') = t
-  intro rs rd; induction rd generalizing H2 c'
-  case R => cases e; exists b; aesop
+lemma Resolved.preservation0' {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
+    HMerge H1 H2 H3 -> WR H2 ->
+    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Red0 (H3, c) (H3', c') ->
+    ∃ H1' b',
+      HMerge H1' H2 H3' ∧
+      [] ;; [] ;; H1' ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Red0 b b' := by
+  generalize e: (H3', c') = t
+  intro mrg wr rs rd; induction rd generalizing H1 H2 H3' a b c' A
+  case R => cases e; exists H1, b; aesop
   case SE x y rd st ih =>
     subst_vars
     rcases x with ⟨H2, c'⟩
-    replace ⟨x, rs, rd⟩ := ih rfl
-    have ⟨y, rs, st⟩ := rs.preservation0 st
-    exists y; and_intros
+    replace ⟨H1, v1, mrg1, rs1, rd1⟩ := ih rfl mrg wr rs
+    have ⟨H2, v2, mrg2, rs2, st2⟩ := rs1.preservation0 mrg1 wr st
+    exists H2, v2; and_intros
     . assumption
-    . apply Star.SE rd st
+    . assumption
+    . apply Star.SE rd1 st2

@@ -6,7 +6,7 @@ namespace Runtime
 open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
+lemma Resolved.preservation1 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     HMerge H1 H2 H3 -> WR H2 ->
     [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step1 (H3, c) (H3', c') ->
     ∃ H1', HMerge H1' H2 H3' ∧ [] ;; [] ;; H1' ⊢ a ▷ b ◁ c' : A := by
@@ -354,3 +354,17 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         assumption
       . assumption
       . assumption
+
+lemma Resolved.preservation1' {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
+    HMerge H1 H2 H3 -> WR H2 ->
+    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Red1 (H3, c) (H3', c') ->
+    ∃ H1', HMerge H1' H2 H3' ∧ [] ;; [] ;; H1' ⊢ a ▷ b ◁ c' : A := by
+  generalize e: (H3', c') = t
+  intro mrg wr rs rd; induction rd generalizing H1 H2 H3' a b c' A
+  case R => cases e; exists H1
+  case SE x y rd st ih =>
+    subst_vars
+    rcases x with ⟨H2, c'⟩
+    replace ⟨H1, mrg1, rs1⟩ := ih rfl mrg wr rs
+    have ⟨H2, mrg2, st2⟩ := rs1.preservation1 mrg1 wr st
+    exists H2
