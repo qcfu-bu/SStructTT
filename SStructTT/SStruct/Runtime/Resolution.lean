@@ -112,6 +112,12 @@ lemma Erased.nf_stack {Γ Δ} {m A : SStruct.Tm Srt} {m' i} :
 
 namespace Runtime
 
+/- Possibly NULL pointers. -/
+@[scoped aesop safe [constructors]]
+inductive Nullptr : Tm Srt -> Prop where
+  | ptr {l} : Nullptr (.ptr l)
+  | null    : Nullptr .null
+
 def WR (H : Heap Srt) : Prop :=
   ∀ l,
     match H.lookup l with
@@ -235,6 +241,36 @@ lemma WR.lookup {H : Heap Srt} l m s :
   replace wr := wr l
   rw[e] at wr
   split at wr <;> aesop
+
+lemma WR.insert_lam {H : Heap Srt} {l m s} :
+    WR H -> NF 1 m -> WR (H.insert l (.lam m s, s)) := by
+  intro wr nf x
+  cases x.decEq l with
+  | isTrue => subst_vars; simp; assumption
+  | isFalse ne => simp[ne]; apply wr
+
+lemma WR.insert_tup {H : Heap Srt} {l l1 p s} :
+    WR H -> Nullptr p -> WR (H.insert l (.tup (.ptr l1) p s, s)) := by
+  intro wr np x
+  cases x.decEq l with
+  | isTrue =>
+    subst_vars; simp
+    cases np <;> simp
+  | isFalse ne => simp[ne]; apply wr
+
+lemma WR.insert_tt {H : Heap Srt} {l} :
+    WR H -> WR (H.insert l (.tt, ord.e)) := by
+  intro wr x
+  cases x.decEq l with
+  | isTrue => subst_vars; simp
+  | isFalse ne => simp[ne]; apply wr
+
+lemma WR.insert_ff {H : Heap Srt} {l} :
+    WR H -> WR (H.insert l (.tt, ord.e)) := by
+  intro wr x
+  cases x.decEq l with
+  | isTrue => subst_vars; simp
+  | isFalse ne => simp[ne]; apply wr
 
 lemma Erased.resolve_refl {H : Heap Srt} {Γ Δ m n A} :
     Γ ;; Δ ⊢ m ▷ n : A -> HLower H ord.e -> H ⊢ n ▷ n := by

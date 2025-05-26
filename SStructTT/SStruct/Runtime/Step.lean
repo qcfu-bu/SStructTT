@@ -61,12 +61,6 @@ inductive Drop : Heap Srt -> Tm Srt -> Heap Srt -> Prop where
   | .ptr _ => True
   | .null => True
 
-/- Possibly NULL pointers. -/
-@[scoped aesop safe [constructors]]
-inductive Nullptr : Tm Srt -> Prop where
-  | ptr {l} : Nullptr (.ptr l)
-  | null    : Nullptr .null
-
 /- Heap allocated values. -/
 @[scoped aesop safe [constructors]]
 inductive HValue : Tm Srt -> Srt -> Prop where
@@ -522,59 +516,6 @@ lemma Drop.wr_image {H1 H2 : Heap Srt} {m} :
   intro dp wr; induction dp
   all_goals try (solve|aesop)
   case ptr lk dp ih => have := lk.wr_image wr; aesop
-
-def SubHeap (H1 H2 : Heap Srt) : Prop :=
-  ∀ l, l ∈ H1 -> H1.lookup l = H2.lookup l
-
-omit ord in
-lemma SubHeap.insert_inv {H1 H2 : Heap Srt} {l x} :
-    SubHeap (Finmap.insert l x H1) H2 -> l ∉ H1 -> SubHeap H1 H2 := by
-  intro sb h0 l0 h1
-  have sb := sb l0
-  if e: l0 = l then
-    subst_vars; contradiction
-  else aesop
-
-omit ord in
-lemma SubHeap.erase {H1 H2 : Heap Srt} l :
-    SubHeap H1 H2 -> SubHeap (H1.erase l) (H2.erase l) := by
-  intro sb x h
-  if e: x = l then
-    subst_vars; simp
-  else
-    repeat rw[Finmap.lookup_erase_ne e]
-    apply sb; aesop
-
-omit ord in
-lemma SubHeap.preimage {H1 H2 : Heap Srt} {l} :
-    SubHeap H1 H2 -> l ∉ H2 -> l ∉ H1 := by
-  intro sb h1 h2
-  replace sb := sb l h2
-  rw[Finmap.mem_iff] at h1
-  rw[Finmap.mem_iff] at h2
-  rcases h2 with ⟨x, e⟩
-  rw[e] at sb
-  apply h1; exists x; simp[sb]
-
-lemma HMerge.split_subheap' {H1 H2 H3 H4 : Heap Srt} :
-    HMerge H1 H2 H3 -> SubHeap H3 H4 -> SubHeap H1 H4 := by
-  intro mrg sb x h
-  replace mrg := mrg x
-  replace sb := sb x
-  rw[Finmap.mem_iff] at h
-  rcases h with ⟨⟨m, s⟩, e⟩
-  rw[e] at mrg
-  if dec: x ∈ H3 then aesop
-  else
-    rw[Finmap.mem_iff] at dec
-    split at mrg <;> simp_all
-
-lemma HMerge.split_subheap {H1 H2 H3 H4 : Heap Srt} :
-    HMerge H1 H2 H3 -> SubHeap H3 H4 -> SubHeap H1 H4 ∧ SubHeap H2 H4 := by
-  intro mrg sb
-  have sb1 := mrg.split_subheap' sb
-  have sb2 := mrg.sym.split_subheap' sb
-  aesop
 
 lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m' s} :
     Drop H3 m H4 -> H1 ⊢ m ▷ m' ->

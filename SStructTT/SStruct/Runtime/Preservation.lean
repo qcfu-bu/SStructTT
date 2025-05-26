@@ -272,15 +272,17 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case alloc s l h vl =>
         cases vl
         have ⟨h1, h2⟩ := mrg0.split_none h
-        cases ord.contra_dec s with
-        | isTrue h0 =>
-          exists H1.insert l (x.lam s, s); and_intros
-          . sorry
-          . constructor
-            . apply Erased.lam_im <;> assumption
-            . apply Resolve.ptr
-              . assumption
-              . constructor <;> assumption
-            . sorry
-        | isFalse _ => sorry
-    case ptr => sorry
+        have nfm := erm.nf; simp at nfm
+        have nfx := rsx.nf_preimage wr1 nfm
+        exists H1.insert l (x.lam s, s); and_intros
+        . apply mrg0.insert_left; assumption
+        . constructor
+          . apply Erased.lam_im <;> assumption
+          . apply Resolve.ptr
+            . assumption
+            . constructor <;> assumption
+          . apply wr1.insert_lam nfx
+    case ptr =>
+      cases st
+      sorry
+  all_goals sorry
