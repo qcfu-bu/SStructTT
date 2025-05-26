@@ -1,12 +1,22 @@
 import SStructTT.SStruct.Erasure.Preservation
 import SStructTT.SStruct.Runtime.Step
 import SStructTT.SStruct.Runtime.Resolution
+import SStructTT.SStruct.Runtime.Substitution
 open ARS
 
 namespace SStruct.Erasure
 namespace Runtime
 open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
+
+lemma Resolve.lookup {H1 H2 H3 H3' : Heap Srt} {l m m'} :
+    H1 ⊢ .ptr l ▷ m' -> HMerge H1 H2 H3 ->
+    HLookup H3 l m H3' -> ∃ H1', H1' ⊢ m ▷ m' ∧ HMerge H1' H2 H3' := by
+  sorry
+
+-- rsm : H1' ⊢ Tm.ptr lf ▷ m'
+-- np : Nullptr Tm.null
+-- lk : HLookup H3 lf (mx.lam s) H3'
 
 lemma Resolved.preservation2 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     HMerge H1 H2 H3 -> WR H2 ->
@@ -27,9 +37,10 @@ lemma Resolved.preservation2 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     subst_vars; cases rs
     case lam => cases st
     case ptr => cases st
-  case app_im m m' n n' erm tyn ihm =>
+  case app_im m m' n s erm tyn ihm =>
     subst_vars; cases rs
     case app H1' H2' m' n' mrg1 rsm rsn =>
+      have wr3 := mrg0.merge_wr wr1 wr2
       have ⟨wr1', wr2'⟩ := mrg1.split_wr wr1
       have ⟨lw2', e⟩ := rsn.null_inv wr2'; subst e
       cases st
@@ -52,6 +63,29 @@ lemma Resolved.preservation2 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . apply Red1.app_im st1
         . constructor; assumption
       case app_N st => cases st
-      case beta => sorry
+      case beta mx s lf np lk =>
+        have wr3' := lk.wr_image wr3
+        have ⟨Hx, mrg1, mrg2⟩ := mrg0.split mrg1.sym
+        have ⟨Hy, rs0, mrg3⟩ := rsm.lookup mrg2.sym lk
+        have ⟨wry, wrx⟩ := mrg3.split_wr wr3'
+        have ⟨Hz, mrg4, mrg5⟩ := mrg3.sym.split mrg1
+        cases rs0; case lam m0 rs0 lw =>
+        have ⟨A, m1, r, rd, rs1⟩ := erm.lam_preimage
+        have ⟨_, _, eq⟩ := rs1.toStatic.lam_inv'
+        have ⟨e, _⟩ := Static.Conv.pi_inj eq; subst e
+        have ⟨sA, erm⟩ := rs1.lam_im_inv
+        have rsm := Resolved.intro erm rs0 wry
+        have rsm := rsm.subst_im
+        exists Hz, m1.[n/], m0.[.null/]; and_intros
+        . assumption
+        . constructor
+          . apply erm.subst_im tyn
+          . apply rsm.weaken_merge mrg4.sym lw2'
+          . apply mrg4.merge_wr wr2' wry
+        . apply Star1.SE_join
+          . apply Dynamic.Red.app_im rd
+          . constructor
+        . constructor
+          constructor
     case ptr => cases st
   all_goals sorry
