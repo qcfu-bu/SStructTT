@@ -547,7 +547,7 @@ lemma HMerge.self_contra {H1 H2 H3 : Heap Srt} :
 
 lemma HMerge.exists_self_contra (H : Heap Srt) :
     ∃ H0, HMerge H H0 H ∧ Contra H0 :=
-  H.induction_on (fun xs => by
+  H.induction_on fun xs => by
     clear H; induction xs
     case H0 =>
       exists ∅; simp; and_intros
@@ -564,7 +564,7 @@ lemma HMerge.exists_self_contra (H : Heap Srt) :
       else
         exists H0; and_intros
         apply mrg0.insert_left <;> assumption
-        assumption)
+        assumption
 
 lemma HMerge.lookup_collision {H1 H2 H3 : Heap Srt} {l} :
     HMerge H1 H2 H3 -> l ∈ H1 -> H1.lookup l = H3.lookup l := by
