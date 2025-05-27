@@ -8,7 +8,7 @@ namespace Runtime
 open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-lemma Resolved.preservation0 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
+lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     HMerge H1 H2 H3 -> WR H2 ->
     [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step0 (H3, c) (H3', c') ->
     ∃ H1' b',
@@ -233,26 +233,28 @@ lemma Resolved.preservation0 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       assumption
     . assumption
 
-lemma Resolved.preservation0' {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
-    HMerge H1 H2 H3 -> WR H2 ->
-    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Red0 (H3, c) (H3', c') ->
-    ∃ H1' b',
-      HMerge H1' H2 H3' ∧
-      [] ;; [] ;; H1' ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Red0 b b' := by
-  generalize e: (H3', c') = t
-  intro mrg wr rs rd; induction rd generalizing H1 H2 H3' a b c' A
-  case R => cases e; exists H1, b; aesop
+lemma Resolved.preservation0 {H H' : Heap Srt} {a b c c' A} :
+    [] ;; [] ;; H ⊢ a ▷ b ◁ c : A -> Step0 (H, c) (H', c') ->
+    ∃ b', [] ;; [] ;; H' ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Step0 b b' := by
+  intro rs st
+  have ⟨_, _, wr⟩ := rs
+  have ⟨H0, mrg, ct⟩ := HMerge.exists_self_contra H
+  have wr0 := mrg.sym.split_wr' wr
+  have ⟨H0', b', mrg', rs'⟩ := rs.preservation0X mrg wr0 st
+  have e := mrg'.self_contra ct; subst e
+  exists b'
+
+lemma Resolved.preservation0' {H H' : Heap Srt} {a b c c' A} :
+    [] ;; [] ;; H ⊢ a ▷ b ◁ c : A -> Red0 (H, c) (H', c') ->
+    ∃ b', [] ;; [] ;; H' ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Red0 b b' := by
+  generalize e: (H', c') = t
+  intro rs rd; induction rd generalizing H' a b c' A
+  case R => cases e; exists b; aesop
   case SE x y rd st ih =>
     subst_vars
     rcases x with ⟨H2, c'⟩
-    replace ⟨H1, v1, mrg1, rs1, rd1⟩ := ih rfl mrg wr rs
-    have ⟨H2, v2, mrg2, rs2, st2⟩ := rs1.preservation0 mrg1 wr st
-    exists H2, v2; and_intros
+    replace ⟨b', rs, rd⟩ := ih rfl rs
+    have ⟨b', rs, st⟩ := rs.preservation0 st
+    exists b'; and_intros
     . assumption
-    . assumption
-    . apply Star.SE rd1 st2
-
-lemma Resolved.preservation0X {H1 H1' : Heap Srt} {a b c c' A} :
-    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Red0 (H1, c) (H1', c') ->
-    ∃ b', [] ;; [] ;; H1' ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Red0 b b' := by
-  sorry
+    . apply Star.SE rd st
