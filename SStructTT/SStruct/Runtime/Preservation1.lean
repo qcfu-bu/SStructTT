@@ -81,11 +81,9 @@ lemma Pad.split {H1 H2 H3 H3p : Heap Srt} :
   exists H1 ∪ H0, H2 ∪ H0; and_intros
   . exists H0
   . exists H0
-  . apply HMerge.contra_union
+  . apply mrg.union_contra ct dsj
 
-/-
-
-lemma Resolved.preservation1 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
+lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     HMerge H1 H2 H3 -> WR H2 ->
     [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step1 (H3, c) (H3', c') ->
     ∃ H1' H2',
@@ -132,7 +130,7 @@ lemma Resolved.preservation1 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
                 simp[h3]; aesop
               . constructor
                 intro; apply lwx.insert; assumption
-                sorry
+                apply rsx.insert_contra h3 h1
             . apply wr1.insert_lam nfx
         else
           exists H1.insert l (x.lam s, s), H2; and_intros
@@ -471,18 +469,17 @@ lemma Resolved.preservation1' {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
 
 -/
 
-lemma Resolved.preservation1X {H1 H2 : Heap Srt} {a b c c' A} :
+lemma Resolved.preservation1 {H1 H2 : Heap Srt} {a b c c' A} :
     [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step1 (H1, c) (H2, c') ->
     [] ;; [] ;; H2 ⊢ a ▷ b ◁ c' : A := by
   intro rsm st
   have ⟨H0, mrg, ct⟩ := HMerge.exists_self_contra H1
   have ⟨_, _, wr⟩ := rsm
   have wr0 := mrg.sym.split_wr' wr
-  have ⟨H1', H2', mrg', wr', pd, rsm'⟩ := rsm.preservation1 mrg wr0 st
+  have ⟨H1', H2', mrg', wr', pd, rsm'⟩ := rsm.preservation1X mrg wr0 st
   have ct := pd.contra _ _ ct
-  sorry
-  -- have e := mrg'.sym.contra ct; subst e
-  -- assumption
+  have e := mrg'.self_contra ct; subst e
+  assumption
 
 lemma Resolved.preservation1' {H1 H2 : Heap Srt} {a b c c' A} :
     [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Red1 (H1, c) (H2, c') ->
@@ -494,6 +491,4 @@ lemma Resolved.preservation1' {H1 H2 : Heap Srt} {a b c c' A} :
     subst_vars
     rcases y with ⟨H2, c'⟩
     replace rs' := ih rfl rs
-    apply rs'.preservation1X st
-
--/
+    apply rs'.preservation1 st

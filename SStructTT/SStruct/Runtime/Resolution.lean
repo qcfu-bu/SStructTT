@@ -285,11 +285,11 @@ lemma HLookup.lookup {H1 H2 : Heap Srt} {l m} :
   unfold HLookup at lk; split at lk <;> aesop
 
 lemma HLookup.not_mem {H1 H2 : Heap Srt} {l1 l2 m} :
-    HLookup H1 l1 m H2 -> l2 ∉ H1.keys -> l2 ∉ H2.keys := by
+    HLookup H1 l1 m H2 -> l2 ∉ H1 -> l2 ∉ H2 := by
   intro lk h
   rw[HLookup] at lk
-  rw[Finmap.mem_keys,<-Finmap.lookup_eq_none] at h
-  rw[Finmap.mem_keys,<-Finmap.lookup_eq_none]
+  rw[<-Finmap.lookup_eq_none] at h
+  rw[<-Finmap.lookup_eq_none]
   split at lk <;> try trivial
   case h_1 opt m' s e =>
     have ⟨_, h⟩ := lk; split_ifs at h
@@ -301,10 +301,10 @@ lemma HLookup.not_mem {H1 H2 : Heap Srt} {l1 l2 m} :
       | isFalse ne => rw[Finmap.lookup_erase_ne ne]; assumption
 
 lemma HLookup.insert {H1 H2 : Heap Srt} {l1 l2 m n s} :
-    HLookup H1 l1 m H2 -> l2 ∉ H1.keys ->
+    HLookup H1 l1 m H2 -> l2 ∉ H1 ->
     HLookup (H1.insert l2 ⟨n, s⟩) l1 m (H2.insert l2 ⟨n, s⟩) := by
   intro lk h
-  rw[Finmap.mem_keys,<-Finmap.lookup_eq_none] at h
+  rw[<-Finmap.lookup_eq_none] at h
   rw[HLookup]
   cases l1.decEq l2 with
   | isTrue =>
@@ -676,11 +676,67 @@ lemma Resolve.nf_preimage {H : Heap Srt} {m m' i} :
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     aesop
 
-lemma Resolve.contra_insert {H : Heap Srt} {l m m' v s} :
+lemma Resolve.insert_contra {H : Heap Srt} {l m m' v s} :
     H ⊢ m ▷ m' -> s ∈ ord.contra_set -> l ∉ H -> H.insert l (v, s) ⊢ m ▷ m' := by
-  sorry
+  intro rs h nn; induction rs
+  case var ct => constructor; apply ct.insert h
+  case lam hyp rsm ih =>
+    constructor
+    . intro h0; apply (hyp h0).insert h
+    . aesop
+  case app mrg rsm rsn ihm ihn =>
+    have ⟨nn1, nn2⟩ := mrg.split_none nn
+    replace ihm := ihm nn1
+    replace ihn := ihn nn2
+    constructor
+    apply mrg.insert_contra h
+    assumption
+    assumption
+  case tup mrg rsm rsn ihm ihn =>
+    have ⟨nn1, nn2⟩ := mrg.split_none nn
+    replace ihm := ihm nn1
+    replace ihn := ihn nn2
+    constructor
+    apply mrg.insert_contra h
+    assumption
+    assumption
+  case prj mrg rsm rsn ihm ihn =>
+    have ⟨nn1, nn2⟩ := mrg.split_none nn
+    replace ihm := ihm nn1
+    replace ihn := ihn nn2
+    constructor
+    apply mrg.insert_contra h
+    assumption
+    assumption
+  case tt ct => constructor; apply ct.insert h
+  case ff ct => constructor; apply ct.insert h
+  case ite mrg rsm rsn1 rsn2 ihm ihn1 ihn2 =>
+    have ⟨nn1, nn2⟩ := mrg.split_none nn
+    replace ihm := ihm nn1
+    replace ihn1 := ihn1 nn2
+    replace ihn2 := ihn2 nn2
+    constructor
+    apply mrg.insert_contra h
+    assumption
+    assumption
+    assumption
+  case drop mrg rsm rsn ihm ihn =>
+    have ⟨nn1, nn2⟩ := mrg.split_none nn
+    replace ihm := ihm nn1
+    replace ihn := ihn nn2
+    constructor
+    apply mrg.insert_contra h
+    assumption
+    assumption
+  case ptr lk rs ih =>
+    have nn2 := lk.not_mem nn
+    replace ih := ih nn2
+    constructor
+    . apply lk.insert nn
+    . assumption
+  case null ct => constructor; apply ct.insert h
 
-lemma Resolve.contra_merge {H1 H2 H3 : Heap Srt} {m m'} :
+lemma Resolve.merge_contra {H1 H2 H3 : Heap Srt} {m m'} :
     HMerge H1 H2 H3 -> Contra H2 -> H1 ⊢ m ▷ m' -> H3 ⊢ m ▷ m' := by
   intro mrg ct2 rsm; induction rsm generalizing H2 H3
   case var H1 x ct1 =>
