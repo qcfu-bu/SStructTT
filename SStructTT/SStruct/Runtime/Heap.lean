@@ -7,26 +7,28 @@ variable {Srt : Type}
 
 abbrev Heap Srt := Finmap (fun (_ : Nat) => Tm Srt × Srt)
 
-lemma Heap.fresh (H : Heap Srt) : ∃ l, l ∉ H.keys := by
+lemma Heap.fresh (H : Heap Srt) : ∃ l, l ∉ H := by
   generalize e1: H.keys = keys
   cases e2: keys.max with
   | bot =>
     rw [keys.max_eq_bot] at e2
     subst e2; exists 0
+    simp[<-Finmap.mem_keys,e1]
   | coe x =>
     exists x + 1
+    simp[<-Finmap.mem_keys,e1]
     apply keys.not_mem_of_max_lt _ e2
     simp
 
 lemma Heap.erase_insert {H : Heap Srt} {l v} :
-    l ∉ H.keys -> (H.insert l v).erase l = H := by
+    l ∉ H -> (H.insert l v).erase l = H := by
   intro h
   apply Finmap.ext_lookup
   intro x
   cases x.decEq l with
   | isTrue e =>
     subst e; simp
-    rw [Finmap.mem_keys,<-Finmap.lookup_eq_none] at h
+    rw [<-Finmap.lookup_eq_none] at h
     rw [h]
   | isFalse e =>
     rw [Finmap.lookup_erase_ne e]
@@ -389,30 +391,29 @@ lemma HMerge.split_contra {H1 H2 H3 : Heap Srt} :
   aesop
 
 lemma HMerge.split_none {H1 H2 H3 : Heap Srt} {l} :
-    HMerge H1 H2 H3 -> l ∉ H3.keys -> l ∉ H1.keys ∧ l ∉ H2.keys := by
+    HMerge H1 H2 H3 -> l ∉ H3 -> l ∉ H1 ∧ l ∉ H2 := by
   intro mrg h3
   apply Classical.byContradiction
   intro h; rw[Classical.not_and_iff_not_or_not] at h; simp at h
   cases h with
   | inl h1 =>
-    rw[Finmap.mem_keys,Finmap.mem_iff] at h1
+    rw[Finmap.mem_iff] at h1
     replace ⟨⟨m, s⟩, h1⟩ := h1
-    rw[Finmap.mem_keys,<-Finmap.lookup_eq_none] at h3
+    rw[<-Finmap.lookup_eq_none] at h3
     replace mrg := mrg l
     simp_rw[h1,h3] at mrg
     split at mrg <;> try trivial
   | inr h2 =>
-    rw[Finmap.mem_keys] at h2
     rw[Finmap.mem_iff] at h2; replace ⟨⟨m, s⟩, h2⟩ := h2
-    rw[Finmap.mem_keys,<-Finmap.lookup_eq_none] at h3
+    rw[<-Finmap.lookup_eq_none] at h3
     replace mrg := mrg l
     simp_rw[h2,h3] at mrg
     split at mrg <;> try trivial
 
 lemma HMerge.mem_left {H1 H2 H3 : Heap Srt} {l} :
-    HMerge H1 H2 H3 -> l ∈ H1.keys -> l ∈ H3.keys := by
+    HMerge H1 H2 H3 -> l ∈ H1 -> l ∈ H3 := by
   intro mrg h1
-  rw[Finmap.mem_keys,Finmap.mem_iff] at h1
+  rw[Finmap.mem_iff] at h1
   replace ⟨⟨m, s⟩, h1⟩ := h1
   replace mrg := mrg l; rw[h1] at mrg
   split at mrg <;> try trivial
@@ -441,12 +442,12 @@ lemma HMerge.insert_lookup {H1 H2 H3 : Heap Srt} {m l s} :
   split at mrg <;> simp_all
 
 lemma HMerge.insert_left {H1 H2 H3 : Heap Srt} l m s :
-    HMerge H1 H2 H3 -> l ∉ H3.keys -> s ∉ ord.contra_set ->
+    HMerge H1 H2 H3 -> l ∉ H3 -> s ∉ ord.contra_set ->
     HMerge (H1.insert l ⟨m, s⟩) H2 (H3.insert l ⟨m, s⟩) := by
   intro mrg h1 h2 x
   have ⟨h3, h4⟩ := mrg.split_none h1
-  rw [Finmap.mem_keys,<-Finmap.lookup_eq_none] at h3
-  rw [Finmap.mem_keys,<-Finmap.lookup_eq_none] at h4
+  rw [<-Finmap.lookup_eq_none] at h3
+  rw [<-Finmap.lookup_eq_none] at h4
   cases x.decEq l with
   | isTrue =>
     subst_vars; simp[Finmap.lookup_insert,h4]
@@ -507,9 +508,9 @@ lemma HMerge.exists_self_contra (H : Heap Srt) :
         assumption)
 
 lemma HMerge.lookup_collision {H1 H2 H3 : Heap Srt} {l} :
-    HMerge H1 H2 H3 -> l ∈ H1.keys -> H1.lookup l = H3.lookup l := by
+    HMerge H1 H2 H3 -> l ∈ H1 -> H1.lookup l = H3.lookup l := by
   intro mrg h
-  rw[Finmap.mem_keys,Finmap.mem_iff] at h
+  rw[Finmap.mem_iff] at h
   have ⟨⟨m, s⟩, e⟩ := h
   replace mrg := mrg l
   rw[e] at mrg; split at mrg <;> aesop

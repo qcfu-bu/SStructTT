@@ -676,6 +676,10 @@ lemma Resolve.nf_preimage {H : Heap Srt} {m m' i} :
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     aesop
 
+lemma Resolve.contra_insert {H : Heap Srt} {l m m' v s} :
+    H ⊢ m ▷ m' -> s ∈ ord.contra_set -> l ∉ H -> H.insert l (v, s) ⊢ m ▷ m' := by
+  sorry
+
 lemma Resolve.contra_merge {H1 H2 H3 : Heap Srt} {m m'} :
     HMerge H1 H2 H3 -> Contra H2 -> H1 ⊢ m ▷ m' -> H3 ⊢ m ▷ m' := by
   intro mrg ct2 rsm; induction rsm generalizing H2 H3
