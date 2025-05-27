@@ -504,6 +504,42 @@ lemma HLookup.wr_value {H H' : Heap Srt} {m l} :
   generalize H.lookup l = r
   split <;> aesop
 
+lemma HLookup.disjoint_image {H0 H1 H2 : Heap Srt} {l m} :
+    HLookup H1 l m H2 -> H1.Disjoint H0 -> H2.Disjoint H0 := by
+  intro lk dsj
+  unfold HLookup at lk; split at lk <;> try trivial
+  case h_1 heq =>
+    rcases lk with ⟨_, ifq⟩; subst_vars
+    split_ifs at ifq <;> subst_vars
+    . aesop
+    . rw[Finmap.Disjoint.eq_1]
+      rw[Finmap.Disjoint.eq_1] at dsj
+      aesop
+
+lemma HLookup.disjoint_union {H0 H1 H2 : Heap Srt} {l m} :
+    HLookup H1 l m H2 -> H1.Disjoint H0 -> HLookup (H1 ∪ H0) l m (H2 ∪ H0) := by
+  intro lk dsj
+  rw[Finmap.Disjoint.eq_1] at dsj
+  unfold HLookup at lk; split at lk <;> try trivial
+  unfold HLookup
+  case h_1 heq =>
+    have mm := Finmap.mem_of_lookup_eq_some heq
+    have nn := dsj _ mm
+    rw[Finmap.lookup_union_left,heq]; simp
+    rcases lk with ⟨_, ifq⟩; split at ifq <;> subst_vars
+    case isTrue => simp; intro; contradiction
+    case isFalse h =>
+      simp[h]
+      apply Finmap.ext_lookup; intro x
+      if e: x = l then
+        subst_vars; simp
+        rw[Finmap.lookup_eq_none]
+        apply dsj
+        apply Finmap.mem_of_lookup_eq_some
+        assumption
+      else aesop
+    aesop
+
 lemma Erased.resolve_refl {H : Heap Srt} {Γ Δ m n A} :
     Γ ;; Δ ⊢ m ▷ n : A -> Contra H -> Weaken H -> H ⊢ n ▷ n := by
   intro er ct wk
@@ -791,6 +827,50 @@ lemma Resolve.merge_contra {H1 H2 H3 : Heap Srt} {m m'} :
   case null ct1 =>
     have lw := mrg.contra_image ct1 ct2
     constructor; assumption
+
+lemma Resolve.subheap {H1 H2 : Heap Srt} {m m'} :
+    H1 ⊢ m ▷ m' -> SubHeap H1 H2 -> H2 ⊢ m ▷ m' := by
+  intro rs sb; induction rs generalizing H2
+  case var ct =>
+    rcases sb with ⟨H0, ct0, dsj, un⟩; subst un
+    constructor; apply ct.union ct0
+  case lam hyp rsm ih =>
+    constructor
+    . intro h
+      replace hyp := hyp h
+      apply sb.contra_image hyp
+    . aesop
+  case app mrg rsm rsn ihm ihn =>
+    have ⟨H1p, H2p, sb1, sb2, mrg⟩ := mrg.split_subheap sb
+    constructor <;> aesop
+  case tup mrg rsm rsn ihm ihn =>
+    have ⟨H1p, H2p, sb1, sb2, mrg⟩ := mrg.split_subheap sb
+    constructor <;> aesop
+  case prj mrg rsm rsn ihm ihn =>
+    have ⟨H1p, H2p, sb1, sb2, mrg⟩ := mrg.split_subheap sb
+    constructor <;> aesop
+  case tt ct =>
+    rcases sb with ⟨H0, ct0, dsj, un⟩; subst un
+    constructor; apply ct.union ct0
+  case ff ct =>
+    rcases sb with ⟨H0, ct0, dsj, un⟩; subst un
+    constructor; apply ct.union ct0
+  case ite mrg rsm rsn1 rsn2 ihm ihn1 ihn2 =>
+    have ⟨H1p, H2p, sb1, sb2, mrg⟩ := mrg.split_subheap sb
+    constructor <;> aesop
+  case drop mrg rsm rsn ihm ihn =>
+    have ⟨H1p, H2p, sb1, sb2, mrg⟩ := mrg.split_subheap sb
+    constructor <;> aesop
+  case ptr lk erm ih =>
+    rcases sb with ⟨H0, ct, dsj, e⟩; subst e
+    have lk0 := lk.disjoint_union dsj
+    have dsj0 := lk.disjoint_image dsj
+    have sb := SubHeap.intro H0 ct dsj0 rfl
+    replace ih := ih sb
+    constructor <;> assumption
+  case null ct =>
+    rcases sb with ⟨H0, ct0, dsj, un⟩; subst un
+    constructor; apply ct.union ct0
 
 lemma HLookup.not_wr_ptr {H H' : Heap Srt} {l i} :
     HLookup H l (.ptr i) H' -> ¬ WR H := by

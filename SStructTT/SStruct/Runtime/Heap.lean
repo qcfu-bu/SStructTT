@@ -100,6 +100,15 @@ lemma Weaken.empty : Weaken (∅ : Heap Srt) := by
 lemma Contra.empty : Contra (∅ : Heap Srt) := by
   intro l; simp
 
+lemma Contra.union {H1 H2 : Heap Srt} : Contra H1 -> Contra H2 -> Contra (H1 ∪ H2) := by
+  intro ct1 ct2 x
+  replace ct1 := ct1 x
+  replace ct2 := ct2 x
+  split <;> try trivial
+  case h_1 heq =>
+    simp at heq
+    cases heq <;> aesop
+
 -- lemma HLower.insert {H : Heap Srt} {l v s s'} :
 --     HLower H s -> s' ∈ InterSet s -> HLower (H.insert l (v, s')) s := by
 --   intro lw h x
@@ -656,6 +665,21 @@ lemma HMerge.shift {H1 H2 H3 : Heap Srt} {l m s} :
 --     split at mrg2 <;> simp_all
 --     split at mrg3 <;> simp_all
 
+lemma HMerge.split_disjoint' {H0 H1 H2 H3 : Heap Srt} :
+    HMerge H1 H2 H3 -> H3.Disjoint H0 -> H1.Disjoint H0 := by
+  intro mrg dsj
+  rw[Finmap.Disjoint.eq_1]; intro x h
+  have e := mrg.lookup_collision h
+  rw[Finmap.mem_iff] at h; rw[e] at h
+  rw[<-Finmap.mem_iff (s := H3)] at h
+  aesop
+
+lemma HMerge.split_disjoint {H0 H1 H2 H3 : Heap Srt} :
+    HMerge H1 H2 H3 -> H3.Disjoint H0 -> H1.Disjoint H0 ∧ H2.Disjoint H0 := by
+  intro mrg dsj; and_intros
+  apply mrg.split_disjoint' dsj
+  apply mrg.sym.split_disjoint' dsj
+
 lemma HMerge.split {H1 H2 H3 Ha Hb : Heap Srt} :
     HMerge H1 H2 H3 ->
     HMerge Ha Hb H1 ->
@@ -760,3 +784,55 @@ lemma HMerge.distr {H1 H2 H3 H11 H12 H21 H22 : Heap Srt} :
   . apply mrg8.sym
   . apply mrg5.sym
   . apply mrg7.sym
+
+inductive SubHeap (H1 H2 : Heap Srt) : Prop where
+  | intro (H0 : Heap Srt) :
+    Contra H0 -> Finmap.Disjoint H1 H0 -> H2 = H1 ∪ H0 -> SubHeap H1 H2
+
+lemma SubHeap.refl (H : Heap Srt) : SubHeap H H := by
+  apply SubHeap.intro ∅
+  apply Contra.empty
+  apply Finmap.Disjoint.symm
+  apply Finmap.disjoint_empty
+  simp
+
+lemma SubHeap.insert (H : Heap Srt) l m s :
+    l ∉ H -> s ∈ ord.contra_set -> SubHeap H (H.insert l (m, s)) := by
+  intro h1 h2
+  apply SubHeap.intro (Finmap.singleton l (m, s))
+  . intro x
+    if e: x = l then
+      subst_vars; simp
+      assumption
+    else
+      rw[<-Finmap.mem_singleton x l (m, s) (β := fun _ => Tm Srt × Srt)] at e
+      rw[Finmap.mem_iff] at e
+      split <;> try aesop
+  . rw[Finmap.Disjoint.eq_1]
+    intro x h0 h1
+    simp at h1; subst h1
+    contradiction
+  . apply Finmap.ext_lookup; intro x
+    if e: x = l then
+      subst_vars; simp[h1]
+    else
+      simp[e]
+      rw[Finmap.lookup_union_left_of_not_in]
+      intro h; simp at h
+      contradiction
+
+lemma SubHeap.contra_image {H1 H2 : Heap Srt} : SubHeap H1 H2 -> Contra H1 -> Contra H2 := by
+  intro pd c1
+  rcases pd with ⟨H0, ct, dsj, mrg⟩
+  rw[mrg]
+  apply Contra.union <;> assumption
+
+lemma HMerge.split_subheap {H1 H2 H3 H3p : Heap Srt} :
+    HMerge H1 H2 H3 -> SubHeap H3 H3p ->
+    ∃ H1p H2p, SubHeap H1 H1p ∧ SubHeap H2 H2p ∧ HMerge H1p H2p H3p := by
+  intro mrg ⟨H0, ct, dsj, un⟩; subst_vars
+  have ⟨dsj1, dsj2⟩ := mrg.split_disjoint dsj
+  exists H1 ∪ H0, H2 ∪ H0; and_intros
+  . apply SubHeap.intro H0 <;> trivial
+  . apply SubHeap.intro H0 <;> trivial
+  . apply mrg.union_contra ct dsj
