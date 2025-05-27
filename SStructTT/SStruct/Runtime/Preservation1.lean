@@ -58,10 +58,32 @@ lemma Pad.contra (H1 H2 : Heap Srt) : Pad H1 H2 -> Contra H1 -> Contra H2 := by
   rw[mrg]
   apply Contra.union <;> assumption
 
+lemma HMerge.split_disjoint' {H0 H1 H2 H3 : Heap Srt} :
+    HMerge H1 H2 H3 -> H3.Disjoint H0 -> H1.Disjoint H0 := by
+  intro mrg dsj
+  rw[Finmap.Disjoint.eq_1]; intro x h
+  have e := mrg.lookup_collision h
+  rw[Finmap.mem_iff] at h; rw[e] at h
+  rw[<-Finmap.mem_iff (s := H3)] at h
+  aesop
+
+lemma HMerge.split_disjoint {H0 H1 H2 H3 : Heap Srt} :
+    HMerge H1 H2 H3 -> H3.Disjoint H0 -> H1.Disjoint H0 ∧ H2.Disjoint H0 := by
+  intro mrg dsj; and_intros
+  apply mrg.split_disjoint' dsj
+  apply mrg.sym.split_disjoint' dsj
+
 lemma Pad.split {H1 H2 H3 H3p : Heap Srt} :
     Pad H3 H3p -> HMerge H1 H2 H3 ->
     ∃ H1p H2p, Pad H1 H1p ∧ Pad H2 H2p ∧ HMerge H1p H2p H3p := by
-  sorry
+  intro ⟨H0, ct, dsj, un⟩ mrg; subst_vars
+  have ⟨dsj1, dsj2⟩ := mrg.split_disjoint dsj
+  exists H1 ∪ H0, H2 ∪ H0; and_intros
+  . exists H0
+  . exists H0
+  . apply HMerge.contra_union
+
+/-
 
 lemma Resolved.preservation1 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     HMerge H1 H2 H3 -> WR H2 ->
@@ -473,3 +495,5 @@ lemma Resolved.preservation1' {H1 H2 : Heap Srt} {a b c c' A} :
     rcases y with ⟨H2, c'⟩
     replace rs' := ih rfl rs
     apply rs'.preservation1X st
+
+-/

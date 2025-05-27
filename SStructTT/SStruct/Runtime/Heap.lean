@@ -334,7 +334,7 @@ lemma HMerge.contra_image {H1 H2 H3 : Heap Srt} :
       replace lw2 := lw2 x; simp_rw[h2] at lw2
       assumption
 
-lemma HMerge.weaken_hyp {H1 H2 H3 : Heap Srt} {s} :
+lemma HMerge.split_weaken_hyp {H1 H2 H3 : Heap Srt} {s} :
     HMerge H1 H2 H3 ->
     (s ∈ ord.weaken_set -> Weaken H1) ->
     (s ∈ ord.weaken_set -> Weaken H2) ->
@@ -344,7 +344,7 @@ lemma HMerge.weaken_hyp {H1 H2 H3 : Heap Srt} {s} :
   replace h2 := h2 h
   apply mrg.weaken_image h1 h2
 
-lemma HMerge.contra_hyp {H1 H2 H3 : Heap Srt} {s} :
+lemma HMerge.split_contra_hyp {H1 H2 H3 : Heap Srt} {s} :
     HMerge H1 H2 H3 ->
     (s ∈ ord.contra_set -> Contra H1) ->
     (s ∈ ord.contra_set -> Contra H2) ->
@@ -434,6 +434,56 @@ lemma HMerge.insert_contra {H1 H2 H3 : Heap Srt} {m l s} :
   | isFalse ne =>
     simp[Finmap.lookup_insert_of_ne _ ne]
     apply mrg
+
+lemma HMerge.union_contra {H0 H1 H2 H3 : Heap Srt} :
+    HMerge H1 H2 H3 -> Contra H0 -> H3.Disjoint H0 ->
+    HMerge (H1 ∪ H0) (H2 ∪ H0) (H3 ∪ H0) := by
+  intro mrg ct dsj x
+  rw[Finmap.Disjoint.eq_1] at dsj
+  if h: x ∈ H3 then
+    have h0 := h
+    rw[Finmap.mem_iff] at h
+    rcases h with ⟨⟨m, s⟩, h⟩
+    if s ∈ ord.contra_set then
+      replace mrg := mrg x; rw[h] at mrg
+      split at mrg <;> try simp_all
+      case h_1 heq1 heq2 heq3 =>
+        rw[Finmap.lookup_union_left]
+        rw[Finmap.lookup_union_left]
+        simp[heq1,heq2]
+        assumption
+        rw[Finmap.mem_iff]; aesop
+        rw[Finmap.mem_iff]; aesop
+      case h_2 => aesop
+      case h_3 => aesop
+    else
+      replace mrg := mrg x; rw[h] at mrg
+      split at mrg <;> try simp_all
+      case h_1 => aesop
+      case h_2 heq1 heq2 heq3 =>
+        rw[Finmap.lookup_union_left]
+        rw[Finmap.lookup_union_right]
+        simp[heq1,heq2]
+        have h0 := dsj _ h0
+        rw[<-Finmap.lookup_eq_none] at h0
+        simp[h0]; assumption
+        rw[Finmap.mem_iff]; aesop
+        rw[Finmap.mem_iff]; aesop
+      case h_3 heq1 heq2 =>
+        rw[Finmap.lookup_union_right]
+        rw[Finmap.lookup_union_left]
+        simp[heq1,heq2]
+        have h0 := dsj _ h0
+        rw[<-Finmap.lookup_eq_none] at h0
+        simp[h0]; assumption
+        rw[Finmap.mem_iff]; aesop
+        rw[Finmap.mem_iff]; aesop
+  else
+    have ⟨h1, h2⟩ := mrg.split_none h
+    rw[Finmap.lookup_union_right h1]
+    rw[Finmap.lookup_union_right h2]
+    rw[Finmap.lookup_union_right h]
+    apply ct.merge_refl
 
 lemma HMerge.insert_lookup {H1 H2 H3 : Heap Srt} {m l s} :
     HMerge (H1.insert l (m, s)) H2 H3 -> H3.lookup l = some (m, s) := by
