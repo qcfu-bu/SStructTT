@@ -208,14 +208,14 @@ lemma Resolved.preservation0 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     . assumption
   case drop m m' n n' A B s mrg lw h erm ern ihm ihn =>
     subst_vars; cases mrg; cases rs
-    case drop H1' H2' m m' lw1 h1 mrg1 rsm rsn =>
+    case drop H1' H2' m m' h1 mrg1 rsm rsn =>
       cases st; case drop_elim dp =>
       have wr3 := mrg0.merge_wr wr1 wr2
       have wr3' := dp.wr_image wr3
       have ⟨H0, mrg1, mrg2⟩ := mrg0.split mrg1.sym
-      have ⟨Hx, mrgx, lwx⟩ := dp.resolve rsm mrg2.sym lw1 h1
+      have ⟨Hx, mrgx, ct⟩ := dp.resolve rsm mrg2.sym
       have ⟨Hy, mrg1', mrg2'⟩ := mrgx.sym.split mrg1
-      have rsn := rsn.weaken_merge mrg1' lwx
+      have rsn := rsn.contra_merge mrg1' ct
       have ⟨wry, _⟩ := mrg2'.split_wr wr3'
       exists Hy, n'; and_intros
       . assumption

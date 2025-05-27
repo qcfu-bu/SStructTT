@@ -37,7 +37,7 @@ lemma Resolved.preservation2 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     subst_vars; cases rs
     case lam => cases st
     case ptr => cases st
-  case app_im m m' n s erm tyn ihm =>
+  case app_im B m m' n s erm tyn ihm =>
     subst_vars; cases rs
     case app H1' H2' m' n' mrg1 rsm rsn =>
       have wr3 := mrg0.merge_wr wr1 wr2
@@ -74,13 +74,20 @@ lemma Resolved.preservation2 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         have ⟨_, _, eq⟩ := rs1.toStatic.lam_inv'
         have ⟨e, _⟩ := Static.Conv.pi_inj eq; subst e
         have ⟨sA, erm⟩ := rs1.lam_im_inv
+        have ⟨H0, mrg0, ct0⟩ := HMerge.exists_self_contra Hy
         have rsm := Resolved.intro erm rs0 wry
-        have rsm := rsm.subst_im
+        have rsm : Hy ⊢ mx.[.null/] ▷ m0.[.null/] := by
+          apply rsm.substitution
+          . apply mrg0
+          . constructor
+            constructor
+            apply (mrg0.split_wr wry).right
+            assumption
         exists Hz, m1.[n/], m0.[.null/]; and_intros
         . assumption
         . constructor
           . apply erm.subst_im tyn
-          . apply rsm.weaken_merge mrg4.sym lw2'
+          . apply rsm.contra_merge mrg4.sym lw2'
           . apply mrg4.merge_wr wr2' wry
         . apply Star1.SE_join
           . apply Dynamic.Red.app_im rd

@@ -229,8 +229,7 @@ def HMerge (H1 H2 H3 : Heap Srt) : Prop :=
     | none, none, none => True
     | _, _, _ => False
 
--- lemma HLower.merge_refl {H : Heap Srt} {s} :
---     HLower H s -> s ∈ ord.contra_set -> HMerge H H H := by
+-- lemma HLower.merge_refl {H : Heap Srt} : HMerge H H H := by
 --   intro lw1 h x
 --   replace lw1 := lw1 x
 --   split at lw1
@@ -253,6 +252,39 @@ lemma HMerge.sym {H1 H2 H3 : Heap Srt} :
   intro mrg x
   replace mrg := mrg x
   split at mrg <;> aesop
+
+def Finmap.filter {α : Type*} {β : α → Type*} (f : Finmap β)
+    (p : Sigma β → Prop) [DecidablePred p] : Finmap β where
+  entries := f.entries.filter p
+  nodupKeys := sorry
+
+def Finmap.lookup_filter {α : Type*} {β : α → Type*}  [DecidableEq α]
+    {f : Finmap β} {p : Sigma β → Prop} [DecidablePred p] {l b}  :
+    f.lookup l = some b -> (p ⟨l, b⟩ <-> (Finmap.filter f p).lookup l = b) := by
+  sorry
+
+lemma HMerge.exists_self_contra {H : Heap Srt} :
+    ∃ H0, HMerge H H0 H ∧ Contra H0 := by
+  -- let H1: Heap Srt := Finmap.filter H (fun ⟨_, m, s⟩ => s ∈ ord.contra_set)
+  sorry
+  -- exists H1; and_intros
+  -- intro x
+  -- . if h: x ∈ H then
+  --     rw[Finmap.mem_iff] at h
+  --     replace ⟨⟨m, s⟩, h⟩ := h
+  --     rw[h]; simp[H1]
+  --     have := Finmap.lookup_filter h (p := (fun xy => xy.2.2 ∈ ord.contra_set))
+  --     simp at this
+  --     if h0: s ∈ ord.contra_set then
+  --       rw[this] at h0
+  --       rw[h0]; simp; aesop
+  --     else
+  --       rw[this] at h0
+  --       split <;> try all_simp
+  --       sorry
+  --   else
+  --     sorry
+  -- sorry
 
 -- lemma HMerge.empty {H : Heap Srt} : HMerge H ∅ H := by
 --   intro l; split <;> try simp_all
@@ -388,7 +420,6 @@ lemma HMerge.split_contra {H1 H2 H3 : Heap Srt} :
   have lw1 := mrg.split_contra' lw
   have lw2 := mrg.sym.split_contra' lw
   aesop
-
 
 lemma HMerge.split_none {H1 H2 H3 : Heap Srt} {l} :
     HMerge H1 H2 H3 -> l ∉ H3.keys -> l ∉ H1.keys ∧ l ∉ H2.keys := by

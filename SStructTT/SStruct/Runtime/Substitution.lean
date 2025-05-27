@@ -51,8 +51,9 @@ open Dynamic
 inductive AgreeSubst :
   (Var -> Tm Srt) -> (Var -> Tm Srt) -> Nat -> Ctx Srt -> Heap Srt -> Prop
 where
-  | nil {σ σ'} :
-    AgreeSubst σ σ' 0 [] ∅
+  | nil {H σ σ'} :
+    WR H -> Contra H ->
+    AgreeSubst σ σ' 0 [] H
   | cons {Δ H σ σ' A x r s} :
     AgreeSubst σ σ' x Δ H ->
     AgreeSubst (up σ) (up σ') (x + 1) (A :⟨r, s⟩ Δ) H
@@ -68,9 +69,9 @@ where
     AgreeSubst (m .: σ) (m' .: σ') 0 (A :⟨.ex, s⟩ Δ) H3
 
 lemma AgreeSubst.implicit_image {Δ : Ctx Srt} {H σ σ' x} :
-    AgreeSubst σ σ' x Δ H -> Implicit Δ -> H = ∅ := by
+    AgreeSubst σ σ' x Δ H -> Implicit Δ -> Contra H := by
   intro agr im; induction agr
-  case nil => rfl
+  case nil => assumption
   case cons ih =>
     simp at im; replace ⟨e, im⟩ := im; subst_vars
     apply ih; apply im
@@ -82,7 +83,7 @@ lemma AgreeSubst.implicit_image {Δ : Ctx Srt} {H σ σ' x} :
 lemma AgreeSubst.contra_image {Δ : Ctx Srt} {H σ σ' x s} :
     AgreeSubst σ σ' x Δ H -> Lower Δ s -> (s ∈ ord.contra_set -> Contra H) := by
   intro agr lw; induction agr generalizing s
-  case nil => intro; apply Contra.empty
+  case nil => intro; assumption
   case cons => cases lw <;> aesop
   case intro_im => cases lw; aesop
   case intro_ex wr hw2 mrg erm agr ih =>
@@ -135,7 +136,6 @@ lemma AgreeSubst.wr_heap {Δ : Ctx Srt} {H σ σ' i} :
     AgreeSubst σ σ' i Δ H -> WR H := by
   intro agr; induction agr
   all_goals try aesop
-  case nil => apply WR.empty
   case intro_ex wr2 _ mrg _ _ wr1 =>
     apply mrg.merge_wr wr1 wr2
 
@@ -170,11 +170,11 @@ lemma Resolve.id_rename {H : Heap Srt} {m m' i ξ} :
     replace ihn1 := ihn1 wr2 idr
     replace ihn2 := ihn2 wr2 idr
     asimp; apply Resolve.ite mrg ihm ihn1 ihn2
-  case drop mrg mem rsm rsn ihm ihn =>
+  case drop mrg rsm rsn ihm ihn =>
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     replace ihm := ihm wr1 idr
     replace ihn := ihn wr2 idr
-    asimp; apply Resolve.drop mrg mem ihm ihn
+    asimp; apply Resolve.drop mrg ihm ihn
   case ptr l m n lk rsm ihm =>
     asimp
     have nfm := lk.nf wr
@@ -191,8 +191,8 @@ lemma AgreeSubst.has {Δ : Ctx Srt} {H σ σ' x i s A} :
   case cons agr ih =>
     cases hs
     case nil im =>
-      rw[agr.implicit_image im]
-      asimp; constructor; apply Contra.empty
+      asimp; constructor
+      apply agr.implicit_image im
     case cons =>
       asimp; apply Resolve.id_rename
       . aesop
@@ -203,9 +203,8 @@ lemma AgreeSubst.has {Δ : Ctx Srt} {H σ σ' x i s A} :
   case intro_ex wr lw mrg rsm agr ih =>
     cases hs; case nil im =>
     asimp
-    rw[agr.implicit_image im] at mrg
-    have e := mrg.sym.empty_inv; subst e
-    assumption
+    have ct := agr.implicit_image im
+    apply rsm.contra_merge mrg.sym ct
 
 lemma AgreeSubst.split {Δ1 Δ2 Δ3 : Ctx Srt} {H3 σ σ' x} :
     AgreeSubst σ σ' x Δ3 H3 -> Merge Δ1 Δ2 Δ3 ->
@@ -214,12 +213,12 @@ lemma AgreeSubst.split {Δ1 Δ2 Δ3 : Ctx Srt} {H3 σ σ' x} :
       AgreeSubst σ σ' x Δ1 H1 ∧
       AgreeSubst σ σ' x Δ2 H2 := by
   intro agr mrg; induction agr generalizing Δ1 Δ2
-  case nil =>
+  case nil H _ _ wr ct =>
     cases mrg
-    exists ∅, ∅; and_intros
-    . apply Contra.empty.merge_refl
-    . constructor
-    . constructor
+    exists H, H; and_intros
+    . apply ct.merge_refl
+    . constructor <;> assumption
+    . constructor <;> assumption
   case cons agr ih =>
     cases mrg
     case contra mrg =>
@@ -315,11 +314,11 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
         have nf2 : NF 0 (.lam m' s) := by simp; assumption
         have erm := Erased.lam_im lw tyA erm
         have im := (erm.nf_stack nf2).toImplicit
-        have e := agr.implicit_image im; subst e
-        have e := mrg.empty_inv; subst e
-        have agr : AgreeSubst (up σ) (up σ') (x + 1) (A :⟨.im, sA⟩ Δ) ∅ := by
+        have ct := agr.implicit_image im
+        have agr : AgreeSubst (up σ) (up σ') (x + 1) (A :⟨.im, sA⟩ Δ) H2 := by
           apply AgreeSubst.cons; assumption
         rw[<-agr.nf_subst nf1 (by simp)]
+        apply Resolve.contra_merge mrg ct
         apply Resolve.ptr lk
         constructor <;> assumption
       case ptr => exfalso; apply lk.not_wr_ptr wr
@@ -343,11 +342,11 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
         have nf2 : NF 0 (.lam m' s) := by simp; assumption
         have erm := Erased.lam_ex lw tyA erm
         have im := (erm.nf_stack nf2).toImplicit
-        have e := agr.implicit_image im; subst e
-        have e := mrg.empty_inv; subst e
-        have agr : AgreeSubst (up σ) (up σ') (x + 1) (A :⟨.im, sA⟩ Δ) ∅ := by
+        have ct := agr.implicit_image im
+        have agr : AgreeSubst (up σ) (up σ') (x + 1) (A :⟨.im, sA⟩ Δ) H2 := by
           apply AgreeSubst.cons; assumption
         rw[<-agr.nf_subst nf1 (by simp)]
+        apply Resolve.contra_merge mrg ct
         apply Resolve.ptr lk
         constructor <;> assumption
       case ptr => exfalso; apply lk.not_wr_ptr wr
@@ -396,9 +395,9 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
         rcases nf0 with ⟨nf1, nf2⟩
         have nf1' := rsm.nf_image wr1 nf1
         have im := (erm.nf_stack nf1').toImplicit
-        have e := agr.implicit_image im; subst e
-        have e := mrg.empty_inv; subst e
+        have ct := agr.implicit_image im
         rw[<-agr.nf_subst nf1' (by simp)]
+        apply Resolve.contra_merge mrg ct
         apply Resolve.ptr lk
         constructor <;> assumption
       case ptr => exfalso; apply lk.not_wr_ptr wr
@@ -424,10 +423,10 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
         have im1 := (erm.nf_stack nf1').toImplicit
         have im2 := (ern.nf_stack nf2').toImplicit
         have im := mrg0.implicit_image im1 im2
-        have e := agr.implicit_image im; subst e
-        have e := mrg.empty_inv; subst e
+        have ct := agr.implicit_image im
         rw[<-agr.nf_subst nf1' (by simp)]
         rw[<-agr.nf_subst nf2' (by simp)]
+        apply Resolve.contra_merge mrg ct
         apply Resolve.ptr lk
         constructor <;> assumption
       case ptr => exfalso; apply lk.not_wr_ptr wr
@@ -458,25 +457,29 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
       case prj => have vl := lk.wr_value wr; cases vl
       case ptr => exfalso; apply lk.not_wr_ptr wr
   case tt im =>
-    have e := agr.implicit_image im; subst e
-    have e := mrg.empty_inv; subst e
+    have ct2 := agr.implicit_image im
     asimp; cases rs
-    case tt => asimp; apply Resolve.tt; assumption
+    case tt ct1 =>
+      asimp; apply Resolve.tt (mrg.contra_image ct1 ct2)
     case ptr lk rsm =>
       cases rsm
       case tt =>
-        asimp; apply Resolve.ptr lk
+        asimp
+        apply Resolve.contra_merge mrg ct2
+        apply Resolve.ptr lk
         constructor; assumption
       case ptr => exfalso; apply lk.not_wr_ptr wr
   case ff im =>
-    have e := agr.implicit_image im; subst e
-    have e := mrg.empty_inv; subst e
+    have ct2 := agr.implicit_image im
     asimp; cases rs
-    case ff => asimp; apply Resolve.ff; assumption
+    case ff ct1 =>
+      asimp; apply Resolve.ff (mrg.contra_image ct1 ct2)
     case ptr lk rsm =>
       cases rsm
       case ff =>
-        asimp; apply Resolve.ptr lk
+        asimp
+        apply Resolve.contra_merge mrg ct2
+        apply Resolve.ptr lk
         constructor; assumption
       case ptr => exfalso; apply lk.not_wr_ptr wr
   case ite mrg0 tyA erm ern1 ern2 ihm ihn1 ihn2 =>
@@ -496,39 +499,16 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
   case rw ih => aesop
   case drop mrg0 lw0 h0 _ _ ihm ihn =>
     asimp; cases rs
-    case drop lw1 h1 mrg1 rsm rsn =>
+    case drop mrg1 rsm rsn =>
       have ⟨wr1, wr2⟩ := mrg1.split_wr wr
       have ⟨Ha, Hb, mrg2, agr1, agr2⟩ := agr.split mrg0
       have ⟨H1', H2', mrg3, mrg1', mrg2'⟩ := mrg.distr mrg1 mrg2
       replace ct0 := agr1.contra_image lw0
       replace ihm := ihm rsm wr1 mrg1' agr1
       replace ihn := ihn rsn wr2 mrg2' agr2
-      asimp; apply Resolve.drop mrg3 lw h0 ihm ihn
-    case ptr l _ _ h rsm =>
+      asimp; apply Resolve.drop mrg3 ihm ihn
+    case ptr lk rsm =>
       asimp; cases rsm
-      case drop => have wr := wr l; simp at wr
-      case ptr => have wr := wr l; simp at wr
+      case drop => have vl := lk.wr_value wr; cases vl
+      case ptr => exfalso; apply lk.not_wr_ptr wr
   case conv => aesop
-
-/-
-
-lemma Resolved.subst_im {H : Heap Srt} {m n n' A B s} :
-    A :: [] ;; A :⟨.im, s⟩ [] ;; H ⊢ m ▷ n ◁ n' : B ->
-    H ⊢ n'.[.null/] ▷ n.[.null/] := by
-  intro rsm
-  apply rsm.substitution HMerge.empty
-  apply AgreeSubst.intro_im
-  constructor
-
-lemma Resolved.subst_ex {H1 H2 H3 : Heap Srt} {m n n' t t' A B s} :
-    WR H2 -> HLower H2 s -> HMerge H1 H2 H3 ->
-    A :: [] ;; A :⟨.ex, s⟩ [] ;; H1 ⊢ m ▷ n ◁ n' : B ->
-    H2 ⊢ t' ▷ t ->
-    H3 ⊢ n'.[t'/] ▷ n.[t/] := by
-  intro wr lw mrg rsm rst
-  apply rsm.substitution mrg
-  apply AgreeSubst.intro_ex wr lw HMerge.empty.sym
-  . assumption
-  . constructor
-
--/

@@ -311,47 +311,40 @@ lemma Drop.wr_image {H1 H2 : Heap Srt} {m} :
   case ptr lk dp ih => have := lk.wr_image wr; aesop
 
 lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
-    Drop H3 m H4 -> H1 ⊢ m ▷ m' ->
-    HMerge H1 H2 H3 -> Weaken H1 ->
-    ∃ H0, HMerge H0 H2 H4 ∧ Weaken H0 ∧ Contra H0 := by
-  intro dp rs mrg wk; induction rs generalizing H2 H3 H4
+    Drop H3 m H4 -> H1 ⊢ m ▷ m' -> HMerge H1 H2 H3 ->
+    ∃ H0, HMerge H0 H2 H4 ∧ Contra H0 := by
+  intro dp rs mrg; induction rs generalizing H2 H3 H4
   case var => cases dp; aesop
   case lam => cases dp; aesop
   case app mrg0 rsm rsn ihm ihn =>
     cases dp; case app dp1 dp2 =>
     have ⟨H1x, mrg1, mrg2⟩ := mrg.split mrg0.sym
-    have ⟨wk1, wk2⟩ := mrg0.split_weaken wk
-    have ⟨H2x, mrg3, wk3, ct3⟩ := ihm dp1 mrg2.sym wk1
+    have ⟨H2x, mrg3, ct3⟩ := ihm dp1 mrg2.sym
     have ⟨H3x, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
-    have ⟨H4x, mrg6, wk4, ct4⟩ := ihn dp2 mrg5.sym wk2
+    have ⟨H4x, mrg6, ct4⟩ := ihn dp2 mrg5.sym
     have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
     exists H5x; and_intros
     . assumption
-    . apply mrg7.weaken_image wk3 wk4
     . apply mrg7.contra_image ct3 ct4
   case tup mrg0 rsm rsn ihm ihn =>
     cases dp; case tup dp1 dp2 =>
     have ⟨H1x, mrg1, mrg2⟩ := mrg.split mrg0.sym
-    have ⟨wk1, wk2⟩ := mrg0.split_weaken wk
-    have ⟨H2x, mrg3, wk3, ct3⟩ := ihm dp1 mrg2.sym wk1
+    have ⟨H2x, mrg3, ct3⟩ := ihm dp1 mrg2.sym
     have ⟨H3x, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
-    have ⟨H4x, mrg6, wk4, ct4⟩ := ihn dp2 mrg5.sym wk2
+    have ⟨H4x, mrg6, ct4⟩ := ihn dp2 mrg5.sym
     have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
     exists H5x; and_intros
     . assumption
-    . apply mrg7.weaken_image wk3 wk4
     . apply mrg7.contra_image ct3 ct4
   case prj mrg0 rsm rsn ihm ihn =>
     cases dp; case prj dp1 dp2 =>
     have ⟨H1x, mrg1, mrg2⟩ := mrg.split mrg0.sym
-    have ⟨wk1, wk2⟩ := mrg0.split_weaken wk
-    have ⟨H2x, mrg3, wk3, ct3⟩ := ihm dp1 mrg2.sym wk1
+    have ⟨H2x, mrg3, ct3⟩ := ihm dp1 mrg2.sym
     have ⟨H3x, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
-    have ⟨H4x, mrg6, wk4, ct4⟩ := ihn dp2 mrg5.sym wk2
+    have ⟨H4x, mrg6, ct4⟩ := ihn dp2 mrg5.sym
     have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
     exists H5x; and_intros
     . assumption
-    . apply mrg7.weaken_image wk3 wk4
     . apply mrg7.contra_image ct3 ct4
   case tt => cases dp; aesop
   case ff => cases dp; aesop
@@ -359,29 +352,25 @@ lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
     cases dp; case ite dp1 dp2 dp3 =>
     have ⟨H1x, mrg1, mrg2⟩ := mrg.split mrg0.sym
     have ⟨H1x, mrg1, mrg2⟩ := mrg.split mrg0.sym
-    have ⟨wk1, wk2⟩ := mrg0.split_weaken wk
-    have ⟨H2x, mrg3, wk3, ct3⟩ := ihm dp1 mrg2.sym wk1
+    have ⟨H2x, mrg3, ct3⟩ := ihm dp1 mrg2.sym
     have ⟨H3x, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
-    have ⟨H4x, mrg6, wk4, ct4⟩ := ihn1 dp2 mrg5.sym wk2
+    have ⟨H4x, mrg6, ct4⟩ := ihn1 dp2 mrg5.sym
     have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
     exists H5x; and_intros
     . assumption
-    . apply mrg7.weaken_image wk3 wk4
     . apply mrg7.contra_image ct3 ct4
-  case drop mrg0 _ rsm rsn ihm ihn =>
+  case drop mrg0 rsm rsn ihm ihn =>
     cases dp; case drop dp1 dp2 =>
     have ⟨H1x, mrg1, mrg2⟩ := mrg.split mrg0.sym
-    have ⟨wk1, wk2⟩ := mrg0.split_weaken wk
-    have ⟨H2x, mrg3, wk3, ct3⟩ := ihm dp1 mrg2.sym wk1
+    have ⟨H2x, mrg3, ct3⟩ := ihm dp1 mrg2.sym
     have ⟨H3x, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
-    have ⟨H4x, mrg6, wk4, ct4⟩ := ihn dp2 mrg5.sym wk2
+    have ⟨H4x, mrg6, ct4⟩ := ihn dp2 mrg5.sym
     have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
     exists H5x; and_intros
     . assumption
-    . apply mrg7.weaken_image wk3 wk4
     . apply mrg7.contra_image ct3 ct4
   case null H1 _ => cases dp; aesop
   case ptr lk1 rs ih =>
     cases dp; case ptr lk2 dp =>
-    have ⟨e, mrg1⟩ := HLookup.collision mrg lk2 lk1; subst e
-    have lw1 := lk1.weaken_image wk; aesop
+    have ⟨e, mrg1⟩ := HLookup.collision mrg lk2 lk1
+    subst e; aesop

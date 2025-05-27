@@ -180,7 +180,6 @@ inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
 
   | drop {H1 H2 H3 m m' n n'} :
     HMerge H1 H2 H3 ->
-    Weaken H1 ->
     Resolve H1 m m' ->
     Resolve H2 n n' ->
     Resolve H3 (.drop m n) (.drop m' n')
@@ -564,7 +563,6 @@ lemma Erased.resolve_refl {H : Heap Srt} {Γ Δ m n A} :
     . apply ct.merge_refl
     . assumption
     . assumption
-    . assumption
   case conv => aesop
 
 lemma Erased.resolve_id {Γ Δ} {H : Heap Srt} {x y z A} :
@@ -643,7 +641,7 @@ lemma Resolve.nf_image {H : Heap Srt} {m m' i} :
     have ⟨nfm, nfn⟩ := nf
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     aesop
-  case drop mrg wk erm ern ihm ihn =>
+  case drop mrg erm ern ihm ihn =>
     have ⟨nfm, nfn⟩ := nf
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     aesop
@@ -673,7 +671,7 @@ lemma Resolve.nf_preimage {H : Heap Srt} {m m' i} :
     have ⟨nfm, nfn⟩ := nf
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     aesop
-  case drop mrg wk erm ern ihm ihn =>
+  case drop mrg erm ern ihm ihn =>
     have ⟨nfm, nfn⟩ := nf
     have ⟨wr1, wr2⟩ := mrg.split_wr wr
     aesop
@@ -722,7 +720,7 @@ lemma Resolve.contra_merge {H1 H2 H3 : Heap Srt} {m m'} :
     replace ihn1 := ihn1 mrgb ct2
     replace ihn2 := ihn2 mrgb ct2
     constructor <;> assumption
-  case drop Ha Hb H1 _ _ _ _ mrg1 wk rsm rsn ihm ihn =>
+  case drop Ha Hb H1 _ _ _ _ mrg1 rsm rsn ihm ihn =>
     have ⟨Hc, mrg2, mrg3⟩ := mrg.split mrg1.sym
     replace ihn := ihn mrg2 ct2
     apply Resolve.drop mrg3.sym <;> assumption
