@@ -96,3 +96,9 @@ lemma Resolved.preservation2 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           constructor
     case ptr => cases st
   all_goals sorry
+
+lemma Resolved.preservation2' {H1 H1' : Heap Srt} {a b c c' A} :
+    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step2 (H1, c) (H1', c') ->
+    ∃ a' b',
+      [] ;; [] ;; H1' ⊢ a' ▷ b' ◁ c' : A ∧ a ~>>1 a' ∧ Erasure.Step1 b b' := by
+  sorry

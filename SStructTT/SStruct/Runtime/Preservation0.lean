@@ -251,3 +251,8 @@ lemma Resolved.preservation0' {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     . assumption
     . assumption
     . apply Star.SE rd1 st2
+
+lemma Resolved.preservation0X {H1 H1' : Heap Srt} {a b c c' A} :
+    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Red0 (H1, c) (H1', c') ->
+    ∃ b', [] ;; [] ;; H1' ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Red0 b b' := by
+  sorry

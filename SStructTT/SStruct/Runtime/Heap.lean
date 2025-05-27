@@ -263,7 +263,7 @@ def Finmap.lookup_filter {α : Type*} {β : α → Type*}  [DecidableEq α]
     f.lookup l = some b -> (p ⟨l, b⟩ <-> (Finmap.filter f p).lookup l = b) := by
   sorry
 
-lemma HMerge.exists_self_contra {H : Heap Srt} :
+lemma HMerge.exists_self_contra (H : Heap Srt) :
     ∃ H0, HMerge H H0 H ∧ Contra H0 := by
   -- let H1: Heap Srt := Finmap.filter H (fun ⟨_, m, s⟩ => s ∈ ord.contra_set)
   sorry
