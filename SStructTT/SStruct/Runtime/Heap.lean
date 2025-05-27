@@ -71,85 +71,147 @@ lemma Heap.insert_id {H : Heap Srt} {l t} :
 
 variable [ord : SrtOrder Srt]
 
-def HLower (H : Heap Srt) (s0 : Srt) : Prop :=
+def Weaken (H : Heap Srt) : Prop :=
   ∀ l,
     match H.lookup l with
-    | some (_, s) => s ∈ InterSet s0
+    | some (_, s) => s ∈ ord.weaken_set
     | none => True
 
-lemma HLower.empty {s : Srt} : HLower ∅ s := by
+def Contra (H : Heap Srt) : Prop :=
+  ∀ l,
+    match H.lookup l with
+    | some (_, s) => s ∈ ord.contra_set
+    | none => True
+
+-- def HLower (H : Heap Srt) (s0 : Srt) : Prop :=
+--   ∀ l,
+--     match H.lookup l with
+--     | some (_, s) => s ∈ InterSet s0
+--     | none => True
+
+-- lemma HLower.empty {s : Srt} : HLower ∅ s := by
+--   intro l; simp
+
+lemma Weaken.empty : Weaken (∅ : Heap Srt) := by
   intro l; simp
 
-lemma HLower.insert {H : Heap Srt} {l v s s'} :
-    HLower H s -> s' ∈ InterSet s -> HLower (H.insert l (v, s')) s := by
+lemma Contra.empty : Contra (∅ : Heap Srt) := by
+  intro l; simp
+
+-- lemma HLower.insert {H : Heap Srt} {l v s s'} :
+--     HLower H s -> s' ∈ InterSet s -> HLower (H.insert l (v, s')) s := by
+--   intro lw h x
+--   cases x.decEq l with
+--   | isTrue => subst_vars; simp[h]
+--   | isFalse ne => simp[ne]; apply lw
+
+lemma Weaken.insert {H : Heap Srt} {l v s} :
+    Weaken H -> s ∈ ord.weaken_set -> Weaken (H.insert l (v, s)) := by
   intro lw h x
   cases x.decEq l with
   | isTrue => subst_vars; simp[h]
   | isFalse ne => simp[ne]; apply lw
 
-lemma HLower.invert {H : Heap Srt} {l v s s'} :
-    HLower (H.insert l (v, s')) s -> s' ∈ InterSet s := by
+lemma Contra.insert {H : Heap Srt} {l v s} :
+    Contra H -> s ∈ ord.contra_set -> Contra (H.insert l (v, s)) := by
+  intro lw h x
+  cases x.decEq l with
+  | isTrue => subst_vars; simp[h]
+  | isFalse ne => simp[ne]; apply lw
+
+-- lemma HLower.invert {H : Heap Srt} {l v s s'} :
+--     HLower (H.insert l (v, s')) s -> s' ∈ InterSet s := by
+--   intro lw
+--   replace lw := lw l
+--   simp at lw; assumption
+
+lemma Weaken.invert {H : Heap Srt} {l v s} :
+    Weaken (H.insert l (v, s)) -> s ∈ ord.weaken_set := by
   intro lw
   replace lw := lw l
   simp at lw; assumption
 
-lemma HLower.cover {H : Heap Srt} {s1 s2 : Srt} :
-    HLower H s1 -> s1 ∈ InterSet s2 -> HLower H s2 := by
-  intro lw h x
-  replace lw := lw x
-  split at lw <;> try simp
-  apply InterSet.trans h lw
+lemma Contra.invert {H : Heap Srt} {l v s} :
+    Contra (H.insert l (v, s)) -> s ∈ ord.contra_set := by
+  intro lw
+  replace lw := lw l
+  simp at lw; assumption
 
-lemma HLower.weaken {H : Heap Srt} {s1 s2 : Srt} :
-    HLower H s1 -> s1 ≤ s2 -> HLower H s2 := by
-  intro lw h
-  apply lw.cover (InterSet.lower_mem h)
+-- lemma HLower.cover {H : Heap Srt} {s1 s2 : Srt} :
+--     HLower H s1 -> s1 ∈ InterSet s2 -> HLower H s2 := by
+--   intro lw h x
+--   replace lw := lw x
+--   split at lw <;> try simp
+--   apply InterSet.trans h lw
 
-lemma HLower.insert_lower {H} {m : Tm Srt} {l s1 s2} :
-    HLower H s2 -> s1 ≤ s2 ->  HLower (H.insert l (m, s1)) s2 := by
-  intro h lw x
-  split <;> try simp
-  case h_1 opt m1 s3 e =>
-    cases x.decEq l with
-    | isTrue =>
-      subst_vars
-      rw[Finmap.lookup_insert] at e; cases e
-      apply InterSet.lower_mem lw
-    | isFalse ne =>
-      rw[Finmap.lookup_insert_of_ne _ ne] at e
-      replace h := h x
-      simp_rw[e] at h
-      assumption
+-- lemma HLower.weaken {H : Heap Srt} {s1 s2 : Srt} :
+--     HLower H s1 -> s1 ≤ s2 -> HLower H s2 := by
+--   intro lw h
+--   apply lw.cover (InterSet.lower_mem h)
 
-lemma HLower.erase_lower {H : Heap Srt} {s} l :
-    HLower H s -> HLower (H.erase l) s := by
-  intro lw x
+-- lemma HLower.insert_lower {H} {m : Tm Srt} {l s1 s2} :
+--     HLower H s2 -> s1 ≤ s2 ->  HLower (H.insert l (m, s1)) s2 := by
+--   intro h lw x
+--   split <;> try simp
+--   case h_1 opt m1 s3 e =>
+--     cases x.decEq l with
+--     | isTrue =>
+--       subst_vars
+--       rw[Finmap.lookup_insert] at e; cases e
+--       apply InterSet.lower_mem lw
+--     | isFalse ne =>
+--       rw[Finmap.lookup_insert_of_ne _ ne] at e
+--       replace h := h x
+--       simp_rw[e] at h
+--       assumption
+
+-- lemma HLower.erase_lower {H : Heap Srt} {s} l :
+--     HLower H s -> HLower (H.erase l) s := by
+--   intro lw x
+--   cases x.decEq l with
+--   | isTrue => aesop
+--   | isFalse ne =>
+--     rw[Finmap.lookup_erase_ne ne]
+--     apply lw
+
+lemma Weaken.erase {H : Heap Srt} l :
+    Weaken H -> Weaken (H.erase l) := by
+  intro ct x
   cases x.decEq l with
   | isTrue => aesop
   | isFalse ne =>
     rw[Finmap.lookup_erase_ne ne]
-    apply lw
+    apply ct
 
-lemma HLower.union {H1 H2 : Heap Srt} {s1 s2 : Srt} :
-    HLower H1 s1 ->
-    HLower H2 s2 ->
-    s1 ≤ s2 ->
-    HLower (H1 ∪ H2) s2 := by
-  intro lw1 lw2 lw x
-  split <;> try simp
-  case h_1 opt m s h =>
-    rw[Finmap.mem_lookup_union'] at h
-    match h with
-    | .inl h =>
-      simp at h
-      replace lw1 := lw1 x
-      simp_rw[h] at lw1
-      apply InterSet.lower_subset lw lw1
-    | .inr ⟨_, h⟩ =>
-      simp at h
-      replace lw2 := lw2 x
-      simp_rw[h] at lw2
-      assumption
+lemma Contra.erase {H : Heap Srt} l :
+    Contra H -> Contra (H.erase l) := by
+  intro ct x
+  cases x.decEq l with
+  | isTrue => aesop
+  | isFalse ne =>
+    rw[Finmap.lookup_erase_ne ne]
+    apply ct
+
+-- lemma HLower.union {H1 H2 : Heap Srt} {s1 s2 : Srt} :
+--     HLower H1 s1 ->
+--     HLower H2 s2 ->
+--     s1 ≤ s2 ->
+--     HLower (H1 ∪ H2) s2 := by
+--   intro lw1 lw2 lw x
+--   split <;> try simp
+--   case h_1 opt m s h =>
+--     rw[Finmap.mem_lookup_union'] at h
+--     match h with
+--     | .inl h =>
+--       simp at h
+--       replace lw1 := lw1 x
+--       simp_rw[h] at lw1
+--       apply InterSet.lower_subset lw lw1
+--     | .inr ⟨_, h⟩ =>
+--       simp at h
+--       replace lw2 := lw2 x
+--       simp_rw[h] at lw2
+--       assumption
 
 def HMerge (H1 H2 H3 : Heap Srt) : Prop :=
   ∀ l,
@@ -159,20 +221,31 @@ def HMerge (H1 H2 H3 : Heap Srt) : Prop :=
       s1 = s2 ∧ s2 = s3 ∧
       m1 = m2 ∧ m2 = m3
     | some (m1, s1), none, some (m3, s3) =>
+      s1 ∉ ord.contra_set ∧
       m1 = m3 ∧ s1 = s3
     | none, some (m2, s2), some (m3, s3) =>
+      s2 ∉ ord.contra_set ∧
       m2 = m3 ∧ s2 = s3
     | none, none, none => True
     | _, _, _ => False
 
-lemma HLower.merge_refl {H : Heap Srt} {s} :
-    HLower H s -> s ∈ ord.contra_set -> HMerge H H H := by
-  intro lw1 h x
+-- lemma HLower.merge_refl {H : Heap Srt} {s} :
+--     HLower H s -> s ∈ ord.contra_set -> HMerge H H H := by
+--   intro lw1 h x
+--   replace lw1 := lw1 x
+--   split at lw1
+--   case h_1 opt m s e =>
+--     rw[e]; simp
+--     apply InterSet.contra lw1 h
+--   case h_2 => aesop
+
+lemma Contra.merge_refl {H : Heap Srt} :
+    Contra H -> HMerge H H H := by
+  intro lw1 x
   replace lw1 := lw1 x
   split at lw1
   case h_1 opt m s e =>
-    rw[e]; simp
-    apply InterSet.contra lw1 h
+    rw[e]; simp; assumption
   case h_2 => aesop
 
 lemma HMerge.sym {H1 H2 H3 : Heap Srt} :
@@ -181,14 +254,14 @@ lemma HMerge.sym {H1 H2 H3 : Heap Srt} :
   replace mrg := mrg x
   split at mrg <;> aesop
 
-lemma HMerge.empty {H : Heap Srt} : HMerge H ∅ H := by
-  intro l; split <;> try simp_all
-  case h_5 h1 h2 =>
-    revert h1 h2
-    generalize Finmap.lookup l H = opt
-    cases opt
-    . simp
-    . aesop
+-- lemma HMerge.empty {H : Heap Srt} : HMerge H ∅ H := by
+--   intro l; split <;> try simp_all
+--   case h_5 h1 h2 =>
+--     revert h1 h2
+--     generalize Finmap.lookup l H = opt
+--     cases opt
+--     . simp
+--     . aesop
 
 lemma HMerge.empty_inv {H1 H2 : Heap Srt} : HMerge H1 ∅ H2 -> H1 = H2 := by
   intro mrg
@@ -197,8 +270,29 @@ lemma HMerge.empty_inv {H1 H2 : Heap Srt} : HMerge H1 ∅ H2 -> H1 = H2 := by
   replace mrg := mrg l; split at mrg
   all_goals aesop
 
-lemma HMerge.lower_image {H1 H2 H3 : Heap Srt} {s} :
-    HMerge H1 H2 H3 -> HLower H1 s -> HLower H2 s -> HLower H3 s := by
+-- lemma HMerge.lower_image {H1 H2 H3 : Heap Srt} {s} :
+--     HMerge H1 H2 H3 -> HLower H1 s -> HLower H2 s -> HLower H3 s := by
+--   intro mrg lw1 lw2 x
+--   split <;> try simp
+--   case h_1 opt m s h =>
+--     replace mrg := mrg x
+--     simp_rw[h] at mrg
+--     split at mrg <;> try trivial
+--     case h_1 h1 h2 e =>
+--       cases e; have ⟨_, e1, e2, e3, e4⟩ := mrg; subst_vars
+--       replace lw1 := lw1 x; simp_rw[h1] at lw1
+--       assumption
+--     case h_2 h1 h2 e =>
+--       cases e; have ⟨_, e1, e2⟩ := mrg; subst_vars
+--       replace lw1 := lw1 x; simp_rw[h1] at lw1
+--       assumption
+--     case h_3 h1 h2 e =>
+--       cases e; have ⟨_, e1, e2⟩ := mrg; subst_vars
+--       replace lw2 := lw2 x; simp_rw[h2] at lw2
+--       assumption
+
+lemma HMerge.weaken_image {H1 H2 H3 : Heap Srt} :
+    HMerge H1 H2 H3 -> Weaken H1 -> Weaken H2 -> Weaken H3 := by
   intro mrg lw1 lw2 x
   split <;> try simp
   case h_1 opt m s h =>
@@ -210,16 +304,57 @@ lemma HMerge.lower_image {H1 H2 H3 : Heap Srt} {s} :
       replace lw1 := lw1 x; simp_rw[h1] at lw1
       assumption
     case h_2 h1 h2 e =>
-      cases e; have ⟨e1, e2⟩ := mrg; subst_vars
+      cases e; have ⟨_, e1, e2⟩ := mrg; subst_vars
       replace lw1 := lw1 x; simp_rw[h1] at lw1
       assumption
     case h_3 h1 h2 e =>
-      cases e; have ⟨e1, e2⟩ := mrg; subst_vars
+      cases e; have ⟨_, e1, e2⟩ := mrg; subst_vars
       replace lw2 := lw2 x; simp_rw[h2] at lw2
       assumption
 
-lemma HMerge.split_lower' {H1 H2 H3 : Heap Srt} {s} :
-    HMerge H1 H2 H3 -> HLower H3 s -> HLower H1 s := by
+lemma HMerge.contra_image {H1 H2 H3 : Heap Srt} :
+    HMerge H1 H2 H3 -> Contra H1 -> Contra H2 -> Contra H3 := by
+  intro mrg lw1 lw2 x
+  split <;> try simp
+  case h_1 opt m s h =>
+    replace mrg := mrg x
+    simp_rw[h] at mrg
+    split at mrg <;> try trivial
+    case h_1 h1 h2 e =>
+      cases e; have ⟨_, e1, e2, e3, e4⟩ := mrg; subst_vars
+      replace lw1 := lw1 x; simp_rw[h1] at lw1
+      assumption
+    case h_2 h1 h2 e =>
+      cases e; have ⟨_, e1, e2⟩ := mrg; subst_vars
+      replace lw1 := lw1 x; simp_rw[h1] at lw1
+      assumption
+    case h_3 h1 h2 e =>
+      cases e; have ⟨_, e1, e2⟩ := mrg; subst_vars
+      replace lw2 := lw2 x; simp_rw[h2] at lw2
+      assumption
+
+lemma HMerge.weaken_hyp {H1 H2 H3 : Heap Srt} {s} :
+    HMerge H1 H2 H3 ->
+    (s ∈ ord.weaken_set -> Weaken H1) ->
+    (s ∈ ord.weaken_set -> Weaken H2) ->
+    (s ∈ ord.weaken_set -> Weaken H3) := by
+  intro mrg h1 h2 h
+  replace h1 := h1 h
+  replace h2 := h2 h
+  apply mrg.weaken_image h1 h2
+
+lemma HMerge.contra_hyp {H1 H2 H3 : Heap Srt} {s} :
+    HMerge H1 H2 H3 ->
+    (s ∈ ord.contra_set -> Contra H1) ->
+    (s ∈ ord.contra_set -> Contra H2) ->
+    (s ∈ ord.contra_set -> Contra H3) := by
+  intro mrg h1 h2 h
+  replace h1 := h1 h
+  replace h2 := h2 h
+  apply mrg.contra_image h1 h2
+
+lemma HMerge.split_weaken' {H1 H2 H3 : Heap Srt} :
+    HMerge H1 H2 H3 -> Weaken H3 -> Weaken H1 := by
   intro mrg wr l
   replace mrg := mrg l; split at mrg <;> try (solve|aesop)
   case h_1 h1 h2 h3 =>
@@ -229,12 +364,31 @@ lemma HMerge.split_lower' {H1 H2 H3 : Heap Srt} {s} :
     replace wr := wr l
     rw[h3] at wr; simp_all
 
-lemma HMerge.split_lower {H1 H2 H3 : Heap Srt} {s} :
-    HMerge H1 H2 H3 -> HLower H3 s -> HLower H1 s ∧ HLower H2 s := by
+lemma HMerge.split_weaken {H1 H2 H3 : Heap Srt} :
+    HMerge H1 H2 H3 -> Weaken H3 -> Weaken H1 ∧ Weaken H2 := by
   intro mrg lw
-  have lw1 := mrg.split_lower' lw
-  have lw2 := mrg.sym.split_lower' lw
+  have lw1 := mrg.split_weaken' lw
+  have lw2 := mrg.sym.split_weaken' lw
   aesop
+
+lemma HMerge.split_contra' {H1 H2 H3 : Heap Srt} :
+    HMerge H1 H2 H3 -> Contra H3 -> Contra H1 := by
+  intro mrg wr l
+  replace mrg := mrg l; split at mrg <;> try (solve|aesop)
+  -- case h_1 h1 h2 h3 =>
+  --   replace wr := wr l
+  --   rw[h3] at wr; simp_all
+  case h_2 h1 h2 h3 =>
+    replace wr := wr l
+    rw[h3] at wr; simp_all
+
+lemma HMerge.split_contra {H1 H2 H3 : Heap Srt} :
+    HMerge H1 H2 H3 -> Contra H3 -> Contra H1 ∧ Contra H2 := by
+  intro mrg lw
+  have lw1 := mrg.split_contra' lw
+  have lw2 := mrg.sym.split_contra' lw
+  aesop
+
 
 lemma HMerge.split_none {H1 H2 H3 : Heap Srt} {l} :
     HMerge H1 H2 H3 -> l ∉ H3.keys -> l ∉ H1.keys ∧ l ∉ H2.keys := by
@@ -289,26 +443,37 @@ lemma HMerge.insert_lookup {H1 H2 H3 : Heap Srt} {m l s} :
   split at mrg <;> simp_all
 
 lemma HMerge.insert_left {H1 H2 H3 : Heap Srt} l m s :
-    HMerge H1 H2 H3 -> l ∉ H3.keys ->
+    HMerge H1 H2 H3 -> l ∉ H3.keys -> s ∉ ord.contra_set ->
     HMerge (H1.insert l ⟨m, s⟩) H2 (H3.insert l ⟨m, s⟩) := by
-  intro mrg h x
-  have ⟨h1, h2⟩ := mrg.split_none h
-  rw [Finmap.mem_keys,<-Finmap.lookup_eq_none] at h1
-  rw [Finmap.mem_keys,<-Finmap.lookup_eq_none] at h2
+  intro mrg h1 h2 x
+  have ⟨h3, h4⟩ := mrg.split_none h1
+  rw [Finmap.mem_keys,<-Finmap.lookup_eq_none] at h3
+  rw [Finmap.mem_keys,<-Finmap.lookup_eq_none] at h4
   cases x.decEq l with
-  | isTrue => subst_vars; simp[Finmap.lookup_insert,h2]
+  | isTrue =>
+    subst_vars; simp[Finmap.lookup_insert,h4]
+    assumption
   | isFalse ne =>
     simp[Finmap.lookup_insert_of_ne _ ne]
     apply mrg
 
-lemma HLower.split_lower {H3 : Heap Srt} {s} :
-    HLower H3 s -> s ∈ ord.contra_set ->
-    ∃ H1 H2, HLower H1 s ∧ HLower H2 s ∧ HMerge H1 H2 H3 := by
-  intro lw h
+-- lemma HLower.split_lower {H3 : Heap Srt} {s} :
+--     HLower H3 s -> s ∈ ord.contra_set ->
+--     ∃ H1 H2, HLower H1 s ∧ HLower H2 s ∧ HMerge H1 H2 H3 := by
+--   intro lw h
+--   exists H3, H3; and_intros
+--   . assumption
+--   . assumption
+--   . apply lw.merge_refl h
+
+lemma HLower.split_contra {H3 : Heap Srt} :
+    Contra H3 ->
+    ∃ H1 H2, Contra H1 ∧ Contra H2 ∧ HMerge H1 H2 H3 := by
+  intro lw
   exists H3, H3; and_intros
   . assumption
   . assumption
-  . apply lw.merge_refl h
+  . apply lw.merge_refl
 
 lemma HMerge.lookup_collision {H1 H2 H3 : Heap Srt} {l} :
     HMerge H1 H2 H3 -> l ∈ H1.keys -> H1.lookup l = H3.lookup l := by
@@ -357,54 +522,57 @@ lemma HMerge.not_contra_inv {H1 H2 H3 : Heap Srt} {m s} l :
   . aesop
   . rw[Finmap.mem_iff]; aesop
 
-lemma HMerge.shift {H1 H2 H3 : Heap Srt} {l t} :
-    HMerge (Finmap.insert l t H1) H2 H3 -> l ∉ H1 ->
-    HMerge H1 (Finmap.insert l t H2) H3 := by
-  intro mrg h x
+lemma HMerge.shift {H1 H2 H3 : Heap Srt} {l m s} :
+    HMerge (Finmap.insert l (m, s) H1) H2 H3 ->
+    l ∉ H1 -> s ∉ ord.contra_set ->
+    HMerge H1 (Finmap.insert l (m, s) H2) H3 := by
+  intro mrg h1 h2 x
   replace mrg := mrg x
   if dec: x = l then
     subst_vars
     simp_all
-    rw[<-Finmap.lookup_eq_none] at h
-    rw[h]; revert mrg
+    rw[<-Finmap.lookup_eq_none] at h1
+    rw[h1]; revert mrg
     generalize e: Finmap.lookup x H3 = opt
     split <;> try simp_all
+    intros; subst_vars
+    assumption
   else simp_all
 
-lemma HMerge.compose {H1 H2 H3 Ha Hb Hx Hy : Heap Srt} {s} :
-    HLower Ha s -> s ∈ ord.contra_set ->
-    HMerge Ha Hb H3 ->
-    HMerge Hx Ha H1 ->
-    HMerge Hy Ha H2 ->
-    HMerge Hx Hy Hb ->
-    HMerge H1 H2 H3 := by
-  intro lw h mrg1 mrg2 mrg3 mrg4 x
-  replace lw := lw x
-  replace mrg1 := mrg1 x
-  replace mrg2 := mrg2 x
-  replace mrg3 := mrg3 x
-  replace mrg4 := mrg4 x
-  split at mrg1 <;> simp_all
-  case h_1 =>
-    split at mrg2 <;> simp_all
-    case h_1 => split at mrg3 <;> simp_all; aesop
-    case h_3 => split at mrg3 <;> simp_all; aesop
-  case h_2 =>
-    split at mrg2 <;> simp_all
-    case h_3 =>
-      split at mrg3 <;> simp_all
-      apply InterSet.contra lw h
-  case h_3 =>
-    split at mrg2 <;> simp_all
-    case h_2 =>
-      split at mrg3 <;> simp_all
-      case h_2 =>
-        have ⟨h, _, _, _⟩ := mrg4; subst_vars
-        assumption
-    case h_4 => split at mrg3 <;> simp_all
-  case h_4 =>
-    split at mrg2 <;> simp_all
-    split at mrg3 <;> simp_all
+-- lemma HMerge.compose {H1 H2 H3 Ha Hb Hx Hy : Heap Srt} {s} :
+--     HLower Ha s -> s ∈ ord.contra_set ->
+--     HMerge Ha Hb H3 ->
+--     HMerge Hx Ha H1 ->
+--     HMerge Hy Ha H2 ->
+--     HMerge Hx Hy Hb ->
+--     HMerge H1 H2 H3 := by
+--   intro lw h mrg1 mrg2 mrg3 mrg4 x
+--   replace lw := lw x
+--   replace mrg1 := mrg1 x
+--   replace mrg2 := mrg2 x
+--   replace mrg3 := mrg3 x
+--   replace mrg4 := mrg4 x
+--   split at mrg1 <;> simp_all
+--   case h_1 =>
+--     split at mrg2 <;> simp_all
+--     case h_1 => split at mrg3 <;> simp_all; aesop
+--     case h_3 => split at mrg3 <;> simp_all; aesop
+--   case h_2 =>
+--     split at mrg2 <;> simp_all
+--     case h_3 =>
+--       split at mrg3 <;> simp_all
+--       apply InterSet.contra lw h
+--   case h_3 =>
+--     split at mrg2 <;> simp_all
+--     case h_2 =>
+--       split at mrg3 <;> simp_all
+--       case h_2 =>
+--         have ⟨h, _, _, _⟩ := mrg4; subst_vars
+--         assumption
+--     case h_4 => split at mrg3 <;> simp_all
+--   case h_4 =>
+--     split at mrg2 <;> simp_all
+--     split at mrg3 <;> simp_all
 
 lemma HMerge.split {H1 H2 H3 Ha Hb : Heap Srt} :
     HMerge H1 H2 H3 ->
@@ -428,16 +596,16 @@ lemma HMerge.split {H1 H2 H3 Ha Hb : Heap Srt} :
         rw[Finmap.lookup_eq_none] at ne
         have h := Finmap.mem_of_lookup_eq_some e
         rw[Finmap.lookup_union_right ne]
-        rw[e]; simp
+        rw[e]; simp; aesop
     . split at mrg2 <;> simp_all
       case h_1 e _ _ =>
         have h := Finmap.mem_of_lookup_eq_some e
         rw[Finmap.lookup_union_left h]
-        rw[e]; simp
+        rw[e]; simp; aesop
       case h_2 e _ _ =>
         have h := Finmap.mem_of_lookup_eq_some e
         rw[Finmap.lookup_union_left h]
-        rw[e]; simp
+        rw[e]; simp; aesop
       case h_3 e _ ne _ _ =>
         rw[Finmap.lookup_eq_none] at ne
         rw[Finmap.lookup_union_right ne]
@@ -446,7 +614,7 @@ lemma HMerge.split {H1 H2 H3 Ha Hb : Heap Srt} :
       case h_4 e _ _ _ _ ne _ =>
         rw[Finmap.lookup_eq_none] at ne
         rw[Finmap.lookup_union_right ne]
-        rw[e]; simp
+        rw[e]; simp; aesop
     . split at mrg2 <;> simp_all
       case h_4 e _ _ _ _ ne _ =>
         rw[Finmap.lookup_eq_none] at ne
@@ -464,7 +632,7 @@ lemma HMerge.split {H1 H2 H3 Ha Hb : Heap Srt} :
       case h_2 e _ _ =>
         have h := Finmap.mem_of_lookup_eq_some e
         rw[Finmap.lookup_union_left h]
-        rw[e]; simp
+        rw[e]; simp; aesop
       case h_3 e _ ne _ _ =>
         rw[Finmap.lookup_eq_none] at ne
         have h := Finmap.mem_of_lookup_eq_some e
@@ -478,16 +646,16 @@ lemma HMerge.split {H1 H2 H3 Ha Hb : Heap Srt} :
       case h_2 e _ _ =>
         have h := Finmap.mem_of_lookup_eq_some e
         rw[Finmap.lookup_union_left h]
-        rw[e]; simp
+        rw[e]; simp; aesop
       case h_3 e _ ne _ _ =>
         rw[Finmap.lookup_eq_none] at ne
         rw[Finmap.lookup_union_right ne]
-        rw[e]; simp
+        rw[e]; simp; aesop
     . split at mrg2 <;> simp_all
       case h_4 e _ _ _ _ ne _ =>
         rw[Finmap.lookup_eq_none] at ne
         rw[Finmap.lookup_union_right ne]
-        rw[e]; simp
+        rw[e]; simp; aesop
     . split at mrg2 <;> simp_all
       case h_4 e _ _ _ _ ne _ =>
         rw[Finmap.lookup_eq_none] at ne
