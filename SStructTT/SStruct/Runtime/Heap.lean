@@ -253,39 +253,6 @@ lemma HMerge.sym {H1 H2 H3 : Heap Srt} :
   replace mrg := mrg x
   split at mrg <;> aesop
 
-def Finmap.filter {α : Type*} {β : α → Type*} (f : Finmap β)
-    (p : Sigma β → Prop) [DecidablePred p] : Finmap β where
-  entries := f.entries.filter p
-  nodupKeys := sorry
-
-def Finmap.lookup_filter {α : Type*} {β : α → Type*}  [DecidableEq α]
-    {f : Finmap β} {p : Sigma β → Prop} [DecidablePred p] {l b}  :
-    f.lookup l = some b -> (p ⟨l, b⟩ <-> (Finmap.filter f p).lookup l = b) := by
-  sorry
-
-lemma HMerge.exists_self_contra (H : Heap Srt) :
-    ∃ H0, HMerge H H0 H ∧ Contra H0 := by
-  -- let H1: Heap Srt := Finmap.filter H (fun ⟨_, m, s⟩ => s ∈ ord.contra_set)
-  sorry
-  -- exists H1; and_intros
-  -- intro x
-  -- . if h: x ∈ H then
-  --     rw[Finmap.mem_iff] at h
-  --     replace ⟨⟨m, s⟩, h⟩ := h
-  --     rw[h]; simp[H1]
-  --     have := Finmap.lookup_filter h (p := (fun xy => xy.2.2 ∈ ord.contra_set))
-  --     simp at this
-  --     if h0: s ∈ ord.contra_set then
-  --       rw[this] at h0
-  --       rw[h0]; simp; aesop
-  --     else
-  --       rw[this] at h0
-  --       split <;> try all_simp
-  --       sorry
-  --   else
-  --     sorry
-  -- sorry
-
 -- lemma HMerge.empty {H : Heap Srt} : HMerge H ∅ H := by
 --   intro l; split <;> try simp_all
 --   case h_5 h1 h2 =>
@@ -505,6 +472,39 @@ lemma HLower.split_contra {H3 : Heap Srt} :
   . assumption
   . assumption
   . apply lw.merge_refl
+
+lemma HMerge.self_contra {H1 H2 H3 : Heap Srt} :
+    HMerge H1 H2 H3 -> Contra H2 -> H1 = H3 := by
+  intro mrg ct
+  apply Finmap.ext_lookup; intro x
+  replace mrg := mrg x
+  replace ct := ct x
+  revert mrg ct
+  generalize e1: H1.lookup x = opt1
+  generalize e2: H2.lookup x = opt2
+  generalize e3: H3.lookup x = opt3
+  split <;> aesop
+
+lemma HMerge.exists_self_contra (H : Heap Srt) :
+    ∃ H0, HMerge H H0 H ∧ Contra H0 :=
+  H.induction_on (fun xs => by
+    clear H; induction xs
+    case H0 =>
+      exists ∅; simp; and_intros
+      apply Contra.empty.merge_refl
+      apply Contra.empty
+    case IH l hd tl nn ih =>
+      rw[<-Finmap.insert_toFinmap]
+      rcases ih with ⟨H0, mrg0, ct0⟩
+      rcases hd with ⟨m, s⟩
+      if mm: s ∈ ord.contra_set then
+        exists H0.insert l (m, s); and_intros
+        apply mrg0.insert_contra mm
+        apply ct0.insert mm
+      else
+        exists H0; and_intros
+        apply mrg0.insert_left <;> assumption
+        assumption)
 
 lemma HMerge.lookup_collision {H1 H2 H3 : Heap Srt} {l} :
     HMerge H1 H2 H3 -> l ∈ H1.keys -> H1.lookup l = H3.lookup l := by
