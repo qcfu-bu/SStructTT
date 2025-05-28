@@ -195,6 +195,41 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         case null =>
           cases rsn; exfalso; apply ern.null_preimage
     case ptr => cases st
+  case tup_im m' n s i ty erm tyn ihm =>
+    subst_vars; cases rs
+    case tup H1' H2' m' n' mrg1 rsm rsn =>
+      have ⟨_, _, _, tyB, _⟩ := ty.sig_inv
+      have wr3 := mrg0.merge_wr wr1 wr2
+      have ⟨wr1', wr2'⟩ := mrg1.split_wr wr1
+      have ⟨ct, e⟩ := rsn.null_inv wr2'; subst e
+      cases st
+      case tup_M st =>
+        have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
+        have wrx := mrg2.merge_wr wr2' wr2
+        have ⟨H1', a', b', mrgx, ⟨er', rs', wr'⟩, st1, st2⟩ :=
+          ihm rfl rfl mrg3.sym wrx rsm wr1' st
+        clear ihm
+        have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
+        exists Hx, .tup a' n .im s, .tup b' .null s; and_intros
+        . assumption
+        . constructor
+          . constructor
+            assumption
+            assumption
+            apply Static.Typed.conv
+            apply Static.Conv.subst1
+            apply Star.conv (Red.toStatic erm.toStatic st1.toStar)
+            assumption
+            apply tyB.subst er'.toStatic
+          . constructor
+            apply mrg1.sym
+            assumption
+            assumption
+          . apply mrg1.merge_wr wr2' wr'
+        . apply Red1.tup_im st1
+        . constructor; assumption
+      case tup_N st => cases st
+    case ptr => cases st
   all_goals sorry
 
 lemma Resolved.preservation2 {H1 H2 : Heap Srt} {a b c c' A} :
