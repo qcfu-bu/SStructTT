@@ -12,13 +12,14 @@ variable {Srt : Type} [ord : SrtOrder Srt]
 lemma Resolve.lookup {H1 H2 H3 H3' : Heap Srt} {l m m'} :
     H1 ⊢ .ptr l ▷ m' -> HMerge H1 H2 H3 ->
     HLookup H3 l m H3' -> ∃ H1', H1' ⊢ m ▷ m' ∧ HMerge H1' H2 H3' := by
-  sorry
+  generalize e: Tm.ptr l = t
+  intro ty mrg lk; induction ty generalizing H2 H3 H3' l m <;> try trivial
+  case ptr Ha Hb l n n' lk0 rsm ihm =>
+    cases e; clear ihm
+    have ⟨e, mrg0⟩ := lk.collision mrg lk0; subst e
+    exists Hb
 
--- rsm : H1' ⊢ Tm.ptr lf ▷ m'
--- np : Nullptr Tm.null
--- lk : HLookup H3 lf (mx.lam s) H3'
-
-lemma Resolved.preservation2 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
+lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     HMerge H1 H2 H3 -> WR H2 ->
     [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step2 (H3, c) (H3', c') ->
     ∃ H1' a' b',
@@ -87,7 +88,7 @@ lemma Resolved.preservation2 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . assumption
         . constructor
           . apply erm.subst_im tyn
-          . apply rsm.contra_merge mrg4.sym lw2'
+          . apply rsm.merge_contra mrg4.sym lw2'
           . apply mrg4.merge_wr wr2' wry
         . apply Star1.SE_join
           . apply Dynamic.Red.app_im rd
@@ -97,8 +98,13 @@ lemma Resolved.preservation2 {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     case ptr => cases st
   all_goals sorry
 
-lemma Resolved.preservation2' {H1 H1' : Heap Srt} {a b c c' A} :
-    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step2 (H1, c) (H1', c') ->
-    ∃ a' b',
-      [] ;; [] ;; H1' ⊢ a' ▷ b' ◁ c' : A ∧ a ~>>1 a' ∧ Erasure.Step1 b b' := by
-  sorry
+lemma Resolved.preservation2 {H1 H2 : Heap Srt} {a b c c' A} :
+    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step2 (H1, c) (H2, c') ->
+    ∃ a' b', [] ;; [] ;; H2 ⊢ a' ▷ b' ◁ c' : A ∧ a ~>>1 a' ∧ Erasure.Step1 b b' := by
+  intro rsm st
+  have ⟨H0, mrg, ct⟩ := HMerge.exists_self_contra H1
+  have ⟨_, _, wr⟩ := rsm
+  have wr0 := mrg.sym.split_wr' wr
+  have ⟨H1', a', b', mrg', rsm', rd, st⟩ := rsm.preservation2X mrg wr0 st
+  have e := mrg'.self_contra ct; subst e
+  exists a', b'
