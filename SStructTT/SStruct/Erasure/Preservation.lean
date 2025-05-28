@@ -305,8 +305,7 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
         have eq : m === (.tup v m2 .im s) := by
           apply Star.conv
           apply Star.trans (Red.toStatic erm.toStatic rdm)
-          apply Static.Red.tup _ _ rdv0
-          apply Star.R
+          apply Static.Red.tup _ _ rdv0 Star.R
         have erm2 : [] ⊢ m2 : B.[v/] := by
           apply Static.Typed.conv
           apply Static.Conv.subst1

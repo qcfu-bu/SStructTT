@@ -280,7 +280,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . apply Red1.tup_ex_N st1
         . constructor; assumption
     case ptr => cases st
-  case prj_im C m0 m1 n0 n1 _ _ _ _ i mrg tyC erm ern ihm ihn =>
+  case prj_im B C m0 m1 n0 n1 _ _ _ _ i mrg tyC erm ern ihm ihn =>
     clear ihn; subst_vars; cases mrg; cases rs
     case prj H1' H2' m' n' mrg1 rsm rsn =>
       have wr3 := mrg0.merge_wr wr1 wr2
@@ -334,14 +334,33 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           have ⟨mx1, nx1, r, rd1, erx⟩ := erm.tup_preimage
           have ⟨_, _, _, _⟩ := erx.toStatic.tup_inv; subst_vars
           have ⟨ermx, tynx, _, _⟩ := erx.tup_im_inv
-          have ⟨v0, rd2, vl0, rsv0⟩ := ermx.value_preimage vl1
+          have ⟨v0, rd2, vl0, erv0⟩ := ermx.value_preimage vl1
           have rsn := Resolved.intro ern rsn wr2'
-          have rsmx0 := (Resolved.intro rsv0 rs1 H5).resolution tyA vl1
+          have rsmx0 := (Resolved.intro erv0 rs1 H5).resolution tyA vl1
+          have rdv0 := Red.toStatic ermx.toStatic rd2
+          have eq : m0 === (.tup v0 nx1 .im s) := by
+            apply Star.conv
+            apply Star.trans (Red.toStatic erm.toStatic rd1)
+            apply Static.Red.tup _ _ rdv0 Star.R
+          have tynx1 : [] ⊢ nx1 : B.[v0/] := by
+            apply Static.Typed.conv
+            apply Static.Conv.subst1
+            apply Star.conv rdv0
+            assumption
+            apply tyB.subst erv0.toStatic
           existsi Hx, n0.[nx1,v0/], n1.[.null,mx0/]
           and_intros
           . assumption
           . constructor
-            . sorry
+            . apply Erased.conv
+              apply Static.Conv.subst1 _ eq.sym
+              rw[show C.[.tup v0 nx1 .im s/]
+                    = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[nx1,v0/] by asimp]
+              apply ern.substitution
+              apply Erasure.AgreeSubst.intro_im tynx1
+              apply Erasure.AgreeSubst.intro_ex Merge.nil; constructor; asimp; assumption
+              apply Erasure.AgreeSubst.refl Wf.nil
+              apply tyC.subst erm.toStatic
             . apply rsn.substitution mrg4
               constructor
               constructor
