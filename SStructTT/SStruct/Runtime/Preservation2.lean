@@ -4,8 +4,6 @@ import SStructTT.SStruct.Runtime.Resolution
 import SStructTT.SStruct.Runtime.Substitution
 open ARS
 
-set_option profiler true
-
 namespace SStruct.Erasure
 namespace Runtime
 open Dynamic
@@ -540,9 +538,62 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           apply Red.ite rd
           constructor
         . constructor
-      case ite_ff => sorry
+      case ite_ff l lk =>
+        clear ihm
+        have e := lk.contra_ff (mrg0.merge_wr wr1 wr2); subst e
+        have ⟨Hx, rsx, mrgx⟩ := rsm.lookup mrg3.sym lk
+        cases rsx
+        have ct := rsm.ff_inv wr1'
+        have rd := erm.ff_preimage
+        existsi H1, n2, n2'; and_intros
+        . assumption
+        . constructor
+          . apply Erased.conv
+            apply Static.Conv.subst1
+            apply (Star.conv (Red.toStatic erm.toStatic rd)).sym
+            assumption
+            apply tyA.subst erm.toStatic
+          . apply rsn2.merge_contra mrg1.sym ct
+          . assumption
+        . apply Star1.SE_join
+          apply Red.ite rd
+          constructor
+        . constructor
     case ptr => cases st
-  all_goals sorry
+  case rw tyA erm tyn ihm =>
+    subst_vars
+    have ⟨H1', a', b', mrgx, ⟨er', rs', wr'⟩, st1, st2⟩ :=
+      ihm rfl rfl mrg0 wr2 rs wr1 st
+    clear ihm
+    have ⟨eq, tyA⟩ := tyn.closed_idn tyA
+    existsi H1', a', b'; and_intros
+    . assumption
+    . constructor
+      . apply Erased.conv eq
+        assumption
+        assumption
+      . assumption
+      . assumption
+    . apply Star1.ES
+      constructor
+      assumption
+    . assumption
+  case drop => cases rs; cases st; cases st
+  case conv eq erm tyB ihm =>
+    subst_vars
+    have ⟨H1', a', b', mrgx, ⟨er', rs', wr'⟩, st1, st2⟩ :=
+      ihm rfl rfl mrg0 wr2 rs wr1 st
+    clear ihm
+    existsi H1', a', b'; and_intros
+    . assumption
+    . constructor
+      . apply Erased.conv eq
+        assumption
+        assumption
+      . assumption
+      . assumption
+    . assumption
+    . assumption
 
 
 lemma Resolved.preservation2 {H1 H2 : Heap Srt} {a b c c' A} :
