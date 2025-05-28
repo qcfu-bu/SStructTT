@@ -84,13 +84,13 @@ lemma Lower.split_e {Δ : Ctx Srt} :
   intro l; induction l
   case nil =>
     subst_vars
-    exists [], []; aesop
+    existsi [], []; aesop
   case ex A _ s' h _ ih =>
     subst_vars
     have := ord.le_antisymm _ _ h (ord.e_min s')
     subst_vars
     have ⟨Δ1, Δ2, l1, l2, mrg⟩ := ih rfl
-    exists A :⟨.ex, ord.e⟩ Δ1, A :⟨.ex, ord.e⟩ Δ2
+    existsi A :⟨.ex, ord.e⟩ Δ1, A :⟨.ex, ord.e⟩ Δ2
     and_intros
     . constructor <;> assumption
     . constructor <;> assumption
@@ -100,7 +100,7 @@ lemma Lower.split_e {Δ : Ctx Srt} :
   case im A s s' lw ih =>
     subst_vars
     have ⟨Δ1, Δ2, l1, l2, mrg⟩ := ih rfl
-    exists A :⟨.im, s'⟩ Δ1, A :⟨.im, s'⟩ Δ2
+    existsi A :⟨.im, s'⟩ Δ1, A :⟨.im, s'⟩ Δ2
     and_intros
     . constructor; assumption
     . constructor; assumption
@@ -315,37 +315,37 @@ lemma Merge.split {Δ1 Δ2 Δ Δa Δb : Ctx Srt} :
     Merge Δa Δb Δ1 ->
     ∃ Δc, Merge Δa Δ2 Δc ∧ Merge Δc Δb Δ := by
   intro mrg1 mrg2; induction mrg1 generalizing Δa Δb
-  case nil => cases mrg2; exists []; aesop
+  case nil => cases mrg2; existsi []; aesop
   case contra A s h mrg ih =>
     cases mrg2 with
     | contra _ _ _ mrg =>
       have ⟨Δc, mrg1, mrg2⟩ := ih mrg
-      exists A :⟨.ex, s⟩ Δc; aesop
+      existsi A :⟨.ex, s⟩ Δc; aesop
     | left _ _ mrg =>
       have ⟨Δc, mrg1, mrg2⟩ := ih mrg
-      exists A :⟨.ex, s⟩ Δc; aesop
+      existsi A :⟨.ex, s⟩ Δc; aesop
     | right _ _ mrg =>
       have ⟨Δc, mrg1, mrg2⟩ := ih mrg
-      exists A :⟨.ex, s⟩ Δc; aesop
+      existsi A :⟨.ex, s⟩ Δc; aesop
   case left A s mrg ih =>
     cases mrg2 with
     | contra _ _ _ mrg =>
       have ⟨Δc, mrg1, mrg2⟩ := ih mrg
-      exists A :⟨.ex, s⟩ Δc; aesop
+      existsi A :⟨.ex, s⟩ Δc; aesop
     | left _ _ mrg =>
       have ⟨Δc, mrg1, mrg2⟩ := ih mrg
-      exists A :⟨.ex, s⟩ Δc; aesop
+      existsi A :⟨.ex, s⟩ Δc; aesop
     | right _ _ mrg =>
       have ⟨Δc, mrg1, mrg2⟩ := ih mrg
-      exists A :⟨.im, s⟩ Δc; aesop
+      existsi A :⟨.im, s⟩ Δc; aesop
   case right A s mrg ih =>
     rcases mrg2 with _ | _ | _ | _ | ⟨_, _, mrg⟩
     have ⟨Δc, mrg1, mrg2⟩ := ih mrg
-    exists A :⟨.ex, s⟩ Δc; aesop
+    existsi A :⟨.ex, s⟩ Δc; aesop
   case im A s mrg ih =>
     rcases mrg2 with _ | _ | _ | _ | ⟨_, _, mrg⟩
     have ⟨Δc, mrg1, mrg2⟩ := ih mrg
-    exists A :⟨.im, s⟩ Δc; aesop
+    existsi A :⟨.im, s⟩ Δc; aesop
 
 lemma Merge.distr {Δ1 Δ2 Δ3 Δ11 Δ12 Δ21 Δ22 : Ctx Srt} :
     Merge Δ1 Δ2 Δ3 ->
@@ -359,7 +359,7 @@ lemma Merge.distr {Δ1 Δ2 Δ3 Δ11 Δ12 Δ21 Δ22 : Ctx Srt} :
   have ⟨Δ4, mrg3, mrg4⟩ := mrg0.split mrg1
   have ⟨Δ5, mrg5, mrg6⟩ := mrg3.sym.split mrg2
   have ⟨Δ6, mrg7, mrg8⟩ := mrg4.split mrg6.sym
-  exists Δ5, Δ6; and_intros
+  existsi Δ5, Δ6; and_intros
   . apply mrg8.sym
   . apply mrg5.sym
   . apply mrg7.sym

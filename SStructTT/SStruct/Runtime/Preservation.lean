@@ -19,7 +19,7 @@ lemma Resolved.preservation {H1 H1' : Heap Srt} {a b c c' A} :
   have ⟨c, rs, rd⟩ := rs.preservation0' rd0
   have rs := rs.preservation1' rd1
   have ⟨a, b, rs, st1, st2⟩ := rs.preservation2 st
-  exists a, b; and_intros
+  existsi a, b; and_intros
   . assumption
   . assumption
   . constructor

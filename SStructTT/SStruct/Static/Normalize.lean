@@ -221,11 +221,11 @@ lemma Typed.red_value {A m : Tm Srt} :
     match ty.progress with
     | .inl ⟨n, st⟩ =>
       have ⟨n', vl, rd⟩ := ih st (ty.preservation st)
-      exists n'; and_intros
+      existsi n'; and_intros
       . assumption
       . apply Star.ES <;> assumption
     | .inr vl =>
-      exists n; and_intros
+      existsi n; and_intros
       . assumption
       . apply Star.R
 

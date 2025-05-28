@@ -66,9 +66,9 @@ lemma Star.ES_split {x z} :
   case R => left; rfl
   case SE a b rd st ih =>
     match ih with
-    | .inl e => subst_vars; right; exists b; aesop
+    | .inl e => subst_vars; right; existsi b; aesop
     | .inr ⟨x, _, rd⟩ =>
-      right; exists x; and_intros
+      right; existsi x; and_intros
       . assumption
       . apply Star.SE rd st
 
@@ -184,12 +184,12 @@ lemma Star1.SE_split {x z} :
     Star1 e x z -> ∃ y, Star e x y ∧ e y z := by
   intro rd; induction rd
   case E y rd =>
-    exists x; and_intros
+    existsi x; and_intros
     apply Star.R
     assumption
   case SE a b rd st ih =>
     have ⟨y, rd, st⟩ := ih
-    exists a; and_intros
+    existsi a; and_intros
     . apply Star.SE rd st
     . assumption
 
@@ -197,12 +197,12 @@ lemma Star1.ES_split {x z} :
     Star1 e x z -> ∃ y, e x y ∧ Star e y z := by
   intro rd; induction rd
   case E y rd =>
-    exists y; and_intros
+    existsi y; and_intros
     assumption
     apply Star.R
   case SE a b rd st ih =>
     have ⟨y, _, rd⟩ := ih
-    exists y; and_intros
+    existsi y; and_intros
     . assumption
     . apply Star.SE rd st
 
@@ -272,17 +272,17 @@ lemma Confluent.cr : Confluent e <-> CR e := by
   . intro h1 x y h2
     induction h2 with
     | R =>
-      exists x
+      existsi x
       constructor <;> constructor
     | @SE y z _ r ih =>
       have ⟨u, h2, h3⟩ := ih
       have ⟨v, h4, h5⟩ := h1 h3 (Star.one r)
-      exists v; constructor
+      existsi v; constructor
       . apply Star.trans h2 h4
       . apply h5
     | @SEi y z _ r ih =>
       have ⟨u, h2, h3⟩ := ih
-      exists u; constructor
+      existsi u; constructor
       . apply h2
       . apply Star.ES r h3
   . intro h x y z  h1 h2
@@ -296,7 +296,7 @@ lemma Com.strip {e1 e2 : Rel T} : Com e1 e2 -> Com (Star e2) e1 := by
   induction h2 with
   | R =>
     intro h2
-    exists z
+    existsi z
     constructor
     . assumption
     . constructor
@@ -304,7 +304,7 @@ lemma Com.strip {e1 e2 : Rel T} : Com e1 e2 -> Com (Star e2) e1 := by
     intro h2
     have ⟨u, r1, s1⟩ := ih h2
     have ⟨v, r2, r1⟩ := h1 r1 r2
-    exists v; constructor
+    existsi v; constructor
     . assumption
     . apply Star.SE s1 r2
 

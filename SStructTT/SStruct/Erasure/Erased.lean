@@ -137,7 +137,7 @@ lemma Erased.drop_spine {Γ} {Δ1 Δ3 : Ctx Srt} {A m m'} :
     have ⟨i, tyA⟩ := wf1.has_typed hs
     have ern : Γ ;; Δ2 ⊢ .var x ▷ .var x : A := by
       constructor <;> assumption
-    exists .drop (.var x) m'
+    existsi .drop (.var x) m'
     apply Erased.drop mrg.sym
     . apply hs.lower
     . apply h
@@ -162,60 +162,60 @@ lemma Typed.toErased {Γ} {Δ : Ctx Srt} {A m} :
     Γ ;; Δ ⊢ m : A -> ∃ m', Γ ;; Δ ⊢ m ▷ m' : A := by
   intro ty; induction ty
   case var x _ _ _ _ _ =>
-    exists (.var x); constructor <;> aesop
+    existsi (.var x); constructor <;> aesop
   case lam_im s _ _ _ _ _ ihm =>
     have ⟨m', erm⟩ := ihm
-    exists .lam m' s
+    existsi .lam m' s
     constructor <;> aesop
   case lam_ex s sA _ _ _ _ ihm =>
     have ⟨m', erm⟩ := ihm
-    exists .lam m' s; constructor
+    existsi .lam m' s; constructor
     all_goals aesop
   case app_im ihm =>
     have ⟨m', erm⟩ := ihm
-    exists .app m' .null
+    existsi .app m' .null
     constructor <;> aesop
   case app_ex ihm ihn =>
     have ⟨m', erm⟩ := ihm
     have ⟨n', ern⟩ := ihn
-    exists .app m' n'
+    existsi .app m' n'
     constructor <;> aesop
   case tup_im s _ _  _ _ ihm =>
     have ⟨m', erm⟩ := ihm
-    exists .tup m' .null s
+    existsi .tup m' .null s
     constructor <;> aesop
   case tup_ex s _ _ _ _ _ ihm ihn =>
     have ⟨m', erm⟩ := ihm
     have ⟨n', ern⟩ := ihn
-    exists (.tup m' n' s)
+    existsi (.tup m' n' s)
     constructor <;> aesop
   case prj_im sA SB _ _ rs _ _ _ _ ihm ihn =>
     have ⟨m', erm⟩ := ihm
     have ⟨n', ern⟩ := ihn
-    exists .prj m' n'; constructor
+    existsi .prj m' n'; constructor
     all_goals aesop
   case prj_ex sA sB _ _ rsA rsB _ _ _ _ ihm ihn =>
     have ⟨m', erm⟩ := ihm
     have ⟨n', ern⟩ := ihn
-    exists .prj m' n'; constructor
+    existsi .prj m' n'; constructor
     all_goals aesop
-  case tt => exists .tt; constructor <;> aesop
-  case ff => exists .ff; constructor <;> aesop
+  case tt => existsi .tt; constructor <;> aesop
+  case ff => existsi .ff; constructor <;> aesop
   case ite ihm ihn1 ihn2 =>
     have ⟨m', erm⟩ := ihm
     have ⟨n1', ern1⟩ := ihn1
     have ⟨n2', ern2⟩ := ihn2
-    exists (.ite m' n1' n2')
+    existsi (.ite m' n1' n2')
     constructor <;> aesop
   case rw ihm =>
     have ⟨m', erm⟩ := ihm
-    exists m'; constructor <;> aesop
+    existsi m'; constructor <;> aesop
   case drop mrg lw h tyn ihn =>
     have ⟨n', ern⟩ := ihn
     apply ern.drop_merge mrg.sym lw h
   case conv ihm =>
     have ⟨m', erm⟩ := ihm
-    exists m'; constructor <;> assumption
+    existsi m'; constructor <;> assumption
   all_goals trivial
 
 end SStruct.Dynamic

@@ -3,7 +3,6 @@ import SStructTT.SStruct.Runtime.Step
 import SStructTT.SStruct.Runtime.Resolution
 import SStructTT.SStruct.Runtime.Substitution
 open ARS
-set_option profiler true
 
 namespace SStruct.Erasure
 namespace Runtime

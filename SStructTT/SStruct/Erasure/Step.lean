@@ -100,17 +100,17 @@ lemma Red0.app_inv {m n t : Tm Srt} :
     ∃ m' n', t = .app m' n' ∧ Red0 m m' ∧ Red0 n n' := by
   intro rd; induction rd
   case R =>
-    exists m, n; aesop
+    existsi m, n; aesop
   case SE st ih =>
     have ⟨m', n', e, rd1, rd2⟩  := ih
     subst_vars
     cases st
     case app_M mx st =>
-      exists mx, n'; simp; and_intros
+      existsi mx, n'; simp; and_intros
       . apply Star.SE rd1 st
       . assumption
     case app_N nx st =>
-      exists m', nx; simp; and_intros
+      existsi m', nx; simp; and_intros
       . assumption
       . apply Star.SE rd2 st
 
@@ -118,17 +118,17 @@ lemma Red0.tup_inv {m n t : Tm Srt} {s} :
     Red0 (.tup m n s) t ->
     ∃ m' n', t = .tup m' n' s ∧ Red0 m m' ∧ Red0 n n' := by
   intro rd; induction rd
-  case R => exists m, n; aesop
+  case R => existsi m, n; aesop
   case SE st ih =>
     have ⟨m', n', e, rd1, rd2⟩  := ih
     subst_vars
     cases st
     case tup_M mx st =>
-      exists mx, n'; simp; and_intros
+      existsi mx, n'; simp; and_intros
       . apply Star.SE rd1 st
       . assumption
     case tup_N nx st =>
-      exists m', nx; simp; and_intros
+      existsi m', nx; simp; and_intros
       . assumption
       . apply Star.SE rd2 st
 
@@ -136,13 +136,13 @@ lemma Red0.prj_inv {m n t : Tm Srt} :
     Red0 (.prj m n) t ->
     ∃ m', t = .prj m' n ∧ Red0 m m' := by
   intro rd; induction rd
-  case R => exists m; aesop
+  case R => existsi m; aesop
   case SE st ih =>
     have ⟨m', e, rd⟩  := ih
     subst_vars
     cases st
     case prj_M mx st =>
-      exists mx; simp
+      existsi mx; simp
       apply Star.SE rd st
 
 lemma Red0.tt_inv {t : Tm Srt} : Red0 .tt t -> t = .tt := by
@@ -159,13 +159,13 @@ lemma Red0.ite_inv {m n1 n2 t : Tm Srt} :
     Red0 (.ite m n1 n2) t ->
     ∃ m', t = .ite m' n1 n2 ∧ Red0 m m' := by
   intro rd; induction rd
-  case R => exists m; aesop
+  case R => existsi m; aesop
   case SE st ih =>
     have ⟨m', e, rd⟩  := ih
     subst_vars
     cases st
     case ite_M mx st =>
-      exists mx; simp
+      existsi mx; simp
       apply Star.SE rd st
 
 lemma Red0.drop_inv {m n a b : Tm Srt} :

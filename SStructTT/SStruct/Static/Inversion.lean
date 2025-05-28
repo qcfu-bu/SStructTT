@@ -11,10 +11,10 @@ lemma Typed.pi_inv {Γ : Ctx Srt} {A B T r s} :
   intro ty; induction ty generalizing A B r s
   all_goals try trivial
   case pi sB iA iB _ _ _ _ =>
-    cases e; exists sB, iB, (max iA iB); aesop
+    cases e; existsi sB, iB, (max iA iB); aesop
   case conv eq1 _ _ ih _ =>
     have ⟨sB, iB, i, _, eq2⟩ := ih e
-    exists sB, iB, i
+    existsi sB, iB, i
     constructor
     . assumption
     . apply Conv.trans
@@ -33,10 +33,10 @@ lemma Typed.sig_inv' {Γ : Ctx Srt} {A B T r s} :
   intro ty; induction ty generalizing A B s
   all_goals try trivial
   case sig sA sB iA iB _ _ _ _ _ _ =>
-    cases e; exists sA, sB, iA, iB, (max iA iB); aesop
+    cases e; existsi sA, sB, iA, iB, (max iA iB); aesop
   case conv eq1 _ _ ih _ =>
     have ⟨sA, sB, iA, iB, i, _, _, _, _, eq2⟩ := ih e
-    exists sA, sB, iA, iB, i
+    existsi sA, sB, iA, iB, i
     and_intros <;> try assumption
     apply Conv.trans
     apply Conv.sym eq1
@@ -55,11 +55,11 @@ lemma Typed.idn_inv {Γ : Ctx Srt} {A T m n} :
   all_goals try trivial
   case idn _ iA _ _ _ _ _ _ =>
     cases e
-    exists iA
+    existsi iA
     aesop
   case conv eq1 _ _ ih _ =>
     have ⟨i, _, _, eq2⟩ := ih e
-    exists i
+    existsi i
     and_intros
     . assumption
     . assumption
@@ -74,10 +74,10 @@ lemma Typed.lam_inv' {Γ : Ctx Srt} {A T m r s} :
   intro ty; induction ty generalizing A m r s
   all_goals try trivial
   case lam B _ _ _ _ _ _ _ _ _ =>
-    cases e; exists B; aesop
+    cases e; existsi B; aesop
   case conv eq1 _ _ ih _ =>
     have ⟨B, _, eq2⟩ := ih e
-    exists B
+    existsi B
     constructor
     . assumption
     . apply Conv.trans
@@ -91,10 +91,10 @@ lemma Typed.tup_inv' {Γ : Ctx Srt} {T m n r s} :
   intro ty; induction ty generalizing m n s
   all_goals try trivial
   case tup A B _ _ _ _ _ _ _ _ _ _ _ =>
-    cases e; exists A, B; aesop
+    cases e; existsi A, B; aesop
   case conv eq1 _ _ ih _ =>
     have ⟨A, B, _, _, eq2⟩ := ih e
-    exists A, B
+    existsi A, B
     and_intros
     . assumption
     . assumption
@@ -109,10 +109,10 @@ lemma Typed.rfl_inv' {Γ : Ctx Srt} {T m} :
   intro ty; induction ty generalizing m
   all_goals try trivial
   case rfl A _ _ _ =>
-    exists A; cases e; aesop
+    existsi A; cases e; aesop
   case conv eq1 _ _ ih _ =>
     have ⟨A, _, eq2⟩ := ih e
-    exists A
+    existsi A
     constructor
     . assumption
     . apply Conv.trans
@@ -124,55 +124,55 @@ theorem Typed.validity {Γ : Ctx Srt} {A m} :
   intro ty; induction ty
   all_goals try trivial
   case srt i _ _ =>
-    exists ord.e, i+2
+    existsi ord.e, i+2
     constructor
     assumption
   case var wf hs _ =>
     have ⟨s, i, _⟩ := wf.has_typed hs
     exists s, i
   case pi s _ _ iA iB tyA _ _ _ =>
-    exists ord.e, (max iA iB + 1)
+    existsi ord.e, (max iA iB + 1)
     constructor
     apply tyA.toWf
   case lam s _ _ _ tym _ ihm =>
     have wf := tym.toWf
     cases wf; case cons iA _ _ =>
     have ⟨_, iB, _⟩ := ihm
-    exists s, (max iA iB)
+    existsi s, (max iA iB)
     constructor <;> assumption
   case app ihm _ =>
     replace ⟨s, i, ihm⟩ := ihm
     have ⟨s, i, j, tyB, eq⟩ := ihm.pi_inv
-    exists s, i
+    existsi s, i
     apply Typed.esubst <;> try first | rfl | assumption
     asimp
   case sig iA iB _ _ tyA _ _ _ =>
-    exists ord.e, (max iA iB + 1)
+    existsi ord.e, (max iA iB + 1)
     constructor
     apply tyA.toWf
   case tup s i _ _ _ _ _ _ =>
     exists s, i
   case prj s i _ _ _ _ _ _ =>
-    exists s, i
+    existsi s, i
     apply Typed.esubst <;> try first | rfl | assumption
     asimp
-  case bool => exists ord.e, 1; constructor; assumption
-  case tt => exists ord.e, 0; constructor; assumption
-  case ff => exists ord.e, 0; constructor; assumption
+  case bool => existsi ord.e, 1; constructor; assumption
+  case tt => existsi ord.e, 0; constructor; assumption
+  case ff => existsi ord.e, 0; constructor; assumption
   case ite s i _ _ _ _ _ _ _ _ =>
-    exists s, i
+    existsi s, i
     apply Typed.esubst <;> try first | rfl | assumption
     asimp
   case idn i tyA _ _ _ _ _ =>
-    exists ord.e, i+1; constructor; apply tyA.toWf
+    existsi ord.e, i+1; constructor; apply tyA.toWf
   case rfl ih =>
     have ⟨s, i, ty⟩ := ih
-    exists ord.e, i
+    existsi ord.e, i
     constructor <;> assumption
   case rw m n a b s i _ _ _ _ _ ihI =>
     have ⟨sI, iI, tyI⟩ := ihI
     have ⟨_, tya, tyb, _⟩ := tyI.idn_inv
-    exists s, i
+    existsi s, i
     rw[show Tm.srt s i = (Tm.srt s i).[n,b/] by asimp]
     apply Typed.substitution
     . assumption

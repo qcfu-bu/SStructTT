@@ -3,8 +3,6 @@ import SStructTT.SStruct.Runtime.Step
 import SStructTT.SStruct.Runtime.Resolution
 open ARS
 
-set_option profiler true
-
 namespace SStruct.Erasure
 namespace Runtime
 open Dynamic
@@ -257,6 +255,6 @@ lemma Resolved.preservation0' {H H' : Heap Srt} {a b c c' A} :
     rcases x with ⟨H2, c'⟩
     replace ⟨b', rs, rd⟩ := ih rfl rs
     have ⟨b', rs, st⟩ := rs.preservation0 st
-    exists b'; and_intros
+    existsi b'; and_intros
     . assumption
     . apply Star.SE rd st

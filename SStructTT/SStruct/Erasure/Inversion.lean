@@ -24,11 +24,11 @@ lemma Erased.lam_im_inv' {Γ} {Δ : Ctx Srt} {A T m m' s} :
   intro er; induction er generalizing A m m' s
   all_goals try trivial
   case lam_im B _ _ _ sA _ _ _ _ _ =>
-    cases e1; cases e2; exists B, sA; aesop
+    cases e1; cases e2; existsi B, sA; aesop
   case lam_ex => cases e1
   case conv eq1 _ _ ih =>
     have ⟨B, sA, erm, eq2⟩ := ih e1 e2
-    exists B, sA
+    existsi B, sA
     and_intros
     . assumption
     . apply Conv.trans
@@ -46,10 +46,10 @@ lemma Erased.lam_ex_inv' {Γ} {Δ : Ctx Srt} {A T m m' s} :
   all_goals try trivial
   case lam_im => cases e1
   case lam_ex B _ _ _ sA _ _ _ _ _ =>
-    cases e1; cases e2; exists B, sA; aesop
+    cases e1; cases e2; existsi B, sA; aesop
   case conv eq1 _ _ ih =>
     have ⟨B, sA, erm, eq2⟩ := ih e1 e2
-    exists B, sA
+    existsi B, sA
     and_intros
     . assumption
     . apply Conv.trans
@@ -67,11 +67,11 @@ lemma Erased.tup_im_inv' {Γ} {Δ : Ctx Srt} {T m m' n n' s} :
   intro er; induction er generalizing m n s
   all_goals try trivial
   case tup_im A B _ _ _ _ _ _ _ _ _ =>
-    cases e1; cases e2; exists A, B; aesop
+    cases e1; cases e2; existsi A, B; aesop
   case tup_ex => cases e1
   case conv eq1 _ _ ih =>
     have ⟨A, B, _, _, _, eq2⟩ := ih e1 e2
-    exists A, B
+    existsi A, B
     and_intros
     . assumption
     . assumption
@@ -93,10 +93,10 @@ lemma Erased.tup_ex_inv' {Γ} {Δ : Ctx Srt} {T m m' n n' s} :
   all_goals try trivial
   case tup_im => cases e1
   case tup_ex Δ1 Δ2 Δ A B _ _ _ _ _ _ _ _ _ _ _ _ =>
-    cases e1; cases e2; exists Δ1, Δ2, A, B; aesop
+    cases e1; cases e2; existsi Δ1, Δ2, A, B; aesop
   case conv eq1 _ _ ih =>
     have ⟨Δ1, Δ2, A, B, mrg, _, _, eq2⟩ := ih e1 e2
-    exists Δ1, Δ2, A, B
+    existsi Δ1, Δ2, A, B
     and_intros
     . assumption
     . assumption
@@ -119,7 +119,7 @@ lemma Erased.lam_im_inv {Γ} {Δ : Ctx Srt} {A A' B m m' s s'} :
   have ty1 := tyA'.preservation' rd'
   have ty2 := tyA.preservation' rd
   have e := Static.Typed.unique ty1 ty2
-  subst_vars; exists sA'
+  subst_vars; existsi sA'
   replace tyB := Static.Typed.conv_ctx eqA.sym tyA tyB
   apply Erased.conv_ctx eqA tyA'
   apply Erased.conv eqB.sym erm tyB
@@ -138,7 +138,7 @@ lemma Erased.lam_ex_inv {Γ} {Δ : Ctx Srt} {A A' B m m' s s'} :
   have ty1 := tyA'.preservation' rd'
   have ty2 := tyA.preservation' rd
   have e := Static.Typed.unique ty1 ty2
-  subst_vars; exists sA'
+  subst_vars; existsi sA'
   replace tyB := Static.Typed.conv_ctx eqA.sym tyA tyB
   apply Erased.conv_ctx eqA tyA'
   apply Erased.conv eqB.sym erm tyB
@@ -177,7 +177,7 @@ lemma Erased.tup_ex_inv {Γ} {Δ : Ctx Srt} {A B m m' n n' s s'} :
   have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
   replace erm := Erased.conv eqA.sym erm tyA
   replace tyB := tyB.subst erm.toStatic; asimp at tyB
-  exists Δ1, Δ2; simp; and_intros
+  existsi Δ1, Δ2; simp; and_intros
   . assumption
   . assumption
   . apply Erased.conv
@@ -199,19 +199,19 @@ lemma Erased.lam_preimage {B t : SStruct.Tm Srt} {m' s} :
   intro er; induction er <;> try trivial
   case lam_im A _ m _ _ _ _ _ _ _ _ =>
     subst_vars; cases e3
-    exists A, m, .im; and_intros
+    existsi A, m, .im; and_intros
     . apply Star.R
     . constructor <;> assumption
   case lam_ex A B m s _ _ _ _ _ _ _ =>
     subst_vars; cases e3
-    exists A, m, .ex; and_intros
+    existsi A, m, .ex; and_intros
     . apply Star.R
     . constructor <;> assumption
   case rw A B m m' n a b s i tyA erm tyn ih =>
     subst_vars; simp_all
     have ⟨eq, tyA⟩ := tyn.closed_idn tyA
     have ⟨A, m, r, rd, er⟩ := ih
-    exists A, m, r; and_intros
+    existsi A, m, r; and_intros
     . apply Star.ES
       constructor
       assumption
@@ -219,7 +219,7 @@ lemma Erased.lam_preimage {B t : SStruct.Tm Srt} {m' s} :
   case conv ih =>
     subst_vars; simp_all
     have ⟨A, m, r, td, er⟩ := ih
-    exists A, m, r; and_intros
+    existsi A, m, r; and_intros
     . assumption
     . apply Erased.conv <;> assumption
 
@@ -232,19 +232,19 @@ lemma Erased.tup_preimage {B t : SStruct.Tm Srt} {m' n' s} :
   intro er; induction er <;> try trivial
   case tup_im A _ m _ n _ _ _ _ _ _ =>
     subst_vars; cases e3
-    exists m, n, .im; and_intros
+    existsi m, n, .im; and_intros
     . apply Star.R
     . constructor <;> assumption
   case tup_ex A _ m _ n _ _ _ _ _ _ _ _ _ =>
     subst_vars; cases e3
-    exists m, n, .ex; and_intros
+    existsi m, n, .ex; and_intros
     . apply Star.R
     . constructor <;> assumption
   case rw A B m m' n a b s i tyA erm tyn ih =>
     subst_vars; simp_all
     have ⟨eq, tyA⟩ := tyn.closed_idn tyA
     have ⟨A, m, r, rd, er⟩ := ih
-    exists A, m, r; and_intros
+    existsi A, m, r; and_intros
     . apply Star.ES
       constructor
       assumption
@@ -252,7 +252,7 @@ lemma Erased.tup_preimage {B t : SStruct.Tm Srt} {m' n' s} :
   case conv ih =>
     subst_vars; simp_all
     have ⟨A, m, r, td, er⟩ := ih
-    exists A, m, r; and_intros
+    existsi A, m, r; and_intros
     . assumption
     . apply Erased.conv <;> assumption
 

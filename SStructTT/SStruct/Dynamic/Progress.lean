@@ -80,63 +80,63 @@ theorem Typed.progress {m A : Tm Srt} :
   case app_im n _ _ tym ih =>
     match ih with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.app m n .im
+      left; existsi Tm.app m n .im
       constructor; assumption
     | .inr vl =>
       have ⟨_, m, _⟩ := tym.pi_canonical Conv.R vl
-      subst_vars; left; exists m.[n/]; constructor
+      subst_vars; left; existsi m.[n/]; constructor
   case app_ex m n _ tym tyn ihm ihn mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.app m n .ex
+      left; existsi Tm.app m n .ex
       constructor; assumption
     | .inr vl =>
       match ihn with
       | .inl ⟨n, _⟩ =>
-        left; exists Tm.app m n .ex
+        left; existsi Tm.app m n .ex
         constructor; assumption
       | .inr _ =>
         have ⟨_, m, _⟩ := tym.pi_canonical Conv.R vl
-        subst_vars; left; exists m.[n/]
+        subst_vars; left; existsi m.[n/]
         constructor; assumption
   case tup_im m n s _ _ _ _ ih =>
     match ih with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.tup m n .im s
+      left; existsi Tm.tup m n .im s
       constructor; assumption
     | .inr _ => right; constructor; assumption
   case tup_ex m n s _ _ _ _ ihm ihn mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.tup m n .ex s
+      left; existsi Tm.tup m n .ex s
       constructor; assumption
     | .inr _ =>
       match ihn with
       | .inl ⟨n, _⟩ =>
-        left; exists Tm.tup m n .ex s
+        left; existsi Tm.tup m n .ex s
         constructor; assumption
       | .inr _ => right; constructor <;> assumption
   case prj_im C _ n _ _ _ _ _ _ tym _ ihm mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.prj C m n .im
+      left; existsi Tm.prj C m n .im
       constructor; assumption
     | .inr vl =>
       have ⟨m1, m2, _⟩ := tym.sig_canonical Conv.R vl
-      subst_vars; left; exists n.[m2,m1/]
+      subst_vars; left; existsi n.[m2,m1/]
       constructor; assumption
   case prj_ex C _ n _ _ _ _ _ _ tym _ ihm mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.prj C m n .ex
+      left; existsi Tm.prj C m n .ex
       constructor; assumption
     | .inr vl =>
       have ⟨m1, m2, _⟩ := tym.sig_canonical Conv.R vl
-      subst_vars; left; exists n.[m2,m1/]
+      subst_vars; left; existsi n.[m2,m1/]
       constructor; assumption
   case tt => right; constructor
   case ff => right; constructor
@@ -144,12 +144,12 @@ theorem Typed.progress {m A : Tm Srt} :
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.ite A m n1 n2
+      left; existsi Tm.ite A m n1 n2
       constructor; assumption
     | .inr vl =>
       cases tym.bool_canonical Conv.R vl with
-      | inl => subst_vars; left; exists n1; constructor
-      | inr => subst_vars; left; exists n2; constructor
+      | inl => subst_vars; left; existsi n1; constructor
+      | inr => subst_vars; left; existsi n2; constructor
   case drop mrg => cases mrg; aesop
   case rw m _ _ _ _ _ _ _ _ _ =>
-    left; exists m; apply Step.rw_elim
+    left; existsi m; apply Step.rw_elim

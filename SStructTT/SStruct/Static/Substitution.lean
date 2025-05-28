@@ -185,7 +185,7 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     . apply agr
     . apply tyA.toWf
     . assumption
-    . intros; exists s, i
+    . intros; existsi s, i
       apply ih1; assumption
 
 lemma Typed.subst {Γ : Ctx Srt} {A B m n} :

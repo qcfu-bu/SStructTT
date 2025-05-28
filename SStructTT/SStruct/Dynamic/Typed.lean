@@ -189,11 +189,11 @@ lemma Wf.has_typed {Γ} {Δ : Ctx Srt} {A x s} :
   intro wf hs; induction hs generalizing Γ
   case nil wf =>
     cases wf; case cons i tyA _ =>
-    exists i; apply tyA.weaken tyA
+    existsi i; apply tyA.weaken tyA
   case cons wf ih =>
     cases wf; case cons i tyB wf =>
     have ⟨i, tyA⟩ := ih wf
-    exists i; apply tyA.weaken tyB
+    existsi i; apply tyA.weaken tyB
 
 lemma Typed.toStatic {Γ} {Δ : Ctx Srt} {m A} :
     Γ ;; Δ ⊢ m : A -> Γ ⊢ m : A := by

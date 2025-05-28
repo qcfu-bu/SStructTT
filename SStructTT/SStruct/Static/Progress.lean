@@ -61,21 +61,21 @@ theorem Typed.progress {m A : Tm Srt} :
   case app n r _ tym tyn ihm ihn =>
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.app m n r
+      left; existsi Tm.app m n r
       constructor; assumption
     | .inr vl =>
       have ⟨A, m, _⟩ := tym.pi_canonical Conv.R vl
-      subst_vars; left; exists m.[n/]; constructor
+      subst_vars; left; existsi m.[n/]; constructor
   case sig => right; constructor
   case tup m n r s _ _ _ _ _ ihm ihn =>
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.tup m n r s
+      left; existsi Tm.tup m n r s
       constructor; assumption
     | .inr vl =>
       match ihn with
       | .inl ⟨n, _⟩ =>
-        left; exists Tm.tup m n r s
+        left; existsi Tm.tup m n r s
         constructor; assumption
       | .inr vl =>
         right; constructor
@@ -84,30 +84,30 @@ theorem Typed.progress {m A : Tm Srt} :
   case prj C m n r _ _ _ _ tym _ ihm =>
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.prj C m n r
+      left; existsi Tm.prj C m n r
       constructor; assumption
     | .inr vl =>
       have ⟨m1, m2, _⟩ := tym.sig_canonical Conv.R vl
-      subst_vars; left; exists n.[m2,m1/]; constructor
+      subst_vars; left; existsi n.[m2,m1/]; constructor
   case bool => right; constructor
   case tt => right; constructor
   case ff => right; constructor
   case ite A m n1 n2 _ _ _ tym _ _ ihm _ _ =>
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.ite A m n1 n2
+      left; existsi Tm.ite A m n1 n2
       constructor; assumption
     | .inr vl =>
       cases Typed.bool_canonical tym Conv.R vl with
-      | inl => subst_vars; left; exists n1; constructor
-      | inr => subst_vars; left; exists n2; constructor
+      | inl => subst_vars; left; existsi n1; constructor
+      | inr => subst_vars; left; existsi n2; constructor
   case idn => right; constructor
   case rfl => right; constructor
   case rw A B m n _ _ _ _ _ _ tyn _ ihn =>
     match ihn with
     | .inl ⟨n, _⟩ =>
-      left; exists Tm.rw A m n
+      left; existsi Tm.rw A m n
       constructor; assumption
     | .inr vl =>
       have ⟨_, _⟩ := Typed.idn_canonical tyn Conv.R vl
-      subst_vars; left; exists m; constructor
+      subst_vars; left; existsi m; constructor

@@ -175,7 +175,7 @@ lemma Typed.renaming {Γ Γ' A m ξ} :
     . assumption
     . assumption
     . intros
-      exists i
+      existsi i
       apply ih; assumption
 
 lemma Wf.has_typed {Γ A x} :
@@ -186,14 +186,14 @@ lemma Wf.has_typed {Γ A x} :
     intro h
     cases h with
     | zero =>
-      exists i
+      existsi i
       apply ty.renaming
       constructor
       . assumption
       . exact AgreeRen.refl wf
     | succ _ _ _ _ hs =>
       have ⟨i, ty⟩ := ih hs
-      exists i
+      existsi i
       apply ty.renaming
       constructor
       . assumption

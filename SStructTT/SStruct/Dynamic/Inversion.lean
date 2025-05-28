@@ -20,17 +20,17 @@ lemma Typed.lam_im_inv' {Γ} {Δ : Ctx Srt} {A T m s} :
   intro ty; induction ty generalizing A m s
   all_goals try trivial
   case lam_im B _ _ sA _ _ _ _ _ =>
-    cases e; exists B, sA; aesop
+    cases e; existsi B, sA; aesop
   case lam_ex => cases e
   case drop mrg lw h tyn ihn =>
     have ⟨B, sA, tym, eq2⟩ := ihn e
-    exists B, sA; and_intros
+    existsi B, sA; and_intros
     . apply Typed.drop (mrg.im _ _) _ h tym
       constructor; assumption
     . assumption
   case conv eq1 _ _ ih =>
     have ⟨B, sA, tym, eq2⟩ := ih e
-    exists B, sA; and_intros
+    existsi B, sA; and_intros
     . assumption
     . apply Conv.trans
       apply Conv.sym eq1
@@ -46,16 +46,16 @@ lemma Typed.lam_ex_inv' {Γ} {Δ : Ctx Srt} {A T m s} :
   all_goals try trivial
   case lam_im => cases e
   case lam_ex B _ _ sA _ _ _ _ _ =>
-    cases e; exists B, sA; aesop
+    cases e; existsi B, sA; aesop
   case drop mrg lw h tyn ihn =>
     have ⟨B, sA, tym, eq2⟩ := ihn e
-    exists B, sA; and_intros
+    existsi B, sA; and_intros
     . apply Typed.drop (mrg.right _ _) _ h tym
       constructor; assumption
     . assumption
   case conv eq1 _ _ ih =>
     have ⟨B, sA, tym, eq2⟩ := ih e
-    exists B, sA; and_intros
+    existsi B, sA; and_intros
     . assumption
     . apply Conv.trans
       apply Conv.sym eq1
@@ -71,18 +71,18 @@ lemma Typed.tup_im_inv' {Γ} {Δ : Ctx Srt} {T m n s} :
   intro ty; induction ty generalizing m n s
   all_goals try trivial
   case tup_im A B _ _ _ _ _ _ _ _ =>
-    cases e; exists A, B; aesop
+    cases e; existsi A, B; aesop
   case tup_ex => cases e
   case drop mrg lw h tyn ihn =>
     have ⟨A, B, tym, tyn, eq2⟩ := ihn e
-    exists A, B; and_intros
+    existsi A, B; and_intros
     . apply Typed.drop mrg _ h tym
       assumption
     . assumption
     . assumption
   case conv eq1 _ _ ih =>
     have ⟨A, B, _, _, eq2⟩ := ih e
-    exists A, B; and_intros
+    existsi A, B; and_intros
     . assumption
     . assumption
     . apply Conv.trans
@@ -101,18 +101,18 @@ lemma Typed.tup_ex_inv' {Γ} {Δ : Ctx Srt} {T m n s} :
   all_goals try trivial
   case tup_im => cases e
   case tup_ex Δ1 Δ2 Δ A B _ _ _ _ _ _ _ _ _ _ =>
-    cases e; exists Δ1, Δ2, A, B; aesop
+    cases e; existsi Δ1, Δ2, A, B; aesop
   case drop mrg lw h tyn ihn =>
     have ⟨Δ1, Δ2, A, B, mrg', tym, tyn, eq2⟩ := ihn e
     have ⟨Δ3, mrg1, mrg2⟩ := mrg.sym.split mrg'.sym
-    exists Δ1, Δ3, A, B; and_intros
+    existsi Δ1, Δ3, A, B; and_intros
     . apply mrg2.sym
     . assumption
     . apply Typed.drop mrg1.sym lw h tyn
     . assumption
   case conv eq1 _ _ ih =>
     have ⟨Δ1, Δ2, A, B, mrg, _, _, eq2⟩ := ih e
-    exists Δ1, Δ2, A, B; and_intros
+    existsi Δ1, Δ2, A, B; and_intros
     . assumption
     . assumption
     . assumption
@@ -134,7 +134,7 @@ lemma Typed.lam_im_inv {Γ} {Δ : Ctx Srt} {A A' B m s s'} :
   have ty1 := tyA'.preservation' rd'
   have ty2 := tyA.preservation' rd
   have e := Static.Typed.unique ty1 ty2
-  subst_vars; exists sA'
+  subst_vars; existsi sA'
   replace tyB := Static.Typed.conv_ctx eqA.sym tyA tyB
   apply Typed.conv_ctx eqA tyA'
   apply Typed.conv eqB.sym tym tyB
@@ -153,7 +153,7 @@ lemma Typed.lam_ex_inv {Γ} {Δ : Ctx Srt} {A A' B m s s'} :
   have ty1 := tyA'.preservation' rd'
   have ty2 := tyA.preservation' rd
   have e := Static.Typed.unique ty1 ty2
-  subst_vars; exists sA'
+  subst_vars; existsi sA'
   replace tyB := Static.Typed.conv_ctx eqA.sym tyA tyB
   apply Typed.conv_ctx eqA tyA'
   apply Typed.conv eqB.sym tym tyB
@@ -192,7 +192,7 @@ lemma Typed.tup_ex_inv {Γ} {Δ : Ctx Srt} {A B m n s s'} :
   have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
   replace tym := Typed.conv eqA.sym tym tyA
   replace tyB := tyB.subst tym.toStatic; asimp at tyB
-  exists Δ1, Δ2; simp; and_intros
+  existsi Δ1, Δ2; simp; and_intros
   . assumption
   . assumption
   . apply Typed.conv

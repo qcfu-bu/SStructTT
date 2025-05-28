@@ -121,31 +121,31 @@ lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ} :
       AgreeSubst σ Γ Δb Γ' Δb' := by
   intro agr mrg; induction agr generalizing Δa Δb
   case nil =>
-    cases mrg; exists [], []
+    cases mrg; existsi [], []
     aesop (rule_sets := [subst])
   case cons A r s i σ tyA agr ih =>
     cases mrg with
     | contra _ _ h mrg =>
       have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
-      exists A.[σ] :⟨.ex, s⟩ Δa', A.[σ] :⟨.ex, s⟩ Δb'; and_intros
+      existsi A.[σ] :⟨.ex, s⟩ Δa', A.[σ] :⟨.ex, s⟩ Δb'; and_intros
       all_goals constructor <;> assumption
     | left _ _ mrg =>
       have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
-      exists A.[σ] :⟨.ex, s⟩ Δa', A.[σ] :⟨.im, s⟩ Δb'; and_intros
+      existsi A.[σ] :⟨.ex, s⟩ Δa', A.[σ] :⟨.im, s⟩ Δb'; and_intros
       all_goals constructor <;> assumption
     | right _ _ mrg =>
       have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
-      exists A.[σ] :⟨.im, s⟩ Δa', A.[σ] :⟨.ex, s⟩ Δb'; and_intros
+      existsi A.[σ] :⟨.im, s⟩ Δa', A.[σ] :⟨.ex, s⟩ Δb'; and_intros
       all_goals constructor <;> assumption
     | im _ _ mrg =>
       have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
-      exists A.[σ] :⟨.im, s⟩ Δa', A.[σ] :⟨.im, s⟩ Δb'; and_intros
+      existsi A.[σ] :⟨.im, s⟩ Δa', A.[σ] :⟨.im, s⟩ Δb'; and_intros
       all_goals constructor <;> assumption
   case intro_im agr ih =>
     cases mrg with
     | im _ _ mrg =>
       have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
-      exists Δa', Δb'; and_intros
+      existsi Δa', Δb'; and_intros
       . assumption
       . constructor <;> assumption
       . constructor <;> assumption
@@ -155,7 +155,7 @@ lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ} :
       have ⟨Δa', Δb', mrg2, agr1, agr2⟩ := ih mrg
       have ⟨Δc1, mrg3, mrg4⟩ := mrg1.sym.split mrg2
       have ⟨Δc2, mrg5, mrg6⟩ := mrg1.sym.split mrg2.sym
-      exists Δc1, Δc2; and_intros
+      existsi Δc1, Δc2; and_intros
       . apply Merge.compose <;> assumption
       . apply AgreeSubst.intro_ex
         . exact mrg3.sym
@@ -170,7 +170,7 @@ lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ} :
     | left _ _ mrg =>
       have ⟨Δa', Δb', mrg2, agr1, agr2⟩ := ih mrg
       have ⟨Δc1, mrg3, mrg4⟩ := mrg1.sym.split mrg2
-      exists Δc1, Δb'; and_intros
+      existsi Δc1, Δb'; and_intros
       . exact mrg4
       . apply AgreeSubst.intro_ex
         . exact mrg3.sym
@@ -183,7 +183,7 @@ lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ} :
     | right _ _ mrg =>
       have ⟨Δa', Δb', mrg2, agr1, agr2⟩ := ih mrg
       have ⟨Δc1, mrg3, mrg4⟩ := mrg1.sym.split mrg2.sym
-      exists Δa', Δc1; and_intros
+      existsi Δa', Δc1; and_intros
       . exact mrg4.sym
       . apply AgreeSubst.intro_im
         . exact tym.toStatic
@@ -197,16 +197,16 @@ lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ} :
     cases mrg with
     | contra _ _ h mrg =>
       have ⟨Δa', Δb', mrg', agr1, agr2⟩ := ih (Merge.contra A s h mrg)
-      exists Δa', Δb'; aesop (rule_sets := [subst])
+      existsi Δa', Δb'; aesop (rule_sets := [subst])
     | left _ _ mrg =>
       have ⟨Δa', Δb', mrg', agr1, agr2⟩ := ih (Merge.left A s mrg)
-      exists Δa', Δb'; aesop (rule_sets := [subst])
+      existsi Δa', Δb'; aesop (rule_sets := [subst])
     | right _ _ mrg =>
       have ⟨Δa', Δb', mrg', agr1, agr2⟩ := ih (Merge.right A s mrg)
-      exists Δa', Δb'; aesop (rule_sets := [subst])
+      existsi Δa', Δb'; aesop (rule_sets := [subst])
     | im _ _ mrg =>
       have ⟨Δa', Δb', mrg', agr1, agr2⟩ := ih (Merge.im _ _ mrg)
-      exists Δa', Δb'; aesop (rule_sets := [subst])
+      existsi Δa', Δb'; aesop (rule_sets := [subst])
 
 lemma AgreeSubst.wf_nil {Γ'} {Δ' : Ctx Srt} {σ} :
     AgreeSubst σ [] [] Γ' Δ' -> Γ' ;; Δ' ⊢ := by

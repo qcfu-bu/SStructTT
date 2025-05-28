@@ -70,23 +70,23 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
   generalize e2: [] = Δ
   intro er; induction er <;> (subst_vars; try trivial)
   case lam_im m' s _ _ _ _ _ _ =>
-    right; exists .lam m' s; and_intros
+    right; existsi .lam m' s; and_intros
     . constructor
     . constructor
   case lam_ex m' s _ _ _ _ _ _ =>
-    right; exists .lam m' s; and_intros
+    right; existsi .lam m' s; and_intros
     . constructor
     . constructor
   case app_im n _ _ erm ih =>
     simp_all
     match ih with
     | .inl ⟨m', _⟩ =>
-      left; exists Tm.app m' .null
+      left; existsi Tm.app m' .null
       apply Step.app_M; assumption
     | .inr ⟨v, rd, vl⟩ =>
       replace erm := erm.preservation0' rd
       have ⟨m', e⟩ := erm.pi_canonical Conv.R vl
-      subst_vars; left; exists m'.[.null/]
+      subst_vars; left; existsi m'.[.null/]
       constructor
       . apply Red0.app rd Star.R
       . aesop
@@ -94,18 +94,18 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m', _⟩ =>
-      left; exists Tm.app m' n'
+      left; existsi Tm.app m' n'
       apply Step.app_M; assumption
     | .inr ⟨v1, rd1, vl1⟩ =>
       replace erm := erm.preservation0' rd1
       match ihn with
       | .inl ⟨n', _⟩ =>
-        left; exists Tm.app m' n'
+        left; existsi Tm.app m' n'
         apply Step.app_N; assumption
       | .inr ⟨v2, rd2, vl2⟩ =>
         replace ern := ern.preservation0' rd2
         have ⟨m', e⟩ := erm.pi_canonical Conv.R vl1
-        subst_vars; left; exists m'.[v2/]
+        subst_vars; left; existsi m'.[v2/]
         constructor
         . apply Red0.app rd1 rd2
         . aesop
@@ -113,37 +113,37 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
     simp_all
     match ih with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.tup m .null s
+      left; existsi Tm.tup m .null s
       apply Step.tup_M; assumption
     | .inr ⟨v, rd, vl⟩ =>
-      right; exists .tup v .null s; and_intros
+      right; existsi .tup v .null s; and_intros
       . apply Red0.tup rd Star.R
       . aesop
   case tup_ex m m' n n' s _ _ _ _ ihm ihn mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.tup m n' s
+      left; existsi Tm.tup m n' s
       apply Step.tup_M; assumption
     | .inr ⟨v1, rd1, vl1⟩ =>
       match ihn with
       | .inl ⟨n, _⟩ =>
-        left; exists Tm.tup m' n s
+        left; existsi Tm.tup m' n s
         apply Step.tup_N; assumption
       | .inr ⟨v2, rd2, vl2⟩ =>
-        right; exists .tup v1 v2 s; and_intros
+        right; existsi .tup v1 v2 s; and_intros
         . apply Red0.tup rd1 rd2
         . aesop
   case prj_im C m m' n n' _ _ _ _ _ _ erm _ ihm _ mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.prj m n'
+      left; existsi Tm.prj m n'
       apply Step.prj_M; assumption
     | .inr ⟨v, rd, vl⟩ =>
       replace erm := erm.preservation0' rd
       have ⟨m1', m2', _⟩ := erm.sig_canonical Conv.R vl
-      subst_vars; left; exists n'.[m2',m1'/]
+      subst_vars; left; existsi n'.[m2',m1'/]
       constructor
       . apply Red0.prj rd
       . aesop
@@ -151,41 +151,41 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; exists Tm.prj m n'
+      left; existsi Tm.prj m n'
       apply Step.prj_M; assumption
     | .inr ⟨v, rd, vl⟩ =>
       replace erm := erm.preservation0' rd
       have ⟨m1', m2', _⟩ := erm.sig_canonical Conv.R vl
-      subst_vars; left; exists n'.[m2',m1'/]
+      subst_vars; left; existsi n'.[m2',m1'/]
       constructor
       . apply Red0.prj rd
       . aesop
-  case tt => right; exists .tt; aesop
-  case ff => right; exists .ff; aesop
+  case tt => right; existsi .tt; aesop
+  case ff => right; existsi .ff; aesop
   case ite A m m' n1 n1' n2 n2' _ _ _ erm _ _ ihm _ _ mrg =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m', _⟩ =>
-      left; exists Tm.ite m' n1' n2'
+      left; existsi Tm.ite m' n1' n2'
       apply Step.ite_M; assumption
     | .inr ⟨v, rd, vl⟩ =>
       replace erm := erm.preservation0' rd
       cases erm.bool_canonical Conv.R vl with
       | inl =>
-        subst_vars; left; exists n1'; constructor
+        subst_vars; left; existsi n1'; constructor
         . apply Red0.ite rd
         . constructor
       | inr =>
-        subst_vars; left; exists n2'; constructor
+        subst_vars; left; existsi n2'; constructor
         . apply Red0.ite rd
         . constructor
   case drop s lw h erm ern ihm ihn mrg =>
     cases mrg; simp_all
     match ihn with
     | .inl ⟨n', st⟩ =>
-      left; exists n'; apply Step.drop st
+      left; existsi n'; apply Step.drop st
     | .inr ⟨v, rd, vl⟩ =>
-      right; exists v;
+      right; existsi v;
       constructor
       . apply Star.ES
         constructor

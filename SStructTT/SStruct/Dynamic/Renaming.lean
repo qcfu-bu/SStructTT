@@ -110,34 +110,34 @@ lemma AgreeRen.split {Γ Γ'} {Δ Δ' Δ1 Δ2 : Ctx Srt} {ξ} :
   intro agr; induction agr generalizing Δ1 Δ2
   case nil =>
     intro mrg; cases mrg
-    exists [], []
+    existsi [], []
     aesop (rule_sets := [rename])
   case cons Γ Γ' Δ Δ' A r s i ξ ty agr ih =>
     intro mrg; cases mrg with
     | contra Δ1 Δ2 h mrg =>
       have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := ih mrg
-      exists A.[ren ξ] :⟨.ex, s⟩ Δ1', A.[ren ξ] :⟨.ex, s⟩ Δ2'
+      existsi A.[ren ξ] :⟨.ex, s⟩ Δ1', A.[ren ξ] :⟨.ex, s⟩ Δ2'
       and_intros
       . constructor <;> assumption
       . constructor <;> assumption
       . constructor <;> assumption
     | @left Δ1 Δ2 _ _ _ mrg =>
       have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := ih mrg
-      exists A.[ren ξ] :⟨.ex, s⟩ Δ1', A.[ren ξ] :⟨.im, s⟩ Δ2'
+      existsi A.[ren ξ] :⟨.ex, s⟩ Δ1', A.[ren ξ] :⟨.im, s⟩ Δ2'
       and_intros
       . constructor; assumption
       . constructor <;> assumption
       . constructor <;> assumption
     | @right Δ1 Δ2 _ _ _ mrg =>
       have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := ih mrg
-      exists A.[ren ξ] :⟨.im, s⟩ Δ1', A.[ren ξ] :⟨.ex, s⟩ Δ2'
+      existsi A.[ren ξ] :⟨.im, s⟩ Δ1', A.[ren ξ] :⟨.ex, s⟩ Δ2'
       and_intros
       . constructor; assumption
       . constructor <;> assumption
       . constructor <;> assumption
     | @im Δ1 Δ2 _ _ _ mrg =>
       have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := ih mrg
-      exists A.[ren ξ] :⟨.im, s⟩ Δ1', A.[ren ξ] :⟨.im, s⟩ Δ2'
+      existsi A.[ren ξ] :⟨.im, s⟩ Δ1', A.[ren ξ] :⟨.im, s⟩ Δ2'
       and_intros
       . constructor; assumption
       . constructor <;> assumption
@@ -145,7 +145,7 @@ lemma AgreeRen.split {Γ Γ'} {Δ Δ' Δ1 Δ2 : Ctx Srt} {ξ} :
   case intro Γ Γ' Δ Δ' A s i ξ ty agr ih =>
     intro mrg
     have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := ih mrg
-    exists A :⟨.im, s⟩ Δ1', A :⟨.im, s⟩ Δ2'
+    existsi A :⟨.im, s⟩ Δ1', A :⟨.im, s⟩ Δ2'
     and_intros
     . constructor; assumption
     . constructor <;> assumption

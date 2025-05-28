@@ -12,10 +12,10 @@ lemma Heap.fresh (H : Heap Srt) : ∃ l, l ∉ H := by
   cases e2: keys.max with
   | bot =>
     rw [keys.max_eq_bot] at e2
-    subst e2; exists 0
+    subst e2; existsi 0
     simp[<-Finmap.mem_keys,e1]
   | coe x =>
-    exists x + 1
+    existsi x + 1
     simp[<-Finmap.mem_keys,e1]
     apply keys.not_mem_of_max_lt _ e2
     simp
@@ -519,7 +519,7 @@ lemma HMerge.insert_left {H1 H2 H3 : Heap Srt} l m s :
 --     HLower H3 s -> s ∈ ord.contra_set ->
 --     ∃ H1 H2, HLower H1 s ∧ HLower H2 s ∧ HMerge H1 H2 H3 := by
 --   intro lw h
---   exists H3, H3; and_intros
+--   existsi H3, H3; and_intros
 --   . assumption
 --   . assumption
 --   . apply lw.merge_refl h
@@ -528,7 +528,7 @@ lemma HLower.split_contra {H3 : Heap Srt} :
     Contra H3 ->
     ∃ H1 H2, Contra H1 ∧ Contra H2 ∧ HMerge H1 H2 H3 := by
   intro lw
-  exists H3, H3; and_intros
+  existsi H3, H3; and_intros
   . assumption
   . assumption
   . apply lw.merge_refl
@@ -550,7 +550,7 @@ lemma HMerge.exists_self_contra (H : Heap Srt) :
   H.induction_on fun xs => by
     clear H; induction xs
     case H0 =>
-      exists ∅; simp; and_intros
+      existsi ∅; simp; and_intros
       apply Contra.empty.merge_refl
       apply Contra.empty
     case IH l hd tl nn ih =>
@@ -558,11 +558,11 @@ lemma HMerge.exists_self_contra (H : Heap Srt) :
       rcases ih with ⟨H0, mrg0, ct0⟩
       rcases hd with ⟨m, s⟩
       if mm: s ∈ ord.contra_set then
-        exists H0.insert l (m, s); and_intros
+        existsi H0.insert l (m, s); and_intros
         apply mrg0.insert_contra mm
         apply ct0.insert mm
       else
-        exists H0; and_intros
+        existsi H0; and_intros
         apply mrg0.insert_left <;> assumption
         assumption
 
@@ -684,7 +684,7 @@ lemma HMerge.split {H1 H2 H3 Ha Hb : Heap Srt} :
     HMerge H1 H2 H3 ->
     HMerge Ha Hb H1 ->
     ∃ Hc, HMerge Ha H2 Hc ∧ HMerge Hc Hb H3 := by
-  intro mrg1 mrg2; exists Ha ∪ H2; and_intros
+  intro mrg1 mrg2; existsi Ha ∪ H2; and_intros
   . intro x
     replace mrg1 := mrg1 x
     replace mrg2 := mrg2 x
@@ -780,7 +780,7 @@ lemma HMerge.distr {H1 H2 H3 H11 H12 H21 H22 : Heap Srt} :
   have ⟨H4, mrg3, mrg4⟩ := mrg0.split mrg1
   have ⟨H5, mrg5, mrg6⟩ := mrg3.sym.split mrg2
   have ⟨H6, mrg7, mrg8⟩ := mrg4.split mrg6.sym
-  exists H5, H6; and_intros
+  existsi H5, H6; and_intros
   . apply mrg8.sym
   . apply mrg5.sym
   . apply mrg7.sym
@@ -832,7 +832,7 @@ lemma HMerge.split_subheap {H1 H2 H3 H3p : Heap Srt} :
     ∃ H1p H2p, SubHeap H1 H1p ∧ SubHeap H2 H2p ∧ HMerge H1p H2p H3p := by
   intro mrg ⟨H0, ct, dsj, un⟩; subst_vars
   have ⟨dsj1, dsj2⟩ := mrg.split_disjoint dsj
-  exists H1 ∪ H0, H2 ∪ H0; and_intros
+  existsi H1 ∪ H0, H2 ∪ H0; and_intros
   . apply SubHeap.intro H0 <;> trivial
   . apply SubHeap.intro H0 <;> trivial
   . apply mrg.union_contra ct dsj

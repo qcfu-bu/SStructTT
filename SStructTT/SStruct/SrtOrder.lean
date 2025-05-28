@@ -81,12 +81,12 @@ lemma InterSet.intersect_contra {s1 s2 : Srt} :
   cases ord.weaken_dec s1 with
   | isTrue _ =>
     cases ord.weaken_dec s2 with
-    | isTrue _  => exists s1; and_intros <;> aesop
-    | isFalse _ => exists s2; and_intros <;> aesop
+    | isTrue _  => existsi s1; and_intros <;> aesop
+    | isFalse _ => existsi s2; and_intros <;> aesop
   | isFalse _ =>
     cases ord.weaken_dec s2 with
-    | isTrue _  => exists s1; and_intros <;> aesop
-    | isFalse _ => exists s2; and_intros <;> aesop
+    | isTrue _  => existsi s1; and_intros <;> aesop
+    | isFalse _ => existsi s2; and_intros <;> aesop
 
 lemma InterSet.intersect_weaken {s1 s2 : Srt} :
     s1 ∈ ord.weaken_set -> s2 ∈ ord.weaken_set ->
@@ -95,12 +95,12 @@ lemma InterSet.intersect_weaken {s1 s2 : Srt} :
   cases ord.contra_dec s1 with
   | isTrue _ =>
     cases ord.contra_dec s2 with
-    | isTrue _  => exists s1; and_intros <;> aesop
-    | isFalse _ => exists s2; and_intros <;> aesop
+    | isTrue _  => existsi s1; and_intros <;> aesop
+    | isFalse _ => existsi s2; and_intros <;> aesop
   | isFalse _ =>
     cases ord.contra_dec s2 with
-    | isTrue _  => exists s1; and_intros <;> aesop
-    | isFalse _ => exists s2; and_intros <;> aesop
+    | isTrue _  => existsi s1; and_intros <;> aesop
+    | isFalse _ => existsi s2; and_intros <;> aesop
 
 end InterSet
 
