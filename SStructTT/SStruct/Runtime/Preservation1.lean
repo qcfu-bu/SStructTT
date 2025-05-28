@@ -41,8 +41,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . constructor
             . apply Erased.lam_im <;> assumption
             . apply Resolve.ptr
-              . unfold HLookup
-                simp[h3]; aesop
+              . unfold HLookup; simp[h3]; trivial
               . constructor
                 intro; apply ct.insert; assumption
                 apply rsx.insert_contra h3 h1
@@ -86,8 +85,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . constructor
             . apply Erased.lam_ex <;> assumption
             . apply Resolve.ptr
-              . unfold HLookup
-                simp[h3]; aesop
+              . unfold HLookup; simp[h3]; trivial
               . constructor
                 intro; apply ct.insert; assumption
                 apply rsx.insert_contra h3 h1
@@ -146,40 +144,49 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     case ptr =>
       cases st
       case alloc vl => cases vl
-  all_goals sorry
-
-/-
   case app_ex mrg1 erm ern ihm ihn =>
     subst_vars; cases mrg1; cases rs
     case app mrg2 rsm rsn =>
       have ⟨wr1', wr2'⟩ := mrg2.split_wr wr1
       cases st
       case app_M st =>
+        clear ihn
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg2.sym
         have wrx := mrg2.merge_wr wr2' wr2
-        have ⟨H1', mrg', ⟨erm', rsm', wr'⟩⟩ := ihm rfl rfl mrg3.sym wrx rsm wr1' st
-        have ⟨H2', mrg1', mrg2'⟩ := mrg'.sym.split mrg2
-        exists H2'; and_intros
+        have ⟨H1', H2', mrg', wr', sb, ⟨erm', rsm', wr⟩⟩ :=
+          ihm rfl rfl mrg3.sym wrx rsm wr1' st
+        clear ihm
+        have ⟨H1p, H2p, sb1, sb2, mrg2p⟩ := mrg2.split_subheap sb
+        have ⟨Hy, mrg1, mrg2⟩ := mrg'.sym.split mrg2p
+        exists Hy, H2p; and_intros
+        . assumption
+        . apply mrg2p.sym.split_wr' wr'
         . assumption
         . constructor
           . apply Erased.app_ex Merge.nil <;> assumption
-          . apply Resolve.app mrg1'.sym
+          . apply Resolve.app mrg1.sym
             assumption
-            assumption
-          . apply mrg1'.merge_wr wr2' wr'
+            apply rsn.subheap sb1
+          . apply mrg2.split_wr' (mrg'.merge_wr wr wr')
       case app_N st =>
+        clear ihm
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg2
         have wrx := mrg2.merge_wr wr1' wr2
-        have ⟨H1', mrg', ⟨ern', rsn', wr'⟩⟩ := ihn rfl rfl mrg3.sym wrx rsn wr2' st
-        have ⟨H2', mrg1', mrg2'⟩ := mrg'.sym.split mrg2
-        exists H2'; and_intros
+        have ⟨H1', H2', mrg', wr', sb, ⟨ern', rsn', wr⟩⟩ :=
+          ihn rfl rfl mrg3.sym wrx rsn wr2' st
+        clear ihn
+        have ⟨H1p, H2p, sb1, sb2, mrg2p⟩ := mrg2.split_subheap sb
+        have ⟨Hy, mrg1, mrg2⟩ := mrg'.sym.split mrg2p
+        exists Hy, H2p; and_intros
+        . assumption
+        . apply mrg2p.sym.split_wr' wr'
         . assumption
         . constructor
           . apply Erased.app_ex Merge.nil <;> assumption
-          . apply Resolve.app mrg1'
+          . apply Resolve.app mrg1
+            apply rsm.subheap sb1
             assumption
-            assumption
-          . apply mrg1'.merge_wr wr1' wr'
+          . apply mrg2.split_wr' (mrg'.merge_wr wr wr')
       case alloc vl => cases vl
     case ptr =>
       cases st
@@ -193,16 +200,21 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         have ⟨lw, e⟩ := rsn.null_inv wr2'; subst e
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
         have wrx := mrg2.merge_wr wr2' wr2
-        have ⟨H1', mrg', ⟨erm', rsm', wr'⟩⟩ := ihm rfl rfl mrg3.sym wrx rsm wr1' st
-        have ⟨H2', mrg1', mrg2'⟩ := mrg'.sym.split mrg2
-        exists H2'; and_intros
+        have ⟨H1', H2', mrg', wr', sb, ⟨erm', rsm', wr⟩⟩ :=
+          ihm rfl rfl mrg3.sym wrx rsm wr1' st
+        clear ihm
+        have ⟨H1p, H2p, sb1, sb2, mrg2p⟩ := mrg2.split_subheap sb
+        have ⟨Hy, mrg1, mrg2⟩ := mrg'.sym.split mrg2p
+        exists Hy, H2p; and_intros
+        . assumption
+        . apply mrg2p.sym.split_wr' wr'
         . assumption
         . constructor
-          . constructor <;> assumption
-          . apply Resolve.tup mrg1'.sym
+          . apply Erased.tup_im <;> assumption
+          . apply Resolve.tup mrg1.sym
             assumption
-            assumption
-          . apply mrg1'.merge_wr wr2' wr'
+            apply rsn.subheap sb1
+          . apply mrg2.split_wr' (mrg'.merge_wr wr wr')
       case tup_N st =>
         cases rsn
         case ptr =>
@@ -213,25 +225,54 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           case alloc vl => cases vl
       case alloc l h vl =>
         have ⟨h1, h2⟩ := mrg0.split_none h
-        cases vl
-        case tup l1 np =>
-          cases np
-          case ptr =>
-            have ⟨_, _⟩ := rsn.null_inv wr2'
-            contradiction
-          case null =>
-            exists H1.insert l (.tup (.ptr l1) .null s, s); and_intros
-            . apply mrg0.insert_left l
+        have ⟨h1', h2'⟩ := mrg1.split_none h1
+        cases vl; case tup l1 np =>
+        cases np
+        case ptr =>
+          have ⟨_, _⟩ := rsn.null_inv wr2'
+          contradiction
+        case null =>
+          if h3: s ∈ ord.contra_set then
+            exists H1.insert l (.tup (.ptr l1) .null s, s)
+            exists H2.insert l (.tup (.ptr l1) .null s, s)
+            and_intros
+            . apply mrg0.insert_contra
+              assumption
+            . apply wr2.insert_tup
+              constructor
+            . apply SubHeap.insert
+              simp[<-Finmap.mem_keys,h2]
               assumption
             . constructor
-              . constructor <;> assumption
-              . apply Resolve.ptr h1
-                constructor <;> assumption
+              . apply Erased.tup_im <;> assumption
+              . apply Resolve.ptr
+                . unfold HLookup; simp[h3]; trivial
+                . apply Resolve.tup (mrg1.insert_contra h3)
+                  apply rsm.insert_contra h3 h1'
+                  apply rsn.insert_contra h3 h2'
+              . apply wr1.insert_tup
+                constructor
+          else
+            exists H1.insert l (.tup (.ptr l1) .null s, s), H2; and_intros
+            . apply mrg0.insert_left
+              assumption
+              assumption
+            . assumption
+            . apply SubHeap.refl
+            . constructor
+              . apply Erased.tup_im <;> assumption
+              . apply Resolve.ptr
+                . unfold HLookup; simp[h3]; trivial
+                . simp[Heap.erase_insert,h1]
+                  apply Resolve.tup mrg1 <;> assumption
               . apply wr1.insert_tup
                 constructor
     case ptr =>
       cases st
       case alloc vl => cases vl
+  -- all_goals sorry
+
+/-
   case tup_ex s i mrg1 ty erm ern ihm ihn =>
     subst_vars; cases mrg1; cases rs
     case tup mrg2 rsm rsn =>
