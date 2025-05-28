@@ -16,9 +16,9 @@ lemma Resolved.preservation {H1 H1' : Heap Srt} {a b c c' A} :
   case intro a b rd0 rd1 st =>
   rcases a with ⟨H1, a⟩
   rcases b with ⟨H2, b⟩
-  have ⟨c, rs, rd⟩ := rs.preservation0X rd0
+  have ⟨c, rs, rd⟩ := rs.preservation0' rd0
   have rs := rs.preservation1' rd1
-  have ⟨a, b, rs, st1, st2⟩ := rs.preservation2' st
+  have ⟨a, b, rs, st1, st2⟩ := rs.preservation2 st
   exists a, b; and_intros
   . assumption
   . assumption
