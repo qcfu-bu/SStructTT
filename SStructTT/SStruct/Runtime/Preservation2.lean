@@ -3,6 +3,7 @@ import SStructTT.SStruct.Runtime.Step
 import SStructTT.SStruct.Runtime.Resolution
 import SStructTT.SStruct.Runtime.Substitution
 open ARS
+set_option profiler true
 
 namespace SStruct.Erasure
 namespace Runtime
@@ -17,7 +18,7 @@ lemma Resolve.lookup {H1 H2 H3 H3' : Heap Srt} {l m m'} :
   case ptr Ha Hb l n n' lk0 rsm ihm =>
     cases e; clear ihm
     have ⟨e, mrg0⟩ := lk.collision mrg lk0; subst e
-    exists Hb
+    existsi Hb; simp_all
 
 lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     HMerge H1 H2 H3 -> WR H2 ->
@@ -52,7 +53,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           ihm rfl rfl mrg3.sym wrx rsm wr1' st
         clear ihm
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
-        exists Hx, .app a' n .im, .app b' .null; and_intros
+        existsi Hx, .app a' n .im, .app b' .null; and_intros
         . assumption
         . constructor
           . constructor <;> assumption
@@ -85,7 +86,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             constructor
             apply (mrg0.split_wr wry).right
             assumption
-        exists Hz, m1.[n/], m0.[.null/]; and_intros
+        existsi Hz, m1.[n/], m0.[.null/]; and_intros
         . assumption
         . constructor
           . apply erm.subst_im tyn
@@ -114,7 +115,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           ihm rfl rfl mrg3.sym wrx rsm wr1' st
         clear ihm
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
-        exists Hx, .app a' n0 .ex, .app b' n1; and_intros
+        existsi Hx, .app a' n0 .ex, .app b' n1; and_intros
         . assumption
         . constructor
           . apply Erased.app_ex Merge.nil <;> assumption
@@ -134,7 +135,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         clear ihn
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
         have tyn1 := tyn0.preservation' (Red.toStatic tyn0 st1.toStar)
-        exists Hx, .app m0 a' .ex, .app m1 b'; and_intros
+        existsi Hx, .app m0 a' .ex, .app m1 b'; and_intros
         . assumption
         . constructor
           . apply Erased.conv
@@ -178,7 +179,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
               constructor
               apply mrg.sym.split_wr' wr1'
               assumption
-          exists Hz, m1.[n2/], m0.[n1/]; and_intros
+          existsi Hz, m1.[n2/], m0.[n1/]; and_intros
           . assumption
           . constructor
             . apply Erased.conv
@@ -210,7 +211,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           ihm rfl rfl mrg3.sym wrx rsm wr1' st
         clear ihm
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
-        exists Hx, .tup a' n .im s, .tup b' .null s; and_intros
+        existsi Hx, .tup a' n .im s, .tup b' .null s; and_intros
         . assumption
         . constructor
           . constructor
@@ -241,4 +242,4 @@ lemma Resolved.preservation2 {H1 H2 : Heap Srt} {a b c c' A} :
   have wr0 := mrg.sym.split_wr' wr
   have ⟨H1', a', b', mrg', rsm', rd, st⟩ := rsm.preservation2X mrg wr0 st
   have e := mrg'.self_contra ct; subst e
-  exists a', b'
+  existsi a', b'; simp_all

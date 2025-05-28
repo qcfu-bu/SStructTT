@@ -367,7 +367,7 @@ lemma HLookup.merge {H1 H1' H2 H3 : Heap Srt} {l m} :
     split_ifs at lk
     case pos h =>
       subst_vars
-      exists H3; and_intros
+      existsi H3; and_intros
       . replace mrg := mrg l
         rw[e] at mrg; split at mrg <;> try trivial
         case h_1 e h2 h3 =>
@@ -383,7 +383,7 @@ lemma HLookup.merge {H1 H1' H2 H3 : Heap Srt} {l m} :
       . assumption
     case neg h =>
       subst_vars
-      exists H3.erase l; and_intros
+      existsi H3.erase l; and_intros
       . replace mrg := mrg l
         rw[e] at mrg; split at mrg <;> try trivial
         case h_1 e h2 h3 =>

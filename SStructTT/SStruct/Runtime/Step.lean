@@ -192,18 +192,18 @@ lemma Red0.app_inv' {H1 m n} {t : State Srt} :
       (¬DropFree m' -> H2 = H3 ∧ n = n') := by
   intro rd; induction rd
   case R =>
-    exists H1, H1, m, n; aesop
+    existsi H1, H1, m, n; aesop
   case SE st ih =>
     rcases ih with ⟨H2, H3, m', n', e, rd1, rd2, h⟩
     subst_vars
     cases st
     case app_M Hx mx st =>
       have ⟨e1, e2⟩ := h st.not_dropfree; subst_vars
-      exists Hx, Hx, mx, n'; simp; and_intros
+      existsi Hx, Hx, mx, n'; simp; and_intros
       apply Star.SE rd1 st
       apply Star.R
     case app_N Hx nx h st =>
-      exists H2, Hx, m', nx; simp; and_intros
+      existsi H2, Hx, m', nx; simp; and_intros
       . assumption
       . apply Star.SE rd2 st
       . intro; contradiction
@@ -225,18 +225,18 @@ lemma Red0.tup_inv' {H1 m n s} {t : State Srt} :
       (¬DropFree m' -> H2 = H3 ∧ n = n') := by
   intro rd; induction rd
   case R =>
-    exists H1, H1, m, n; aesop
+    existsi H1, H1, m, n; aesop
   case SE st ih =>
     rcases ih with ⟨H2, H3, m', n', e, rd1, rd2, h⟩
     subst_vars
     cases st
     case tup_M Hx mx st =>
       have ⟨e1, e2⟩ := h st.not_dropfree; subst_vars
-      exists Hx, Hx, mx, n'; simp; and_intros
+      existsi Hx, Hx, mx, n'; simp; and_intros
       apply Star.SE rd1 st
       apply Star.R
     case tup_N Hx nx h st =>
-      exists H2, Hx, m', nx; simp; and_intros
+      existsi H2, Hx, m', nx; simp; and_intros
       . assumption
       . apply Star.SE rd2 st
       . intro; contradiction
@@ -253,12 +253,12 @@ lemma Red0.prj_inv {H1 m n} {t : State Srt} :
     Red0 (H1, .prj m n) t ->
     ∃ H2 m', t = (H2, .prj m' n) ∧ Red0 (H1, m) (H2, m') := by
   intro rd; induction rd
-  case R => exists H1, m; aesop
+  case R => existsi H1, m; aesop
   case SE st ih =>
     rcases ih with ⟨H2, m', e, rd⟩
     subst_vars; cases st
     case prj_M Hx mx st =>
-      exists Hx, mx; simp
+      existsi Hx, mx; simp
       apply Star.SE rd st
 
 lemma Red0.tt_inv {H1} (t : State Srt) :
@@ -282,7 +282,7 @@ lemma Red0.ite_inv {H1 m n1 n2} {t : State Srt} :
     rcases ih with ⟨H2, m', e, rd0⟩
     subst_vars; cases st
     case ite_M Hx mx st =>
-      exists Hx, mx; simp
+      existsi Hx, mx; simp
       apply Star.SE rd0 st
 
 lemma Red0.ptr_inv {H1 l} {t : State Srt} :
@@ -323,7 +323,7 @@ lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
     have ⟨H3x, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
     have ⟨H4x, mrg6, ct4⟩ := ihn dp2 mrg5.sym
     have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
-    exists H5x; and_intros
+    existsi H5x; and_intros
     . assumption
     . apply mrg7.contra_image ct3 ct4
   case tup mrg0 rsm rsn ihm ihn =>
@@ -333,7 +333,7 @@ lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
     have ⟨H3x, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
     have ⟨H4x, mrg6, ct4⟩ := ihn dp2 mrg5.sym
     have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
-    exists H5x; and_intros
+    existsi H5x; and_intros
     . assumption
     . apply mrg7.contra_image ct3 ct4
   case prj mrg0 rsm rsn ihm ihn =>
@@ -343,7 +343,7 @@ lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
     have ⟨H3x, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
     have ⟨H4x, mrg6, ct4⟩ := ihn dp2 mrg5.sym
     have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
-    exists H5x; and_intros
+    existsi H5x; and_intros
     . assumption
     . apply mrg7.contra_image ct3 ct4
   case tt => cases dp; aesop
@@ -356,7 +356,7 @@ lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
     have ⟨H3x, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
     have ⟨H4x, mrg6, ct4⟩ := ihn1 dp2 mrg5.sym
     have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
-    exists H5x; and_intros
+    existsi H5x; and_intros
     . assumption
     . apply mrg7.contra_image ct3 ct4
   case drop mrg0 rsm rsn ihm ihn =>
@@ -366,7 +366,7 @@ lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
     have ⟨H3x, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
     have ⟨H4x, mrg6, ct4⟩ := ihn dp2 mrg5.sym
     have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
-    exists H5x; and_intros
+    existsi H5x; and_intros
     . assumption
     . apply mrg7.contra_image ct3 ct4
   case null H1 _ => cases dp; aesop
