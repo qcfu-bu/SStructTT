@@ -319,7 +319,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         have wr3' := lk.wr_image wr3
         have ⟨wr4, wrx⟩ := mrg'.split_wr wr3'
         cases rsm'; case tup mx0 nx0 mrg rs1 rs2 =>
-        have ⟨H5, H6⟩ := mrg.split_wr wr4
+        have ⟨wr5, wr6⟩ := mrg.split_wr wr4
         have vl := rsm.ptr_value wr1'
         cases vl; case tup vl1 vl2 =>
         cases np
@@ -336,7 +336,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           have ⟨ermx, tynx, _, _⟩ := erx.tup_im_inv
           have ⟨v0, rd2, vl0, erv0⟩ := ermx.value_preimage vl1
           have rsn := Resolved.intro ern rsn wr2'
-          have rsmx0 := (Resolved.intro erv0 rs1 H5).resolution tyA vl1
+          have hyp := (Resolved.intro erv0 rs1 wr5).resolution tyA vl1
           have rdv0 := Red.toStatic ermx.toStatic rd2
           have eq : m0 === (.tup v0 nx1 .im s) := by
             apply Star.conv
@@ -348,8 +348,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             apply Star.conv rdv0
             assumption
             apply tyB.subst erv0.toStatic
-          existsi Hx, n0.[nx1,v0/], n1.[.null,mx0/]
-          and_intros
+          existsi Hx, n0.[nx1,v0/], n1.[.null,mx0/]; and_intros
           . assumption
           . constructor
             . apply Erased.conv
@@ -358,13 +357,13 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
                     = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[nx1,v0/] by asimp]
               apply ern.substitution
               apply Erasure.AgreeSubst.intro_im tynx1
-              apply Erasure.AgreeSubst.intro_ex Merge.nil; constructor; asimp; assumption
+              apply Erasure.AgreeSubst.intro_ex Merge.nil (Lower.nil _)
+              asimp; assumption
               apply Erasure.AgreeSubst.refl Wf.nil
               apply tyC.subst erm.toStatic
             . apply rsn.substitution mrg4
               constructor
-              constructor
-              pick_goal 2
+              constructor; swap
               . assumption
               . assumption
               . apply mrg.sym
@@ -377,6 +376,113 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             apply Red.prj (Red.tup_im rd2)
             aesop
           . aesop
+    case ptr => cases st
+  case prj_ex B C m0 m1 n0 n1 _ _ _ _ i mrg tyC erm ern ihm ihn =>
+    clear ihn; subst_vars; cases mrg; cases rs
+    case prj H1' H2' m' n' mrg1 rsm rsn =>
+      have wr3 := mrg0.merge_wr wr1 wr2
+      have ⟨wr1', wr2'⟩ := mrg1.split_wr wr1
+      have tym0 := erm.toStatic
+      have wf := ern.toWf
+      cases wf; case cons tyB wf =>
+      cases wf; case cons tyA _ =>
+      cases st
+      case prj_M st =>
+        have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
+        have wrx := mrg2.merge_wr wr2' wr2
+        have ⟨H1', a', b', mrgx, ⟨er', rs', wr'⟩, st1, st2⟩ :=
+          ihm rfl rfl mrg3.sym wrx rsm wr1' st
+        clear ihm
+        have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
+        existsi Hx, .prj C a' n0 .ex, .prj b' n1; and_intros
+        . assumption
+        . constructor
+          . apply Erased.conv
+            apply Static.Conv.subst1
+            apply (Star.conv (Red.toStatic tym0 st1.toStar)).sym
+            apply Erased.prj_ex Merge.nil tyC
+            assumption
+            assumption
+            apply tyC.subst tym0
+          . apply Resolve.prj mrg1.sym <;> assumption
+          . apply mrg1.merge_wr wr2' wr'
+        . apply Red1.prj st1
+        . constructor; assumption
+      case prj_elim H1' s l l1 p np lk =>
+        clear ihm
+        have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
+        have ⟨H4, rsm', mrg'⟩ := rsm.lookup mrg3.sym lk
+        have ⟨Hx, mrg4, mrg5⟩ := mrg'.sym.split mrg2
+        have wr3' := lk.wr_image wr3
+        have ⟨wr4, wrx⟩ := mrg'.split_wr wr3'
+        cases rsm'; case tup Hm Hn mx0 nx0 mrg rs1 rs2 =>
+        have ⟨wr5, wr6⟩ := mrg.split_wr wr4
+        have vl := rsm.ptr_value wr1'
+        cases vl; case tup vlm vln =>
+        cases np
+        case ptr =>
+          have ⟨mx1, nx1, r, rd1, erx⟩ := erm.tup_preimage
+          have ⟨_, _, _, _⟩ := erx.toStatic.tup_inv; subst_vars
+          have ⟨_, _, mrg, ermx, ernx, _⟩ := erx.tup_ex_inv; cases mrg
+          have ⟨v1, rdv1, vl1, erv1⟩ := ermx.value_preimage vlm
+          have ⟨v2, rdv2, vl2, erv2⟩ := ernx.value_preimage vln
+          have tymx := ermx.toStatic
+          have rsn := Resolved.intro ern rsn wr2'
+          have hyp1 := (Resolved.intro erv1 rs1 wr5).resolution tyA vlm
+          have hyp2 := (Resolved.intro erv2 rs2 wr6).resolution (tyB.subst tymx) vln
+          have rdv1' := Red.toStatic tymx rdv1
+          have rdv2' := Red.toStatic ernx.toStatic rdv2
+          have ⟨Hm', mrg, ct⟩ := HMerge.exists_self_contra Hm
+          have eq : m0 === (.tup v1 v2 .ex s) := by
+            apply Star.conv
+            apply Star.trans (Red.toStatic erm.toStatic rd1)
+            apply Static.Red.tup _ _ rdv1' rdv2'
+          have erv2 : [] ;; [] ⊢ v2 ▷ nx0 : B.[v1/] := by
+            apply Erased.conv
+            apply Static.Conv.subst1
+            apply Star.conv rdv1'
+            apply erv2
+            apply tyB.subst erv1.toStatic
+          existsi Hx, n0.[v2,v1/], n1.[nx0,mx0/]; and_intros
+          . assumption
+          . constructor
+            . apply Erased.conv
+              apply Static.Conv.subst1 _ eq.sym
+              rw[show C.[.tup v1 v2 .ex s/]
+                    = C.[.tup (.var 1) (.var 0) .ex s .: shift 2].[v2,v1/] by asimp]
+              apply ern.substitution
+              apply Erasure.AgreeSubst.intro_ex Merge.nil (Lower.nil _) erv2
+              apply Erasure.AgreeSubst.intro_ex Merge.nil (Lower.nil _)
+              asimp; assumption
+              apply Erasure.AgreeSubst.refl Wf.nil
+              apply tyC.subst erm.toStatic
+            . apply rsn.substitution mrg4
+              constructor; swap
+              . assumption
+              . assumption
+              . assumption
+              . assumption
+              . constructor; swap
+                . assumption
+                . assumption
+                . apply mrg.sym
+                . assumption
+                . constructor
+                  apply mrg.sym.split_wr' wr5
+                  assumption
+            . apply mrg4.merge_wr wr2' wr4
+          . apply Star1.SE_join
+            apply Star.trans
+            apply Red.prj rd1
+            apply Red.prj (Red.tup_ex rdv1 rdv2)
+            aesop
+          . aesop
+        case null =>
+          cases rs2
+          have ⟨_, _, _, _, erm'⟩ := erm.tup_preimage
+          have ⟨_, _, _, _⟩ := erm'.toStatic.tup_inv; subst_vars
+          have ⟨_, _, _, _, ern, _⟩ := erm'.tup_ex_inv
+          exfalso; apply ern.null_preimage
     case ptr => cases st
   all_goals sorry
 
