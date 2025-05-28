@@ -4,6 +4,8 @@ import SStructTT.SStruct.Runtime.Resolution
 import SStructTT.SStruct.Runtime.Substitution
 open ARS
 
+set_option profiler true
+
 namespace SStruct.Erasure
 namespace Runtime
 open Dynamic
@@ -484,7 +486,64 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           have ⟨_, _, _, _, ern, _⟩ := erm'.tup_ex_inv
           exfalso; apply ern.null_preimage
     case ptr => cases st
+  case tt =>
+    subst_vars; cases rs
+    case tt => cases st
+    case ptr => cases st
+  case ff =>
+    subst_vars; cases rs
+    case ff => cases st
+    case ptr => cases st
+  case ite A m m' n1 n1' n2 n2' s i mrg tyA erm ern1 ern2 ihm ihn1 ihn2 =>
+    clear ihn1 ihn2
+    subst_vars; cases mrg; cases rs
+    case ite mrg1 rsm rsn1 rsn2 =>
+      have ⟨wr1', wr2'⟩ := mrg1.split_wr wr1
+      have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
+      have wrx := mrg2.merge_wr wr2' wr2
+      cases st
+      case ite_M mx st =>
+        have ⟨H1', a', b', mrgx, ⟨er', rs', wr'⟩, st1, st2⟩ :=
+          ihm rfl rfl mrg3.sym wrx rsm wr1' st
+        clear ihm
+        have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
+        existsi Hx, .ite A a' n1 n2, .ite b' n1' n2'; and_intros
+        . assumption
+        . constructor
+          . apply Erased.conv
+            apply Static.Conv.subst1
+            apply (Star.conv (Red.toStatic erm.toStatic st1.toStar)).sym
+            apply Erased.ite Merge.nil <;> assumption
+            apply tyA.subst erm.toStatic
+          . apply Resolve.ite mrg1.sym <;> assumption
+          . apply mrg1.merge_wr wr2' wr'
+        . apply Red1.ite st1
+        . constructor; assumption
+      case ite_tt l lk =>
+        clear ihm
+        have e := lk.contra_tt (mrg0.merge_wr wr1 wr2); subst e
+        have ⟨Hx, rsx, mrgx⟩ := rsm.lookup mrg3.sym lk
+        cases rsx
+        have ct := rsm.tt_inv wr1'
+        have rd := erm.tt_preimage
+        existsi H1, n1, n1'; and_intros
+        . assumption
+        . constructor
+          . apply Erased.conv
+            apply Static.Conv.subst1
+            apply (Star.conv (Red.toStatic erm.toStatic rd)).sym
+            assumption
+            apply tyA.subst erm.toStatic
+          . apply rsn1.merge_contra mrg1.sym ct
+          . assumption
+        . apply Star1.SE_join
+          apply Red.ite rd
+          constructor
+        . constructor
+      case ite_ff => sorry
+    case ptr => cases st
   all_goals sorry
+
 
 lemma Resolved.preservation2 {H1 H2 : Heap Srt} {a b c c' A} :
     [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step2 (H1, c) (H2, c') ->
