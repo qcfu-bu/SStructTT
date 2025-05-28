@@ -141,10 +141,10 @@ inductive Step2 : State Srt -> State Srt -> Prop where
   | prj_M {H H' m m' n} :
     Step2 (H, m) (H', m') ->
     Step2 (H, .prj m n) (H', .prj m' n)
-  | prj_elim {H1 H2 H3 n s l l1 p} :
+  | prj_elim {H1 H2 n s l l1 p} :
     Nullptr p ->
     HLookup H1 l (.tup (.ptr l1) p s) H2 ->
-    Step2 (H1, .prj (.ptr l) n) (H3, n.[p,.ptr l1/])
+    Step2 (H1, .prj (.ptr l) n) (H2, n.[p,.ptr l1/])
   | ite_M {H H' m m' n1 n2} :
     Step2 (H, m) (H', m') ->
     Step2 (H, .ite m n1 n2) (H', .ite m' n1 n2)

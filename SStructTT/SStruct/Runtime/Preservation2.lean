@@ -213,7 +213,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi Hx, .tup a' n .im s, .tup b' .null s; and_intros
         . assumption
         . constructor
-          . constructor
+          . apply Erased.tup_im
             assumption
             assumption
             apply Static.Typed.conv
@@ -229,6 +229,135 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . apply Red1.tup_im st1
         . constructor; assumption
       case tup_N st => cases st
+    case ptr => cases st
+  case tup_ex m0 m1 n0 n1 s i mrg ty erm ern ihm ihn =>
+    subst_vars; cases mrg; cases rs
+    case tup H1' H2' m' n' mrg1 rsm rsn =>
+      have ⟨_, _, _, tyB, _⟩ := ty.sig_inv
+      have wr3 := mrg0.merge_wr wr1 wr2
+      have ⟨wr1', wr2'⟩ := mrg1.split_wr wr1
+      cases st
+      case tup_M st =>
+        clear ihn
+        have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
+        have wrx := mrg2.merge_wr wr2' wr2
+        have ⟨H1', a', b', mrgx, ⟨er', rs', wr'⟩, st1, st2⟩ :=
+          ihm rfl rfl mrg3.sym wrx rsm wr1' st
+        clear ihm
+        have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
+        existsi Hx, .tup a' n0 .ex s, .tup b' n1 s; and_intros
+        . assumption
+        . constructor
+          . apply Erased.tup_ex Merge.nil
+            assumption
+            assumption
+            apply Erased.conv
+            apply Static.Conv.subst1
+            apply Star.conv (Red.toStatic erm.toStatic st1.toStar)
+            assumption
+            apply tyB.subst er'.toStatic
+          . constructor
+            apply mrg1.sym
+            assumption
+            assumption
+          . apply mrg1.merge_wr wr2' wr'
+        . apply Red1.tup_ex_M st1
+        . constructor; assumption
+      case tup_N st =>
+        clear ihm
+        have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1
+        have wrx := mrg2.merge_wr wr1' wr2
+        have ⟨H1', a', b', mrgx, ⟨er', rs', wr'⟩, st1, st2⟩ :=
+          ihn rfl rfl mrg3.sym wrx rsn wr2' st
+        clear ihn
+        have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
+        existsi Hx, .tup m0 a' .ex s, .tup m1 b' s; and_intros
+        . assumption
+        . constructor
+          . apply Erased.tup_ex Merge.nil <;> assumption
+          . constructor <;> assumption
+          . apply mrg1.merge_wr wr1' wr'
+        . apply Red1.tup_ex_N st1
+        . constructor; assumption
+    case ptr => cases st
+  case prj_im C m0 m1 n0 n1 _ _ _ _ i mrg tyC erm ern ihm ihn =>
+    clear ihn; subst_vars; cases mrg; cases rs
+    case prj H1' H2' m' n' mrg1 rsm rsn =>
+      have wr3 := mrg0.merge_wr wr1 wr2
+      have ⟨wr1', wr2'⟩ := mrg1.split_wr wr1
+      have tym0 := erm.toStatic
+      have wf := ern.toWf
+      cases wf; case cons tyB wf =>
+      cases wf; case cons tyA _ =>
+      cases st
+      case prj_M st =>
+        have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
+        have wrx := mrg2.merge_wr wr2' wr2
+        have ⟨H1', a', b', mrgx, ⟨er', rs', wr'⟩, st1, st2⟩ :=
+          ihm rfl rfl mrg3.sym wrx rsm wr1' st
+        clear ihm
+        have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
+        existsi Hx, .prj C a' n0 .im, .prj b' n1; and_intros
+        . assumption
+        . constructor
+          . apply Erased.conv
+            apply Static.Conv.subst1
+            apply (Star.conv (Red.toStatic tym0 st1.toStar)).sym
+            apply Erased.prj_im Merge.nil tyC
+            assumption
+            assumption
+            apply tyC.subst tym0
+          . apply Resolve.prj mrg1.sym <;> assumption
+          . apply mrg1.merge_wr wr2' wr'
+        . apply Red1.prj st1
+        . constructor; assumption
+      case prj_elim H1' s l l1 p np lk =>
+        clear ihm
+        have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
+        have ⟨H4, rsm', mrg'⟩ := rsm.lookup mrg3.sym lk
+        have ⟨Hx, mrg4, mrg5⟩ := mrg'.sym.split mrg2
+        have wr3' := lk.wr_image wr3
+        have ⟨wr4, wrx⟩ := mrg'.split_wr wr3'
+        cases rsm'; case tup mx0 nx0 mrg rs1 rs2 =>
+        have ⟨H5, H6⟩ := mrg.split_wr wr4
+        have vl := rsm.ptr_value wr1'
+        cases vl; case tup vl1 vl2 =>
+        cases np
+        case ptr =>
+          have ⟨_, _, _, _, erm'⟩ := erm.tup_preimage
+          have ⟨_, _, _, _⟩ := erm'.toStatic.tup_inv; subst_vars
+          have ⟨_, _, _, _⟩ := erm'.tup_im_inv; subst_vars
+          have ⟨_, e⟩ := rs2.null_inv (mrg.sym.split_wr' wr4)
+          cases e
+        case null =>
+          cases rs2
+          have ⟨mx1, nx1, r, rd1, erx⟩ := erm.tup_preimage
+          have ⟨_, _, _, _⟩ := erx.toStatic.tup_inv; subst_vars
+          have ⟨ermx, tynx, _, _⟩ := erx.tup_im_inv
+          have ⟨v0, rd2, vl0, rsv0⟩ := ermx.value_preimage vl1
+          have rsn := Resolved.intro ern rsn wr2'
+          have rsmx0 := (Resolved.intro rsv0 rs1 H5).resolution tyA vl1
+          existsi Hx, n0.[nx1,v0/], n1.[.null,mx0/]
+          and_intros
+          . assumption
+          . constructor
+            . sorry
+            . apply rsn.substitution mrg4
+              constructor
+              constructor
+              pick_goal 2
+              . assumption
+              . assumption
+              . apply mrg.sym
+              . assumption
+              . constructor <;> assumption
+            . apply mrg4.merge_wr wr2' wr4
+          . apply Star1.SE_join
+            apply Star.trans
+            apply Red.prj rd1
+            apply Red.prj (Red.tup_im rd2)
+            aesop
+          . aesop
     case ptr => cases st
   all_goals sorry
 
