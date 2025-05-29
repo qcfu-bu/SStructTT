@@ -8,20 +8,35 @@ namespace Runtime
 open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-lemma Resolved.preservation {H1 H1' : Heap Srt} {a b c c' A} :
-    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> (H1, c) ~>> (H1', c') ->
-    ∃ a' b', [] ;; [] ;; H1' ⊢ a' ▷ b' ◁ c' : A ∧ a ~>>1 a' ∧ b ~>> b' := by
+lemma Resolved.preservationX {H H' : Heap Srt} {a b c c' A} :
+    [] ;; [] ;; H ⊢ a ▷ b ◁ c : A -> Star (Union Step0 Step1) (H, c) (H', c') ->
+    ∃ b', [] ;; [] ;; H' ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Red0 b b' := by
+  generalize e: (H', c') = t
+  intro rs rd; induction rd generalizing H' a b c' A
+  case R => cases e; existsi b; aesop
+  case SE x y rd st ih =>
+    subst_vars
+    rcases x with ⟨H2, c'⟩
+    have ⟨b', rs, rd⟩ := ih rfl rs
+    cases st with
+    | inl st =>
+      have ⟨b', rs, st⟩ := rs.preservation0 st
+      existsi b'; and_intros
+      . assumption
+      . apply Star.SE rd st
+    | inr st =>
+      have rs := rs.preservation1 st
+      exists b'
+
+lemma Resolved.preservation {H H' : Heap Srt} {a b c c' A} :
+    [] ;; [] ;; H ⊢ a ▷ b ◁ c : A -> (H, c) ~>> (H', c') ->
+    ∃ a' b', [] ;; [] ;; H' ⊢ a' ▷ b' ◁ c' : A ∧ a ~>>1 a' ∧ b ~>> b' := by
   intro rs st
-  cases st
-  case intro a b rd0 rd1 st =>
-  rcases a with ⟨H1, a⟩
-  rcases b with ⟨H2, b⟩
-  have ⟨c, rs, rd⟩ := rs.preservation0' rd0
-  have rs := rs.preservation1' rd1
-  have ⟨a, b, rs, st1, st2⟩ := rs.preservation2 st
-  existsi a, b; and_intros
+  rcases st with ⟨x, rd, st⟩
+  rcases x with ⟨H1, a⟩
+  have ⟨c, rs, rd⟩ := rs.preservationX rd
+  have ⟨a', b', rs, st, rd⟩ := rs.preservation2 st
+  existsi a', b'; and_intros
   . assumption
   . assumption
-  . constructor
-    assumption
-    assumption
+  . constructor; and_intros <;> assumption

@@ -315,7 +315,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             . assumption
             . apply mrg.sym
             . assumption
-            . constructor <;> assumption
+            . constructor; assumption
         . apply Star1.SE_join
           apply Star.trans
           apply Red.prj rd1
@@ -370,7 +370,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           cases rsn
           replace ⟨_, _, _, _, erm⟩ := erm.tup_preimage
           have ⟨_, _, _, _⟩ := erm.toStatic.tup_inv; subst_vars
-          have ⟨_, _, _, _, er, _⟩ := erm.tup_ex_inv; subst_vars
+          have ⟨_, _, _, _, er, _⟩ := erm.tup_ex_inv
           exfalso; apply er.null_preimage
       case prj_tup H1' s l l1 l2 lk =>
         clear ihm

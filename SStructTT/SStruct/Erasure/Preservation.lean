@@ -146,23 +146,23 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
   generalize e2: [] = Δ
   intro ty st; induction ty generalizing m2'
   case var =>
-    rcases st with ⟨rd, st⟩
+    rcases st with ⟨_, rd, st⟩
     rw[rd.var_inv] at st; cases st
   case lam_im =>
-    rcases st with ⟨rd, st⟩
+    rcases st with ⟨_, rd, st⟩
     rw[rd.lam_inv] at st; cases st
   case lam_ex =>
-    rcases st with ⟨rd, st⟩
+    rcases st with ⟨_, rd, st⟩
     rw[rd.lam_inv] at st; cases st
   case app_im m' n s erm tyn ih =>
     subst_vars; simp_all
-    rcases st with ⟨rd, st⟩
+    rcases st with ⟨_, rd, st⟩
     have ⟨mx, nx, e, rd1, rd2⟩ := rd.app_inv
     replace erm := erm.preservation0' rd1
     have e := rd2.null_inv
     subst_vars; cases st
     case app_M st =>
-      have ⟨m, st, erm⟩ := ih (Step.intro rd1 st)
+      have ⟨m, st, erm⟩ := ih ⟨_, rd1, st⟩
       existsi .app m n .im; and_intros
       . apply Red1.app_im st
       . apply Erased.app_im erm tyn
@@ -183,20 +183,20 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
         contradiction
   case app_ex m1 m1' n1 n1' s mrg erm ern ihm ihn =>
     subst_vars; cases mrg; simp_all;
-    rcases st with ⟨rd, st⟩
+    rcases st with ⟨_, rd, st⟩
     have ⟨mx, nx, e, rd1, rd2⟩ := rd.app_inv
     replace erm := erm.preservation0' rd1
     replace ern := ern.preservation0' rd2
     subst_vars; cases st
     case app_M st' =>
-      have ⟨m2, st, erm⟩ := ihm (Step.intro rd1 st')
+      have ⟨m2, st, erm⟩ := ihm ⟨_, rd1, st'⟩
       existsi (.app m2 n1 .ex); and_intros
       . apply Red1.app_ex_M st
       . apply Erased.app_ex Merge.nil erm ern
     case app_N st' =>
       have ⟨_, _, tyP⟩ := erm.validity
       have ⟨_, _, _, tyB, _⟩ := tyP.pi_inv
-      have ⟨n2, st, ern2⟩ := ihn (Step.intro rd2 st')
+      have ⟨n2, st, ern2⟩ := ihn ⟨_, rd2, st'⟩
       have rd := Red.toStatic ern.toStatic st.toStar
       existsi (.app m1 n2 .ex); and_intros
       . apply Red1.app_ex_N st
@@ -232,13 +232,13 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
           apply tyB.subst ern.toStatic
   case tup_im m m' n s _ tyS erm tyn ih =>
     subst_vars; simp_all
-    rcases st with ⟨rd, st⟩
+    rcases st with ⟨_, rd, st⟩
     have ⟨mx, nx, e, rd1, rd2⟩ := rd.tup_inv
     replace erm := erm.preservation0' rd1
     have e := rd2.null_inv
     subst_vars; cases st
     case tup_M st' =>
-      have ⟨m1, st, erm1⟩ := ih (Step.intro rd1 st')
+      have ⟨m1, st, erm1⟩ := ih ⟨_, rd1, st'⟩
       have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
       existsi .tup m1 n .im s; and_intros
       . apply Red1.tup_im st
@@ -254,13 +254,13 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
   case tup_ex m m' n n' s _ mrg tyS erm ern ihm ihn =>
     have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
     subst_vars; cases mrg; simp_all
-    rcases st with ⟨rd, st⟩
+    rcases st with ⟨_, rd, st⟩
     have ⟨mx, nx, e, rd1, rd2⟩ := rd.tup_inv
     replace erm := erm.preservation0' rd1
     replace ern := ern.preservation0' rd2
     subst_vars; cases st
     case tup_M st =>
-      have ⟨m1, st, erm1⟩ := ihm (Step.intro rd1 st)
+      have ⟨m1, st, erm1⟩ := ihm ⟨_, rd1, st⟩
       existsi .tup m1 n .ex s; and_intros
       . apply Red1.tup_ex_M st
       . constructor
@@ -273,18 +273,18 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
           assumption
           apply tyB.subst erm1.toStatic
     case tup_N st =>
-      have ⟨n1, st, ern1⟩ := ihn (Step.intro rd2 st)
+      have ⟨n1, st, ern1⟩ := ihn ⟨_, rd2, st⟩
       existsi .tup m n1 .ex s; and_intros
       . apply Red1.tup_ex_N st
       . constructor <;> aesop
   case prj_im B C m m' n n' s sA sB sC iC mrg tyC erm ern ihm _ =>
     subst_vars; cases mrg; simp_all
-    rcases st with ⟨rd, st⟩
+    rcases st with ⟨_, rd, st⟩
     have ⟨mx, e, rd1⟩ := rd.prj_inv
     replace erm := erm.preservation0' rd1
     subst_vars; cases st
     case prj_M st' =>
-      have ⟨m1, st, erm1⟩ := ihm (Step.intro rd1 st')
+      have ⟨m1, st, erm1⟩ := ihm ⟨_, rd1, st'⟩
       existsi .prj C m1 n .im; and_intros
       . apply Red1.prj st
       . apply Erased.conv
@@ -332,12 +332,12 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
         contradiction
   case prj_ex B C m m' n n' s sA sB sC iC mrg tyC erm ern ihm ihn =>
     subst_vars; cases mrg; simp_all
-    rcases st with ⟨rd, st⟩
+    rcases st with ⟨_, rd, st⟩
     have ⟨mx, e, rd1⟩ := rd.prj_inv
     replace erm := erm.preservation0' rd1
     subst_vars; cases st
     case prj_M st' =>
-      have ⟨m1, st, erm1⟩ := ihm (Step.intro rd1 st')
+      have ⟨m1, st, erm1⟩ := ihm ⟨_, rd1, st'⟩
       existsi .prj C m1 n .ex; and_intros
       . apply Red1.prj st
       . apply Erased.conv
@@ -387,19 +387,19 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
           apply AgreeSubst.refl Wf.nil
           apply tyC.subst erm.toStatic
   case tt =>
-    rcases st with ⟨rd, st⟩
+    rcases st with ⟨_, rd, st⟩
     rw[rd.tt_inv] at st; cases st
   case ff =>
-    rcases st with ⟨rd, st⟩
+    rcases st with ⟨_, rd, st⟩
     rw[rd.ff_inv] at st; cases st
   case ite A m m' n1 n1' n2 n2' _ _ mrg tyA erm ern1 ern2 ihm ihn1 ihn2 =>
     subst_vars; cases mrg; simp_all
-    rcases st with ⟨rd, st⟩
+    rcases st with ⟨_, rd, st⟩
     have ⟨mx, e, rd1⟩ := rd.ite_inv
     replace erm := erm.preservation0' rd1
     subst_vars; cases st
     case ite_M st =>
-      have ⟨m1, st, erm1⟩ := ihm (Step.intro rd1 st)
+      have ⟨m1, st, erm1⟩ := ihm ⟨_, rd1, st⟩
       existsi .ite A m1 n1 n2; and_intros
       . apply Red1.ite st
       . apply Erased.conv
@@ -440,12 +440,13 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
     . apply Erased.conv <;> assumption
   case drop mrg lw h erm ern ihm ihn =>
     subst_vars; cases mrg; simp_all
-    rcases st with ⟨rd, st⟩
+    rcases st with ⟨_, rd, st⟩
     cases rd
     case R => cases st
     case SE rd st0 =>
       replace rd := Red0.drop_inv rd st0
-      apply ihn; constructor <;> assumption
+      apply ihn; constructor
+      and_intros <;> assumption
   case conv eq _ tyB ihm =>
     subst_vars
     have ⟨m', st', erm'⟩ := ihm rfl rfl st

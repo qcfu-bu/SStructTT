@@ -76,8 +76,7 @@ inductive Step1 : Tm Srt -> Tm Srt -> Prop where
 
 abbrev Red0 (m m' : Tm Srt) : Prop := Star Step0 m m'
 
-inductive Step (m : Tm Srt) : Tm Srt -> Prop where
-  | intro {m' n} : Red0 m m' -> Step1 m' n -> Step m n
+def Step : Rel (Tm Srt) := Relation.Comp Red0 Step1
 
 notation:50 m:50 " ~>> " n:50 => Step m n
 notation:50 m:50 " ~>>* " n:50 => ARS.Star Step m n
@@ -219,64 +218,64 @@ lemma Red0.ite {m m' n1 n2 : Tm Srt} :
 lemma Step.app_M {m m' n : Tm Srt} :
     m ~>> m' -> .app m n ~>> .app m' n := by
   intro st
-  rcases st with ⟨rd, st⟩
-  constructor
+  rcases st with ⟨_, rd, st⟩
+  constructor; and_intros
   . apply Red0.app rd Star.R
   . constructor; assumption
 
 lemma Step.app_N {m n n' : Tm Srt} :
     n ~>> n' -> .app m n ~>> .app m n' := by
   intro st
-  rcases st with ⟨rd, st⟩
-  constructor
+  rcases st with ⟨_, rd, st⟩
+  constructor; and_intros
   . apply Red0.app Star.R rd
   . constructor; assumption
 
 lemma Step.tup_M {m m' n : Tm Srt} {s} :
     m ~>> m' -> .tup m n s ~>> .tup m' n s := by
   intro st
-  rcases st with ⟨rd, st⟩
-  constructor
+  rcases st with ⟨_, rd, st⟩
+  constructor; and_intros
   . apply Red0.tup rd Star.R
   . constructor; assumption
 
 lemma Step.tup_N {m n n' : Tm Srt} {s} :
     n ~>> n' -> .tup m n s ~>> .tup m n' s := by
   intro st
-  rcases st with ⟨rd, st⟩
-  constructor
+  rcases st with ⟨_, rd, st⟩
+  constructor; and_intros
   . apply Red0.tup Star.R rd
   . constructor; assumption
 
 lemma Step.prj_M {m m' n : Tm Srt} :
     m ~>> m' -> .prj m n ~>> .prj m' n := by
   intro st
-  rcases st with ⟨rd, st⟩
-  constructor
+  rcases st with ⟨_, rd, st⟩
+  constructor; and_intros
   . apply Red0.prj rd
   . constructor; assumption
 
 lemma Step.ite_M {m m' n1 n2 : Tm Srt} :
     m ~>> m' -> .ite m n1 n2 ~>> .ite m' n1 n2 := by
   intro st
-  rcases st with ⟨rd, st⟩
-  constructor
+  rcases st with ⟨_, rd, st⟩
+  constructor; and_intros
   . apply Red0.ite rd
   . constructor; assumption
 
 lemma Step.drop {m n n' : Tm Srt} :
     n ~>> n' -> .drop m n ~>> n' := by
   intro st
-  rcases st with ⟨rd, st⟩
+  rcases st with ⟨_, rd, st⟩
   cases rd
   case R =>
-    constructor
+    constructor; and_intros
     . apply Star.one
       constructor
     . assumption
   case SE rd st0 =>
     have rd := Star.SE rd st0
-    constructor
+    constructor; and_intros
     . apply Star.trans _ rd
       apply Star.one
       constructor

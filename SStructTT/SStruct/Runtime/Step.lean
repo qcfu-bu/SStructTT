@@ -170,8 +170,8 @@ inductive Step2 : State Srt -> State Srt -> Prop where
 abbrev Red0 (t1 t2 : @State Srt) : Prop := Star Step0 t1 t2
 abbrev Red1 (t1 t2 : @State Srt) : Prop := Star Step1 t1 t2
 
-inductive Step (m : State Srt) : State Srt -> Prop where
-  | intro {x y n} : Red0 m x -> Red1 x y -> Step2 y n -> Step m n
+def Step : Rel (State Srt) :=
+  Relation.Comp (Star (Union Step0 Step1)) Step2
 
 notation:50 t:50 " ~>> " t':51 => Step t t'
 notation:50 t:50 " ~>>* " t':51 => Star Step t t'

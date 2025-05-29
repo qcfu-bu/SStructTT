@@ -26,6 +26,7 @@ inductive Conv (x : T) : T -> Prop where
 attribute [aesop safe] Star.R Star1.E Conv.R
 
 def Com (R S : Rel T) := ∀ {x y z}, R x y -> S x z -> ∃ u, S y u ∧ R z u
+def Union (R S : Rel T) : Rel T := fun x y => R x y ∨ S x y
 def Joinable (R : Rel T) x y := ∃ z, R x z ∧ R y z
 def Diamond := ∀ {x y z}, e x y -> e x z -> ∃ u, e y u ∧ e z u
 def Confluent := ∀ {x y z}, Star e x y -> Star e x z -> Joinable (Star e) y z

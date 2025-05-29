@@ -87,7 +87,7 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
       replace erm := erm.preservation0' rd
       have ⟨m', e⟩ := erm.pi_canonical Conv.R vl
       subst_vars; left; existsi m'.[.null/]
-      constructor
+      constructor; and_intros
       . apply Red0.app rd Star.R
       . aesop
   case app_ex m m' n n' _ erm ern ihm ihn mrg =>
@@ -106,7 +106,7 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
         replace ern := ern.preservation0' rd2
         have ⟨m', e⟩ := erm.pi_canonical Conv.R vl1
         subst_vars; left; existsi m'.[v2/]
-        constructor
+        constructor; and_intros
         . apply Red0.app rd1 rd2
         . aesop
   case tup_im m m' n s _ _ _ _ ih =>
@@ -144,7 +144,7 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
       replace erm := erm.preservation0' rd
       have ⟨m1', m2', _⟩ := erm.sig_canonical Conv.R vl
       subst_vars; left; existsi n'.[m2',m1'/]
-      constructor
+      constructor; and_intros
       . apply Red0.prj rd
       . aesop
   case prj_ex C m m' n n' _ _ _ _ _ _ erm _ ihm _ mrg =>
@@ -157,7 +157,7 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
       replace erm := erm.preservation0' rd
       have ⟨m1', m2', _⟩ := erm.sig_canonical Conv.R vl
       subst_vars; left; existsi n'.[m2',m1'/]
-      constructor
+      constructor; and_intros
       . apply Red0.prj rd
       . aesop
   case tt => right; existsi .tt; aesop
@@ -172,11 +172,13 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
       replace erm := erm.preservation0' rd
       cases erm.bool_canonical Conv.R vl with
       | inl =>
-        subst_vars; left; existsi n1'; constructor
+        subst_vars; left; existsi n1'
+        constructor; and_intros
         . apply Red0.ite rd
         . constructor
       | inr =>
-        subst_vars; left; existsi n2'; constructor
+        subst_vars; left; existsi n2'
+        constructor; and_intros
         . apply Red0.ite rd
         . constructor
   case drop s lw h erm ern ihm ihn mrg =>
