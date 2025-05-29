@@ -7,6 +7,7 @@ namespace Runtime
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 /- Deallocate dropped terms. -/
+@[scoped aesop safe [constructors]]
 inductive Drop : Heap Srt -> Tm Srt -> Heap Srt -> Prop where
   | var {H x} : Drop H (.var x) H
   | lam {H1 H2 m s} :
@@ -107,7 +108,7 @@ inductive Step1 : State Srt -> State Srt -> Prop where
     Step1 (H1, m) (H2, m') ->
     Step1 (H1, .ite m n1 n2) (H2, .ite m' n1 n2)
   | alloc_clo {H m s l} :
-    l ∉ H.keys ->
+    l ∉ H ->
     (nf : m.NF 1) ->
     Step1 (H, .lam m s) (H.insert l (.clo m s nf), .ptr l)
   | alloc_box {H s l l1} :
@@ -120,7 +121,7 @@ inductive Step1 : State Srt -> State Srt -> Prop where
     l ∉ H.keys ->
     Step1 (H, .tt) (H.insert l .tt, .ptr l)
   | alloc_ff {H l} :
-    l ∉ H.keys ->
+    l ∉ H ->
     Step1 (H, .ff) (H.insert l .ff, .ptr l)
 
 /- Possibly NULL pointers. -/
@@ -175,146 +176,6 @@ def Step : Rel (State Srt) :=
 
 notation:50 t:50 " ~>> " t':51 => Step t t'
 notation:50 t:50 " ~>>* " t':51 => Star Step t t'
-
-lemma Step0.not_dropfree {H m} {t : State Srt} :
-    Step0 (H, m) t -> ¬ DropFree m := by
-  generalize e: (H, m) = t0
-  intro st; induction st generalizing H m
-  all_goals cases e; aesop
-
-lemma Red0.var_inv {H x} {t : State Srt} :
-    Red0 (H, .var x) t -> t = (H, .var x) := by
-  intro rd; induction rd
-  case R => simp
-  case SE st ih =>
-    subst_vars; cases st
-
-lemma Red0.lam_inv {H m s} {t : State Srt}  :
-    Red0 (H, .lam m s) t -> t = (H, .lam m s) := by
-  intro rd; induction rd
-  case R => simp
-  case SE st e => subst_vars; cases st
-
-lemma Red0.app_inv' {H1 m n} {t : State Srt} :
-    Red0 (H1, .app m n) t ->
-    ∃ H2 H3 m' n',
-      t = (H3, .app m' n') ∧
-      Red0 (H1, m) (H2, m') ∧
-      Red0 (H2, n) (H3, n') ∧
-      (¬DropFree m' -> H2 = H3 ∧ n = n') := by
-  intro rd; induction rd
-  case R =>
-    existsi H1, H1, m, n; aesop
-  case SE st ih =>
-    rcases ih with ⟨H2, H3, m', n', e, rd1, rd2, h⟩
-    subst_vars
-    cases st
-    case app_M Hx mx st =>
-      have ⟨e1, e2⟩ := h st.not_dropfree; subst_vars
-      existsi Hx, Hx, mx, n'; simp; and_intros
-      apply Star.SE rd1 st
-      apply Star.R
-    case app_N Hx nx h st =>
-      existsi H2, Hx, m', nx; simp; and_intros
-      . assumption
-      . apply Star.SE rd2 st
-      . intro; contradiction
-
-lemma Red0.app_inv {H1 m n} {t : State Srt} :
-    Red0 (H1, .app m n) t ->
-    ∃ H2 H3 m' n',
-      t = (H3, .app m' n') ∧
-      Red0 (H1, m) (H2, m') ∧
-      Red0 (H2, n) (H3, n') := by
-  intro rd; have := rd.app_inv'; aesop
-
-lemma Red0.tup_inv' {H1 m n s} {t : State Srt} :
-    Red0 (H1, .tup m n s) t ->
-    ∃ H2 H3 m' n',
-      t = (H3, .tup m' n' s) ∧
-      Red0 (H1, m) (H2, m') ∧
-      Red0 (H2, n) (H3, n') ∧
-      (¬DropFree m' -> H2 = H3 ∧ n = n') := by
-  intro rd; induction rd
-  case R =>
-    existsi H1, H1, m, n; aesop
-  case SE st ih =>
-    rcases ih with ⟨H2, H3, m', n', e, rd1, rd2, h⟩
-    subst_vars
-    cases st
-    case tup_M Hx mx st =>
-      have ⟨e1, e2⟩ := h st.not_dropfree; subst_vars
-      existsi Hx, Hx, mx, n'; simp; and_intros
-      apply Star.SE rd1 st
-      apply Star.R
-    case tup_N Hx nx h st =>
-      existsi H2, Hx, m', nx; simp; and_intros
-      . assumption
-      . apply Star.SE rd2 st
-      . intro; contradiction
-
-lemma Red0.tup_inv {H1 m n s} {t : State Srt} :
-    Red0 (H1, .tup m n s) t ->
-    ∃ H2 H3 m' n',
-      t = (H3, .tup m' n' s) ∧
-      Red0 (H1, m) (H2, m') ∧
-      Red0 (H2, n) (H3, n') := by
-  intro rd; have := rd.tup_inv'; aesop
-
-lemma Red0.prj_inv {H1 m n} {t : State Srt} :
-    Red0 (H1, .prj m n) t ->
-    ∃ H2 m', t = (H2, .prj m' n) ∧ Red0 (H1, m) (H2, m') := by
-  intro rd; induction rd
-  case R => existsi H1, m; aesop
-  case SE st ih =>
-    rcases ih with ⟨H2, m', e, rd⟩
-    subst_vars; cases st
-    case prj_M Hx mx st =>
-      existsi Hx, mx; simp
-      apply Star.SE rd st
-
-lemma Red0.tt_inv {H1} (t : State Srt) :
-    Red0 (H1, .tt) t -> t = (H1, .tt) := by
-  intro rd; induction rd
-  case R => simp
-  case SE st e => subst_vars; cases st
-
-lemma Red0.ff_inv {H1} (t : State Srt) :
-    Red0 (H1, .ff) t -> t = (H1, .ff) := by
-  intro rd; induction rd
-  case R => simp
-  case SE st e => subst_vars; cases st
-
-lemma Red0.ite_inv {H1 m n1 n2} {t : State Srt} :
-    Red0 (H1, .ite m n1 n2) t ->
-    ∃ H2 m', t = (H2, .ite m' n1 n2) ∧ Red0 (H1, m) (H2, m') := by
-  intro rd; induction rd
-  case R => simp; aesop
-  case SE rd st ih =>
-    rcases ih with ⟨H2, m', e, rd0⟩
-    subst_vars; cases st
-    case ite_M Hx mx st =>
-      existsi Hx, mx; simp
-      apply Star.SE rd0 st
-
-lemma Red0.ptr_inv {H1 l} {t : State Srt} :
-    Red0 (H1, .ptr l) t -> t = (H1, .ptr l) := by
-  intro rd; induction rd
-  case R => simp
-  case SE st e => subst_vars; cases st
-
-lemma Red0.null_inv {H1} {t : State Srt} :
-    Red0 (H1, .null) t -> t = (H1, .null) := by
-  intro rd; induction rd
-  case R => simp
-  case SE st e => subst_vars; cases st
-
-lemma Red0.app_M {H1 H2} {m m' n : Tm Srt} :
-    Red0 (H1, m) (H2, m') ->
-    Red0 (H1, .app m n) (H2, .app m' n) := by
-  intro rm
-  apply Star.hom (fun (H, x) => (H, Tm.app x n)) _ rm (e2 := Step0)
-  simp; aesop
 
 lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
     Drop H3 m H4 -> H1 ⊢ m ▷ m' -> HMerge H1 H2 H3 ->

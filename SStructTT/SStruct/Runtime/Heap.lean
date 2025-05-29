@@ -461,6 +461,15 @@ lemma HMerge.lookup_collision {H1 H2 H3 : Heap Srt} {l} :
   replace mrg := mrg l
   rw[e] at mrg; split at mrg <;> aesop
 
+lemma HMerge.unique {H1 H2 H3 H4 : Heap Srt} :
+    HMerge H1 H2 H3 -> HMerge H1 H2 H4 -> H3 = H4 := by
+  intro mrg1 mrg2
+  apply Finmap.ext_lookup; intro x
+  replace mrg1 := mrg1 x
+  replace mrg2 := mrg2 x
+  split at mrg1
+  all_goals split at mrg2 <;> aesop
+
 lemma HMerge.insert_inv {H1 H2 H3 : Heap Srt} {l m} :
     HMerge (H1.insert l m) H2 H3 -> l ∉ H1 -> l ∉ H2 ->
     HMerge H1 H2 (H3.erase l) := by

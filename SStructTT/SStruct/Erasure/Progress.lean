@@ -65,7 +65,7 @@ lemma Erased.bool_canonical {C m : SStruct.Tm Srt} {m'} :
 
 theorem Erased.progress {A m} {m' : Tm Srt} :
     [] ;; [] ⊢ m ▷ m' : A ->
-      (∃ n', m' ~>> n') ∨ (∃ v, Red0 m' v ∧ Value v) := by
+    (∃ n', m' ~>> n') ∨ (∃ v, Red0 m' v ∧ Value v) := by
   generalize e1: [] = Γ
   generalize e2: [] = Δ
   intro er; induction er <;> (subst_vars; try trivial)

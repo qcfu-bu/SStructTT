@@ -247,6 +247,14 @@ lemma HLookup.contra_image {H H' : Heap Srt} {l m} :
   . simp
   . intro ct; apply ct.erase
 
+lemma HLookup.unique {H0 H1 H2 : Heap Srt} {l m1 m2} :
+    HLookup H0 l m1 H1 -> HLookup H0 l m2 H2 -> m1 = m2 ∧ H1 = H2 := by
+  intro lk1 lk2
+  unfold HLookup at lk1
+  unfold HLookup at lk2
+  split at lk1 <;> try trivial
+  split at lk2 <;> aesop
+
 lemma HLookup.collision {H1 H1' H2 H3 H3' : Heap Srt} {l m n} :
     HMerge H1 H2 H3 ->
     HLookup H3 l m H3' ->
