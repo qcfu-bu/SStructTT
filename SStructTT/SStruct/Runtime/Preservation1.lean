@@ -251,7 +251,8 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . apply Resolve.tup mrg1
             apply rsm.subheap sb1
             assumption
-      case alloc_box => sorry
+      case alloc_box =>
+        cases rsn; exfalso; apply ern.null_preimage
       case alloc_tup l l1 l2 h =>
         have ⟨h1, h2⟩ := mrg0.split_none h
         have ⟨h1', h2'⟩ := mrg2.split_none h1
