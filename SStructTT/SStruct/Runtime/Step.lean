@@ -37,7 +37,7 @@ inductive Drop : Heap Srt -> Tm Srt -> Heap Srt -> Prop where
     Drop H1 (.drop m n) H3
   | ptr {H1 H2 H3 m l} :
     HLookup H1 l m H2 ->
-    Drop H2 m H3 ->
+    Drop H2 m.tm H3 ->
     Drop H1 (.ptr l) H3
   | null {H} : Drop H .null H -- free(NULL) in C does nothing
 
@@ -54,14 +54,6 @@ inductive Drop : Heap Srt -> Tm Srt -> Heap Srt -> Prop where
   | .drop _ _ => False
   | .ptr _ => True
   | .null => True
-
-/- Heap allocated values. -/
-@[scoped aesop safe [constructors]]
-inductive HValue : Tm Srt -> Srt -> Prop where
-  | lam {m s}   : HValue (.lam m s) s
-  | tup {l p s} : Nullptr p -> HValue (.tup (.ptr l) p s) s
-  | tt : HValue .tt ord.e
-  | ff : HValue .ff ord.e
 
 /- State (Heap + Term) of the evaluator. -/
 abbrev State Srt := Heap Srt × Tm Srt
@@ -114,10 +106,28 @@ inductive Step1 : State Srt -> State Srt -> Prop where
   | ite_M {H1 H2 m m'} n1 n2 :
     Step1 (H1, m) (H2, m') ->
     Step1 (H1, .ite m n1 n2) (H2, .ite m' n1 n2)
-  | alloc {H v s l} :
+  | alloc_clo {H m s l} :
     l ∉ H.keys ->
-    HValue v s ->
-    Step1 (H, v) (H.insert l ⟨v, s⟩, .ptr l)
+    (nf : m.NF 1) ->
+    Step1 (H, .lam m s) (H.insert l (.clo m s nf), .ptr l)
+  | alloc_box {H s l l1} :
+    l ∉ H.keys ->
+    Step1 (H, .tup (.ptr l1) .null s) (H.insert l (.box l1 s), .ptr l)
+  | alloc_tup {H s l l1 l2} :
+    l ∉ H.keys ->
+    Step1 (H, .tup (.ptr l1) (.ptr l2) s) (H.insert l (.tup l1 l2 s), .ptr l)
+  | alloc_tt {H l} :
+    l ∉ H.keys ->
+    Step1 (H, .tt) (H.insert l .tt, .ptr l)
+  | alloc_ff {H l} :
+    l ∉ H.keys ->
+    Step1 (H, .ff) (H.insert l .ff, .ptr l)
+
+/- Possibly NULL pointers. -/
+@[scoped aesop safe [constructors]]
+inductive Nullptr : Tm Srt -> Prop where
+  | ptr {l} : Nullptr (.ptr l)
+  | null    : Nullptr .null
 
 /- Core-reductions. -/
 @[scoped aesop safe [constructors]]
@@ -128,9 +138,9 @@ inductive Step2 : State Srt -> State Srt -> Prop where
   | app_N {H H' m n n'} :
     Step2 (H, n) (H', n') ->
     Step2 (H, .app m n) (H', .app m n')
-  | beta {H1 H2 m s lf p} :
+  | beta {H1 H2 m s lf p nf} :
     Nullptr p ->
-    HLookup H1 lf (.lam m s) H2 ->
+    HLookup H1 lf (.clo m s nf) H2 ->
     Step2 (H1, .app (.ptr lf) p) (H2, m.[p/])
   | tup_M {H H' m m' n s} :
     Step2 (H, m) (H', m') ->
@@ -141,10 +151,12 @@ inductive Step2 : State Srt -> State Srt -> Prop where
   | prj_M {H H' m m' n} :
     Step2 (H, m) (H', m') ->
     Step2 (H, .prj m n) (H', .prj m' n)
-  | prj_elim {H1 H2 n s l l1 p} :
-    Nullptr p ->
-    HLookup H1 l (.tup (.ptr l1) p s) H2 ->
-    Step2 (H1, .prj (.ptr l) n) (H2, n.[p,.ptr l1/])
+  | prj_box {H1 H2 n s l l1} :
+    HLookup H1 l (.box l1 s) H2 ->
+    Step2 (H1, .prj (.ptr l) n) (H2, n.[.null,.ptr l1/])
+  | prj_tup {H1 H2 n s l l1 l2} :
+    HLookup H1 l (.tup l1 l2 s) H2 ->
+    Step2 (H1, .prj (.ptr l) n) (H2, n.[.ptr l2,.ptr l1/])
   | ite_M {H H' m m' n1 n2} :
     Step2 (H, m) (H', m') ->
     Step2 (H, .ite m n1 n2) (H', .ite m' n1 n2)
@@ -303,12 +315,6 @@ lemma Red0.app_M {H1 H2} {m m' n : Tm Srt} :
   intro rm
   apply Star.hom (fun (H, x) => (H, Tm.app x n)) _ rm (e2 := Step0)
   simp; aesop
-
-lemma Drop.wr_image {H1 H2 : Heap Srt} {m} :
-    Drop H1 m H2 -> WR H1 -> WR H2 := by
-  intro dp wr; induction dp
-  all_goals try (solve|aesop)
-  case ptr lk dp ih => have := lk.wr_image wr; aesop
 
 lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
     Drop H3 m H4 -> H1 ⊢ m ▷ m' -> HMerge H1 H2 H3 ->

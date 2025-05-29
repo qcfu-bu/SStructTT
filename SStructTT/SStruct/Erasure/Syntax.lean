@@ -18,6 +18,27 @@ inductive Tm where
 
 namespace Tm
 variable {Srt : Type}
+
+@[simp]def NF (i : Nat) : Tm Srt -> Prop
+  | .var x => x < i
+  | .lam m _ => NF (i + 1) m
+  | .app m n => NF i m ∧ NF i n
+  | .tup m n _ => NF i m ∧ NF i n
+  | .prj m n => NF i m ∧ NF (i + 2) n
+  | .tt => True
+  | .ff => True
+  | .ite m n1 n2 => NF i m ∧ NF i n1 ∧ NF i n2
+  | .drop m n => NF i m ∧ NF i n
+  | .ptr _ => True
+  | .null => True
+
+lemma NF.weaken {m : Tm Srt} {i j} : NF i m -> i ≤ j -> NF j m := by
+  induction m generalizing i j <;> try (solve| aesop)
+  case var x =>
+    unfold Var at x
+    intros h1 h2
+    apply h1.trans_le h2
+
 instance : Ids (Tm Srt) where
   ids := var
 
