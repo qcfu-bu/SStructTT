@@ -5,7 +5,7 @@ namespace SStruct.Erasure
 namespace Runtime
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-lemma Resolved.progessX {H : Heap Srt} {a b c A} :
+lemma Resolved.progressX {H : Heap Srt} {a b c A} :
     [] ;; [] ;; H ⊢ a ▷ b ◁ c : A -> Poised c ->
     (∃ H' c', Step2 (H, c) (H', c')) ∨ (∃ l, c = .ptr l)  := by
   generalize e1: [] = Γ
@@ -82,9 +82,16 @@ lemma Resolved.progessX {H : Heap Srt} {a b c A} :
           constructor
           assumption
     case ptr => right; aesop
+  case drop ihm ihn =>
+    subst_vars; clear ihm ihn
+    cases rs
+    case drop => cases ps
+    case ptr => right; aesop
+  case rw => subst_vars; aesop
+  case conv => subst_vars; aesop
   all_goals sorry
 
-lemma Resolved.progess {H : Heap Srt} {a b c A} :
+lemma Resolved.progress {H : Heap Srt} {a b c A} :
     [] ;; [] ;; H ⊢ a ▷ b ◁ c : A ->
     (∃ H' c', (H, c) ~>> (H', c')) ∨ (∃ H' l, Red01 (H, c) (H', .ptr l))  := by
   intro rs
@@ -92,7 +99,7 @@ lemma Resolved.progess {H : Heap Srt} {a b c A} :
   have ⟨⟨H1, c'⟩, ⟨rd, norm⟩⟩ := sn.wn; clear sn
   have ⟨b', rs, _⟩ := rs.preservationX rd
   have p := rs.normal_poised norm
-  match rs.progessX p with
+  match rs.progressX p with
   | .inl ⟨Hx, x, st⟩  =>
     left; existsi Hx, x; apply Step.intro rd norm st
   | .inr ⟨l, e⟩ =>
