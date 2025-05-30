@@ -342,7 +342,13 @@ inductive Poised : Tm Srt -> Prop where
     Poised m ->
     Poised n ->
     Poised (.app m n)
-  | tup {m n s} :
+  | tup_M {m n s} :
+    (∀ l, m ≠ .ptr l) ->
+    Poised m ->
+    Poised n ->
+    Poised (.tup m n s)
+  | tup_N {m n s} :
+    ¬ Nullptr n ->
     Poised m ->
     Poised n ->
     Poised (.tup m n s)
@@ -466,8 +472,19 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
       case pos =>
         have ⟨Hx, mrg2, mrg3⟩ := mrg.split mrg1.sym
         replace ihm := ihm rfl rfl rsm mrg3.sym h1
-        constructor; assumption
-        constructor
+        by_cases h2: ∃ l, m = .ptr l
+        case pos =>
+          rcases h2 with ⟨l, e⟩; subst e
+          exfalso; apply norm
+          have ⟨_, _⟩ := H3.fresh
+          constructor
+          right; apply Step1.alloc_box
+          assumption
+        case neg =>
+          constructor
+          simp at h2; assumption
+          assumption
+          constructor
       case neg =>
         exfalso; apply norm
         simp[ARS.Normal] at h1
@@ -493,7 +510,32 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
         by_cases h2: ARS.Normal Step01 (Hx, n)
         case pos =>
           replace ihn := ihn rfl rfl rsn mrg2 h2
-          constructor <;> assumption
+          by_cases h2: ∃ l, m = .ptr l
+          case pos =>
+            rcases h2 with ⟨l, e⟩; subst e
+            by_cases h3: Nullptr n
+            case pos =>
+              have ⟨_, _⟩ := H3.fresh
+              exfalso; apply norm
+              cases h3
+              case ptr =>
+                constructor
+                right; apply Step1.alloc_tup
+                assumption
+              case null =>
+                constructor
+                right; apply Step1.alloc_box
+                assumption
+            case neg =>
+              apply Poised.tup_N
+              asimp at h3; assumption
+              assumption
+              assumption
+          case neg =>
+            constructor
+            simp at h2; assumption
+            assumption
+            assumption
         case neg =>
           exfalso; apply norm
           simp[ARS.Normal] at h2
