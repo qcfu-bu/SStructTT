@@ -106,8 +106,8 @@ inductive Step1 : State Srt -> State Srt -> Prop where
     Step1 (H1, .ite m n1 n2) (H2, .ite m' n1 n2)
   | alloc_clo {H m s l} :
     l ∉ H ->
-    (nf : m.NF 1) ->
-    Step1 (H, .lam m s) (H.insert l (.clo m s nf), .ptr l)
+    (cl : Closed 1 m) ->
+    Step1 (H, .lam m s) (H.insert l (.clo m s cl), .ptr l)
   | alloc_box {H s l l1} :
     l ∉ H.keys ->
     Step1 (H, .tup (.ptr l1) .null s) (H.insert l (.box l1 s), .ptr l)
@@ -136,9 +136,9 @@ inductive Step2 : State Srt -> State Srt -> Prop where
   | app_N {H H' m n n'} :
     Step2 (H, n) (H', n') ->
     Step2 (H, .app m n) (H', .app m n')
-  | beta {H1 H2 m s lf p nf} :
+  | beta {H1 H2 m s lf p cl} :
     Nullptr p ->
-    HLookup H1 lf (.clo m s nf) H2 ->
+    HLookup H1 lf (.clo m s cl) H2 ->
     Step2 (H1, .app (.ptr lf) p) (H2, m.[p/])
   | tup_M {H H' m m' n s} :
     Step2 (H, m) (H', m') ->

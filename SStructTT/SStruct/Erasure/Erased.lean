@@ -152,23 +152,23 @@ lemma Erased.drop_merge {Γ} {Δ1 Δ2 Δ3 : Ctx Srt} {A m m' s} :
   have sp := mrg.toSpine lw h
   apply tym.drop_spine sp
 
-lemma Erased.nf {Γ Δ} {m A : SStruct.Tm Srt} {m'} :
-    Γ ;; Δ ⊢ m ▷ m' : A -> m'.NF Γ.length := by
+lemma Erased.closed {Γ Δ} {m A : SStruct.Tm Srt} {m'} :
+    Γ ;; Δ ⊢ m ▷ m' : A -> Closed Γ.length m' := by
   intro erm; induction erm
   all_goals try (solve | aesop)
   case var wf hs =>
     replace hs := wf.hasStatic hs
     apply hs.var_lt_length
 
-lemma Erased.nf_stack {Γ Δ} {m A : SStruct.Tm Srt} {m' i} :
-    Γ ;; Δ ⊢ m ▷ m' : A -> m'.NF i -> Stack Δ i := by
-  intro erm nf; induction erm generalizing i
+lemma Erased.closed_stack {Γ Δ} {m A : SStruct.Tm Srt} {m' i} :
+    Γ ;; Δ ⊢ m ▷ m' : A -> Closed i m' -> Stack Δ i := by
+  intro erm cl; induction erm generalizing i
   case var hs =>
-    simp at nf
-    apply hs.stack nf
+    simp at cl
+    apply hs.stack cl
   case lam_im ihm =>
-    simp at nf
-    have st := ihm nf
+    simp at cl
+    have st := ihm cl
     cases st
     case nil im =>
       simp at im
@@ -176,39 +176,39 @@ lemma Erased.nf_stack {Γ Δ} {m A : SStruct.Tm Srt} {m' i} :
       apply im
     case cons => assumption
   case lam_ex ihm =>
-    simp at nf
-    have st := ihm nf
+    simp at cl
+    have st := ihm cl
     cases st
     case nil im => simp at im
     case cons => assumption
-  case app_im ihm => simp at nf; aesop
+  case app_im ihm => simp at cl; aesop
   case app_ex mrg _ _ ihm ihn =>
-    simp at nf
-    have ⟨nf1, nf2⟩ := nf
-    replace ihm := ihm nf1
-    replace ihn := ihn nf2
+    simp at cl
+    have ⟨cl1, cl2⟩ := cl
+    replace ihm := ihm cl1
+    replace ihn := ihn cl2
     apply mrg.stack_image ihm ihn
-  case tup_im ihm => simp at nf; aesop
+  case tup_im ihm => simp at cl; aesop
   case tup_ex mrg _ _ _ ihm ihn =>
-    simp at nf
-    have ⟨nf1, nf2⟩ := nf
-    replace ihm := ihm nf1
-    replace ihn := ihn nf2
+    simp at cl
+    have ⟨cl1, cl2⟩ := cl
+    replace ihm := ihm cl1
+    replace ihn := ihn cl2
     apply mrg.stack_image ihm ihn
   case prj_im mrg _ _ _ ihm ihn =>
-    simp at nf
-    have ⟨nf1, nf2⟩ := nf
-    replace ihm := ihm nf1
-    replace ihn := ihn nf2
+    simp at cl
+    have ⟨cl1, cl2⟩ := cl
+    replace ihm := ihm cl1
+    replace ihn := ihn cl2
     cases ihn <;> try simp_all
     case cons ihn =>
       cases ihn <;> try simp_all
       apply mrg.stack_image <;> assumption
   case prj_ex mrg _ _ _ ihm ihn =>
-    simp at nf
-    have ⟨nf1, nf2⟩ := nf
-    replace ihm := ihm nf1
-    replace ihn := ihn nf2
+    simp at cl
+    have ⟨cl1, cl2⟩ := cl
+    replace ihm := ihm cl1
+    replace ihn := ihn cl2
     cases ihn <;> try simp_all
     case cons ihn =>
       cases ihn <;> try simp_all
@@ -220,17 +220,17 @@ lemma Erased.nf_stack {Γ Δ} {m A : SStruct.Tm Srt} {m' i} :
     constructor
     assumption
   case ite mrg _ _ _ _ ihm ihn1 ihn2 =>
-    simp at nf
-    rcases nf with ⟨nf0, nf1, nf2⟩
-    replace ihm := ihm nf0
-    replace ihn1 := ihn1 nf1
+    simp at cl
+    rcases cl with ⟨cl0, cl1, cl2⟩
+    replace ihm := ihm cl0
+    replace ihn1 := ihn1 cl1
     apply mrg.stack_image ihm ihn1
   case rw => aesop
   case drop mrg _ _ _ _ ihm ihn =>
-    simp at nf
-    have ⟨nf1, nf2⟩ := nf
-    replace ihm := ihm nf1
-    replace ihn := ihn nf2
+    simp at cl
+    have ⟨cl1, cl2⟩ := cl
+    replace ihm := ihm cl1
+    replace ihn := ihn cl2
     apply mrg.stack_image ihm ihn
   case conv => aesop
 

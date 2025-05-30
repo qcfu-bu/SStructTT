@@ -282,8 +282,8 @@ lemma HLookup.collision {H1 H1' H2 H3 H3' : Heap Srt} {l m n} :
       simp[Finmap.lookup_erase_ne ne]
       assumption
 
-lemma HLookup.nf {H H' : Heap Srt} {l m} :
-    HLookup H l m H' -> m.tm.NF 0 := by
+lemma HLookup.closed {H H' : Heap Srt} {l m} :
+    HLookup H l m H' -> Closed 0 m.tm := by
   intro lk
   unfold HLookup at lk; split at lk <;> try trivial
   case h_1 m' h =>
@@ -366,19 +366,19 @@ lemma Erased.resolve_id {Γ Δ} {H : Heap Srt} {x y z A} :
   case drop => cases rs; aesop
   case conv => aesop
 
-lemma Resolve.nf_image {H : Heap Srt} {m m' i} :
-    H ⊢ m ▷ m' -> m.NF i -> m'.NF i := by
-  intro rs nf; induction rs generalizing i
+lemma Resolve.closed_image {H : Heap Srt} {m m' i} :
+    H ⊢ m ▷ m' -> Closed i m -> Closed i m' := by
+  intro rs cl; induction rs generalizing i
   all_goals try (solve|simp_all)
   case ptr H1 H2 l m m' lk erm ihm =>
     cases m <;> simp_all[Cell.tm]
-    case clo nf =>
+    case clo cl =>
       apply ihm
-      apply nf.weaken (by simp)
+      apply cl.weaken (by simp)
 
-lemma Resolve.nf_preimage {H : Heap Srt} {m m' i} :
-    H ⊢ m ▷ m' -> m'.NF i -> m.NF i := by
-  intro rs nf; induction rs generalizing i
+lemma Resolve.closed_preimage {H : Heap Srt} {m m' i} :
+    H ⊢ m ▷ m' -> Closed i m' -> Closed i m := by
+  intro rs cl; induction rs generalizing i
   all_goals simp_all
 
 lemma Resolve.insert_contra {H : Heap Srt} {l m m' v} :
@@ -710,12 +710,12 @@ lemma Resolve.ptr_value {H : Heap Srt} {n l} :
     apply rs.value_image; cases m
     all_goals simp_all[Cell.tm]; aesop
 
-lemma Resolve.ptr_nf {H : Heap Srt} {n l} :
-    H ⊢ .ptr l ▷ n -> n.NF 0 := by
+lemma Resolve.ptr_closed {H : Heap Srt} {n l} :
+    H ⊢ .ptr l ▷ n -> Closed 0 n := by
   intro rs; cases rs
   case ptr m lk rs =>
-    have nf := lk.nf
-    apply Resolve.nf_image rs nf
+    have cl := lk.closed
+    apply Resolve.closed_image rs cl
 
 end Runtime
 

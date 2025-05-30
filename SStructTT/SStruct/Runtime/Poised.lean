@@ -248,10 +248,10 @@ lemma Step1.merge {H1 H1' H2 H3 : Heap Srt} {m n} :
     have ⟨Hx, x, mrg⟩ := ih rfl rfl mrg
     existsi Hx, .ite x n1 n2
     constructor; assumption
-  case alloc_clo H m s l h nf =>
+  case alloc_clo H m s l h cl =>
     cases e1; cases e2
     have ⟨l, _⟩ := H3.fresh
-    existsi H3.insert l (.clo m s nf), .ptr l
+    existsi H3.insert l (.clo m s cl), .ptr l
     constructor; assumption
   case alloc_box H s l l1 h =>
     cases e1; cases e2
@@ -375,8 +375,8 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
     all_goals cases rs
     case lam rsm _ =>
       have ⟨_, _⟩ := H3.fresh
-      have nf := erm.nf; simp at nf
-      have nf := rsm.nf_preimage nf
+      have cl := erm.closed; simp at cl
+      have cl := rsm.closed_preimage cl
       exfalso; apply norm
       constructor
       right; constructor
@@ -389,8 +389,8 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
     all_goals cases rs
     case lam rsm _ =>
       have ⟨_, _⟩ := H3.fresh
-      have nf := erm.nf; simp at nf
-      have nf := rsm.nf_preimage nf
+      have cl := erm.closed; simp at cl
+      have cl := rsm.closed_preimage cl
       exfalso; apply norm
       constructor
       right; constructor

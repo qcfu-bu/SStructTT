@@ -6,7 +6,7 @@ namespace Runtime
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 inductive Cell Srt where
-  | clo (m : Tm Srt)  (s : Srt) (_ : m.NF 1)
+  | clo (m : Tm Srt)  (s : Srt) (_ : Closed 1 m)
   | box (l : Nat)     (s : Srt)
   | tup (l1 l2 : Nat) (s : Srt)
   | tt | ff

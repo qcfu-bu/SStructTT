@@ -59,7 +59,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . apply Red1.app_im st1
         . constructor; assumption
       case app_N st => cases st
-      case beta mx s lf nf np lk =>
+      case beta mx s lf cl np lk =>
         clear ihm
         have ⟨Hx, mrg1, mrg2⟩ := mrg0.split mrg1.sym
         have ⟨Hy, rs0, mrg3⟩ := rsm.lookup mrg2.sym lk
@@ -129,7 +129,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . apply Resolve.app mrg1 <;> assumption
         . apply Red1.app_ex_N st1
         . constructor; assumption
-      case beta mx s lf nf np lk =>
+      case beta mx s lf cl np lk =>
         clear ihm ihn; cases np
         case ptr lp =>
           have ⟨Hx, mrg1, mrg2⟩ := mrg0.split mrg1.sym

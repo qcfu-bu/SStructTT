@@ -16,16 +16,16 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
     subst_vars; clear ih; cases rs
     case lam rs _ =>
       have ⟨l, h⟩ := H.fresh
-      have nf := erm.nf; simp at nf
-      replace nf := rs.nf_preimage nf
+      have cl := erm.closed; simp at cl
+      replace cl := rs.closed_preimage cl
       cases ps
     case ptr => right; aesop
   case lam_ex erm ih =>
     subst_vars; clear ih; cases rs
     case lam rs _ =>
       have ⟨l, h⟩ := H.fresh
-      have nf := erm.nf; simp at nf
-      replace nf := rs.nf_preimage nf
+      have cl := erm.closed; simp at cl
+      replace cl := rs.closed_preimage cl
       cases ps
     case ptr => right; aesop
   case app_im erm tyn ihm =>

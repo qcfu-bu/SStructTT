@@ -16,32 +16,32 @@ private lemma IdRename.up {i ξ} :
   | succ x => simp at lt; asimp; apply idr _ lt
 
 omit ord in
-private lemma nf_rename {m : Tm Srt} {i ξ} :
-    m.NF i -> IdRename i ξ  -> m = m.[ren ξ] := by
-  intro nf idr; induction m generalizing i ξ
+private lemma closed_rename {m : Tm Srt} {i ξ} :
+    Closed i m -> IdRename i ξ  -> m = m.[ren ξ] := by
+  intro cl idr; induction m generalizing i ξ
   all_goals simp_all; try (solve| aesop)
-  case var => asimp; simp[idr _ nf]
+  case var => asimp; simp[idr _ cl]
   case lam ih =>
-    asimp; rw[Tm.up_upren]; apply ih nf
+    asimp; rw[Tm.up_upren]; apply ih cl
     apply idr.up
   case app =>
-    have ⟨nf1, nf2⟩ := nf
+    have ⟨cl1, cl2⟩ := cl
     asimp; aesop
   case tup =>
-    have ⟨nf1, nf2⟩ := nf
+    have ⟨cl1, cl2⟩ := cl
     asimp; aesop
   case prj ih =>
-    have ⟨nf1, nf2⟩ := nf
+    have ⟨cl1, cl2⟩ := cl
     asimp; split_ands
     . aesop
     . rw[show @upn (Tm Srt) _ _ 2 (ren ξ) = ren (upren (upren ξ)) by asimp]
-      apply ih nf2
+      apply ih cl2
       apply idr.up.up
   case ite =>
-    have ⟨nf1, nf2⟩ := nf
+    have ⟨cl1, cl2⟩ := cl
     asimp; aesop
   case drop =>
-    have ⟨nf1, nf2⟩ := nf
+    have ⟨cl1, cl2⟩ := cl
     asimp; aesop
 
 namespace Runtime
@@ -104,13 +104,13 @@ lemma AgreeSubst.subst_var {Δ : Ctx Srt} {H σ σ' i x} :
       have e := ih le
       rw[<-e]; asimp
 
-lemma AgreeSubst.nf_subst {Δ : Ctx Srt} {H σ σ' i x m} :
-    AgreeSubst σ σ' i Δ H -> m.NF x -> x ≤ i -> m = m.[σ'] := by
-  intro agr nf lw; induction m generalizing Δ H σ σ' i x
+lemma AgreeSubst.closed_subst {Δ : Ctx Srt} {H σ σ' i x m} :
+    AgreeSubst σ σ' i Δ H -> Closed x m -> x ≤ i -> m = m.[σ'] := by
+  intro agr cl lw; induction m generalizing Δ H σ σ' i x
   all_goals simp_all
   case var =>
     asimp; apply agr.subst_var
-    apply nf.trans_le lw
+    apply cl.trans_le lw
   case lam ih =>
     asimp; apply ih
     . apply AgreeSubst.cons agr
@@ -118,7 +118,7 @@ lemma AgreeSubst.nf_subst {Δ : Ctx Srt} {H σ σ' i x m} :
     . assumption
     . simp[lw]
   case prj ihm ihn =>
-    have ⟨nf1, nf2⟩ := nf
+    have ⟨cl1, cl2⟩ := cl
     asimp; split_ands
     . aesop
     . apply ihn
@@ -164,9 +164,9 @@ lemma Resolve.id_rename {H : Heap Srt} {m m' i ξ} :
     asimp; apply Resolve.drop mrg ihm ihn
   case ptr l m n lk rsm ihm =>
     asimp
-    have nfm := lk.nf
-    have nfm' := (rsm.nf_image nfm).weaken (zero_le i)
-    rw[<-nf_rename nfm' idr]
+    have clm := lk.closed
+    have clm' := (rsm.closed_image clm).weaken (zero_le i)
+    rw[<-closed_rename clm' idr]
     constructor <;> assumption
   case null => asimp; constructor; assumption
 
@@ -289,16 +289,16 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
     case ptr l x lk rsm =>
       cases x
       all_goals simp_all[Cell.tm]; cases rsm
-      case lam nf0 rsm ct1 =>
+      case lam cl0 rsm ct1 =>
         asimp
-        have nf1 := rsm.nf_image nf0
-        have nf2 : (Tm.lam m' s).NF 0 := by simp; assumption
+        have cl1 := rsm.closed_image cl0
+        have cl2 : Closed 0 (Tm.lam m' s) := by simp; assumption
         have erm := Erased.lam_im lw tyA erm
-        have im := (erm.nf_stack nf2).toImplicit
+        have im := (erm.closed_stack cl2).toImplicit
         have ct := agr.implicit_image im
         have agr : AgreeSubst (up σ) (up σ') (x + 1) (A :⟨.im, sA⟩ Δ) H2 := by
           apply AgreeSubst.cons; assumption
-        rw[<-agr.nf_subst nf1 (by simp)]
+        rw[<-agr.closed_subst cl1 (by simp)]
         apply Resolve.merge_contra mrg ct
         apply Resolve.ptr lk
         constructor <;> assumption
@@ -313,16 +313,16 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
     case ptr l x lk rsm =>
       cases x
       all_goals simp_all[Cell.tm]; cases rsm
-      case lam nf0 rsm ct1 =>
+      case lam cl0 rsm ct1 =>
         asimp
-        have nf1 := rsm.nf_image nf0
-        have nf2 : (Tm.lam m' s).NF 0 := by simp; assumption
+        have cl1 := rsm.closed_image cl0
+        have cl2 : Closed 0 (Tm.lam m' s) := by simp; assumption
         have erm := Erased.lam_ex lw tyA erm
-        have im := (erm.nf_stack nf2).toImplicit
+        have im := (erm.closed_stack cl2).toImplicit
         have ct := agr.implicit_image im
         have agr : AgreeSubst (up σ) (up σ') (x + 1) (A :⟨.im, sA⟩ Δ) H2 := by
           apply AgreeSubst.cons; assumption
-        rw[<-agr.nf_subst nf1 (by simp)]
+        rw[<-agr.closed_subst cl1 (by simp)]
         apply Resolve.merge_contra mrg ct
         apply Resolve.ptr lk
         constructor <;> assumption
@@ -360,10 +360,10 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
       cases x
       all_goals simp_all[Cell.tm]; cases rsm
       case box mrg0 rsm rsn =>
-        have nf := rsm.ptr_nf
-        have im := (erm.nf_stack nf).toImplicit
+        have cl := rsm.ptr_closed
+        have im := (erm.closed_stack cl).toImplicit
         have ct := agr.implicit_image im
-        rw[<-agr.nf_subst nf (by simp)]
+        rw[<-agr.closed_subst cl (by simp)]
         apply Resolve.merge_contra mrg ct
         apply Resolve.ptr lk; simp[Cell.tm]
         constructor <;> assumption
@@ -384,14 +384,14 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
         cases rs
         exfalso; apply ern.null_preimage
       case tup mrg1 rsm rsn =>
-        have nf1 := rsm.ptr_nf
-        have nf2 := rsn.ptr_nf
-        have im1 := (erm.nf_stack nf1).toImplicit
-        have im2 := (ern.nf_stack nf2).toImplicit
+        have cl1 := rsm.ptr_closed
+        have cl2 := rsn.ptr_closed
+        have im1 := (erm.closed_stack cl1).toImplicit
+        have im2 := (ern.closed_stack cl2).toImplicit
         have im := mrg0.implicit_image im1 im2
         have ct := agr.implicit_image im
-        rw[<-agr.nf_subst nf1 (by simp)]
-        rw[<-agr.nf_subst nf2 (by simp)]
+        rw[<-agr.closed_subst cl1 (by simp)]
+        rw[<-agr.closed_subst cl2 (by simp)]
         apply Resolve.merge_contra mrg ct
         apply Resolve.ptr lk
         constructor <;> assumption

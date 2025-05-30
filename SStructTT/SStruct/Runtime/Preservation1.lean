@@ -23,12 +23,12 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     subst_vars; cases rs
     case lam x rsx hyp =>
       cases st
-      case alloc_clo l h nf =>
+      case alloc_clo l h cl =>
         clear ihm
         have ⟨h1, h2⟩ := mrg0.split_none h
         if h3: s ∈ ord.contra_set then
           replace ct := hyp h3
-          existsi H1.insert l (.clo x s nf), H2.insert l (.clo x s nf); and_intros
+          existsi H1.insert l (.clo x s cl), H2.insert l (.clo x s cl); and_intros
           . apply mrg0.insert_contra
             assumption
           . apply SubHeap.insert
@@ -45,7 +45,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
                 simp[Cell.srt]
                 apply rsx.insert_contra (by aesop) h1
         else
-          existsi H1.insert l (.clo x s nf), H2; and_intros
+          existsi H1.insert l (.clo x s cl), H2; and_intros
           . apply mrg0.insert_left
             assumption
             assumption
@@ -63,11 +63,11 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     subst_vars; cases rs
     case lam x rsx hyp =>
       cases st
-      case alloc_clo l h nf =>
+      case alloc_clo l h cl =>
         have ⟨h1, h2⟩ := mrg0.split_none h
         if h3: s ∈ ord.contra_set then
           replace ct := hyp h3
-          existsi H1.insert l (.clo x s nf), H2.insert l (.clo x s nf); and_intros
+          existsi H1.insert l (.clo x s cl), H2.insert l (.clo x s cl); and_intros
           . apply mrg0.insert_contra
             assumption
           . apply SubHeap.insert
@@ -83,7 +83,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
                 intro; apply ct.insert; assumption; rfl
                 apply rsx.insert_contra (by aesop) h1
         else
-          existsi H1.insert l (.clo x s nf), H2; and_intros
+          existsi H1.insert l (.clo x s cl), H2; and_intros
           . apply mrg0.insert_left
             assumption
             assumption
