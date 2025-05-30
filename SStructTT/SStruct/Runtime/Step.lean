@@ -43,18 +43,18 @@ inductive Drop : Heap Srt -> Tm Srt -> Heap Srt -> Prop where
   | null {H} : Drop H .null H -- free(NULL) in C does nothing
 
 /- Force drop-reductions to have deterministic eval order.  -/
-@[simp]def DropFree : Tm Srt -> Prop
-  | .var _ => True
-  | .lam _ _ => True
-  | .app m n => DropFree m ∧ DropFree n
-  | .tup m n _ => DropFree m ∧ DropFree n
-  | .prj m _ => DropFree m
-  | .tt => True
-  | .ff => True
-  | .ite m _ _ => DropFree m
-  | .drop _ _ => False
-  | .ptr _ => True
-  | .null => True
+@[simp]def drop_count : Tm Srt -> Nat
+  | .var _ => 0
+  | .lam _ _ => 0
+  | .app m n => drop_count m + drop_count n
+  | .tup m n _ => drop_count m + drop_count n
+  | .prj m _ => drop_count m
+  | .tt => 0
+  | .ff => 0
+  | .ite m _ _ => drop_count m
+  | .drop _ _ => 1
+  | .ptr _ => 0
+  | .null => 0
 
 /- State (Heap + Term) of the evaluator. -/
 abbrev State Srt := Heap Srt × Tm Srt
@@ -66,14 +66,14 @@ inductive Step0 : State Srt -> State Srt -> Prop where
     Step0 (H1, m) (H2, m') ->
     Step0 (H1, .app m n) (H2, .app m' n)
   | app_N {H1 H2} m {n n'} :
-    DropFree m ->
+    drop_count m = 0 ->
     Step0 (H1, n) (H2, n') ->
     Step0 (H1, .app m n) (H2, .app m n')
   | tup_M {H1 H2 m m'} n s :
     Step0 (H1, m) (H2, m') ->
     Step0 (H1, .tup m n s) (H2, .tup m' n s)
   | tup_N {H1 H2} m {n n'} s :
-    DropFree m ->
+    drop_count m = 0 ->
     Step0 (H1, n) (H2, n') ->
     Step0 (H1, .tup m n s) (H2, .tup m n' s)
   | prj_M {H1 H2 m m'} n :
@@ -85,6 +85,20 @@ inductive Step0 : State Srt -> State Srt -> Prop where
   | drop_elim {H1 H2 m n} :
     Drop H1 m H2 ->
     Step0 (H1, .drop m n) (H2, n)
+
+/- Force alloc-reductions to have deterministic eval order.  -/
+@[simp]def measure : Tm Srt -> Nat
+  | .var _ => 0
+  | .lam _ _ => 1
+  | .app m n => measure m + measure n
+  | .tup m n _ => measure m + measure n + 1
+  | .prj m _ => measure m
+  | .tt => 1
+  | .ff => 1
+  | .ite m _ _ => measure m
+  | .drop _ m => measure m + 1
+  | .ptr _ => 0
+  | .null => 0
 
 /- Alloc-reductions. -/
 @[scoped aesop safe [constructors]]
@@ -168,11 +182,12 @@ inductive Step2 : State Srt -> State Srt -> Prop where
     HLookup H l .ff H' ->
     Step2 (H, .ite (.ptr l) n1 n2) (H', n2)
 
-abbrev Red0 (t1 t2 : @State Srt) : Prop := Star Step0 t1 t2
-abbrev Red1 (t1 t2 : @State Srt) : Prop := Star Step1 t1 t2
+abbrev Red0 (t1 t2 : State Srt) : Prop := Star Step0 t1 t2
+abbrev Red1 (t1 t2 : State Srt) : Prop := Star Step1 t1 t2
 
-def Step : Rel (State Srt) :=
-  Relation.Comp (Star (Union Step0 Step1)) Step2
+inductive Step (x z : State Srt) : Prop where
+  | intro {y : State Srt} :
+    Star (Union Step0 Step1) x y -> measure y.2 = 0 -> Step2 y z -> Step x z
 
 notation:50 t:50 " ~>> " t':51 => Step t t'
 notation:50 t:50 " ~>>* " t':51 => Star Step t t'

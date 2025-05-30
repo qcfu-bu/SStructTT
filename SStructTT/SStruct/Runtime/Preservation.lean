@@ -32,7 +32,7 @@ lemma Resolved.preservation {H H' : Heap Srt} {a b c c' A} :
     [] ;; [] ;; H ⊢ a ▷ b ◁ c : A -> (H, c) ~>> (H', c') ->
     ∃ a' b', [] ;; [] ;; H' ⊢ a' ▷ b' ◁ c' : A ∧ a ~>>1 a' ∧ b ~>> b' := by
   intro rs st
-  rcases st with ⟨x, rd, st⟩
+  rcases st with @⟨x, rd, ms, st⟩
   rcases x with ⟨H1, a⟩
   have ⟨c, rs, rd⟩ := rs.preservationX rd
   have ⟨a', b', rs, st, rd⟩ := rs.preservation2 st
