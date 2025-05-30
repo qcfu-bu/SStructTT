@@ -1,5 +1,5 @@
 import SStructTT.SStruct.Erasure.Preservation
-import SStructTT.SStruct.Runtime.DropLemmas
+import SStructTT.SStruct.Runtime.Drop
 open ARS
 
 namespace SStruct.Erasure

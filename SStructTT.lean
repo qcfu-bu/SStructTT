@@ -58,7 +58,7 @@ import SStructTT.SStruct.Runtime.Heap
 import SStructTT.SStruct.Runtime.Resolution
 import SStructTT.SStruct.Runtime.Substitution
 import SStructTT.SStruct.Runtime.Step
-import SStructTT.SStruct.Runtime.DropLemmas
+import SStructTT.SStruct.Runtime.Drop
 import SStructTT.SStruct.Runtime.Preservation0
 import SStructTT.SStruct.Runtime.Preservation1
 import SStructTT.SStruct.Runtime.Preservation2
