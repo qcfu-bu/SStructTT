@@ -339,9 +339,9 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi H2.insert l .tt
         and_intros
         . apply mrg0.insert_contra
-          simp[Cell.srt]; apply ord.e_contra
+          simp[Cell.srt]; apply ord.ι_contra
         . apply SubHeap.intro (Finmap.singleton l .tt)
-          apply Contra.empty.insert ord.e_contra (by aesop)
+          apply Contra.empty.insert ord.ι_contra (by aesop)
           rw[Finmap.Disjoint.eq_1]; intros; aesop
           apply Finmap.ext_lookup; intro x
           if e: x = l then
@@ -355,8 +355,8 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . apply Resolve.ptr (H2 := H1.insert l .tt)
             simp[HLookup]; and_intros
             . rfl
-            . simp[Cell.srt,ord.e_contra]
-            . constructor; apply ct.insert ord.e_contra; rfl
+            . simp[Cell.srt,ord.ι_contra]
+            . constructor; apply ct.insert ord.ι_contra; rfl
     case ptr => cases st
   case ff =>
     subst_vars; cases rs
@@ -368,9 +368,9 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi H2.insert l .ff
         and_intros
         . apply mrg0.insert_contra
-          simp[Cell.srt]; apply ord.e_contra
+          simp[Cell.srt]; apply ord.ι_contra
         . apply SubHeap.intro (Finmap.singleton l .ff)
-          apply Contra.empty.insert ord.e_contra (by aesop)
+          apply Contra.empty.insert ord.ι_contra (by aesop)
           rw[Finmap.Disjoint.eq_1]; intros; aesop
           apply Finmap.ext_lookup; intro x
           if e: x = l then
@@ -384,8 +384,8 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . apply Resolve.ptr (H2 := H1.insert l .ff)
             simp[HLookup]; and_intros
             . rfl
-            . simp[Cell.srt,ord.e_contra]
-            . constructor; apply ct.insert ord.e_contra; rfl
+            . simp[Cell.srt,ord.ι_contra]
+            . constructor; apply ct.insert ord.ι_contra; rfl
     case ptr => cases st
   case ite mrg1 ty erm ern1 ern2 ihm ihn1 ihn2 =>
     subst_vars; cases mrg1; cases rs

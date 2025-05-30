@@ -5,12 +5,12 @@ Substructural Dependent Type Theory (SStruct) in [Lean 4](https://lean-lang.org/
 SStruct is parameterized over a [sort-order](./SStructTT/SStruct/SrtOrder.lean) structure.
 ```lean
 class SrtOrder (S : Type) extends PartialOrder S where
-  e : S
+  ι : S
   weaken_set : LowerSet S
   contra_set : LowerSet S
-  e_min : ∀ (x : S), e ≤ x
-  e_weaken : e ∈ weaken_set
-  e_contra : e ∈ contra_set
+  ι_min : ∀ (x : S), ι ≤ x
+  ι_weaken : ι ∈ weaken_set
+  ι_contra : ι ∈ contra_set
   weaken_dec : ∀ s, Decidable (s ∈ weaken_set)
   contra_dec : ∀ s, Decidable (s ∈ contra_set)
 ```

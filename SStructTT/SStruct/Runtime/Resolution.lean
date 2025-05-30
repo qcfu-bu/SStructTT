@@ -442,7 +442,7 @@ lemma Resolve.insert_contra {H : Heap Srt} {l m m' v} :
     . assumption
   case null ct => constructor; apply ct.insert h; rfl
 
-lemma Resolve.merge_contra {H1 H2 H3 : Heap Srt} {m m'} :
+lemma Resolve.mergι_contra {H1 H2 H3 : Heap Srt} {m m'} :
     HMerge H1 H2 H3 -> Contra H2 -> H1 ;; m ▷ m' -> H3 ;; m ▷ m' := by
   intro mrg ct2 rsm; induction rsm generalizing H2 H3
   case var H1 x ct1 =>
@@ -548,7 +548,7 @@ lemma HLookup.contra_tt {H H' : Heap Srt} {l} :
   unfold HLookup at lk
   split at lk <;> simp_all[Cell.srt]
   replace ⟨_, lk⟩ := lk; subst_vars
-  simp[ord.e_contra] at lk
+  simp[ord.ι_contra] at lk
   assumption
 
 lemma HLookup.contra_ff {H H' : Heap Srt} {l} :
@@ -557,7 +557,7 @@ lemma HLookup.contra_ff {H H' : Heap Srt} {l} :
   unfold HLookup at lk
   split at lk <;> simp_all[Cell.srt]
   replace ⟨_, lk⟩ := lk; subst_vars
-  simp[ord.e_contra] at lk
+  simp[ord.ι_contra] at lk
   assumption
 
 lemma Resolve.var_inv {H : Heap Srt} {m x} :
@@ -590,7 +590,7 @@ lemma Resolve.tt_inv {H : Heap Srt} {m} :
     subst_vars; cases m
     all_goals simp_all[Cell.tm]; cases rsm
     have ifq := lk.lookup
-    simp[Cell.srt,ord.e_contra] at ifq; subst ifq
+    simp[Cell.srt,ord.ι_contra] at ifq; subst ifq
     assumption
 
 lemma Resolve.ff_inv {H : Heap Srt} {m} :
@@ -601,7 +601,7 @@ lemma Resolve.ff_inv {H : Heap Srt} {m} :
     subst_vars; cases m
     all_goals simp_all[Cell.tm]; cases rsm
     have ifq := lk.lookup
-    simp[Cell.srt,ord.e_contra] at ifq; subst ifq
+    simp[Cell.srt,ord.ι_contra] at ifq; subst ifq
     assumption
 
 lemma Resolve.null_inv {H : Heap Srt} {m} :

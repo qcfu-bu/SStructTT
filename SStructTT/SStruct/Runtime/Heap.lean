@@ -22,8 +22,8 @@ def Cell.srt : Cell Srt -> Srt
   | .clo _ s _ => s
   | .box _ s   => s
   | .tup _ _ s => s
-  | .tt        => ord.e
-  | .ff        => ord.e
+  | .tt        => ord.ι
+  | .ff        => ord.ι
 
 abbrev Heap Srt := Finmap fun (_ : Nat) => Cell Srt
 

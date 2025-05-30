@@ -4,12 +4,12 @@ import Mathlib.Order.Defs.PartialOrder
 namespace SStruct
 
 class SrtOrder (S : Type) extends PartialOrder S where
-  e : S
+  ι : S
   weaken_set : LowerSet S
   contra_set : LowerSet S
-  e_min : ∀ (x : S), e ≤ x
-  e_weaken : e ∈ weaken_set
-  e_contra : e ∈ contra_set
+  ι_min : ∀ (x : S), ι ≤ x
+  ι_weaken : ι ∈ weaken_set
+  ι_contra : ι ∈ contra_set
   weaken_dec : ∀ s, Decidable (s ∈ weaken_set)
   contra_dec : ∀ s, Decidable (s ∈ contra_set)
 
@@ -30,10 +30,10 @@ def InterSet (s : Srt) : Set Srt :=
 lemma InterSet.self_mem {s : Srt} : s ∈ InterSet s := by
   constructor <;> simp
 
-lemma InterSet.min_mem {s : Srt} : ord.e ∈ InterSet s := by
+lemma InterSet.min_mem {s : Srt} : ord.ι ∈ InterSet s := by
   constructor
-  . intro; apply ord.e_weaken
-  . intro; apply ord.e_contra
+  . intro; apply ord.ι_weaken
+  . intro; apply ord.ι_contra
 
 lemma InterSet.weaken {s1 s2 : Srt} :
     s1 ∈ InterSet s2 -> s2 ∈ ord.weaken_set -> s1 ∈ ord.weaken_set := by
@@ -44,7 +44,7 @@ lemma InterSet.contra {s1 s2 : Srt} :
   intro h1 h2; cases h1; aesop
 
 lemma InterSet.weaken_contra {s : Srt} :
-    s ∈ ord.weaken_set -> s ∈ ord.contra_set -> s ∈ InterSet ord.e := by
+    s ∈ ord.weaken_set -> s ∈ ord.contra_set -> s ∈ InterSet ord.ι := by
   intro h1 h2; constructor <;> aesop
 
 lemma InterSet.lower_mem {s1 s2 : Srt} :
@@ -266,12 +266,12 @@ def Srt.contra_dec (s : Srt) : Decidable (s ∈ contra) := by
   | L => apply isFalse; intro h; cases h
 
 instance : SrtOrder Srt where
-  e := Srt.U
+  ι := Srt.U
   weaken_set := ⟨_, Srt.weaken_lower⟩
   contra_set := ⟨_, Srt.contra_lower⟩
-  e_min := Srt.le_U_min
-  e_weaken := Srt.weaken.U
-  e_contra := Srt.contra.U
+  ι_min := Srt.le_U_min
+  ι_weaken := Srt.weaken.U
+  ι_contra := Srt.contra.U
   weaken_dec := Srt.weaken_dec
   contra_dec := Srt.contra_dec
 

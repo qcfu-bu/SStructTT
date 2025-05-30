@@ -182,7 +182,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       have ⟨H0, mrg1, mrg2⟩ := mrg0.split mrg1.sym
       have ⟨Hx, mrgx, ct⟩ := dp.resolve rsm mrg2.sym
       have ⟨Hy, mrg1', mrg2'⟩ := mrgx.sym.split mrg1
-      have rsn := rsn.merge_contra mrg1' ct
+      have rsn := rsn.mergι_contra mrg1' ct
       existsi Hy, n'; and_intros
       . assumption
       . constructor <;> assumption

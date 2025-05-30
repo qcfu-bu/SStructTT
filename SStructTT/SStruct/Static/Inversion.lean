@@ -49,7 +49,7 @@ lemma Typed.sig_inv {Γ : Ctx Srt} {A B T r s} :
 
 lemma Typed.idn_inv {Γ : Ctx Srt} {A T m n} :
     Γ ⊢ .idn A m n : T ->
-    ∃ i, Γ ⊢ m : A ∧ Γ ⊢ n : A ∧ T === .srt ord.e i := by
+    ∃ i, Γ ⊢ m : A ∧ Γ ⊢ n : A ∧ T === .srt ord.ι i := by
   generalize e: Tm.idn A m n = x
   intro ty; induction ty generalizing A m n
   all_goals try trivial
@@ -124,14 +124,14 @@ theorem Typed.validity {Γ : Ctx Srt} {A m} :
   intro ty; induction ty
   all_goals try trivial
   case srt i _ _ =>
-    existsi ord.e, i+2
+    existsi ord.ι, i+2
     constructor
     assumption
   case var wf hs _ =>
     have ⟨s, i, _⟩ := wf.has_typed hs
     exists s, i
   case pi s _ _ iA iB tyA _ _ _ =>
-    existsi ord.e, (max iA iB + 1)
+    existsi ord.ι, (max iA iB + 1)
     constructor
     apply tyA.toWf
   case lam s _ _ _ tym _ ihm =>
@@ -147,7 +147,7 @@ theorem Typed.validity {Γ : Ctx Srt} {A m} :
     apply Typed.esubst <;> try first | rfl | assumption
     asimp
   case sig iA iB _ _ tyA _ _ _ =>
-    existsi ord.e, (max iA iB + 1)
+    existsi ord.ι, (max iA iB + 1)
     constructor
     apply tyA.toWf
   case tup s i _ _ _ _ _ _ =>
@@ -156,18 +156,18 @@ theorem Typed.validity {Γ : Ctx Srt} {A m} :
     existsi s, i
     apply Typed.esubst <;> try first | rfl | assumption
     asimp
-  case bool => existsi ord.e, 1; constructor; assumption
-  case tt => existsi ord.e, 0; constructor; assumption
-  case ff => existsi ord.e, 0; constructor; assumption
+  case bool => existsi ord.ι, 1; constructor; assumption
+  case tt => existsi ord.ι, 0; constructor; assumption
+  case ff => existsi ord.ι, 0; constructor; assumption
   case ite s i _ _ _ _ _ _ _ _ =>
     existsi s, i
     apply Typed.esubst <;> try first | rfl | assumption
     asimp
   case idn i tyA _ _ _ _ _ =>
-    existsi ord.e, i+1; constructor; apply tyA.toWf
+    existsi ord.ι, i+1; constructor; apply tyA.toWf
   case rfl ih =>
     have ⟨s, i, ty⟩ := ih
-    existsi ord.e, i
+    existsi ord.ι, i
     constructor <;> assumption
   case rw m n a b s i _ _ _ _ _ ihI =>
     have ⟨sI, iI, tyI⟩ := ihI

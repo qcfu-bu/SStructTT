@@ -81,7 +81,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . assumption
         . constructor
           . apply erm.subst_im tyn
-          . apply rsm.merge_contra mrg4.sym ct
+          . apply rsm.mergι_contra mrg4.sym ct
         . apply Star1.SE_join
           . apply Dynamic.Red.app_im rd
           . constructor
@@ -477,7 +477,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             apply (Star.conv (Red.toStatic erm.toStatic rd)).sym
             assumption
             apply tyA.subst erm.toStatic
-          . apply rsn1.merge_contra mrg1.sym ct
+          . apply rsn1.mergι_contra mrg1.sym ct
         . apply Star1.SE_join
           apply Red.ite rd
           constructor
@@ -497,7 +497,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             apply (Star.conv (Red.toStatic erm.toStatic rd)).sym
             assumption
             apply tyA.subst erm.toStatic
-          . apply rsn2.merge_contra mrg1.sym ct
+          . apply rsn2.mergι_contra mrg1.sym ct
         . apply Star1.SE_join
           apply Red.ite rd
           constructor

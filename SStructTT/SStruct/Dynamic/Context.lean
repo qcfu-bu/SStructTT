@@ -79,23 +79,23 @@ lemma Stack.toImplicit {Δ : Ctx Srt} : Stack Δ 0 -> Implicit Δ := by
   intro st; cases st; assumption
 
 lemma Lower.split_e {Δ : Ctx Srt} :
-    Lower Δ ord.e -> ∃ Δ1 Δ2, Lower Δ1 ord.e ∧ Lower Δ2 ord.e ∧ Merge Δ1 Δ2 Δ := by
-  generalize e: ord.e = s
+    Lower Δ ord.ι -> ∃ Δ1 Δ2, Lower Δ1 ord.ι ∧ Lower Δ2 ord.ι ∧ Merge Δ1 Δ2 Δ := by
+  generalize e: ord.ι = s
   intro l; induction l
   case nil =>
     subst_vars
     existsi [], []; aesop
   case ex A _ s' h _ ih =>
     subst_vars
-    have := ord.le_antisymm _ _ h (ord.e_min s')
+    have := ord.le_antisymm _ _ h (ord.ι_min s')
     subst_vars
     have ⟨Δ1, Δ2, l1, l2, mrg⟩ := ih rfl
-    existsi A :⟨.ex, ord.e⟩ Δ1, A :⟨.ex, ord.e⟩ Δ2
+    existsi A :⟨.ex, ord.ι⟩ Δ1, A :⟨.ex, ord.ι⟩ Δ2
     and_intros
     . constructor <;> assumption
     . constructor <;> assumption
     . constructor
-      apply ord.e_contra
+      apply ord.ι_contra
       assumption
   case im A s s' lw ih =>
     subst_vars
