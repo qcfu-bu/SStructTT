@@ -65,3 +65,4 @@ import SStructTT.SStruct.Runtime.Preservation2
 import SStructTT.SStruct.Runtime.Preservation
 import SStructTT.SStruct.Runtime.Normalize
 import SStructTT.SStruct.Runtime.Poised
+import SStructTT.SStruct.Runtime.Progress
