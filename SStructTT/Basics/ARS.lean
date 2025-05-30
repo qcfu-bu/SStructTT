@@ -35,6 +35,7 @@ def CR := ∀ {x y}, Conv e x y -> Joinable (Star e) x y
 def Reducible (x : T) := ∃ y, e x y
 def Normal (x : T) := ¬ Reducible e x
 def NF (x y : T) := Star e x y ∧ Normal e y
+def WN (x : T) := ∃ y, NF e x y
 
 inductive SN : T -> Prop where
   | intro {x} : (∀ {y}, e x y -> SN y) -> SN x
@@ -354,6 +355,21 @@ lemma SN.star1 {x} : SN e x -> SN (Star1 e) x := by
       have ⟨h⟩ := ih
       apply h
       apply Star1.E st
+
+lemma SN.wn {x} : SN e x -> WN e x := by
+  intro sn; induction sn
+  case intro x h ih =>
+    by_cases h0 : Reducible e x
+    case pos =>
+      rcases h0 with ⟨y, h1⟩
+      have ⟨z, ⟨h2, h3⟩⟩ := ih h1
+      existsi z; and_intros
+      . apply Star.ES h1 h2
+      . apply h3
+    case neg =>
+      existsi x; and_intros
+      . apply Star.R
+      . apply h0
 
 lemma Normal.star {x y} : Star e x y -> Normal e x -> x = y := by
   intro h1 h2
