@@ -73,7 +73,7 @@ inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
     Contra H ->
     Resolve H .null .null
 
-notation:50 H:50 " ⊢ " m:51 " ▷ " m':51 => Resolve H m m'
+notation:50 H:50 " ;; " m:51 " ▷ " m':51 => Resolve H m m'
 
 @[simp]def IsResolved : Tm Srt -> Prop
   | .var _ => True
@@ -88,7 +88,7 @@ notation:50 H:50 " ⊢ " m:51 " ▷ " m':51 => Resolve H m m'
   | .ptr _ => False
   | .null => True
 
-lemma Resolve.is_resolved {H : Heap Srt} {m m'} : H ⊢ m ▷ m' -> IsResolved m' := by
+lemma Resolve.is_resolved {H : Heap Srt} {m m'} : H ;; m ▷ m' -> IsResolved m' := by
   intro rs; induction rs
   all_goals aesop
 
@@ -97,7 +97,7 @@ inductive Resolved :
   SStruct.Tm Srt -> Tm Srt -> Tm Srt -> SStruct.Tm Srt -> Prop
 where
   | intro {Γ Δ H x y z A} :
-    Γ ;; Δ ⊢ x ▷ y : A -> H ⊢ z ▷ y -> Resolved Γ Δ H x y z A
+    Γ ;; Δ ⊢ x ▷ y : A -> H ;; z ▷ y -> Resolved Γ Δ H x y z A
 
 notation:50 Γ:50 " ;; " Δ:51 " ;; " H:51 " ⊢ " x:51 " ▷ " y:51 " ◁ " z:51 " : " A:51 =>
   Resolved Γ Δ H x y z A
@@ -342,7 +342,7 @@ lemma HLookup.disjoint_union {H0 H1 H2 : Heap Srt} {l m} :
     aesop
 
 lemma Erased.resolve_id {Γ Δ} {H : Heap Srt} {x y z A} :
-    Γ ;; Δ ⊢ x ▷ y : A -> H ⊢ y ▷ z -> y = z := by
+    Γ ;; Δ ⊢ x ▷ y : A -> H ;; y ▷ z -> y = z := by
   intro ty rs; induction ty generalizing H z
   case var => cases rs; simp
   case lam_im => cases rs; aesop
@@ -367,7 +367,7 @@ lemma Erased.resolve_id {Γ Δ} {H : Heap Srt} {x y z A} :
   case conv => aesop
 
 lemma Resolve.closed_image {H : Heap Srt} {m m' i} :
-    H ⊢ m ▷ m' -> Closed i m -> Closed i m' := by
+    H ;; m ▷ m' -> Closed i m -> Closed i m' := by
   intro rs cl; induction rs generalizing i
   all_goals try (solve|simp_all)
   case ptr H1 H2 l m m' lk erm ihm =>
@@ -377,13 +377,13 @@ lemma Resolve.closed_image {H : Heap Srt} {m m' i} :
       apply cl.weaken (by simp)
 
 lemma Resolve.closed_preimage {H : Heap Srt} {m m' i} :
-    H ⊢ m ▷ m' -> Closed i m' -> Closed i m := by
+    H ;; m ▷ m' -> Closed i m' -> Closed i m := by
   intro rs cl; induction rs generalizing i
   all_goals simp_all
 
 lemma Resolve.insert_contra {H : Heap Srt} {l m m' v} :
-    H ⊢ m ▷ m' -> v.srt ∈ ord.contra_set -> l ∉ H ->
-    H.insert l v ⊢ m ▷ m' := by
+    H ;; m ▷ m' -> v.srt ∈ ord.contra_set -> l ∉ H ->
+    H.insert l v ;; m ▷ m' := by
   intro rs h nn; induction rs
   case var ct => constructor; apply ct.insert h; rfl
   case lam hyp rsm ih =>
@@ -443,7 +443,7 @@ lemma Resolve.insert_contra {H : Heap Srt} {l m m' v} :
   case null ct => constructor; apply ct.insert h; rfl
 
 lemma Resolve.merge_contra {H1 H2 H3 : Heap Srt} {m m'} :
-    HMerge H1 H2 H3 -> Contra H2 -> H1 ⊢ m ▷ m' -> H3 ⊢ m ▷ m' := by
+    HMerge H1 H2 H3 -> Contra H2 -> H1 ;; m ▷ m' -> H3 ;; m ▷ m' := by
   intro mrg ct2 rsm; induction rsm generalizing H2 H3
   case var H1 x ct1 =>
     have ct := mrg.contra_image ct1 ct2
@@ -499,7 +499,7 @@ lemma Resolve.merge_contra {H1 H2 H3 : Heap Srt} {m m'} :
     constructor; assumption
 
 lemma Resolve.subheap {H1 H2 : Heap Srt} {m m'} :
-    H1 ⊢ m ▷ m' -> SubHeap H1 H2 -> H2 ⊢ m ▷ m' := by
+    H1 ;; m ▷ m' -> SubHeap H1 H2 -> H2 ;; m ▷ m' := by
   intro rs sb; induction rs generalizing H2
   case var ct =>
     rcases sb with ⟨H0, ct0, dsj, un⟩; subst un
@@ -561,7 +561,7 @@ lemma HLookup.contra_ff {H H' : Heap Srt} {l} :
   assumption
 
 lemma Resolve.var_inv {H : Heap Srt} {m x} :
-    H ⊢ m ▷ .var x -> Contra H := by
+    H ;; m ▷ .var x -> Contra H := by
   generalize e: Tm.var x = m'
   intro rs; induction rs <;> try trivial
   case ptr l m m' lk rsm ih =>
@@ -569,7 +569,7 @@ lemma Resolve.var_inv {H : Heap Srt} {m x} :
     all_goals simp_all[Cell.tm]; cases rsm
 
 lemma Resolve.lam_inv {H : Heap Srt} {m m' s} :
-    H ⊢ m ▷ .lam m' s -> (s ∈ ord.contra_set -> Contra H) := by
+    H ;; m ▷ .lam m' s -> (s ∈ ord.contra_set -> Contra H) := by
   generalize e: Tm.lam m' s = t
   intro rs; induction rs <;> try trivial
   case lam => cases e; assumption
@@ -583,7 +583,7 @@ lemma Resolve.lam_inv {H : Heap Srt} {m m' s} :
       assumption
 
 lemma Resolve.tt_inv {H : Heap Srt} {m} :
-    H ⊢ m ▷ .tt -> Contra H := by
+    H ;; m ▷ .tt -> Contra H := by
   generalize e: Tm.tt = t
   intro rs; induction rs <;> try trivial
   case ptr l m m' lk rsm ih =>
@@ -594,7 +594,7 @@ lemma Resolve.tt_inv {H : Heap Srt} {m} :
     assumption
 
 lemma Resolve.ff_inv {H : Heap Srt} {m} :
-    H ⊢ m ▷ .ff -> Contra H := by
+    H ;; m ▷ .ff -> Contra H := by
   generalize e: Tm.ff = t
   intro rs; induction rs <;> try trivial
   case ptr l m m' lk rsm ih =>
@@ -605,7 +605,7 @@ lemma Resolve.ff_inv {H : Heap Srt} {m} :
     assumption
 
 lemma Resolve.null_inv {H : Heap Srt} {m} :
-    H ⊢ m ▷ .null -> Contra H ∧ m = .null := by
+    H ;; m ▷ .null -> Contra H ∧ m = .null := by
   generalize e: Tm.null = t
   intro rs; induction rs <;> try trivial
   case ptr l m m' lk rsm ih =>
@@ -691,7 +691,7 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
     aesop
 
 lemma Resolve.value_image {H : Heap Srt} {m m'} :
-    H ⊢ m ▷ m' -> Value m -> Value m' := by
+    H ;; m ▷ m' -> Value m -> Value m' := by
   intro rsm vl; induction rsm <;> try (solve|aesop)
   all_goals try (solve|cases vl)
   case tup mrg rsm rsn ihm ihn =>
@@ -704,14 +704,14 @@ lemma Resolve.value_image {H : Heap Srt} {m m'} :
     all_goals simp_all[Cell.tm]; aesop
 
 lemma Resolve.ptr_value {H : Heap Srt} {n l} :
-    H ⊢ .ptr l ▷ n -> Value n := by
+    H ;; .ptr l ▷ n -> Value n := by
   intro rs; cases rs
   case ptr m lk rs =>
     apply rs.value_image; cases m
     all_goals simp_all[Cell.tm]; aesop
 
 lemma Resolve.ptr_closed {H : Heap Srt} {n l} :
-    H ⊢ .ptr l ▷ n -> Closed 0 n := by
+    H ;; .ptr l ▷ n -> Closed 0 n := by
   intro rs; cases rs
   case ptr m lk rs =>
     have cl := lk.closed
@@ -722,7 +722,7 @@ end Runtime
 open Runtime
 
 lemma Erased.resolve_init' {H : Heap Srt} {Γ Δ m n A} :
-    Γ ;; Δ ⊢ m ▷ n : A -> Contra H -> Weaken H -> H ⊢ n ▷ n := by
+    Γ ;; Δ ⊢ m ▷ n : A -> Contra H -> Weaken H -> H ;; n ▷ n := by
   intro er ct wk
   induction er
   case var => constructor; assumption
@@ -783,6 +783,6 @@ lemma Erased.resolve_init' {H : Heap Srt} {Γ Δ m n A} :
   case conv => aesop
 
 lemma Erased.resolve_init {Γ Δ m n A} :
-    Γ ;; Δ ⊢ m ▷ n : A -> (∅ : Heap Srt) ⊢ n ▷ n := by
+    Γ ;; Δ ⊢ m ▷ n : A -> (∅ : Heap Srt) ;; n ▷ n := by
   intro erm
   apply erm.resolve_init' Contra.empty Weaken.empty

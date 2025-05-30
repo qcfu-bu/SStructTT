@@ -10,8 +10,8 @@ open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Resolve.lookup {H1 H2 H3 H3' : Heap Srt} {l m m'} :
-    H1 ⊢ .ptr l ▷ m' -> HMerge H1 H2 H3 ->
-    HLookup H3 l m H3' -> ∃ H1', H1' ⊢ m.tm ▷ m' ∧ HMerge H1' H2 H3' := by
+    H1 ;; .ptr l ▷ m' -> HMerge H1 H2 H3 ->
+    HLookup H3 l m H3' -> ∃ H1', H1' ;; m.tm ▷ m' ∧ HMerge H1' H2 H3' := by
   generalize e: Tm.ptr l = t
   intro ty mrg lk; induction ty generalizing H2 H3 H3' l m <;> try trivial
   case ptr Ha Hb l n n' lk0 rsm ihm =>
@@ -71,7 +71,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         have ⟨sA, erm⟩ := rs1.lam_im_inv
         have ⟨H0, mrg0, ct0⟩ := HMerge.exists_self_contra Hy
         have rsm := Resolved.intro erm rs0
-        have rsm : Hy ⊢ mx.[.null/] ▷ m0.[.null/] := by
+        have rsm : Hy ;; mx.[.null/] ▷ m0.[.null/] := by
           apply rsm.substitution
           . apply mrg0
           . constructor
@@ -146,7 +146,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           have ⟨n2, rd2, vl2, ern1⟩ := ern.value_preimage vl1
           have hyp := (Resolved.intro ern rsn).resolution tyA vl1
           have ⟨H0, mrg, ct⟩ := HMerge.exists_self_contra H2'
-          have rsm : Hz ⊢ mx.[.ptr lp/] ▷ m0.[n1/] := by
+          have rsm : Hz ;; mx.[.ptr lp/] ▷ m0.[n1/] := by
             apply rsm.substitution
             . apply mrg4.sym
             . constructor

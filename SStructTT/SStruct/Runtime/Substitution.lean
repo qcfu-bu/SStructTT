@@ -63,7 +63,7 @@ where
   | intro_ex {Δ H1 H2 H3 σ σ' m m' A s} :
     (s ∈ ord.contra_set -> Contra H2) ->
     HMerge H1 H2 H3 ->
-    H2 ⊢ m ▷ m' ->
+    H2 ;; m ▷ m' ->
     AgreeSubst σ σ' 0 Δ H1 ->
     AgreeSubst (m .: σ) (m' .: σ') 0 (A :⟨.ex, s⟩ Δ) H3
 
@@ -132,7 +132,7 @@ lemma AgreeSubst.closed_subst {Δ : Ctx Srt} {H σ σ' i x m} :
   all_goals asimp; try aesop
 
 lemma Resolve.id_rename {H : Heap Srt} {m m' i ξ} :
-    H ⊢ m ▷ m' -> IdRename i ξ -> H ⊢ m.[ren ξ] ▷ m'.[ren ξ] := by
+    H ;; m ▷ m' -> IdRename i ξ -> H ;; m.[ren ξ] ▷ m'.[ren ξ] := by
   intro rs idr; induction rs generalizing i ξ
   case var => asimp; constructor; assumption
   case lam lw _ ih =>
@@ -171,7 +171,7 @@ lemma Resolve.id_rename {H : Heap Srt} {m m' i ξ} :
   case null => asimp; constructor; assumption
 
 lemma AgreeSubst.has {Δ : Ctx Srt} {H σ σ' x i s A} :
-    AgreeSubst σ σ' i Δ H -> Has Δ x s A -> H ⊢ σ x ▷ σ' x := by
+    AgreeSubst σ σ' i Δ H -> Has Δ x s A -> H ;; σ x ▷ σ' x := by
   intro agr hs; induction agr generalizing x s A
   case nil => cases hs
   case cons agr ih =>
@@ -266,7 +266,7 @@ lemma AgreeSubst.split {Δ1 Δ2 Δ3 : Ctx Srt} {H3 σ σ' x} :
 
 lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
     Γ ;; Δ ;; H1 ⊢ m ▷ n ◁ n' : A -> HMerge H1 H2 H3 -> AgreeSubst σ σ' x Δ H2 ->
-    H3 ⊢ n'.[σ] ▷ n.[σ'] := by
+    H3 ;; n'.[σ] ▷ n.[σ'] := by
   intro ⟨er, rs⟩ mrg agr
   induction er generalizing H1 H2 H3 σ σ' n' x
   case var hs =>

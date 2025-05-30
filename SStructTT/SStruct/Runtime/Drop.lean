@@ -7,7 +7,7 @@ namespace Runtime
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
-    Drop H3 m H4 -> H1 ⊢ m ▷ m' -> HMerge H1 H2 H3 ->
+    Drop H3 m H4 -> H1 ;; m ▷ m' -> HMerge H1 H2 H3 ->
     ∃ H0, HMerge H0 H2 H4 ∧ Contra H0 := by
   intro dp rs mrg; induction rs generalizing H2 H3 H4
   case var => cases dp; aesop
@@ -72,7 +72,7 @@ lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
     subst e; aesop
 
 lemma Resolve.drop_safeX {H1 H2 H3 : Heap Srt} {m m'} :
-    H1 ⊢ m ▷ m' -> HMerge H1 H2 H3 ->
+    H1 ;; m ▷ m' -> HMerge H1 H2 H3 ->
     ∃ H1' H3', Drop H3 m H3' ∧ HMerge H1' H2 H3' := by
   intro rsm mrg; induction rsm generalizing H2 H3
   case var H1 x ct =>
@@ -161,7 +161,7 @@ lemma Resolve.drop_safeX {H1 H2 H3 : Heap Srt} {m m'} :
     . assumption
 
 lemma Resolve.drop_safe {H1 : Heap Srt} {m m'} :
-    H1 ⊢ m ▷ m' -> ∃ H1', Drop H1 m H1' := by
+    H1 ;; m ▷ m' -> ∃ H1', Drop H1 m H1' := by
   intro rs
   have ⟨H0, mrg, ct⟩ := HMerge.exists_self_contra H1
   have ⟨H1', H3', dp, mrg⟩ := rs.drop_safeX mrg
