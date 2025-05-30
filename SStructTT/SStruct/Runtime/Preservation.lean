@@ -9,7 +9,7 @@ open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Resolved.preservationX {H H' : Heap Srt} {a b c c' A} :
-    [] ;; [] ;; H ⊢ a ▷ b ◁ c : A -> Star (Union Step0 Step1) (H, c) (H', c') ->
+    [] ;; [] ;; H ⊢ a ▷ b ◁ c : A -> Red01 (H, c) (H', c') ->
     ∃ b', [] ;; [] ;; H' ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Red0 b b' := by
   generalize e: (H', c') = t
   intro rs rd; induction rd generalizing H' a b c' A

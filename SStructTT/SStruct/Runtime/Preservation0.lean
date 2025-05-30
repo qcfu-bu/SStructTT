@@ -1,6 +1,5 @@
 import SStructTT.SStruct.Erasure.Preservation
-import SStructTT.SStruct.Runtime.Step
-import SStructTT.SStruct.Runtime.Resolution
+import SStructTT.SStruct.Runtime.DropLemmas
 open ARS
 
 namespace SStruct.Erasure
@@ -44,7 +43,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             assumption
             assumption
         . constructor; assumption
-      case app_N mrg rsm rsn n0 dpf st =>
+      case app_N mrg rsm rsn n0 st =>
         have ⟨_, e⟩ := rsn.null_inv; subst e
         cases st
     case ptr => cases st
@@ -62,7 +61,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . apply Erased.app_ex Merge.nil erx ern
           . apply Resolve.app mrg1.sym rsx rsn
         . constructor; assumption
-      case app_N mrg rsm rsn nx dpf st =>
+      case app_N mrg rsm rsn nx st =>
         have ⟨Hx, mrg1, mrg2⟩ := mrg0.split mrg
         have ⟨H1', nx', mrgx, ⟨erx, rsx⟩, stx⟩ := ihn rfl rfl mrg2.sym rsn st
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg1
@@ -90,7 +89,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             assumption
             assumption
         . constructor; assumption
-      case tup_N mrg rsm rsn n0 dpf st =>
+      case tup_N mrg rsm rsn n0 st =>
         have ⟨_, e⟩ := rsn.null_inv; subst e
         cases st
     case ptr => cases st
@@ -108,7 +107,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . apply Erased.tup_ex Merge.nil ty erx ern
           . apply Resolve.tup mrg1.sym rsx rsn
         . constructor; assumption
-      case tup_N mrg rsm rsn nx dpf st =>
+      case tup_N mrg rsm rsn nx st =>
         have ⟨Hx, mrg1, mrg2⟩ := mrg0.split mrg
         have ⟨H1', nx', mrgx, ⟨erx, rsx⟩, stx⟩ := ihn rfl rfl mrg2.sym rsn st
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg1

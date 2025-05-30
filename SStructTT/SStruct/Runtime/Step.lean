@@ -30,7 +30,6 @@ inductive Drop : Heap Srt -> Tm Srt -> Heap Srt -> Prop where
   | ite {H1 H2 H3 m n1 n2} :
     Drop H1 m H2 ->
     Drop H2 n1 H3 ->
-    Drop H2 n2 H3 ->
     Drop H1 (.ite m n1 n2) H3
   | drop {H1 H2 H3 m n} :
     Drop H1 m H2 ->
@@ -66,14 +65,12 @@ inductive Step0 : State Srt -> State Srt -> Prop where
     Step0 (H1, m) (H2, m') ->
     Step0 (H1, .app m n) (H2, .app m' n)
   | app_N {H1 H2} m {n n'} :
-    drop_count m = 0 ->
     Step0 (H1, n) (H2, n') ->
     Step0 (H1, .app m n) (H2, .app m n')
   | tup_M {H1 H2 m m'} n s :
     Step0 (H1, m) (H2, m') ->
     Step0 (H1, .tup m n s) (H2, .tup m' n s)
   | tup_N {H1 H2} m {n n'} s :
-    drop_count m = 0 ->
     Step0 (H1, n) (H2, n') ->
     Step0 (H1, .tup m n s) (H2, .tup m n' s)
   | prj_M {H1 H2 m m'} n :
@@ -92,15 +89,15 @@ inductive Step1 : State Srt -> State Srt -> Prop where
   | app_M {H1 H2 m m'} n :
     Step1 (H1, m) (H2, m') ->
     Step1 (H1, .app m n) (H2, .app m' n)
-  | app_N {H1 H2} l {n n'} :
+  | app_N {H1 H2} m {n n'} :
     Step1 (H1, n) (H2, n') ->
-    Step1 (H1, .app (.ptr l) n) (H2, .app (.ptr l) n')
+    Step1 (H1, .app m n) (H2, .app m n')
   | tup_M {H1 H2 m m'} n s :
     Step1 (H1, m) (H2, m') ->
     Step1 (H1, .tup m n s) (H2, .tup m' n s)
-  | tup_N {H1 H2} l {n n'} s :
+  | tup_N {H1 H2} m {n n'} s :
     Step1 (H1, n) (H2, n') ->
-    Step1 (H1, .tup (.ptr l) n s) (H2, .tup (.ptr l) n' s)
+    Step1 (H1, .tup m n s) (H2, .tup m n' s)
   | prj_M {H1 H2 m m'} n :
     Step1 (H1, m) (H2, m') ->
     Step1 (H1, .prj m n) (H2, .prj m' n)
@@ -168,78 +165,15 @@ inductive Step2 : State Srt -> State Srt -> Prop where
     HLookup H l .ff H' ->
     Step2 (H, .ite (.ptr l) n1 n2) (H', n2)
 
+def Step01 (t1 t2 : State Srt) : Prop := (Union Step0 Step1) t1 t2
+
 def Red0 (t1 t2 : State Srt) : Prop := Star Step0 t1 t2
 def Red1 (t1 t2 : State Srt) : Prop := Star Step1 t1 t2
-def Step01 (x y : State Srt) : Prop := Star (Union Step0 Step1) x y
+def Red01 (t1 t2 : State Srt) : Prop := Star Step01 t1 t2
 
 inductive Step (x z : State Srt) : Prop where
   | intro {y : State Srt} :
-    Step01 x y -> Normal Step01 y -> Step2 y z -> Step x z
+    Red01 x y -> Normal Step01 y -> Step2 y z -> Step x z
 
 notation:50 t:50 " ~>> " t':51 => Step t t'
 notation:50 t:50 " ~>>* " t':51 => Star Step t t'
-
-lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
-    Drop H3 m H4 -> H1 ⊢ m ▷ m' -> HMerge H1 H2 H3 ->
-    ∃ H0, HMerge H0 H2 H4 ∧ Contra H0 := by
-  intro dp rs mrg; induction rs generalizing H2 H3 H4
-  case var => cases dp; aesop
-  case lam => cases dp; aesop
-  case app mrg0 rsm rsn ihm ihn =>
-    cases dp; case app dp1 dp2 =>
-    have ⟨H1x, mrg1, mrg2⟩ := mrg.split mrg0.sym
-    have ⟨H2x, mrg3, ct3⟩ := ihm dp1 mrg2.sym
-    have ⟨H3x, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
-    have ⟨H4x, mrg6, ct4⟩ := ihn dp2 mrg5.sym
-    have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
-    existsi H5x; and_intros
-    . assumption
-    . apply mrg7.contra_image ct3 ct4
-  case tup mrg0 rsm rsn ihm ihn =>
-    cases dp; case tup dp1 dp2 =>
-    have ⟨H1x, mrg1, mrg2⟩ := mrg.split mrg0.sym
-    have ⟨H2x, mrg3, ct3⟩ := ihm dp1 mrg2.sym
-    have ⟨H3x, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
-    have ⟨H4x, mrg6, ct4⟩ := ihn dp2 mrg5.sym
-    have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
-    existsi H5x; and_intros
-    . assumption
-    . apply mrg7.contra_image ct3 ct4
-  case prj mrg0 rsm rsn ihm ihn =>
-    cases dp; case prj dp1 dp2 =>
-    have ⟨H1x, mrg1, mrg2⟩ := mrg.split mrg0.sym
-    have ⟨H2x, mrg3, ct3⟩ := ihm dp1 mrg2.sym
-    have ⟨H3x, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
-    have ⟨H4x, mrg6, ct4⟩ := ihn dp2 mrg5.sym
-    have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
-    existsi H5x; and_intros
-    . assumption
-    . apply mrg7.contra_image ct3 ct4
-  case tt => cases dp; aesop
-  case ff => cases dp; aesop
-  case ite mrg0 rsm1 rsn1 rsn2 ihm ihn1 ihn2 =>
-    cases dp; case ite dp1 dp2 dp3 =>
-    have ⟨H1x, mrg1, mrg2⟩ := mrg.split mrg0.sym
-    have ⟨H1x, mrg1, mrg2⟩ := mrg.split mrg0.sym
-    have ⟨H2x, mrg3, ct3⟩ := ihm dp1 mrg2.sym
-    have ⟨H3x, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
-    have ⟨H4x, mrg6, ct4⟩ := ihn1 dp2 mrg5.sym
-    have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
-    existsi H5x; and_intros
-    . assumption
-    . apply mrg7.contra_image ct3 ct4
-  case drop mrg0 rsm rsn ihm ihn =>
-    cases dp; case drop dp1 dp2 =>
-    have ⟨H1x, mrg1, mrg2⟩ := mrg.split mrg0.sym
-    have ⟨H2x, mrg3, ct3⟩ := ihm dp1 mrg2.sym
-    have ⟨H3x, mrg4, mrg5⟩ := mrg3.sym.split mrg1.sym
-    have ⟨H4x, mrg6, ct4⟩ := ihn dp2 mrg5.sym
-    have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
-    existsi H5x; and_intros
-    . assumption
-    . apply mrg7.contra_image ct3 ct4
-  case null H1 _ => cases dp; aesop
-  case ptr lk1 rs ih =>
-    cases dp; case ptr lk2 dp =>
-    have ⟨e, mrg1⟩ := HLookup.collision mrg lk2 lk1
-    subst e; aesop
