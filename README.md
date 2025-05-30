@@ -2,7 +2,7 @@
 This repository contains the formalization of 
 Substructural Dependent Type Theory (SStruct) in [Lean 4](https://lean-lang.org/).
 
-SStruct is parameterized over a *sort-order* structure.
+SStruct is parameterized over a [*sort-order*](./SStructTT/SStruct/SrtOrder.lean) structure.
 ```lean
 class SrtOrder (S : Type) extends PartialOrder S where
   e : S
