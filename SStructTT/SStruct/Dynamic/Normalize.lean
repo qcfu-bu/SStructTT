@@ -30,7 +30,7 @@ lemma static_sn_ext {a : Tm Srt} :
 variable [ord : SrtOrder Srt]
 
 lemma ext_sn_dynamic' {A a : Tm Srt} :
-    [] ;; [] ⊢ a : A -> SN Ext a -> ∀ {b}, a ~>>* b -> SN Step b := by
+    [] ⊢ a :: A -> SN Ext a -> ∀ {b}, a ~>>* b -> SN Step b := by
   intro ty sn; induction sn generalizing A
   case intro b h ih =>
     intro c rd1
@@ -50,11 +50,11 @@ lemma ext_sn_dynamic' {A a : Tm Srt} :
       . apply Star.SE rd2 st1
 
 lemma ext_sn_dynamic {A a : Tm Srt} :
-    [] ;; [] ⊢ a : A -> SN Ext a -> SN Step a := by
+    [] ⊢ a :: A -> SN Ext a -> SN Step a := by
   intro sn ty; apply ext_sn_dynamic' sn ty Star.R
 
 theorem Typed.normalize {A m : Tm Srt} :
-    [] ;; [] ⊢ m : A -> SN Step m := by
+    [] ⊢ m :: A -> SN Step m := by
   intro ty
   have sn := ty.toStatic.normalize
   have sn := static_sn_ext sn

@@ -264,8 +264,8 @@ lemma AgreeSubst.split {Δ1 Δ2 Δ3 : Ctx Srt} {H3 σ σ' x} :
       . apply AgreeSubst.intro_im agr2
       . apply AgreeSubst.intro_ex (by aesop) mrg1' rsm agr1
 
-lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Γ Δ m n n' A σ σ' x} :
-    Γ ;; Δ ;; H1 ⊢ m ▷ n ◁ n' : A -> HMerge H1 H2 H3 -> AgreeSubst σ σ' x Δ H2 ->
+lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
+    Δ ;; H1 ⊢ m ▷ n ◁ n' :: A -> HMerge H1 H2 H3 -> AgreeSubst σ σ' x Δ H2 ->
     H3 ;; n'.[σ] ▷ n.[σ'] := by
   intro ⟨er, rs⟩ mrg agr
   induction er generalizing H1 H2 H3 σ σ' n' x

@@ -10,14 +10,14 @@ variable {Srt : Type} [ord : SrtOrder Srt]
 
 inductive Rw
 
-theorem Erased.validity {Γ} {Δ : Ctx Srt} {A m m'} :
-    Γ ;; Δ ⊢ m ▷ m' : A -> ∃ s i, Γ ⊢ A : .srt s i := by
+theorem Erased.validity {Δ : Ctx Srt} {A m m'} :
+    Δ ⊢ m ▷ m' :: A -> ∃ s i, Δ.static ⊢ A : .srt s i := by
   intro erm; apply erm.toDynamic.validity
 
-lemma Erased.lam_im_inv' {Γ} {Δ : Ctx Srt} {A T m m' s} :
-    Γ ;; Δ ⊢ .lam A m .im s ▷ .lam m' s : T ->
+lemma Erased.lam_im_inv' {Δ : Ctx Srt} {A T m m' s} :
+    Δ ⊢ .lam A m .im s ▷ .lam m' s :: T ->
     ∃ B sA,
-      A :: Γ ;; A :⟨.im, sA⟩ Δ ⊢ m ▷ m' : B ∧
+      A :⟨.im, sA⟩ Δ ⊢ m ▷ m' :: B ∧
       T === .pi A B .im s := by
   generalize e1: SStruct.Tm.lam A m .im s = x
   generalize e2: Tm.lam m' s = y
@@ -35,10 +35,10 @@ lemma Erased.lam_im_inv' {Γ} {Δ : Ctx Srt} {A T m m' s} :
       apply Conv.sym eq1
       apply eq2
 
-lemma Erased.lam_ex_inv' {Γ} {Δ : Ctx Srt} {A T m m' s} :
-    Γ ;; Δ ⊢ .lam A m .ex s ▷ .lam m' s : T ->
+lemma Erased.lam_ex_inv' {Δ : Ctx Srt} {A T m m' s} :
+    Δ ⊢ .lam A m .ex s ▷ .lam m' s :: T ->
     ∃ B sA,
-      A :: Γ ;; A :⟨.ex, sA⟩ Δ ⊢ m ▷ m' : B ∧
+      A :⟨.ex, sA⟩ Δ ⊢ m ▷ m' :: B ∧
       T === .pi A B .ex s := by
   generalize e1: SStruct.Tm.lam A m .ex s = x
   generalize e2: Tm.lam m' s = x
@@ -56,11 +56,11 @@ lemma Erased.lam_ex_inv' {Γ} {Δ : Ctx Srt} {A T m m' s} :
       apply Conv.sym eq1
       apply eq2
 
-lemma Erased.tup_im_inv' {Γ} {Δ : Ctx Srt} {T m m' n n' s} :
-    Γ ;; Δ ⊢ .tup m n .im s ▷ .tup m' n' s : T ->
+lemma Erased.tup_im_inv' {Δ : Ctx Srt} {T m m' n n' s} :
+    Δ ⊢ .tup m n .im s ▷ .tup m' n' s :: T ->
     ∃ A B,
-      Γ ;; Δ ⊢ m ▷ m' : A ∧
-      Γ ⊢ n : B.[m/] ∧ n' = .null ∧
+      Δ ⊢ m ▷ m' :: A ∧
+      Δ.static ⊢ n : B.[m/] ∧ n' = .null ∧
       T === .sig A B .im s := by
   generalize e1: SStruct.Tm.tup m n .im s = x
   generalize e2: Tm.tup m' n' s = y
@@ -80,12 +80,12 @@ lemma Erased.tup_im_inv' {Γ} {Δ : Ctx Srt} {T m m' n n' s} :
       apply Conv.sym eq1
       apply eq2
 
-lemma Erased.tup_ex_inv' {Γ} {Δ : Ctx Srt} {T m m' n n' s} :
-    Γ ;; Δ ⊢ .tup m n .ex s ▷ .tup m' n' s : T ->
+lemma Erased.tup_ex_inv' {Δ : Ctx Srt} {T m m' n n' s} :
+    Δ ⊢ .tup m n .ex s ▷ .tup m' n' s :: T ->
     ∃ Δ1 Δ2 A B,
       Merge Δ1 Δ2 Δ ∧
-      Γ ;; Δ1 ⊢ m ▷ m' : A ∧
-      Γ ;; Δ2 ⊢ n ▷ n' : B.[m/] ∧
+      Δ1 ⊢ m ▷ m' :: A ∧
+      Δ2 ⊢ n ▷ n' :: B.[m/] ∧
       T === .sig A B .ex s := by
   generalize e1: SStruct.Tm.tup m n .ex s = x
   generalize e2: Tm.tup m' n' s = y
@@ -105,9 +105,9 @@ lemma Erased.tup_ex_inv' {Γ} {Δ : Ctx Srt} {T m m' n n' s} :
       apply Conv.sym eq1
       apply eq2
 
-lemma Erased.lam_im_inv {Γ} {Δ : Ctx Srt} {A A' B m m' s s'} :
-    Γ ;; Δ ⊢ .lam A m .im s ▷ .lam m' s : .pi A' B .im s' ->
-    ∃ sA, A' :: Γ ;; A' :⟨.im, sA⟩ Δ ⊢ m ▷ m' : B := by
+lemma Erased.lam_im_inv {Δ : Ctx Srt} {A A' B m m' s s'} :
+    Δ ⊢ .lam A m .im s ▷ .lam m' s :: .pi A' B .im s' ->
+    ∃ sA, A' :⟨.im, sA⟩ Δ ⊢ m ▷ m' :: B := by
   intro er
   have ⟨B, sA, erm, eq⟩ := er.lam_im_inv'
   have ⟨_, _, eqA, eqB⟩ := Static.Conv.pi_inj eq
@@ -124,9 +124,9 @@ lemma Erased.lam_im_inv {Γ} {Δ : Ctx Srt} {A A' B m m' s s'} :
   apply Erased.conv_ctx eqA tyA'
   apply Erased.conv eqB.sym erm tyB
 
-lemma Erased.lam_ex_inv {Γ} {Δ : Ctx Srt} {A A' B m m' s s'} :
-    Γ ;; Δ ⊢ .lam A m .ex s ▷ .lam m' s : .pi A' B .ex s' ->
-    ∃ sA, A' :: Γ ;; A' :⟨.ex, sA⟩ Δ ⊢ m ▷ m' : B := by
+lemma Erased.lam_ex_inv {Δ : Ctx Srt} {A A' B m m' s s'} :
+    Δ ⊢ .lam A m .ex s ▷ .lam m' s :: .pi A' B .ex s' ->
+    ∃ sA, A' :⟨.ex, sA⟩ Δ ⊢ m ▷ m' :: B := by
   intro er
   have ⟨B, sA, erm, eq⟩ := er.lam_ex_inv'
   have ⟨_, _, eqA, eqB⟩ := Static.Conv.pi_inj eq
@@ -143,9 +143,9 @@ lemma Erased.lam_ex_inv {Γ} {Δ : Ctx Srt} {A A' B m m' s s'} :
   apply Erased.conv_ctx eqA tyA'
   apply Erased.conv eqB.sym erm tyB
 
-lemma Erased.tup_im_inv {Γ} {Δ : Ctx Srt} {A B m m' n n' s s'} :
-    Γ ;; Δ ⊢ .tup m n .im s ▷ .tup m' n' s : .sig A B .im s' ->
-    Γ ;; Δ ⊢ m ▷ m' : A ∧ Γ ⊢ n : B.[m/] ∧ n' = .null ∧ s = s' := by
+lemma Erased.tup_im_inv {Δ : Ctx Srt} {A B m m' n n' s s'} :
+    Δ ⊢ .tup m n .im s ▷ .tup m' n' s :: .sig A B .im s' ->
+    Δ ⊢ m ▷ m' :: A ∧ Δ.static ⊢ n : B.[m/] ∧ n' = .null ∧ s = s' := by
   intro er
   have ⟨A', B', erm, tyn, e, eq⟩ := er.tup_im_inv'
   have ⟨_, _, eqA, eqB⟩ := Static.Conv.sig_inj eq
@@ -162,12 +162,12 @@ lemma Erased.tup_im_inv {Γ} {Δ : Ctx Srt} {A B m m' n n' s s'} :
     assumption
     assumption
 
-lemma Erased.tup_ex_inv {Γ} {Δ : Ctx Srt} {A B m m' n n' s s'} :
-    Γ ;; Δ ⊢ .tup m n .ex s ▷ .tup m' n' s : .sig A B .ex s' ->
+lemma Erased.tup_ex_inv {Δ : Ctx Srt} {A B m m' n n' s s'} :
+    Δ ⊢ .tup m n .ex s ▷ .tup m' n' s :: .sig A B .ex s' ->
     ∃ Δ1 Δ2,
       Merge Δ1 Δ2 Δ ∧
-      Γ ;; Δ1 ⊢ m ▷ m' : A ∧
-      Γ ;; Δ2 ⊢ n ▷ n' : B.[m/] ∧ s = s' := by
+      Δ1 ⊢ m ▷ m' :: A ∧
+      Δ2 ⊢ n ▷ n' :: B.[m/] ∧ s = s' := by
   intro er
   have ⟨Δ1, Δ2, A', B', mrg, erm, ern, eq⟩ := er.tup_ex_inv'
   have ⟨_, _, eqA, eqB⟩ := Static.Conv.sig_inj eq
@@ -175,7 +175,9 @@ lemma Erased.tup_ex_inv {Γ} {Δ : Ctx Srt} {A B m m' n n' s s'} :
   have ⟨s, i, tyS⟩ := er.validity
   have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
   have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
+  rw[mrg.static] at tyA
   replace erm := Erased.conv eqA.sym erm tyA
+  rw[mrg.static] at tyB
   replace tyB := tyB.subst erm.toStatic; asimp at tyB
   existsi Δ1, Δ2; simp; and_intros
   . assumption
@@ -183,27 +185,28 @@ lemma Erased.tup_ex_inv {Γ} {Δ : Ctx Srt} {A B m m' n n' s s'} :
   . apply Erased.conv
     apply Static.Conv.subst _ eqB.sym
     assumption
+    rw[<-mrg.sym.static]
+    rw[<-mrg.static] at tyB
     assumption
 
-lemma Erased.null_preimage {Γ} {Δ : Ctx Srt} {t B} :
-    Γ ;; Δ ⊢ t ▷ .null : B -> False := by
+lemma Erased.null_preimage {Δ : Ctx Srt} {t B} :
+    Δ ⊢ t ▷ .null :: B -> False := by
   generalize e: Tm.null = k
   intro er; induction er <;> trivial
 
 lemma Erased.lam_preimage {B t : SStruct.Tm Srt} {m' s} :
-    [] ;; [] ⊢ t ▷ .lam m' s : B ->
-    ∃ A m r, t ~>>* .lam A m r s ∧ [] ;; [] ⊢ .lam A m r s ▷ .lam m' s : B := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
-  generalize e3: Tm.lam m' s = Δ
+    [] ⊢ t ▷ .lam m' s :: B ->
+    ∃ A m r, t ~>>* .lam A m r s ∧ [] ⊢ .lam A m r s ▷ .lam m' s :: B := by
+  generalize e1: [] = Δ
+  generalize e2: Tm.lam m' s = Δ
   intro er; induction er <;> try trivial
   case lam_im A _ m _ _ _ _ _ _ _ _ =>
-    subst_vars; cases e3
+    subst_vars; cases e2
     existsi A, m, .im; and_intros
     . apply Star.R
     . constructor <;> assumption
   case lam_ex A B m s _ _ _ _ _ _ _ =>
-    subst_vars; cases e3
+    subst_vars; cases e2
     existsi A, m, .ex; and_intros
     . apply Star.R
     . constructor <;> assumption
@@ -224,19 +227,18 @@ lemma Erased.lam_preimage {B t : SStruct.Tm Srt} {m' s} :
     . apply Erased.conv <;> assumption
 
 lemma Erased.tup_preimage {B t : SStruct.Tm Srt} {m' n' s} :
-    [] ;; [] ⊢ t ▷ .tup m' n' s : B ->
-    ∃ m n r, t ~>>* .tup m n r s ∧ [] ;; [] ⊢ .tup m n r s ▷ .tup m' n' s : B := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
-  generalize e3: Tm.tup m' n' s = k
+    [] ⊢ t ▷ .tup m' n' s :: B ->
+    ∃ m n r, t ~>>* .tup m n r s ∧ [] ⊢ .tup m n r s ▷ .tup m' n' s :: B := by
+  generalize e1: [] = Δ
+  generalize e2: Tm.tup m' n' s = k
   intro er; induction er <;> try trivial
   case tup_im A _ m _ n _ _ _ _ _ _ =>
-    subst_vars; cases e3
+    subst_vars; cases e2
     existsi m, n, .im; and_intros
     . apply Star.R
     . constructor <;> assumption
   case tup_ex A _ m _ n _ _ _ _ _ _ _ _ _ =>
-    subst_vars; cases e3
+    subst_vars; cases e2
     existsi m, n, .ex; and_intros
     . apply Star.R
     . constructor <;> assumption
@@ -257,10 +259,9 @@ lemma Erased.tup_preimage {B t : SStruct.Tm Srt} {m' n' s} :
     . apply Erased.conv <;> assumption
 
 lemma Erased.tt_preimage {B t : SStruct.Tm Srt} :
-    [] ;; [] ⊢ t ▷ .tt : B -> t ~>>* .tt := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
-  generalize e3: Tm.tt = k
+    [] ⊢ t ▷ .tt :: B -> t ~>>* .tt := by
+  generalize e1: [] = Δ
+  generalize e2: Tm.tt = k
   intro er; induction er <;> try trivial
   case tt => subst_vars; apply Star.R
   case rw A B m m' n a b s i tyA erm tyn ih =>
@@ -271,10 +272,9 @@ lemma Erased.tt_preimage {B t : SStruct.Tm Srt} :
   case conv ih => subst_vars; simp[ih]
 
 lemma Erased.ff_preimage {B t : SStruct.Tm Srt} :
-    [] ;; [] ⊢ t ▷ .ff : B -> t ~>>* .ff := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
-  generalize e3: Tm.ff = k
+    [] ⊢ t ▷ .ff :: B -> t ~>>* .ff := by
+  generalize e1: [] = Δ
+  generalize e2: Tm.ff = k
   intro er; induction er <;> try trivial
   case ff => subst_vars; apply Star.R
   case rw A B m m' n a b s i tyA erm tyn ih =>

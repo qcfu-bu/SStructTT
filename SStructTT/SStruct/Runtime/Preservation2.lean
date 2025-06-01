@@ -21,12 +21,11 @@ lemma Resolve.lookup {H1 H2 H3 H3' : Heap Srt} {l m m'} :
 
 lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     HMerge H1 H2 H3 ->
-    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step2 (H3, c) (H3', c') ->
+    [] ;; H1 ⊢ a ▷ b ◁ c :: A -> Step2 (H3, c) (H3', c') ->
     ∃ H1' a' b',
       HMerge H1' H2 H3' ∧
-      [] ;; [] ;; H1' ⊢ a' ▷ b' ◁ c' : A ∧ a ~>>1 a' ∧ Erasure.Step1 b b' := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
+      [] ;; H1' ⊢ a' ▷ b' ◁ c' :: A ∧ a ~>>1 a' ∧ Erasure.Step1 b b' := by
+  generalize e: [] = Δ
   intro mrg0 ⟨er, rs⟩ st; induction er generalizing H1 H2 H3 H3' c c'
   case var hs =>
     subst_vars; cases hs
@@ -45,7 +44,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       cases st
       case app_M st =>
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
-        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl rfl mrg3.sym rsm st
+        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
         existsi Hx, .app a' n .im, .app b' .null; and_intros
@@ -98,7 +97,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case app_M st =>
         clear ihn
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
-        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl rfl mrg3.sym rsm st
+        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
         existsi Hx, .app a' n0 .ex, .app b' n1; and_intros
@@ -114,7 +113,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case app_N st =>
         clear ihm
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1
-        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihn rfl rfl mrg3.sym rsn st
+        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihn rfl mrg3.sym rsn st
         clear ihn
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
         have tyn1 := tyn0.preservation' (Red.toStatic tyn0 st1.toStar)
@@ -180,7 +179,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       cases st
       case tup_M st =>
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
-        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl rfl mrg3.sym rsm st
+        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
         existsi Hx, .tup a' n .im s, .tup b' .null s; and_intros
@@ -210,7 +209,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case tup_M st =>
         clear ihn
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
-        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl rfl mrg3.sym rsm st
+        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
         existsi Hx, .tup a' n0 .ex s, .tup b' n1 s; and_intros
@@ -233,7 +232,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case tup_N st =>
         clear ihm
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1
-        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihn rfl rfl mrg3.sym rsn st
+        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihn rfl mrg3.sym rsn st
         clear ihn
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
         existsi Hx, .tup m0 a' .ex s, .tup m1 b' s; and_intros
@@ -249,12 +248,12 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     case prj H1' H2' m' n' mrg1 rsm rsn =>
       have tym0 := erm.toStatic
       have wf := ern.toWf
-      cases wf; case cons tyB wf =>
-      cases wf; case cons tyA _ =>
+      cases wf; case cons wf tyB =>
+      cases wf; case cons tyA =>
       cases st
       case prj_M st =>
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
-        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl rfl mrg3.sym rsm st
+        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
         existsi Hx, .prj C a' n0 .im, .prj b' n1; and_intros
@@ -304,6 +303,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             rw[show C.[.tup v0 nx1 .im s/]
                   = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[nx1,v0/] by asimp]
             apply ern.substitution
+            rw[<-Ctx.static.eq_1] at tynx1
             apply Erasure.AgreeSubst.intro_im tynx1
             apply Erasure.AgreeSubst.intro_ex Merge.nil (Lower.nil _)
             asimp; assumption
@@ -339,12 +339,12 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     case prj H1' H2' m' n' mrg1 rsm rsn =>
       have tym0 := erm.toStatic
       have wf := ern.toWf
-      cases wf; case cons tyB wf =>
-      cases wf; case cons tyA _ =>
+      cases wf; case cons wf tyB =>
+      cases wf; case cons tyA =>
       cases st
       case prj_M st =>
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
-        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl rfl mrg3.sym rsm st
+        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
         existsi Hx, .prj C a' n0 .ex, .prj b' n1; and_intros
@@ -396,7 +396,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           apply Star.conv
           apply Star.trans (Red.toStatic erm.toStatic rd1)
           apply Static.Red.tup _ _ rdv1' rdv2'
-        have erv2 : [] ;; [] ⊢ v2 ▷ nx0 : B.[v1/] := by
+        have erv2 : [] ⊢ v2 ▷ nx0 :: B.[v1/] := by
           apply Erased.conv
           apply Static.Conv.subst1
           apply Star.conv rdv1'
@@ -448,7 +448,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
       cases st
       case ite_M mx st =>
-        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl rfl mrg3.sym rsm st
+        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
         existsi Hx, .ite A a' n1 n2, .ite b' n1' n2'; and_intros
@@ -505,7 +505,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     case ptr => cases st
   case rw tyA erm tyn ihm =>
     subst_vars
-    have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl rfl mrg0 rs st
+    have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl mrg0 rs st
     clear ihm
     have ⟨eq, tyA⟩ := tyn.closed_idn tyA
     existsi H1', a', b'; and_intros
@@ -522,7 +522,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
   case drop => cases rs; cases st; cases st
   case conv eq erm tyB ihm =>
     subst_vars
-    have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl rfl mrg0 rs st
+    have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl mrg0 rs st
     clear ihm
     existsi H1', a', b'; and_intros
     . assumption
@@ -535,8 +535,8 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     . assumption
 
 lemma Resolved.preservation2 {H1 H2 : Heap Srt} {a b c c' A} :
-    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step2 (H1, c) (H2, c') ->
-    ∃ a' b', [] ;; [] ;; H2 ⊢ a' ▷ b' ◁ c' : A ∧ a ~>>1 a' ∧ Erasure.Step1 b b' := by
+    [] ;; H1 ⊢ a ▷ b ◁ c :: A -> Step2 (H1, c) (H2, c') ->
+    ∃ a' b', [] ;; H2 ⊢ a' ▷ b' ◁ c' :: A ∧ a ~>>1 a' ∧ Erasure.Step1 b b' := by
   intro rsm st
   have ⟨H0, mrg, ct⟩ := HMerge.exists_self_contra H1
   have ⟨H1', a', b', mrg', rsm', rd, st⟩ := rsm.preservation2X mrg st

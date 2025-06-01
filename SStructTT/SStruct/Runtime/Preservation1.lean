@@ -10,12 +10,11 @@ variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     HMerge H1 H2 H3 ->
-    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step1 (H3, c) (H3', c') ->
+    [] ;; H1 ⊢ a ▷ b ◁ c :: A -> Step1 (H3, c) (H3', c') ->
     ∃ H1' H2',
       HMerge H1' H2' H3' ∧ SubHeap H2 H2' ∧
-      [] ;; [] ;; H1' ⊢ a ▷ b ◁ c' : A := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
+      [] ;; H1' ⊢ a ▷ b ◁ c' :: A := by
+  generalize e: [] = Δ
   intro mrg0 ⟨er, rs⟩ st; induction er generalizing H1 H2 H3 H3' c c'
   case var wf hs =>
     subst_vars; cases hs
@@ -104,7 +103,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case app_M st =>
         have ⟨ct, e⟩ := rsn.null_inv; subst e
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
-        have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ihm rfl rfl mrg3.sym rsm st
+        have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨H1p, H2p, sb1, sb2, mrg2p⟩ := mrg2.split_subheap sb
         have ⟨Hx, mrg1, mrg2⟩ := mrg'.sym.split mrg2p
@@ -128,7 +127,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case app_M st =>
         clear ihn
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg2.sym
-        have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ihm rfl rfl mrg3.sym rsm st
+        have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨H1p, H2p, sb1, sb2, mrg2p⟩ := mrg2.split_subheap sb
         have ⟨Hy, mrg1, mrg2⟩ := mrg'.sym.split mrg2p
@@ -143,7 +142,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case app_N st =>
         clear ihm
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg2
-        have ⟨H1', H2', mrg', sb, ⟨ern', rsn'⟩⟩ := ihn rfl rfl mrg3.sym rsn st
+        have ⟨H1', H2', mrg', sb, ⟨ern', rsn'⟩⟩ := ihn rfl mrg3.sym rsn st
         clear ihn
         have ⟨H1p, H2p, sb1, sb2, mrg2p⟩ := mrg2.split_subheap sb
         have ⟨Hy, mrg1, mrg2⟩ := mrg'.sym.split mrg2p
@@ -163,7 +162,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case tup_M st =>
         have ⟨ct, e⟩ := rsn.null_inv; subst e
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
-        have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ihm rfl rfl mrg3.sym rsm st
+        have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨H1p, H2p, sb1, sb2, mrg2p⟩ := mrg2.split_subheap sb
         have ⟨Hy, mrg1, mrg2⟩ := mrg'.sym.split mrg2p
@@ -224,7 +223,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case tup_M st =>
         clear ihn
         have ⟨Hx, mrg3, mrg4⟩ := mrg0.split mrg2.sym
-        have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ihm rfl rfl mrg4.sym rsm st
+        have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ihm rfl mrg4.sym rsm st
         clear ihm
         have ⟨H1p, H2p, sb1, sb2, mrg3p⟩ := mrg3.split_subheap sb
         have ⟨Hy, mrg1, mrg2⟩ := mrg'.sym.split mrg3p
@@ -239,7 +238,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case tup_N st =>
         clear ihm
         have ⟨Hx, mrg3, mrg4⟩ := mrg0.split mrg2
-        have ⟨H1', H2', mrg', sb, ⟨ern', rsn'⟩⟩ := ihn rfl rfl mrg4.sym rsn st
+        have ⟨H1', H2', mrg', sb, ⟨ern', rsn'⟩⟩ := ihn rfl mrg4.sym rsn st
         clear ihn
         have ⟨H1p, H2p, sb1, sb2, mrg3p⟩ := mrg3.split_subheap sb
         have ⟨Hy, mrg1, mrg2⟩ := mrg'.sym.split mrg3p
@@ -296,7 +295,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case prj_M st =>
         clear ihn
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg2.sym
-        have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ihm rfl rfl mrg3.sym rsm st
+        have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨H1p, H2p, sb1, sb2, mrg2p⟩ := mrg2.split_subheap sb
         have ⟨Hy, mrg1, mrg2⟩ := mrg'.sym.split mrg2p
@@ -316,7 +315,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case prj_M st =>
         clear ihn
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg2.sym
-        have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ihm rfl rfl mrg3.sym rsm st
+        have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨H1p, H2p, sb1, sb2, mrg2p⟩ := mrg2.split_subheap sb
         have ⟨Hy, mrg1, mrg2⟩ := mrg'.sym.split mrg2p
@@ -394,7 +393,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case ite_M st =>
         clear ihn1 ihn2
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg2.sym
-        have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ihm rfl rfl mrg3.sym rsm st
+        have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨H1p, H2p, sb1, sb2, mrg2p⟩ := mrg2.split_subheap sb
         have ⟨Hy, mrg1, mrg2⟩ := mrg'.sym.split mrg2p
@@ -410,7 +409,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     case ptr => cases st
   case rw tyA erm tyn ih =>
     subst_vars
-    have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ih rfl rfl mrg0 rs st
+    have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ih rfl mrg0 rs st
     existsi H1', H2'; and_intros
     . assumption
     . assumption
@@ -425,7 +424,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     case ptr => cases st
   case conv eq erm tyB ih =>
     subst_vars
-    have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ih rfl rfl mrg0 rs st
+    have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ih rfl mrg0 rs st
     existsi H1', H2'; and_intros
     . assumption
     . assumption
@@ -436,8 +435,8 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       . assumption
 
 lemma Resolved.preservation1 {H1 H2 : Heap Srt} {a b c c' A} :
-    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Step1 (H1, c) (H2, c') ->
-    [] ;; [] ;; H2 ⊢ a ▷ b ◁ c' : A := by
+    [] ;; H1 ⊢ a ▷ b ◁ c :: A -> Step1 (H1, c) (H2, c') ->
+    [] ;; H2 ⊢ a ▷ b ◁ c' :: A := by
   intro rsm st
   have ⟨H0, mrg, ct⟩ := HMerge.exists_self_contra H1
   have ⟨H1', H2', mrg', sb, rsm'⟩ := rsm.preservation1X mrg st
@@ -446,8 +445,8 @@ lemma Resolved.preservation1 {H1 H2 : Heap Srt} {a b c c' A} :
   assumption
 
 lemma Resolved.preservation1' {H1 H2 : Heap Srt} {a b c c' A} :
-    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> Red1 (H1, c) (H2, c') ->
-    [] ;; [] ;; H2 ⊢ a ▷ b ◁ c' : A := by
+    [] ;; H1 ⊢ a ▷ b ◁ c :: A -> Red1 (H1, c) (H2, c') ->
+    [] ;; H2 ⊢ a ▷ b ◁ c' :: A := by
   generalize e: (H2, c') = t
   intro rs rd; induction rd generalizing H2 a b c' A
   case R => cases e; assumption

@@ -90,13 +90,13 @@ lemma Step.toStatic' {A m n : Tm Srt} :
   case conv => aesop
 
 lemma Step.toStatic {A m n : Tm Srt} :
-    [] ⊢ m : A -> m ~>> n -> m ~>* n := by
+    ([] : Static.Ctx Srt) ⊢ m : A -> m ~>> n -> m ~>* n := by
   intro ty st
   have ⟨x, st, rd⟩ := st.toStatic' ty
   apply Star.ES <;> assumption
 
 lemma Red.toStatic {A m n : Tm Srt} :
-    [] ⊢ m : A -> m ~>>* n -> m ~>* n := by
+    ([] : Static.Ctx Srt) ⊢ m : A -> m ~>>* n -> m ~>* n := by
   intro tym rd
   induction rd
   case R => constructor
@@ -106,15 +106,14 @@ lemma Red.toStatic {A m n : Tm Srt} :
   apply Star.trans ih rd
 
 theorem Typed.preservation {A m m' : Tm Srt} :
-    [] ;; [] ⊢ m : A -> m ~>> m' -> [] ;; [] ⊢ m' : A := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
+    [] ⊢ m :: A -> m ~>> m' -> [] ⊢ m' :: A := by
+  generalize e: [] = Δ
   intro ty st; induction ty generalizing m'
   all_goals try trivial
   case app_im m n s tym tyn ih =>
     subst_vars; cases st
     case app_im_M st =>
-      have tym' := ih rfl rfl st
+      have tym' := ih rfl st
       apply Typed.app_im tym' tyn
     case beta_im =>
       replace ⟨sA, tym⟩ := tym.lam_im_inv
@@ -122,7 +121,7 @@ theorem Typed.preservation {A m m' : Tm Srt} :
   case app_ex mrg tym tyn ihm ihn =>
     subst_vars; cases mrg; cases st
     case app_ex_M st =>
-      have tym' := ihm rfl rfl st
+      have tym' := ihm rfl st
       apply Typed.app_ex Merge.nil tym' tyn
     case app_ex_N st =>
       have ⟨_, _, tyP⟩ := tym.validity
@@ -134,7 +133,7 @@ theorem Typed.preservation {A m m' : Tm Srt} :
       . apply Typed.app_ex
         . apply Merge.nil
         . assumption
-        . apply ihn rfl rfl st
+        . apply ihn rfl st
       . apply tyB.subst tyn.toStatic
     case beta_ex =>
       replace ⟨sA, tym⟩ := tym.lam_ex_inv
@@ -142,7 +141,7 @@ theorem Typed.preservation {A m m' : Tm Srt} :
   case tup_im tyS tym tyn ih =>
     subst_vars; cases st
     case tup_im_M st =>
-      have tym' := ih rfl rfl st
+      have tym' := ih rfl st
       have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
       constructor
       . assumption
@@ -155,7 +154,7 @@ theorem Typed.preservation {A m m' : Tm Srt} :
   case tup_ex mrg tyS tym tyn ihm ihn =>
     subst_vars; cases mrg; cases st
     case tup_ex_M st =>
-      have tym' := ihm rfl rfl st
+      have tym' := ihm rfl st
       have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
       constructor
       . constructor
@@ -171,14 +170,14 @@ theorem Typed.preservation {A m m' : Tm Srt} :
       . constructor
       . assumption
       . assumption
-      . apply ihn rfl rfl st
+      . apply ihn rfl st
   case prj_im C m n s sA sB sC iC mrg tyC tym tyn ihm _ =>
     subst_vars; cases mrg; cases st
     case prj_im_M st =>
       apply Typed.conv
       . apply Conv.subst1
         apply (Star.conv (st.toStatic tym.toStatic)).sym
-      . apply Typed.prj_im Merge.nil tyC (ihm rfl rfl st) tyn
+      . apply Typed.prj_im Merge.nil tyC (ihm rfl st) tyn
       . apply tyC.subst tym.toStatic
     case prj_im_elim m1 m2 s vl =>
       have ⟨tym1, tym2, _⟩ := tym.tup_im_inv; subst_vars
@@ -194,7 +193,7 @@ theorem Typed.preservation {A m m' : Tm Srt} :
       apply Typed.conv
       . apply Conv.subst1
         apply (Star.conv (st.toStatic tym.toStatic)).sym
-      . apply Typed.prj_ex Merge.nil tyC (ihm rfl rfl st) tyn
+      . apply Typed.prj_ex Merge.nil tyC (ihm rfl st) tyn
       . apply tyC.subst tym.toStatic
     case prj_ex_elim m1 m2 s vl =>
       have ⟨Δ1, Δ2, mrg, tym1, tym2, _⟩ := tym.tup_ex_inv; subst_vars
@@ -214,7 +213,7 @@ theorem Typed.preservation {A m m' : Tm Srt} :
       . constructor
         . apply Merge.nil
         . assumption
-        . apply ihm rfl rfl st
+        . apply ihm rfl st
         . assumption
         . assumption
       . apply tyA.subst tym.toStatic
@@ -228,11 +227,11 @@ theorem Typed.preservation {A m m' : Tm Srt} :
   case drop mrg lw h tyn ihn =>
     subst_vars; cases mrg; aesop
   case conv eq _ tyB ihm =>
-    subst_vars; have tym := ihm rfl rfl st
+    subst_vars; have tym := ihm rfl st
     apply tym.conv eq tyB
 
 theorem Typed.preservation' {A m m' : Tm Srt} :
-    [] ;; [] ⊢ m : A -> m ~>>* m' -> [] ;; [] ⊢ m' : A := by
+    [] ⊢ m :: A -> m ~>>* m' -> [] ⊢ m' :: A := by
   intro ty rd
   induction rd generalizing A
   case R => assumption

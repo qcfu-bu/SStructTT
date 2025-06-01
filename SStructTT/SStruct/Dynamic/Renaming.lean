@@ -1,58 +1,52 @@
 import SStructTT.SStruct.Static.Renaming
 import SStructTT.SStruct.Dynamic.Typed
-open SStruct.Static
 
 namespace SStruct.Dynamic
+open Static
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 @[aesop safe (rule_sets := [rename]) [constructors]]
-inductive AgreeRen : (Var -> Var) ->
-  Static.Ctx Srt -> Dynamic.Ctx Srt ->
-  Static.Ctx Srt -> Dynamic.Ctx Srt -> Prop
-where
+inductive AgreeRen : (Var -> Var) -> Ctx Srt -> Ctx Srt -> Prop where
   | nil {ξ} :
-    AgreeRen ξ [] [] [] []
-  | cons {Γ Γ' Δ Δ' A} r {s i ξ} :
-    Γ ⊢ A : .srt s i ->
-    AgreeRen ξ Γ Δ Γ' Δ' ->
-    AgreeRen (upren ξ)
-      (A :: Γ) (A :⟨r, s⟩ Δ) (A.[ren ξ] :: Γ') (A.[ren ξ] :⟨r, s⟩ Δ')
-  | intro {Γ Γ' Δ Δ' A s i ξ} :
-    Γ' ⊢ A : .srt s i ->
-    AgreeRen ξ Γ Δ Γ' Δ' ->
-    AgreeRen (ξ !>> (.+1)) Γ Δ (A :: Γ') (A :⟨.im, s⟩ Δ')
+    AgreeRen ξ [] []
+  | cons {Δ Δ' : Ctx Srt} {A s i ξ} r :
+    Δ.static ⊢ A : (.srt s i) ->
+    AgreeRen ξ Δ Δ' ->
+    AgreeRen (upren ξ) (A :⟨r, s⟩ Δ) (A.[ren ξ] :⟨r, s⟩ Δ')
+  | intro {Δ Δ' : Ctx Srt} {A s i ξ} :
+    Δ'.static ⊢ A : .srt s i ->
+    AgreeRen ξ Δ Δ' ->
+    AgreeRen (ξ !>> (.+1)) Δ (A :⟨.im, s⟩ Δ')
 
-lemma AgreeRen.toStatic {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ} :
-    Dynamic.AgreeRen ξ Γ Δ Γ' Δ' -> Static.AgreeRen ξ Γ Γ' := by
+lemma AgreeRen.toStatic {Δ Δ' : Ctx Srt} {ξ} :
+    Dynamic.AgreeRen ξ Δ Δ' -> Static.AgreeRen ξ Δ.static Δ'.static := by
   intro agr; induction agr <;> aesop (rule_sets := [rename])
 
 @[aesop safe (rule_sets := [rename])]
-lemma AgreeRen.refl {Γ} {Δ : Ctx Srt} :
-    Γ ;; Δ ⊢ -> AgreeRen id Γ Δ Γ Δ := by
+lemma AgreeRen.refl {Δ : Ctx Srt} :
+    Δ ⊢ -> AgreeRen id Δ Δ := by
   intro wf; induction wf <;> try aesop (rule_sets := [rename])
   case cons r _ _ ty _ agr =>
     replace agr := agr.cons r ty
     asimp at agr; assumption
 
 @[aesop safe (rule_sets := [rename])]
-lemma AgreeRen.implicit_image {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ} :
-    AgreeRen ξ Γ Δ Γ' Δ' -> Implicit Δ -> Implicit Δ' := by
+lemma AgreeRen.implicit_image {Δ Δ' : Ctx Srt} {ξ} :
+    AgreeRen ξ Δ Δ' -> Implicit Δ -> Implicit Δ' := by
   intro agr im; induction agr <;> try (solve| aesop)
 
 @[aesop safe (rule_sets := [rename])]
-lemma AgreeRen.lower_image {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ s} :
-    AgreeRen ξ Γ Δ Γ' Δ' -> Lower Δ s -> Lower Δ' s := by
+lemma AgreeRen.lower_image {Δ Δ' : Ctx Srt} {ξ s} :
+    AgreeRen ξ Δ Δ' -> Lower Δ s -> Lower Δ' s := by
   intro agr lw; induction agr <;> try (solve| aesop)
   cases lw <;> constructor <;> aesop
 
-lemma AgreeRen.has {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ x s A} :
-    AgreeRen ξ Γ Δ Γ' Δ' ->
-    Has Δ x s A ->
-    Has Δ' (ξ x) s A.[ren ξ] := by
+lemma AgreeRen.has {Δ Δ' : Ctx Srt} {ξ x s A} :
+    AgreeRen ξ Δ Δ' -> Has Δ x s A -> Has Δ' (ξ x) s A.[ren ξ] := by
   intro agr hs
   induction agr generalizing x s A
   case nil => cases hs
-  case cons A r _ _ ξ _ agr ih =>
+  case cons A _ _ ξ r _ agr ih =>
     cases r with
     | ex =>
       rcases hs with ⟨im⟩
@@ -69,115 +63,120 @@ lemma AgreeRen.has {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ x s A} :
     rw[show A.[ren (ξ !>> (.+1))] = A.[ren ξ].[shift 1] by asimp; rfl]
     constructor; assumption
 
-lemma AgreeRen.wf_nil {Γ'} {Δ' : Ctx Srt} {ξ} :
-    AgreeRen ξ [] [] Γ' Δ' -> Γ' ;; Δ' ⊢ := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
+lemma AgreeRen.wf_nil {Δ' : Ctx Srt} {ξ} : AgreeRen ξ [] Δ' -> Δ' ⊢ := by
+  generalize e: [] = Δ
   intro agr; induction agr <;> try trivial
   case nil => constructor
   case intro => subst_vars; aesop (add safe Wf)
 
-lemma AgreeRen.wf_cons {Γ Γ'} {Δ Δ' : Ctx Srt} {A r s ξ} :
-    AgreeRen ξ (A :: Γ) (A :⟨r, s⟩ Δ) Γ' Δ' -> Γ ;; Δ ⊢ ->
-    (∀ {Γ' Δ' ξ}, AgreeRen ξ Γ Δ Γ' Δ' → Γ' ;; Δ' ⊢) ->
-    Γ' ;; Δ' ⊢ := by
-  generalize e1: A :: Γ = Γ0
-  generalize e2: A :⟨r, s⟩ Δ = Δ0
-  intro agr wf h; induction agr generalizing Γ Δ A r s <;> try trivial
+lemma AgreeRen.wf_cons {Δ Δ' : Ctx Srt} {A r s ξ} :
+    AgreeRen ξ (A :⟨r, s⟩ Δ) Δ' -> Δ ⊢ ->
+    (∀ {Δ' ξ}, AgreeRen ξ Δ Δ' → Δ' ⊢) -> Δ' ⊢ := by
+  generalize e: A :⟨r, s⟩ Δ = Δ0
+  intro agr wf h; induction agr generalizing Δ A r s <;> try trivial
   case cons ξ tyA agr ih =>
-    cases e1; cases e2
+    cases e
     constructor
     . apply tyA.renaming agr.toStatic
     . apply h agr
   case intro _ ih =>
-    cases e1; cases e2
-    specialize ih rfl rfl wf h
+    cases e
+    specialize ih rfl wf h
     constructor <;> aesop
 
 @[aesop safe (rule_sets := [rename])]
-lemma AgreeRen.wf {Γ Γ'} {Δ Δ' : Ctx Srt} {ξ} :
-    AgreeRen ξ Γ Δ Γ' Δ' -> Γ ;; Δ ⊢ -> Γ' ;; Δ' ⊢ := by
-  intro agr wf; induction wf generalizing Γ' Δ' ξ <;> try aesop
+lemma AgreeRen.wf {Δ Δ' : Ctx Srt} {ξ} :
+    AgreeRen ξ Δ Δ' -> Δ ⊢ -> Δ' ⊢ := by
+  intro agr wf; induction wf generalizing Δ' ξ <;> try aesop
   case nil => apply agr.wf_nil
   case cons ih => apply agr.wf_cons <;> aesop
 
-lemma AgreeRen.split {Γ Γ'} {Δ Δ' Δ1 Δ2 : Ctx Srt} {ξ} :
-    AgreeRen ξ Γ Δ Γ' Δ' -> Merge Δ1 Δ2 Δ ->
+lemma AgreeRen.split {Δ Δ' Δ1 Δ2 : Ctx Srt} {ξ} :
+    AgreeRen ξ Δ Δ' -> Merge Δ1 Δ2 Δ ->
     ∃ Δ1' Δ2',
       Merge Δ1' Δ2' Δ' ∧
-      AgreeRen ξ Γ Δ1 Γ' Δ1' ∧
-      AgreeRen ξ Γ Δ2 Γ' Δ2' := by
-  intro agr; induction agr generalizing Δ1 Δ2
+      AgreeRen ξ Δ1 Δ1' ∧
+      AgreeRen ξ Δ2 Δ2' := by
+  intro agr mrg; induction agr generalizing Δ1 Δ2
   case nil =>
-    intro mrg; cases mrg
+    cases mrg
     existsi [], []
     aesop (rule_sets := [rename])
-  case cons Γ Γ' Δ Δ' A r s i ξ ty agr ih =>
-    intro mrg; cases mrg with
+  case cons Δ Δ' A s i ξ r ty agr ih =>
+    cases mrg with
     | contra Δ1 Δ2 h mrg =>
-      have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := ih mrg
+      have ⟨Δ1', Δ2', _, agr1, agr2⟩ := ih mrg
       existsi A.[ren ξ] :⟨.ex, s⟩ Δ1', A.[ren ξ] :⟨.ex, s⟩ Δ2'
       and_intros
       . constructor <;> assumption
-      . constructor <;> assumption
-      . constructor <;> assumption
+      . constructor <;> try assumption
+        rw[<-mrg.static]; assumption
+      . constructor <;> try assumption
+        rw[<-mrg.sym.static]; assumption
     | @left Δ1 Δ2 _ _ _ mrg =>
-      have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := ih mrg
+      have ⟨Δ1', Δ2', _, agr1, agr2⟩ := ih mrg
       existsi A.[ren ξ] :⟨.ex, s⟩ Δ1', A.[ren ξ] :⟨.im, s⟩ Δ2'
       and_intros
       . constructor; assumption
-      . constructor <;> assumption
-      . constructor <;> assumption
+      . constructor <;> try assumption
+        rw[<-mrg.static]; assumption
+      . constructor <;> try assumption
+        rw[<-mrg.sym.static]; assumption
     | @right Δ1 Δ2 _ _ _ mrg =>
-      have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := ih mrg
+      have ⟨Δ1', Δ2', _, agr1, agr2⟩ := ih mrg
       existsi A.[ren ξ] :⟨.im, s⟩ Δ1', A.[ren ξ] :⟨.ex, s⟩ Δ2'
       and_intros
       . constructor; assumption
-      . constructor <;> assumption
-      . constructor <;> assumption
+      . constructor <;> try assumption
+        rw[<-mrg.static]; assumption
+      . constructor <;> try assumption
+        rw[<-mrg.sym.static]; assumption
     | @im Δ1 Δ2 _ _ _ mrg =>
-      have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := ih mrg
+      have ⟨Δ1', Δ2', _, agr1, agr2⟩ := ih mrg
       existsi A.[ren ξ] :⟨.im, s⟩ Δ1', A.[ren ξ] :⟨.im, s⟩ Δ2'
       and_intros
       . constructor; assumption
-      . constructor <;> assumption
-      . constructor <;> assumption
-  case intro Γ Γ' Δ Δ' A s i ξ ty agr ih =>
-    intro mrg
+      . constructor <;> try assumption
+        rw[<-mrg.static]; assumption
+      . constructor <;> try assumption
+        rw[<-mrg.sym.static]; assumption
+  case intro Δ Δ' A s i ξ ty agr ih =>
     have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := ih mrg
     existsi A :⟨.im, s⟩ Δ1', A :⟨.im, s⟩ Δ2'
     and_intros
     . constructor; assumption
-    . constructor <;> assumption
-    . constructor <;> assumption
+    . constructor <;> try assumption
+      rw[<-mrg.static]; assumption
+    . constructor <;> try assumption
+      rw[<-mrg.sym.static]; assumption
 
-lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
-    Γ ;; Δ ⊢ m : A -> AgreeRen ξ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢ m.[ren ξ] : A.[ren ξ] := by
+lemma Typed.renaming {Δ Δ' : Ctx Srt} {A m ξ} :
+    Δ ⊢ m :: A -> AgreeRen ξ Δ Δ' -> Δ' ⊢ m.[ren ξ] :: A.[ren ξ] := by
   intro ty agr; induction ty using
     @Typed.rec _ ord
-      (motive_2 := fun Γ Δ _ => ∀ {Γ' Δ' ξ}, AgreeRen ξ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢)
-  generalizing Γ' Δ' ξ <;> asimp
+      (motive_2 := fun Δ _ => ∀ {Δ' ξ}, AgreeRen ξ Δ Δ' -> Δ' ⊢)
+  generalizing Δ' ξ <;> asimp
   case var h _ =>
     constructor <;> try aesop
     apply agr.has h
-  case lam_im Γ Δ A B m s sA i lw tyA tym ih =>
+  case lam_im Δ A B m s sA i lw tyA tym ih =>
     constructor
     . apply agr.lower_image lw
     . apply tyA.renaming agr.toStatic
     . specialize ih (agr.cons .im tyA)
       asimp at ih; assumption
-  case lam_ex Γ Δ A B m s sA i lw tyA tym ih =>
+  case lam_ex Δ A B m s sA i lw tyA tym ih =>
     constructor
     . apply agr.lower_image lw
     . apply tyA.renaming agr.toStatic
     . specialize ih (agr.cons .ex tyA)
       asimp at ih; assumption
-  case app_im Γ Δ A B m n s tym tyn ih =>
+  case app_im Δ A B m n s tym tyn ih =>
     replace tym := ih agr; asimp at tym
     replace tyn := tyn.renaming agr.toStatic; asimp at tyn
     have ty := Typed.app_im tym tyn
     asimp at ty; assumption
-  case app_ex Γ Δ1 Δ2 Δ A B m n s mrg tym tyn ihm ihn =>
+  case app_ex Δ1 Δ2 Δ A B m n s mrg tym tyn ihm ihn =>
     have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg
     replace tym := ihm agr1; asimp at tym
     replace tyn := ihn agr2; asimp at tyn
@@ -266,21 +265,21 @@ lemma Typed.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m ξ} :
   case nil agr => apply agr.wf_nil
   case cons agr => apply agr.wf_cons <;> aesop
 
-lemma Typed.weaken_im {Γ} {Δ : Ctx Srt} {A B m s i} :
-    Γ ;; Δ ⊢ m : A ->
-    Γ ⊢ B : .srt s i ->
-    B :: Γ ;; B :⟨.im, s⟩ Δ ⊢ m.[shift 1] : A.[shift 1] := by
+lemma Typed.weaken_im {Δ : Ctx Srt} {A B m s i} :
+    Δ ⊢ m :: A ->
+    Δ.static ⊢ B : .srt s i ->
+    B :⟨.im, s⟩ Δ ⊢ m.[shift 1] :: A.[shift 1] := by
   intro tym tyB
   apply tym.renaming
   constructor
   . assumption
   . exact AgreeRen.refl tym.toWf
 
-lemma Typed.weaken_ex {Γ} {Δ : Ctx Srt} {A B m s i} :
-    Γ ;; Δ ⊢ m : A ->
-    Γ ⊢ B : .srt s i ->
+lemma Typed.weaken_ex {Δ : Ctx Srt} {A B m s i} :
+    Δ ⊢ m :: A ->
+    Δ.static ⊢ B : .srt s i ->
     s ∈ ord.weaken_set ->
-    B :: Γ ;; B :⟨.ex, s⟩ Δ ⊢ m.[shift 1] : A.[shift 1] := by
+    B :⟨.ex, s⟩ Δ ⊢ m.[shift 1] :: A.[shift 1] := by
   intro tym tyB h
   have mrg : Merge (B :⟨.im, s⟩ Δ) (B :⟨.ex, s⟩ Δ.toImplicit) (B :⟨.ex, s⟩ Δ) := by
     constructor; apply Merge.self
@@ -290,26 +289,24 @@ lemma Typed.weaken_ex {Γ} {Δ : Ctx Srt} {A B m s i} :
   . assumption
   . constructor; simp; apply Lower.implicit (Implicit.toImplicit _)
 
-lemma Typed.eweaken_im {Γ Γ'} {Δ Δ' : Ctx Srt} {A A' B m m' s i} :
-    Γ' = B :: Γ ->
+lemma Typed.eweaken_im {Δ Δ' : Ctx Srt} {A A' B m m' s i} :
     Δ' = B :⟨.im, s⟩ Δ ->
     m' = m.[shift 1] ->
     A' = A.[shift 1] ->
-    Γ ;; Δ ⊢ m : A ->
-    Γ ⊢ B : .srt s i ->
-    Γ' ;; Δ' ⊢ m' : A' := by
+    Δ ⊢ m :: A ->
+    Δ.static ⊢ B : .srt s i ->
+    Δ' ⊢ m' :: A' := by
   intros; subst_vars
   apply Typed.weaken_im <;> assumption
 
-lemma Typed.eweaken_ex {Γ Γ'} {Δ Δ' : Ctx Srt} {A A' B m m' s i} :
-    Γ' = B :: Γ ->
+lemma Typed.eweaken_ex {Δ Δ' : Ctx Srt} {A A' B m m' s i} :
     Δ' = B :⟨.ex, s⟩ Δ ->
     m' = m.[shift 1] ->
     A' = A.[shift 1] ->
-    Γ ;; Δ ⊢ m : A ->
-    Γ ⊢ B : .srt s i ->
+    Δ ⊢ m :: A ->
+    Δ.static ⊢ B : .srt s i ->
     s ∈ ord.weaken_set ->
-    Γ' ;; Δ' ⊢ m' : A' := by
+    Δ' ⊢ m' :: A' := by
   intros; subst_vars
   apply Typed.weaken_ex <;> assumption
 
@@ -366,16 +363,16 @@ lemma Merge.toSpine {Δ1 Δ2 Δ3 : Ctx Srt} {s} :
     cases lw; case im lw =>
     apply (ih lw).extend
 
-lemma Typed.drop_spine {Γ} {Δ1 Δ3 : Ctx Srt} {A m} :
+lemma Typed.drop_spine {Δ1 Δ3 : Ctx Srt} {A m} :
     Spine Δ1 Δ3 ->
-    Γ ;; Δ1 ⊢ m : A ->
-    Γ ;; Δ3 ⊢ m : A := by
+    Δ1 ⊢ m :: A ->
+    Δ3 ⊢ m :: A := by
   intro sp tym; induction sp
   case refl => assumption
   case cons Δ1 Δ2 Δ3 x s A mrg h hs sp ih =>
     have ⟨wf1, wf2⟩ := ih.toWf.merge mrg
     have ⟨i, tyA⟩ := wf1.has_typed hs
-    have tyn : Γ ;; Δ2 ⊢ .var x : A := by
+    have tyn : Δ2 ⊢ .var x :: A := by
       constructor <;> assumption
     apply Typed.drop mrg.sym
     . apply hs.lower

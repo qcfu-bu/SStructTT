@@ -2,7 +2,7 @@ import SStructTT.SStruct.Syntax
 
 namespace SStruct.Static
 variable {Srt : Type}
-abbrev Ctx Srt := List (Tm Srt)
+def Ctx Srt := List (Tm Srt)
 
 @[scoped aesop safe [constructors]]
 inductive Has : Ctx Srt -> Var -> Tm Srt -> Prop where

@@ -93,14 +93,13 @@ lemma Resolve.is_resolved {H : Heap Srt} {m m'} : H ;; m ▷ m' -> IsResolved m'
   all_goals aesop
 
 inductive Resolved :
-  Static.Ctx Srt -> Dynamic.Ctx Srt -> Heap Srt ->
-  SStruct.Tm Srt -> Tm Srt -> Tm Srt -> SStruct.Tm Srt -> Prop
+  Ctx Srt -> Heap Srt -> SStruct.Tm Srt -> Tm Srt -> Tm Srt -> SStruct.Tm Srt -> Prop
 where
-  | intro {Γ Δ H x y z A} :
-    Γ ;; Δ ⊢ x ▷ y : A -> H ;; z ▷ y -> Resolved Γ Δ H x y z A
+  | intro {Δ H x y z A} :
+    Δ ⊢ x ▷ y :: A -> H ;; z ▷ y -> Resolved Δ H x y z A
 
-notation:50 Γ:50 " ;; " Δ:51 " ;; " H:51 " ⊢ " x:51 " ▷ " y:51 " ◁ " z:51 " : " A:51 =>
-  Resolved Γ Δ H x y z A
+notation:50 Δ:50 " ;; " H:51 " ⊢ " x:51 " ▷ " y:51 " ◁ " z:81 " :: " A:51 =>
+  Resolved Δ H x y z A
 
 lemma HLookup.lookup {H1 H2 : Heap Srt} {l m} :
     HLookup H1 l m H2 ->
@@ -341,8 +340,8 @@ lemma HLookup.disjoint_union {H0 H1 H2 : Heap Srt} {l m} :
       else aesop
     aesop
 
-lemma Erased.resolve_id {Γ Δ} {H : Heap Srt} {x y z A} :
-    Γ ;; Δ ⊢ x ▷ y : A -> H ;; y ▷ z -> y = z := by
+lemma Erased.resolve_id {Δ} {H : Heap Srt} {x y z A} :
+    Δ ⊢ x ▷ y :: A -> H ;; y ▷ z -> y = z := by
   intro ty rs; induction ty generalizing H z
   case var => cases rs; simp
   case lam_im => cases rs; aesop
@@ -613,7 +612,7 @@ lemma Resolve.null_inv {H : Heap Srt} {m} :
     all_goals simp_all[Cell.tm]
 
 theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
-    [] ;; [] ;; H ⊢ x ▷ y ◁ z : A ->
+    [] ;; H ⊢ x ▷ y ◁ z :: A ->
     [] ⊢ A : .srt s i -> Value y -> (s ∈ ord.contra_set -> Contra H) := by
   intro ⟨er, rs⟩; revert er
   generalize e1: [] = Γ
@@ -649,7 +648,7 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
         apply mrg.contra_image ct1 ct2
       case tup rsn =>
         have ⟨_, e⟩ := rsn.null_inv; cases e
-  case tup_ex erm ern ihm ihn mrg =>
+  case tup_ex erm ern ihm ihn mrg _ =>
     intro h; cases mrg
     have ⟨_, _, _, _, _, le1, le2, tyA, tyB, rd⟩ := ty.sig_inv'
     have ⟨_, _⟩ := Static.Conv.srt_inj rd; subst_vars
@@ -673,7 +672,7 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
         apply mrg.contra_image ct1 ct2
   case tt => have ct := rs.tt_inv; aesop
   case ff => have ct := rs.ff_inv; aesop
-  case rw tyA tyn erm ihm =>
+  case rw tyA erm tyn ihm =>
     have ⟨eq, _⟩ := tyn.closed_idn tyA
     have ⟨s, i, ty'⟩ := erm.validity
     have ⟨x, rd1, rd2⟩ := Static.Step.cr eq.sym
@@ -681,7 +680,7 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
     have ty2 := ty'.preservation' rd2
     have e := Static.Typed.unique ty1 ty2
     simp_all; apply ihm <;> try assumption
-  case conv eq _ erm ih =>
+  case conv eq erm _ ih =>
     simp_all
     have ⟨s, i, tyA⟩ := erm.validity
     have ⟨x, rd1, rd2⟩ := Static.Step.cr eq
@@ -721,8 +720,8 @@ end Runtime
 
 open Runtime
 
-lemma Erased.resolve_init' {H : Heap Srt} {Γ Δ m n A} :
-    Γ ;; Δ ⊢ m ▷ n : A -> Contra H -> Weaken H -> H ;; n ▷ n := by
+lemma Erased.resolve_init' {H : Heap Srt} {Δ m n A} :
+    Δ ⊢ m ▷ n :: A -> Contra H -> Weaken H -> H ;; n ▷ n := by
   intro er ct wk
   induction er
   case var => constructor; assumption
@@ -782,7 +781,7 @@ lemma Erased.resolve_init' {H : Heap Srt} {Γ Δ m n A} :
     . assumption
   case conv => aesop
 
-lemma Erased.resolve_init {Γ Δ m n A} :
-    Γ ;; Δ ⊢ m ▷ n : A -> (∅ : Heap Srt) ;; n ▷ n := by
+lemma Erased.resolve_init {Δ m n A} :
+    Δ ⊢ m ▷ n :: A -> (∅ : Heap Srt) ;; n ▷ n := by
   intro erm
   apply erm.resolve_init' Contra.empty Weaken.empty

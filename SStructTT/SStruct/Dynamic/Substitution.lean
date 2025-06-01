@@ -6,46 +6,45 @@ namespace SStruct.Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 @[aesop safe (rule_sets := [subst]) [constructors]]
-inductive AgreeSubst : (Var -> Tm Srt) ->
-  Static.Ctx Srt -> Dynamic.Ctx Srt ->
-  Static.Ctx Srt -> Dynamic.Ctx Srt -> Prop
-where
+inductive AgreeSubst : (Var -> Tm Srt) -> Ctx Srt -> Ctx Srt -> Prop where
   | nil {σ} :
-    AgreeSubst σ [] [] [] []
-  | cons {Γ Γ' Δ Δ' A} r {s i σ} :
-    Γ ⊢ A : .srt s i ->
-    AgreeSubst σ Γ Δ Γ' Δ' ->
-    AgreeSubst (up σ) (A :: Γ) (A :⟨r, s⟩ Δ) (A.[σ] :: Γ') (A.[σ] :⟨r, s⟩ Δ')
-  | intro_im {Γ Γ' Δ Δ' A m s σ} :
-    Γ' ⊢ m : A.[σ] ->
-    AgreeSubst σ Γ Δ Γ' Δ' ->
-    AgreeSubst (m .: σ) (A :: Γ) (A :⟨.im, s⟩ Δ) Γ' Δ'
-  | intro_ex {Γ Γ' Δ Δ' Δa Δb A m s σ} :
+    AgreeSubst σ [] []
+  | cons {Δ Δ' : Ctx Srt} {A s i σ} r :
+    Δ.static ⊢ A : .srt s i ->
+    AgreeSubst σ Δ Δ' ->
+    AgreeSubst (up σ) (A :⟨r, s⟩ Δ) (A.[σ] :⟨r, s⟩ Δ')
+  | intro_im {Δ Δ' : Ctx Srt} {A m s σ} :
+    Δ'.static ⊢ m : A.[σ] ->
+    AgreeSubst σ Δ Δ' ->
+    AgreeSubst (m .: σ) (A :⟨.im, s⟩ Δ) Δ'
+  | intro_ex {Δ Δ' : Ctx Srt} {Δa Δb A m s σ} :
     Merge Δa Δb Δ' ->
     Lower Δa s ->
-    Γ' ;; Δa ⊢ m : A.[σ] ->
-    AgreeSubst σ Γ Δ Γ' Δb ->
-    AgreeSubst (m .: σ) (A :: Γ) (A :⟨.ex, s⟩ Δ) Γ' Δ'
-  | conv {Γ Γ' Δ Δ' A B r s i σ} :
+    Δa ⊢ m :: A.[σ] ->
+    AgreeSubst σ Δ Δb ->
+    AgreeSubst (m .: σ) (A :⟨.ex, s⟩ Δ) Δ'
+  | conv {Δ Δ' : Ctx Srt} {A B r s i σ} :
     A === B ->
-    Γ ⊢ B : .srt s i ->
-    Γ' ⊢ B.[shift 1].[σ] : .srt s i ->
-    AgreeSubst σ (A :: Γ) (A :⟨r, s⟩ Δ) Γ' Δ' ->
-    AgreeSubst σ (B :: Γ) (B :⟨r, s⟩ Δ) Γ' Δ'
+    Δ.static ⊢ B : .srt s i ->
+    Δ'.static ⊢ B.[shift 1].[σ] : .srt s i ->
+    AgreeSubst σ (A :⟨r, s⟩ Δ) Δ' ->
+    AgreeSubst σ (B :⟨r, s⟩ Δ) Δ'
 
-lemma AgreeSubst.toStatic {Γ Γ'} {Δ Δ' : Ctx Srt} {σ} :
-    Dynamic.AgreeSubst σ Γ Δ Γ' Δ' -> Static.AgreeSubst σ Γ Γ' := by
+lemma AgreeSubst.toStatic {Δ Δ' : Ctx Srt} {σ} :
+    Dynamic.AgreeSubst σ Δ Δ' -> Static.AgreeSubst σ Δ.static Δ'.static := by
   intro agr
-  induction agr <;> try aesop (rule_sets := [subst])
+  induction agr
+  case nil => simp; constructor
   case cons => constructor <;> assumption
   case intro_im => constructor <;> assumption
-  case intro_ex tym agr ih =>
+  case intro_ex mrg _ tym agr ih =>
     constructor
-    . apply tym.toStatic
-    . assumption
+    . rw[mrg.static]; apply tym.toStatic
+    . rw[mrg.sym.static]; assumption
+  case conv => aesop (rule_sets := [subst])
 
 @[aesop safe (rule_sets := [subst])]
-lemma AgreeSubst.refl {Γ} {Δ : Ctx Srt} : Γ ;; Δ ⊢ -> AgreeSubst ids Γ Δ Γ Δ := by
+lemma AgreeSubst.refl {Δ : Ctx Srt} : Δ ⊢ -> AgreeSubst ids Δ Δ := by
   intro wf; induction wf
   all_goals try trivial
   case nil => constructor
@@ -54,14 +53,14 @@ lemma AgreeSubst.refl {Γ} {Δ : Ctx Srt} : Γ ;; Δ ⊢ -> AgreeSubst ids Γ Δ
     asimp at agr; assumption
 
 @[aesop safe (rule_sets := [subst])]
-lemma AgreeSubst.implicit_image {Γ Γ'} {Δ Δ' : Ctx Srt} {σ} :
-    AgreeSubst σ Γ Δ Γ' Δ' -> Implicit Δ -> Implicit Δ' := by
+lemma AgreeSubst.implicit_image {Δ Δ' : Ctx Srt} {σ} :
+    AgreeSubst σ Δ Δ' -> Implicit Δ -> Implicit Δ' := by
   intro agr im; induction agr
   all_goals try aesop
 
 @[aesop safe (rule_sets := [subst])]
-lemma AgreeSubst.lower_image {Γ Γ'} {Δ Δ' : Ctx Srt} {s σ} :
-    AgreeSubst σ Γ Δ Γ' Δ' -> Lower Δ s -> Lower Δ' s := by
+lemma AgreeSubst.lower_image {Δ Δ' : Ctx Srt} {s σ} :
+    AgreeSubst σ Δ Δ' -> Lower Δ s -> Lower Δ' s := by
   intro agr lw; induction agr generalizing s
   case nil => assumption
   case cons =>
@@ -74,11 +73,11 @@ lemma AgreeSubst.lower_image {Γ Γ'} {Δ Δ' : Ctx Srt} {s σ} :
     . aesop
   case conv ih => cases lw <;> aesop
 
-lemma AgreeSubst.has {Γ Γ'} {Δ Δ' : Ctx Srt} {A x s σ} :
-    AgreeSubst σ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢ -> Has Δ x s A -> Γ' ;; Δ' ⊢ (σ x) : A.[σ] := by
+lemma AgreeSubst.has {Δ Δ' : Ctx Srt} {A x s σ} :
+    AgreeSubst σ Δ Δ' -> Δ' ⊢ -> Has Δ x s A -> Δ' ⊢ (σ x) :: A.[σ] := by
   intro agr wf hs; induction agr generalizing x A
   case nil => cases hs
-  case cons A r s i σ tyA agr ih =>
+  case cons A s i σ r tyA agr ih =>
     cases r with
     | ex =>
       rcases hs with ⟨im⟩; asimp
@@ -113,42 +112,52 @@ lemma AgreeSubst.has {Γ Γ'} {Δ Δ' : Ctx Srt} {A x s σ} :
       . apply ih wf; constructor; assumption
       . assumption
 
-lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ} :
-    AgreeSubst σ Γ Δ Γ' Δ' -> Merge Δa Δb Δ ->
+lemma AgreeSubst.split {Δ Δ' Δa Δb : Ctx Srt} {σ} :
+    AgreeSubst σ Δ Δ' -> Merge Δa Δb Δ ->
     ∃ Δa' Δb',
       Merge Δa' Δb' Δ' ∧
-      AgreeSubst σ Γ Δa Γ' Δa' ∧
-      AgreeSubst σ Γ Δb Γ' Δb' := by
+      AgreeSubst σ Δa Δa' ∧
+      AgreeSubst σ Δb Δb' := by
   intro agr mrg; induction agr generalizing Δa Δb
   case nil =>
     cases mrg; existsi [], []
     aesop (rule_sets := [subst])
-  case cons A r s i σ tyA agr ih =>
+  case cons A s i σ r tyA agr ih =>
     cases mrg with
     | contra _ _ h mrg =>
-      have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
+      have ⟨Δa', Δb', _, agr1, agr2⟩ := ih mrg
       existsi A.[σ] :⟨.ex, s⟩ Δa', A.[σ] :⟨.ex, s⟩ Δb'; and_intros
-      all_goals constructor <;> assumption
+      all_goals constructor <;> try assumption
+      rw[<-mrg.static]; assumption
+      rw[<-mrg.sym.static]; assumption
     | left _ _ mrg =>
-      have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
+      have ⟨Δa', Δb', _, agr1, agr2⟩ := ih mrg
       existsi A.[σ] :⟨.ex, s⟩ Δa', A.[σ] :⟨.im, s⟩ Δb'; and_intros
-      all_goals constructor <;> assumption
+      all_goals constructor <;> try assumption
+      rw[<-mrg.static]; assumption
+      rw[<-mrg.sym.static]; assumption
     | right _ _ mrg =>
-      have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
+      have ⟨Δa', Δb', _, agr1, agr2⟩ := ih mrg
       existsi A.[σ] :⟨.im, s⟩ Δa', A.[σ] :⟨.ex, s⟩ Δb'; and_intros
-      all_goals constructor <;> assumption
+      all_goals constructor <;> try assumption
+      rw[<-mrg.static]; assumption
+      rw[<-mrg.sym.static]; assumption
     | im _ _ mrg =>
-      have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
+      have ⟨Δa', Δb', _, agr1, agr2⟩ := ih mrg
       existsi A.[σ] :⟨.im, s⟩ Δa', A.[σ] :⟨.im, s⟩ Δb'; and_intros
-      all_goals constructor <;> assumption
+      all_goals constructor <;> try assumption
+      rw[<-mrg.static]; assumption
+      rw[<-mrg.sym.static]; assumption
   case intro_im agr ih =>
     cases mrg with
     | im _ _ mrg =>
       have ⟨Δa', Δb', mrg, agr1, agr2⟩ := ih mrg
       existsi Δa', Δb'; and_intros
       . assumption
-      . constructor <;> assumption
-      . constructor <;> assumption
+      . constructor <;> try assumption
+        rw[<-mrg.static]; assumption
+      . constructor <;> try assumption
+        rw[<-mrg.sym.static]; assumption
   case intro_ex mrg1 lw tym agr ih =>
     cases mrg with
     | contra _ _ h mrg =>
@@ -178,7 +187,10 @@ lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ} :
         . exact tym
         . exact agr1
       . apply AgreeSubst.intro_im
-        . exact tym.toStatic
+        . rw[<-mrg2.sym.static]
+          rw[<-mrg1.sym.static]
+          rw[mrg1.static]
+          exact tym.toStatic
         . exact agr2
     | right _ _ mrg =>
       have ⟨Δa', Δb', mrg2, agr1, agr2⟩ := ih mrg
@@ -186,7 +198,10 @@ lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ} :
       existsi Δa', Δc1; and_intros
       . exact mrg4.sym
       . apply AgreeSubst.intro_im
-        . exact tym.toStatic
+        . rw[<-mrg2.static]
+          rw[<-mrg1.sym.static]
+          rw[mrg1.static]
+          exact tym.toStatic
         . exact agr1
       . apply AgreeSubst.intro_ex
         . exact mrg3.sym
@@ -197,61 +212,98 @@ lemma AgreeSubst.split {Γ Γ'} {Δ Δ' Δa Δb : Ctx Srt} {σ} :
     cases mrg with
     | contra _ _ h mrg =>
       have ⟨Δa', Δb', mrg', agr1, agr2⟩ := ih (Merge.contra A s h mrg)
-      existsi Δa', Δb'; aesop (rule_sets := [subst])
+      existsi Δa', Δb'; and_intros
+      . assumption
+      . constructor
+        assumption
+        rw[<-mrg.static]; assumption
+        rw[<-mrg'.static]; assumption
+        assumption
+      . constructor
+        assumption
+        rw[<-mrg.sym.static]; assumption
+        rw[<-mrg'.sym.static]; assumption
+        assumption
     | left _ _ mrg =>
       have ⟨Δa', Δb', mrg', agr1, agr2⟩ := ih (Merge.left A s mrg)
-      existsi Δa', Δb'; aesop (rule_sets := [subst])
+      existsi Δa', Δb'; and_intros
+      . assumption
+      . constructor
+        assumption
+        rw[<-mrg.static]; assumption
+        rw[<-mrg'.static]; assumption
+        assumption
+      . constructor
+        assumption
+        rw[<-mrg.sym.static]; assumption
+        rw[<-mrg'.sym.static]; assumption
+        assumption
     | right _ _ mrg =>
       have ⟨Δa', Δb', mrg', agr1, agr2⟩ := ih (Merge.right A s mrg)
-      existsi Δa', Δb'; aesop (rule_sets := [subst])
+      existsi Δa', Δb'; and_intros
+      . assumption
+      . constructor
+        assumption
+        rw[<-mrg.static]; assumption
+        rw[<-mrg'.static]; assumption
+        assumption
+      . constructor
+        assumption
+        rw[<-mrg.sym.static]; assumption
+        rw[<-mrg'.sym.static]; assumption
+        assumption
     | im _ _ mrg =>
       have ⟨Δa', Δb', mrg', agr1, agr2⟩ := ih (Merge.im _ _ mrg)
-      existsi Δa', Δb'; aesop (rule_sets := [subst])
+      existsi Δa', Δb'; and_intros
+      . assumption
+      . constructor
+        assumption
+        rw[<-mrg.static]; assumption
+        rw[<-mrg'.static]; assumption
+        assumption
+      . constructor
+        assumption
+        rw[<-mrg.sym.static]; assumption
+        rw[<-mrg'.sym.static]; assumption
+        assumption
 
-lemma AgreeSubst.wf_nil {Γ'} {Δ' : Ctx Srt} {σ} :
-    AgreeSubst σ [] [] Γ' Δ' -> Γ' ;; Δ' ⊢ := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
+lemma AgreeSubst.wf_nil {Δ' : Ctx Srt} {σ} :
+    AgreeSubst σ [] Δ' -> Δ' ⊢ := by
+  generalize e: [] = Δ
   intro agr; induction agr <;> try trivial
   constructor
 
-lemma AgreeSubst.wf_cons {Γ Γ'} {Δ Δ' : Ctx Srt} {A r s σ} :
-    AgreeSubst σ (A :: Γ) (A :⟨r, s⟩ Δ) Γ' Δ' -> Γ ;; Δ ⊢ ->
-    (∀ {Γ' Δ' σ}, AgreeSubst σ Γ Δ Γ' Δ' → Γ' ;; Δ' ⊢) ->
-    Γ' ;; Δ' ⊢ := by
-  generalize e1: A :: Γ = Γ0
-  generalize e2: A :⟨r, s⟩ Δ = Δ0
-  intro agr wf h; induction agr generalizing Γ Δ A r s <;> try trivial
+lemma AgreeSubst.wf_cons {Δ Δ' : Ctx Srt} {A r s σ} :
+    AgreeSubst σ (A :⟨r, s⟩ Δ) Δ' -> Δ ⊢ ->
+    (∀ {Δ' σ}, AgreeSubst σ Δ Δ' → Δ' ⊢) -> Δ' ⊢ := by
+  generalize e: A :⟨r, s⟩ Δ = Δ0
+  intro agr wf h; induction agr generalizing Δ A r s <;> try trivial
   case cons tyA agr ih =>
-    cases e1; cases e2
+    cases e
     constructor
     . apply tyA.substitution agr.toStatic
     . apply h agr
   case intro_im agr _ =>
-    cases e1; cases e2
-    apply h agr
+    cases e; apply h agr
   case intro_ex mrg lw tym agr ih =>
-    cases e1; cases e2
-    apply (Wf.merge mrg tym.toWf).right
+    cases e; apply (Wf.merge mrg tym.toWf).right
   case conv ih =>
-    cases e1; cases e2
-    apply ih rfl rfl wf h
+    cases e; apply ih rfl wf h
 
 @[aesop safe (rule_sets := [subst])]
-lemma AgreeSubst.wf {Γ Γ'} {Δ Δ' : Ctx Srt} {σ} :
-    AgreeSubst σ Γ Δ Γ' Δ' ->
-    Γ ;; Δ ⊢ -> Γ' ;; Δ' ⊢ := by
-  intro agr wf; induction wf generalizing Γ' Δ' σ
+lemma AgreeSubst.wf {Δ Δ' : Ctx Srt} {σ} :
+    AgreeSubst σ Δ Δ' -> Δ ⊢ -> Δ' ⊢ := by
+  intro agr wf; induction wf generalizing Δ' σ
   all_goals try aesop
   case nil => apply agr.wf_nil
   case cons => apply agr.wf_cons <;> aesop
 
-lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
-    Γ ;; Δ ⊢ m : A -> AgreeSubst σ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢ m.[σ] : A.[σ] := by
+lemma Typed.substitution {Δ Δ' : Ctx Srt} {A m σ} :
+    Δ ⊢ m :: A -> AgreeSubst σ Δ Δ' -> Δ' ⊢ m.[σ] :: A.[σ] := by
   intro ty agr; induction ty using
     @Typed.rec _ ord
-      (motive_2 := fun Γ Δ _ => ∀ {Γ' Δ' σ}, AgreeSubst σ Γ Δ Γ' Δ' -> Γ' ;; Δ' ⊢)
-  generalizing Γ' Δ' σ <;> asimp
+      (motive_2 := fun Δ _ => ∀ {Δ' σ}, AgreeSubst σ Δ Δ' -> Δ' ⊢)
+  generalizing Δ' σ <;> asimp
   case var wf hs ih => apply agr.has (ih agr) hs
   case lam_im lw tyA tym ih =>
     apply Typed.lam_im
@@ -336,7 +388,7 @@ lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
          by asimp] at tym
     have := Typed.rw tyA tym tyn
     asimp at this; assumption
-  case drop Δ1 Δ2 Δ3 n A s i mrg lw h tyn ihn =>
+  case drop Δ1 Δ2 Δ3 n s i mrg lw h tyn ihn =>
     have ⟨Δ1', Δ2', mrg', agr1, agr2⟩ := agr.split mrg
     replace lw := agr1.lower_image lw
     specialize ihn agr2
@@ -351,10 +403,8 @@ lemma Typed.substitution {Γ Γ'} {Δ Δ' : Ctx Srt} {A m σ} :
   case nil agr => apply agr.wf_nil
   case cons agr => apply agr.wf_cons <;> aesop
 
-lemma Typed.subst_im {Γ} {Δ : Ctx Srt} {A B m n s} :
-    A :: Γ ;; A :⟨.im, s⟩ Δ ⊢ m : B ->
-    Γ ⊢ n : A ->
-    Γ ;; Δ ⊢ m.[n/] : B.[n/] := by
+lemma Typed.subst_im {Δ : Ctx Srt} {A B m n s} :
+    A :⟨.im, s⟩ Δ ⊢ m :: B -> Δ.static ⊢ n : A -> Δ ⊢ m.[n/] :: B.[n/] := by
   intro tym tyn
   obtain ⟨_, _, _⟩ := tym.ctx_inv
   apply tym.substitution
@@ -362,11 +412,9 @@ lemma Typed.subst_im {Γ} {Δ : Ctx Srt} {A B m n s} :
   . asimp; assumption
   . apply AgreeSubst.refl; assumption
 
-lemma Typed.subst_ex {Γ} {Δ1 Δ2 Δ : Ctx Srt} {A B m n s} :
+lemma Typed.subst_ex {Δ1 Δ2 Δ : Ctx Srt} {A B m n s} :
     Lower Δ2 s -> Merge Δ1 Δ2 Δ ->
-    A :: Γ ;; A :⟨.ex, s⟩ Δ1 ⊢ m : B ->
-    Γ ;; Δ2 ⊢ n : A ->
-    Γ ;; Δ ⊢ m.[n/] : B.[n/] := by
+    A :⟨.ex, s⟩ Δ1 ⊢ m :: B -> Δ2 ⊢ n :: A -> Δ ⊢ m.[n/] :: B.[n/] := by
   intro lw mrg tym tyn
   obtain ⟨_, _, _⟩ := tym.ctx_inv
   apply tym.substitution
@@ -376,31 +424,29 @@ lemma Typed.subst_ex {Γ} {Δ1 Δ2 Δ : Ctx Srt} {A B m n s} :
   . asimp; assumption
   . apply AgreeSubst.refl; assumption
 
-lemma Typed.esubst_im {Γ} {Δ : Ctx Srt} {A B B' m m' n s} :
+lemma Typed.esubst_im {Δ : Ctx Srt} {A B B' m m' n s} :
     m' = m.[n/] ->
     B' = B.[n/] ->
-    A :: Γ ;; A :⟨.im, s⟩ Δ ⊢ m : B ->
-    Γ ⊢ n : A ->
-    Γ ;; Δ ⊢ m' : B' := by
+    A :⟨.im, s⟩ Δ ⊢ m :: B ->
+    Δ.static ⊢ n : A ->
+    Δ ⊢ m' :: B' := by
   intros; subst_vars; apply Typed.subst_im <;> assumption
 
-lemma Typed.esubst_ex {Γ} {Δ1 Δ2 Δ : Ctx Srt} {A B B' m m' n s} :
+lemma Typed.esubst_ex {Δ1 Δ2 Δ : Ctx Srt} {A B B' m m' n s} :
     m' = m.[n/] ->
     B' = B.[n/] ->
     Lower Δ2 s -> Merge Δ1 Δ2 Δ ->
-    A :: Γ ;; A :⟨.ex, s⟩ Δ1 ⊢ m : B ->
-    Γ ;; Δ2 ⊢ n : A ->
-    Γ ;; Δ ⊢ m' : B' := by
+    A :⟨.ex, s⟩ Δ1 ⊢ m :: B -> Δ2 ⊢ n :: A -> Δ ⊢ m' :: B' := by
   intros; subst_vars; apply Typed.subst_ex <;> assumption
 
-lemma Typed.conv_ctx {Γ} {Δ : Ctx Srt} {A B C m r s i} :
+lemma Typed.conv_ctx {Δ : Ctx Srt} {A B C m r s i} :
     B === A ->
-    Γ ⊢ B : .srt s i ->
-    A :: Γ ;; A :⟨r, s⟩ Δ ⊢ m : C ->
-    B :: Γ ;; B :⟨r, s⟩ Δ ⊢ m : C := by
+    Δ.static ⊢ B : .srt s i ->
+    A :⟨r, s⟩ Δ ⊢ m :: C ->
+    B :⟨r, s⟩ Δ ⊢ m :: C := by
   intro eq tyB tym
   obtain ⟨_, wf, tyA⟩ := tym.ctx_inv
-  replace tym : B :: Γ ;; B :⟨r, s⟩ Δ ⊢ m.[ids] : C.[ids] := by
+  replace tym : B :⟨r, s⟩ Δ ⊢ m.[ids] :: C.[ids] := by
     apply tym.substitution
     apply AgreeSubst.conv <;> try assumption
     . asimp; apply tyA.weaken tyB

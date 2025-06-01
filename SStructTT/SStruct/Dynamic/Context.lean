@@ -1,11 +1,36 @@
 import SStructTT.SStruct.SrtOrder
 import SStructTT.SStruct.Syntax
+import SStructTT.SStruct.Static.Context
 
 namespace SStruct.Dynamic
-variable {Srt : Type} [ord : SrtOrder Srt]
+variable {Srt : Type}
 
-abbrev Ctx Srt := List (Tm Srt × Rlv × Srt)
+def Ctx Srt := List (Tm Srt × Rlv × Srt)
 notation:max A " :⟨" r ", " s "⟩ " Δ:81 => List.cons (A, r, s) Δ
+
+namespace Ctx
+
+@[simp]def static : Ctx Srt -> Static.Ctx Srt
+  | [] => []
+  | ⟨A, _, _⟩ :: (Δ : Ctx Srt) => A :: Δ.static
+
+def toImplicit (Δ : Ctx Srt) : Ctx Srt :=
+  Δ.map fun ⟨m, _, s⟩ => ⟨m, .im, s⟩
+
+@[simp]lemma toImplicit.nil :
+    toImplicit ([] : Ctx Srt) = [] := by
+  rfl
+
+@[simp]lemma toImplicit.cons {A : Tm Srt} {r s Δ} :
+    toImplicit (A :⟨r, s⟩ Δ) = A :⟨.im, s⟩ toImplicit Δ := by
+  rfl
+
+lemma static_length {Δ : Ctx Srt} : Δ.static.length = Δ.length := by
+  induction Δ <;> aesop
+
+end Ctx
+
+variable [ord : SrtOrder Srt]
 
 @[scoped aesop safe [constructors]]
 inductive Merge : Ctx Srt -> Ctx Srt -> Ctx Srt -> Prop where
@@ -53,12 +78,17 @@ inductive Has : Ctx Srt -> Var -> Srt -> Tm Srt -> Prop where
     Has Δ x s A ->
     Has (B :⟨.im, s'⟩ Δ) (x + 1) s A.[shift 1]
 
-@[simp]def Ctx.toImplicit (Δ : Ctx Srt) : Ctx Srt :=
-  Δ.map fun ⟨m, _, s⟩ => ⟨m, .im, s⟩
-
 omit ord in
 lemma Implicit.toImplicit (Δ : Ctx Srt) : Implicit Δ.toImplicit := by
   induction Δ <;> aesop
+
+omit ord in
+@[simp]lemma Implicit.static (Δ : Ctx Srt) :
+    Δ.toImplicit.static = Δ.static := by
+  induction Δ
+  case nil => simp
+  case cons ih =>
+    simp; rw[<-ih]; rfl
 
 omit ord in
 lemma Has.stack {Δ : Ctx Srt} {x s i A} :
@@ -73,6 +103,14 @@ lemma Has.stack {Δ : Ctx Srt} {x s i A} :
     cases i <;> try trivial
     simp at lt
     apply Stack.cons (ih lt)
+
+omit ord in
+lemma Has.static {Δ : Ctx Srt} {A x s} :
+    Has Δ x s A -> Static.Has Δ.static x A := by
+  intro hs; induction hs
+  all_goals simp_all
+  . constructor
+  . constructor; assumption
 
 omit ord in
 lemma Stack.toImplicit {Δ : Ctx Srt} : Stack Δ 0 -> Implicit Δ := by
@@ -175,6 +213,14 @@ lemma Merge.implicit_image {Δ1 Δ2 Δ3 : Ctx Srt} :
     Merge Δ1 Δ2 Δ3 -> Implicit Δ1 -> Implicit Δ2 -> Implicit Δ3 := by
   intro mrg im1 im2; induction mrg
   all_goals try aesop
+
+lemma Merge.static {Δ1 Δ2 Δ3 : Ctx Srt} :
+    Merge Δ1 Δ2 Δ3 -> Δ3.static = Δ1.static := by
+  intro mrg; induction mrg <;> aesop
+
+lemma Merge.length {Δ1 Δ2 Δ3 : Ctx Srt} :
+    Merge Δ1 Δ2 Δ3 -> Δ3.length = Δ1.length := by
+  intro mrg; induction mrg <;> aesop
 
 lemma Merge.stack_image {Δ1 Δ2 Δ3 : Ctx Srt} {i} :
     Merge Δ1 Δ2 Δ3 -> Stack Δ1 i -> Stack Δ2 i -> Stack Δ3 i := by

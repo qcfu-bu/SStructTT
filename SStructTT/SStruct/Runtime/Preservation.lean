@@ -9,8 +9,8 @@ open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Resolved.preservationX {H H' : Heap Srt} {a b c c' A} :
-    [] ;; [] ;; H ⊢ a ▷ b ◁ c : A -> Red01 (H, c) (H', c') ->
-    ∃ b', [] ;; [] ;; H' ⊢ a ▷ b' ◁ c' : A ∧ Erasure.Red0 b b' := by
+    [] ;; H ⊢ a ▷ b ◁ c :: A -> Red01 (H, c) (H', c') ->
+    ∃ b', [] ;; H' ⊢ a ▷ b' ◁ c' :: A ∧ Erasure.Red0 b b' := by
   generalize e: (H', c') = t
   intro rs rd; induction rd generalizing H' a b c' A
   case R => cases e; existsi b; aesop
@@ -29,8 +29,8 @@ lemma Resolved.preservationX {H H' : Heap Srt} {a b c c' A} :
       exists b'
 
 lemma Resolved.preservation {H H' : Heap Srt} {a b c c' A} :
-    [] ;; [] ;; H ⊢ a ▷ b ◁ c : A -> (H, c) ~>> (H', c') ->
-    ∃ a' b', [] ;; [] ;; H' ⊢ a' ▷ b' ◁ c' : A ∧ a ~>>1 a' ∧ b ~>> b' := by
+    [] ;; H ⊢ a ▷ b ◁ c :: A -> (H, c) ~>> (H', c') ->
+    ∃ a' b', [] ;; H' ⊢ a' ▷ b' ◁ c' :: A ∧ a ~>>1 a' ∧ b ~>> b' := by
   intro rs st
   rcases st with @⟨x, rd, ms, st⟩
   rcases x with ⟨H1, a⟩

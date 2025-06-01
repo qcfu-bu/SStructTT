@@ -5,33 +5,32 @@ open SStruct.Dynamic
 namespace SStruct.Erasure
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-lemma Erased.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m m' ξ} :
-    Γ ;; Δ ⊢ m ▷ m' : A ->
-    AgreeRen ξ Γ Δ Γ' Δ' ->
-    Γ' ;; Δ' ⊢ m.[ren ξ] ▷ m'.[ren ξ] : A.[ren ξ] := by
-  intro er agr; induction er generalizing Γ' Δ' ξ <;> asimp
+lemma Erased.renaming {Δ Δ' : Ctx Srt} {A m m' ξ} :
+    Δ ⊢ m ▷ m' :: A -> AgreeRen ξ Δ Δ' ->
+    Δ' ⊢ m.[ren ξ] ▷ m'.[ren ξ] :: A.[ren ξ] := by
+  intro er agr; induction er generalizing Δ' ξ <;> asimp
   case var wf h =>
     constructor <;> try aesop
     . apply agr.wf wf
     . apply agr.has h
-  case lam_im Γ Δ A B m m' s sA i lw tyA erm ih =>
+  case lam_im Δ A B m m' s sA i lw tyA erm ih =>
     constructor
     . apply agr.lower_image lw
     . apply tyA.renaming agr.toStatic
     . specialize ih (agr.cons .im tyA)
       asimp at ih; assumption
-  case lam_ex Γ Δ A B m m' s sA i lw tyA erm ih =>
+  case lam_ex Δ A B m m' s sA i lw tyA erm ih =>
     constructor
     . apply agr.lower_image lw
     . apply tyA.renaming agr.toStatic
     . specialize ih (agr.cons .ex tyA)
       asimp at ih; assumption
-  case app_im Γ Δ A B m m' n s erm tyn ihm =>
+  case app_im Δ A B m m' n s erm tyn ihm =>
     replace erm := ihm agr; asimp at erm
     replace tyn := tyn.renaming agr.toStatic; asimp at tyn
     have er := Erased.app_im erm tyn
     asimp at er; assumption
-  case app_ex Γ Δ1 Δ2 Δ A B m m' n n' s mrg erm ern ihm ihn =>
+  case app_ex Δ1 Δ2 Δ A B m m' n n' s mrg erm ern ihm ihn =>
     have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg
     replace erm := ihm agr1; asimp at erm
     replace ern := ihn agr2; asimp at ern
@@ -119,24 +118,23 @@ lemma Erased.renaming {Γ Γ'} {Δ Δ' : Ctx Srt} {A m m' ξ} :
     . assumption
     . assumption
 
-lemma Erased.weaken {Γ} {Δ : Dynamic.Ctx Srt} {A B m m' s i} :
-    Γ ;; Δ ⊢ m ▷ m' : A ->
-    Γ ⊢ B : .srt s i ->
-    B :: Γ ;; B :⟨.im, s⟩ Δ ⊢ m.[shift 1] ▷ m'.[shift 1] : A.[shift 1] := by
+lemma Erased.weaken {Δ : Dynamic.Ctx Srt} {A B m m' s i} :
+    Δ ⊢ m ▷ m' :: A ->
+    Δ.static ⊢ B : .srt s i ->
+    B :⟨.im, s⟩ Δ ⊢ m.[shift 1] ▷ m'.[shift 1] :: A.[shift 1] := by
   intro erm tyB
   apply erm.renaming
   constructor
   . assumption
   . exact AgreeRen.refl erm.toWf
 
-lemma Erased.eweaken {Γ1 Γ2} {Δ1 Δ2 : Dynamic.Ctx Srt} {A1 A2 B m1 m2 n1 n2 s i} :
-    Γ2 = B :: Γ1 ->
+lemma Erased.eweaken {Δ1 Δ2 : Dynamic.Ctx Srt} {A1 A2 B m1 m2 n1 n2 s i} :
     Δ2 = B :⟨.im, s⟩ Δ1 ->
     m2 = m1.[shift 1] ->
     n2 = n1.[shift 1] ->
     A2 = A1.[shift 1] ->
-    Γ1 ;; Δ1 ⊢ m1 ▷ n1 : A1 ->
-    Γ1 ⊢ B : .srt s i ->
-    Γ2 ;; Δ2 ⊢ m2 ▷ n2 : A2 := by
+    Δ1 ⊢ m1 ▷ n1 :: A1 ->
+    Δ1.static ⊢ B : .srt s i ->
+    Δ2 ⊢ m2 ▷ n2 :: A2 := by
   intros; subst_vars
   apply Erased.weaken <;> assumption

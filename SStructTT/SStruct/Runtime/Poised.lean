@@ -364,10 +364,9 @@ inductive Poised : Tm Srt -> Prop where
     Poised .null
 
 lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
-    [] ;; [] ;; H1 ⊢ a ▷ b ◁ c : A -> HMerge H1 H2 H3 ->
+    [] ;; H1 ⊢ a ▷ b ◁ c :: A -> HMerge H1 H2 H3 ->
     Normal Step01 (H3, c) -> Poised c := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
+  generalize e: [] = Δ
   intro ⟨er, rs⟩ mrg norm; induction er generalizing H1 H2 H3 c
   case var hs => subst_vars; cases hs
   case lam_im erm ihm =>
@@ -405,7 +404,7 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
       by_cases h1: ARS.Normal Step01 (H3, m)
       case pos =>
         have ⟨Hx, mrg2, mrg3⟩ := mrg.split mrg1.sym
-        replace ihm := ihm rfl rfl rsm mrg3.sym h1
+        replace ihm := ihm rfl rsm mrg3.sym h1
         constructor; assumption
         constructor
       case neg =>
@@ -429,10 +428,10 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
       by_cases h1: ARS.Normal Step01 (H3, m)
       case pos =>
         have ⟨Hx, mrg2, mrg3⟩ := mrg.split mrg1.sym
-        replace ihm := ihm rfl rfl rsm mrg3.sym h1
+        replace ihm := ihm rfl rsm mrg3.sym h1
         by_cases h2: ARS.Normal Step01 (Hx, n)
         case pos =>
-          replace ihn := ihn rfl rfl rsn mrg2 h2
+          replace ihn := ihn rfl rsn mrg2 h2
           constructor <;> assumption
         case neg =>
           exfalso; apply norm
@@ -471,7 +470,7 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
       by_cases h1: ARS.Normal Step01 (H3, m)
       case pos =>
         have ⟨Hx, mrg2, mrg3⟩ := mrg.split mrg1.sym
-        replace ihm := ihm rfl rfl rsm mrg3.sym h1
+        replace ihm := ihm rfl rsm mrg3.sym h1
         by_cases h2: ∃ l, m = .ptr l
         case pos =>
           rcases h2 with ⟨l, e⟩; subst e
@@ -506,10 +505,10 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
       by_cases h1: ARS.Normal Step01 (H3, m)
       case pos =>
         have ⟨Hx, mrg2, mrg3⟩ := mrg.split mrg1.sym
-        replace ihm := ihm rfl rfl rsm mrg3.sym h1
+        replace ihm := ihm rfl rsm mrg3.sym h1
         by_cases h2: ARS.Normal Step01 (Hx, n)
         case pos =>
-          replace ihn := ihn rfl rfl rsn mrg2 h2
+          replace ihn := ihn rfl rsn mrg2 h2
           by_cases h2: ∃ l, m = .ptr l
           case pos =>
             rcases h2 with ⟨l, e⟩; subst e
@@ -572,7 +571,7 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
       by_cases h1: ARS.Normal Step01 (H3, m)
       case pos =>
         have ⟨Hx, mrg2, mrg3⟩ := mrg.split mrg1.sym
-        replace ihm := ihm rfl rfl rsm mrg3.sym h1
+        replace ihm := ihm rfl rsm mrg3.sym h1
         constructor; assumption
       case neg =>
         exfalso; apply norm
@@ -595,7 +594,7 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
       by_cases h1: ARS.Normal Step01 (H3, m)
       case pos =>
         have ⟨Hx, mrg2, mrg3⟩ := mrg.split mrg1.sym
-        replace ihm := ihm rfl rfl rsm mrg3.sym h1
+        replace ihm := ihm rfl rsm mrg3.sym h1
         constructor; assumption
       case neg =>
         exfalso; apply norm
@@ -636,7 +635,7 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
       by_cases h1: ARS.Normal Step01 (H3, m)
       case pos =>
         have ⟨Hx, mrg2, mrg3⟩ := mrg.split mrg1.sym
-        replace ihm := ihm rfl rfl rsm mrg3.sym h1
+        replace ihm := ihm rfl rsm mrg3.sym h1
         constructor; assumption
       case neg =>
         exfalso; apply norm
@@ -668,7 +667,7 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
   case conv => subst_vars; aesop
 
 lemma Resolved.normal_poised {H : Heap Srt} {a b c A} :
-    [] ;; [] ;; H ⊢ a ▷ b ◁ c : A -> Normal Step01 (H, c) -> Poised c := by
+    [] ;; H ⊢ a ▷ b ◁ c :: A -> Normal Step01 (H, c) -> Poised c := by
   intro rs norm
   have ⟨H0, mrg, ct⟩ := HMerge.exists_self_contra H
   apply rs.normal_poisedX mrg norm

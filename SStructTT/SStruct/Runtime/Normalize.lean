@@ -7,7 +7,7 @@ namespace Runtime
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 theorem Resolved.normalize {H : Heap Srt} {a b c A} :
-    [] ;; [] ;; H ⊢ a ▷ b ◁ c : A -> SN Step (H, c) := by
+    [] ;; H ⊢ a ▷ b ◁ c :: A -> SN Step (H, c) := by
   intro rs
   have ⟨er, rs0⟩ := rs; clear rs0
   have sn := er.normalize

@@ -7,10 +7,9 @@ namespace SStruct.Erasure
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Erased.value_preimage {A m1 : SStruct.Tm Srt} {m2} :
-    [] ;; [] ⊢ m1 ▷ m2 : A -> Value m2 ->
-    ∃ v, m1 ~>>* v ∧ Dynamic.Value v ∧ [] ;; [] ⊢ v ▷ m2 : A := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Γ
+    [] ⊢ m1 ▷ m2 :: A -> Value m2 ->
+    ∃ v, m1 ~>>* v ∧ Dynamic.Value v ∧ [] ⊢ v ▷ m2 :: A := by
+  generalize e: [] = Δ
   intro erm vl; induction erm
   all_goals try trivial
   case lam_im A B m m' s sA i lw tyA erm ihm =>
@@ -34,7 +33,8 @@ lemma Erased.value_preimage {A m1 : SStruct.Tm Srt} {m2} :
     existsi .tup v n .im s; and_intros
     . apply Red.tup_im rd
     . constructor; assumption
-    . apply Erased.tup_im tyA erv
+    . rw[<-Ctx.static.eq_1] at tyA
+      apply Erased.tup_im tyA erv
       apply Static.Typed.conv
       apply Static.Conv.subst1
       apply Star.conv rd0
@@ -87,10 +87,9 @@ lemma Erased.value_preimage {A m1 : SStruct.Tm Srt} {m2} :
     . apply Erased.conv <;> assumption
 
 lemma Erased.preservation0 {A m1 : SStruct.Tm Srt} {m2 m2'} :
-    [] ;; [] ⊢ m1 ▷ m2 : A -> Step0 m2 m2' ->
-    [] ;; [] ⊢ m1 ▷ m2' : A := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
+    [] ⊢ m1 ▷ m2 :: A -> Step0 m2 m2' ->
+    [] ⊢ m1 ▷ m2' :: A := by
+  generalize e: [] = Δ
   intro erm st; induction erm generalizing m2'
   all_goals try trivial
   case app_im st tyn erm ihm =>
@@ -124,26 +123,24 @@ lemma Erased.preservation0 {A m1 : SStruct.Tm Srt} {m2 m2'} :
   case rw tyA erm tyn ihm =>
     subst_vars
     have ⟨eq, tyA⟩ := tyn.closed_idn tyA
-    have erm := ihm rfl rfl st
+    have erm := ihm rfl st
     have erm := Erased.conv eq erm tyA
     constructor <;> assumption
   case conv eq _ tyB ihm =>
     subst_vars
-    have erm := ihm rfl rfl st
+    have erm := ihm rfl st
     apply erm.conv eq tyB
 
 lemma Erased.preservation0' {A m1 : SStruct.Tm Srt} {m2 m2'} :
-    [] ;; [] ⊢ m1 ▷ m2 : A -> Red0 m2 m2' ->
-    [] ;; [] ⊢ m1 ▷ m2' : A := by
+    [] ⊢ m1 ▷ m2 :: A -> Red0 m2 m2' -> [] ⊢ m1 ▷ m2' :: A := by
   intro erm rd; induction rd
   case R => assumption
   case SE st ih => apply ih.preservation0 st
 
 theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
-    [] ;; [] ⊢ m1 ▷ m2 : A -> m2 ~>> m2' ->
-    ∃ m1', m1 ~>>1 m1' ∧ [] ;; [] ⊢ m1' ▷ m2' : A := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
+    [] ⊢ m1 ▷ m2 :: A -> m2 ~>> m2' ->
+    ∃ m1', m1 ~>>1 m1' ∧ [] ⊢ m1' ▷ m2' :: A := by
+  generalize e: [] = Δ
   intro ty st; induction ty generalizing m2'
   case var =>
     rcases st with ⟨_, rd, st⟩
@@ -322,6 +319,7 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
           rw[show C.[.tup v m2 .im s/]
                 = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[m2,v/] by asimp]
           apply ern.substitution
+          rw[<-Ctx.static.eq_1] at erm2
           apply AgreeSubst.intro_im erm2
           apply AgreeSubst.intro_ex Merge.nil; constructor; asimp; assumption
           apply AgreeSubst.refl Wf.nil
@@ -366,7 +364,7 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
           apply Star.conv
           apply Star.trans (Red.toStatic erm.toStatic rdm)
           apply Static.Red.tup _ _ rdv1' rdv2'
-        have erm2 : [] ;; [] ⊢ v2 ▷ m2 : B.[v1/] := by
+        have erm2 : [] ⊢ v2 ▷ m2 :: B.[v1/] := by
           apply Erased.conv
           apply Static.Conv.subst1
           apply Star.conv rdv1'
@@ -449,7 +447,7 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
       and_intros <;> assumption
   case conv eq _ tyB ihm =>
     subst_vars
-    have ⟨m', st', erm'⟩ := ihm rfl rfl st
+    have ⟨m', st', erm'⟩ := ihm rfl st
     existsi m'; and_intros
     . assumption
     . apply erm'.conv eq tyB

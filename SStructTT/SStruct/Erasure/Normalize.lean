@@ -33,7 +33,7 @@ lemma Erased.value_step {m n : Tm Srt} :
 variable [ord : SrtOrder Srt]
 
 theorem Erased.normalize {A m : SStruct.Tm Srt} {m'} :
-    [] ;; [] ⊢ m ▷ m' : A -> SN Step m' := by
+    [] ⊢ m ▷ m' :: A -> SN Step m' := by
   intro er
   have sn := er.toDynamic.normalize.star1
   induction sn generalizing m'

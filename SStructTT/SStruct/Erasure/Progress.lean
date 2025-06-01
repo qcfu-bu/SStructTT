@@ -6,10 +6,9 @@ namespace SStruct.Erasure
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Erased.pi_canonical {A B C m : SStruct.Tm Srt} {m' r s} :
-    [] ;; [] ⊢ m ▷ m' : C -> C === .pi A B r s -> Value m' ->
+    [] ⊢ m ▷ m' :: C -> C === .pi A B r s -> Value m' ->
     ∃ n', m' = .lam n' s := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
+  generalize e: [] = Δ
   intro ty eq vl; induction ty <;> try trivial
   all_goals try false_conv
   case lam_im A B m m' _ _ _ _ _ _ _  =>
@@ -27,10 +26,9 @@ lemma Erased.pi_canonical {A B C m : SStruct.Tm Srt} {m' r s} :
     apply Conv.trans <;> assumption
 
 lemma Erased.sig_canonical {A B C m : SStruct.Tm Srt} {m' r s} :
-    [] ;; [] ⊢ m ▷ m' : C -> C === .sig A B r s -> Value m' ->
+    [] ⊢ m ▷ m' :: C -> C === .sig A B r s -> Value m' ->
     ∃ m1' m2', m' = .tup m1' m2' s  := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
+  generalize e: [] = Δ
   intro ty eq vl; induction ty <;> try trivial
   all_goals try false_conv
   case tup_im A0 B0 m m' n _ _ _ _ _ _ =>
@@ -48,9 +46,8 @@ lemma Erased.sig_canonical {A B C m : SStruct.Tm Srt} {m' r s} :
     apply Conv.trans <;> assumption
 
 lemma Erased.bool_canonical {C m : SStruct.Tm Srt} {m'} :
-    [] ;; [] ⊢ m ▷ m' : C -> C === .bool -> Value m' -> m' = .tt ∨ m' = .ff := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Γ
+    [] ⊢ m ▷ m' :: C -> C === .bool -> Value m' -> m' = .tt ∨ m' = .ff := by
+  generalize e: [] = Δ
   intro ty eq vl; induction ty <;> try trivial
   all_goals try false_conv
   case tt => simp
@@ -64,10 +61,9 @@ lemma Erased.bool_canonical {C m : SStruct.Tm Srt} {m'} :
     apply Conv.trans <;> assumption
 
 theorem Erased.progress {A m} {m' : Tm Srt} :
-    [] ;; [] ⊢ m ▷ m' : A ->
+    [] ⊢ m ▷ m' :: A ->
     (∃ n', m' ~>> n') ∨ (∃ v, Red0 m' v ∧ Value v) := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
+  generalize e: [] = Δ
   intro er; induction er <;> (subst_vars; try trivial)
   case lam_im m' s _ _ _ _ _ _ =>
     right; existsi .lam m' s; and_intros
@@ -77,7 +73,7 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
     right; existsi .lam m' s; and_intros
     . constructor
     . constructor
-  case app_im n _ _ erm ih =>
+  case app_im n _ _ erm _ ih =>
     simp_all
     match ih with
     | .inl ⟨m', _⟩ =>
@@ -119,7 +115,7 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
       right; existsi .tup v .null s; and_intros
       . apply Red0.tup rd Star.R
       . aesop
-  case tup_ex m m' n n' s _ _ _ _ ihm ihn mrg =>
+  case tup_ex m m' n n' s _ _ _ ihm ihn mrg _ =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
@@ -134,7 +130,7 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
         right; existsi .tup v1 v2 s; and_intros
         . apply Red0.tup rd1 rd2
         . aesop
-  case prj_im C m m' n n' _ _ _ _ _ _ erm _ ihm _ mrg =>
+  case prj_im C m m' n n' _ _ _ _ _ erm _ ihm ihn mrg _ =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
@@ -147,7 +143,7 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
       constructor; and_intros
       . apply Red0.prj rd
       . aesop
-  case prj_ex C m m' n n' _ _ _ _ _ _ erm _ ihm _ mrg =>
+  case prj_ex C m m' n n' _ _ _ _ _ erm _ ihm _ mrg _ =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
@@ -162,7 +158,7 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
       . aesop
   case tt => right; existsi .tt; aesop
   case ff => right; existsi .ff; aesop
-  case ite A m m' n1 n1' n2 n2' _ _ _ erm _ _ ihm _ _ mrg =>
+  case ite A m m' n1 n1' n2 n2' _ _  erm _ _ ihm _ _ mrg _ =>
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m', _⟩ =>

@@ -7,14 +7,14 @@ open ARS
 namespace SStruct.Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-theorem Typed.validity {Γ} {Δ : Ctx Srt} {A m} :
-    Γ ;; Δ ⊢ m : A -> ∃ s i, Γ ⊢ A : .srt s i := by
+theorem Typed.validity {Δ : Ctx Srt} {A m} :
+    Δ ⊢ m :: A -> ∃ s i, Δ.static ⊢ A : .srt s i := by
   intro ty; apply ty.toStatic.validity
 
-lemma Typed.lam_im_inv' {Γ} {Δ : Ctx Srt} {A T m s} :
-    Γ ;; Δ ⊢ .lam A m .im s : T ->
+lemma Typed.lam_im_inv' {Δ : Ctx Srt} {A T m s} :
+    Δ ⊢ .lam A m .im s :: T ->
     ∃ B sA,
-      A :: Γ ;; A :⟨.im, sA⟩ Δ ⊢ m : B ∧
+      A :⟨.im, sA⟩ Δ ⊢ m :: B ∧
       T === .pi A B .im s := by
   generalize e: Tm.lam A m .im s = x
   intro ty; induction ty generalizing A m s
@@ -36,10 +36,10 @@ lemma Typed.lam_im_inv' {Γ} {Δ : Ctx Srt} {A T m s} :
       apply Conv.sym eq1
       apply eq2
 
-lemma Typed.lam_ex_inv' {Γ} {Δ : Ctx Srt} {A T m s} :
-    Γ ;; Δ ⊢ .lam A m .ex s : T ->
+lemma Typed.lam_ex_inv' {Δ : Ctx Srt} {A T m s} :
+    Δ ⊢ .lam A m .ex s :: T ->
     ∃ B sA,
-      A :: Γ ;; A :⟨.ex, sA⟩ Δ ⊢ m : B ∧
+      A :⟨.ex, sA⟩ Δ ⊢ m :: B ∧
       T === .pi A B .ex s := by
   generalize e: Tm.lam A m .ex s = x
   intro ty; induction ty generalizing A m s
@@ -61,11 +61,11 @@ lemma Typed.lam_ex_inv' {Γ} {Δ : Ctx Srt} {A T m s} :
       apply Conv.sym eq1
       apply eq2
 
-lemma Typed.tup_im_inv' {Γ} {Δ : Ctx Srt} {T m n s} :
-    Γ ;; Δ ⊢ .tup m n .im s : T ->
+lemma Typed.tup_im_inv' {Δ : Ctx Srt} {T m n s} :
+    Δ ⊢ .tup m n .im s :: T ->
     ∃ A B,
-      Γ ;; Δ ⊢ m : A ∧
-      Γ ⊢ n : B.[m/] ∧
+      Δ ⊢ m :: A ∧
+      Δ.static ⊢ n : B.[m/] ∧
       T === .sig A B .im s := by
   generalize e: Tm.tup m n .im s = x
   intro ty; induction ty generalizing m n s
@@ -78,7 +78,7 @@ lemma Typed.tup_im_inv' {Γ} {Δ : Ctx Srt} {T m n s} :
     existsi A, B; and_intros
     . apply Typed.drop mrg _ h tym
       assumption
-    . assumption
+    . rw[mrg.sym.static]; assumption
     . assumption
   case conv eq1 _ _ ih =>
     have ⟨A, B, _, _, eq2⟩ := ih e
@@ -89,12 +89,12 @@ lemma Typed.tup_im_inv' {Γ} {Δ : Ctx Srt} {T m n s} :
       apply Conv.sym eq1
       apply eq2
 
-lemma Typed.tup_ex_inv' {Γ} {Δ : Ctx Srt} {T m n s} :
-    Γ ;; Δ ⊢ .tup m n .ex s : T ->
+lemma Typed.tup_ex_inv' {Δ : Ctx Srt} {T m n s} :
+    Δ ⊢ .tup m n .ex s :: T ->
     ∃ Δ1 Δ2 A B,
       Merge Δ1 Δ2 Δ ∧
-      Γ ;; Δ1 ⊢ m : A ∧
-      Γ ;; Δ2 ⊢ n : B.[m/] ∧
+      Δ1 ⊢ m :: A ∧
+      Δ2 ⊢ n :: B.[m/] ∧
       T === .sig A B .ex s := by
   generalize e: Tm.tup m n .ex s = x
   intro ty; induction ty generalizing m n s
@@ -120,9 +120,9 @@ lemma Typed.tup_ex_inv' {Γ} {Δ : Ctx Srt} {T m n s} :
       apply Conv.sym eq1
       apply eq2
 
-lemma Typed.lam_im_inv {Γ} {Δ : Ctx Srt} {A A' B m s s'} :
-    Γ ;; Δ ⊢ .lam A m .im s : .pi A' B .im s' ->
-    ∃ sA, A' :: Γ ;; A' :⟨.im, sA⟩ Δ ⊢ m : B := by
+lemma Typed.lam_im_inv {Δ : Ctx Srt} {A A' B m s s'} :
+    Δ ⊢ .lam A m .im s :: .pi A' B .im s' ->
+    ∃ sA, A' :⟨.im, sA⟩ Δ ⊢ m :: B := by
   intro ty
   have ⟨B, sA, tym, eq⟩ := ty.lam_im_inv'
   have ⟨_, _, eqA, eqB⟩ := Static.Conv.pi_inj eq
@@ -139,9 +139,9 @@ lemma Typed.lam_im_inv {Γ} {Δ : Ctx Srt} {A A' B m s s'} :
   apply Typed.conv_ctx eqA tyA'
   apply Typed.conv eqB.sym tym tyB
 
-lemma Typed.lam_ex_inv {Γ} {Δ : Ctx Srt} {A A' B m s s'} :
-    Γ ;; Δ ⊢ .lam A m .ex s : .pi A' B .ex s' ->
-    ∃ sA, A' :: Γ ;; A' :⟨.ex, sA⟩ Δ ⊢ m : B := by
+lemma Typed.lam_ex_inv {Δ : Ctx Srt} {A A' B m s s'} :
+    Δ ⊢ .lam A m .ex s :: .pi A' B .ex s' ->
+    ∃ sA, A' :⟨.ex, sA⟩ Δ ⊢ m :: B := by
   intro ty
   have ⟨B, sA, tym, eq⟩ := ty.lam_ex_inv'
   have ⟨_, _, eqA, eqB⟩ := Static.Conv.pi_inj eq
@@ -158,9 +158,9 @@ lemma Typed.lam_ex_inv {Γ} {Δ : Ctx Srt} {A A' B m s s'} :
   apply Typed.conv_ctx eqA tyA'
   apply Typed.conv eqB.sym tym tyB
 
-lemma Typed.tup_im_inv {Γ} {Δ : Ctx Srt} {A B m n s s'} :
-    Γ ;; Δ ⊢ .tup m n .im s : .sig A B .im s' ->
-    Γ ;; Δ ⊢ m : A ∧ Γ ⊢ n : B.[m/] ∧ s = s' := by
+lemma Typed.tup_im_inv {Δ : Ctx Srt} {A B m n s s'} :
+    Δ ⊢ .tup m n .im s :: .sig A B .im s' ->
+    Δ ⊢ m :: A ∧ Δ.static ⊢ n : B.[m/] ∧ s = s' := by
   intro ty
   have ⟨A', B', tym, tyn, eq⟩ := ty.tup_im_inv'
   have ⟨_, _, eqA, eqB⟩ := Static.Conv.sig_inj eq
@@ -177,12 +177,12 @@ lemma Typed.tup_im_inv {Γ} {Δ : Ctx Srt} {A B m n s s'} :
     assumption
     assumption
 
-lemma Typed.tup_ex_inv {Γ} {Δ : Ctx Srt} {A B m n s s'} :
-    Γ ;; Δ ⊢ .tup m n .ex s : .sig A B .ex s' ->
+lemma Typed.tup_ex_inv {Δ : Ctx Srt} {A B m n s s'} :
+    Δ ⊢ .tup m n .ex s :: .sig A B .ex s' ->
     ∃ Δ1 Δ2,
       Merge Δ1 Δ2 Δ ∧
-      Γ ;; Δ1 ⊢ m : A ∧
-      Γ ;; Δ2 ⊢ n : B.[m/] ∧ s = s' := by
+      Δ1 ⊢ m :: A ∧
+      Δ2 ⊢ n :: B.[m/] ∧ s = s' := by
   intro ty
   have ⟨Δ1, Δ2, A', B', mrg, tym, tyn, eq⟩ := ty.tup_ex_inv'
   have ⟨_, _, eqA, eqB⟩ := Static.Conv.sig_inj eq
@@ -190,7 +190,9 @@ lemma Typed.tup_ex_inv {Γ} {Δ : Ctx Srt} {A B m n s s'} :
   have ⟨s, i, tyS⟩ := ty.validity
   have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
   have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
+  rw[mrg.static] at tyA
   replace tym := Typed.conv eqA.sym tym tyA
+  rw[mrg.static] at tyB
   replace tyB := tyB.subst tym.toStatic; asimp at tyB
   existsi Δ1, Δ2; simp; and_intros
   . assumption
@@ -198,4 +200,6 @@ lemma Typed.tup_ex_inv {Γ} {Δ : Ctx Srt} {A B m n s s'} :
   . apply Typed.conv
     apply Static.Conv.subst _ eqB.sym
     assumption
+    rw[<-mrg.sym.static]
+    rw[<-mrg.static] at tyB
     assumption

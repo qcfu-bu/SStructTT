@@ -6,10 +6,9 @@ namespace Runtime
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Resolved.progressX {H : Heap Srt} {a b c A} :
-    [] ;; [] ;; H ⊢ a ▷ b ◁ c : A -> Poised c ->
+    [] ;; H ⊢ a ▷ b ◁ c :: A -> Poised c ->
     (∃ H' c', Step2 (H, c) (H', c')) ∨ (∃ l, c = .ptr l)  := by
-  generalize e1: [] = Γ
-  generalize e2: [] = Δ
+  generalize e: [] = Δ
   intro ⟨er, rs⟩ ps; induction er generalizing H c
   case var hs => subst_vars; cases hs
   case lam_im erm ih =>
@@ -33,7 +32,7 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
     case app rsm rsn =>
       left; cases ps; case app mrg ps1 ps2 =>
       have ⟨_, e⟩ := rsn.null_inv; subst e
-      match ihm rfl rfl rsm ps1 with
+      match ihm rfl rsm ps1 with
       | .inl ⟨H, m1, st⟩ =>
         have ⟨Hx, x, st⟩ := st.merge mrg
         existsi Hx, .app x .null
@@ -45,7 +44,7 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
         cases rsm; case ptr H0 m1 lk rsm =>
         cases m1
         all_goals simp_all[Cell.tm]; cases rsm
-        case lam m1 _ _ _ =>
+        case lam m1 _ _ _ _ =>
           have ⟨Hx, lk, _⟩ := lk.merge mrg
           existsi Hx, m1.[.null/]
           constructor
@@ -56,14 +55,14 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
     subst_vars; cases mrg; cases rs
     case app m n _ rsm rsn =>
       left; cases ps; case app mrg ps1 ps2 =>
-      match ihm rfl rfl rsm ps1 with
+      match ihm rfl rsm ps1 with
       | .inl ⟨H, m1, st⟩ =>
         have ⟨Hx, x, st⟩ := st.merge mrg
         existsi Hx, .app x n
         constructor; assumption
       | .inr ⟨l1, e⟩ =>
         subst_vars
-        match ihn rfl rfl rsn ps2 with
+        match ihn rfl rsn ps2 with
         | .inl ⟨H, n1, st⟩ =>
           have ⟨Hx, x, st⟩ := st.merge mrg.sym
           existsi Hx, .app (.ptr l1) x
@@ -88,7 +87,7 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
       have ⟨_, e⟩ := rsn.null_inv; subst e
       cases ps
       case tup_M h ps1 ps2 =>
-        match ihm rfl rfl rsm ps1 with
+        match ihm rfl rsm ps1 with
         | .inl ⟨H, m1, st⟩ =>
           have ⟨Hx, x, st⟩ := st.merge mrg
           left; existsi Hx, .tup x .null s
@@ -103,7 +102,7 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
     case tup m n mrg rsm rsn =>
       cases ps
       case tup_M h ps1 ps2 =>
-        match ihm rfl rfl rsm ps1 with
+        match ihm rfl rsm ps1 with
         | .inl ⟨H, m1, st⟩ =>
           have ⟨Hx, x, st⟩ := st.merge mrg
           left; existsi Hx, .tup x n s
@@ -111,7 +110,7 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
         | .inr ⟨l1, e⟩ =>
           exfalso; apply h; assumption
       case tup_N ps1 h ps2 =>
-        match ihn rfl rfl rsn ps2 with
+        match ihn rfl rsn ps2 with
         | .inl ⟨H, m1, st⟩ =>
           have ⟨Hx, x, st⟩ := st.merge mrg.sym
           left; existsi Hx, .tup m x s
@@ -123,7 +122,7 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
     subst_vars; cases mrg; cases rs
     case prj rsm rsn =>
       left; cases ps; case prj m n mrg ps =>
-      match ihm rfl rfl rsm ps with
+      match ihm rfl rsm ps with
       | .inl ⟨H, m1, st⟩ =>
         have ⟨Hx, x, st⟩ := st.merge mrg
         existsi Hx, .prj x n
@@ -135,7 +134,7 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
         cases rsm; case ptr H m0 lk rsm =>
         cases m0
         all_goals simp_all[Cell.tm]; cases rsm
-        case box.tup l _ _ _ rsm rsn =>
+        case box.tup l _ _ _ _ _ rsm rsn =>
           have ⟨Hx, lk, mrg⟩ := lk.merge mrg
           existsi Hx, n.[.null,.ptr l/]
           constructor; assumption
@@ -149,7 +148,7 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
     subst_vars; cases mrg; cases rs
     case prj rsm rsn =>
       left; cases ps; case prj m n mrg ps =>
-      match ihm rfl rfl rsm ps with
+      match ihm rfl rsm ps with
       | .inl ⟨H, m1, st⟩ =>
         have ⟨Hx, x, st⟩ := st.merge mrg
         existsi Hx, .prj x n
@@ -161,7 +160,7 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
         cases rsm; case ptr H m0 lk rsm =>
         cases m0
         all_goals simp_all[Cell.tm]; cases rsm
-        case tup.tup l1 l2 _ _ _ rsm rsn =>
+        case tup.tup l1 l2 _ _ _ _ _ rsm rsn =>
           have ⟨Hx, lk, mrg⟩ := lk.merge mrg
           existsi Hx, n.[.ptr l2,.ptr l1/]
           constructor; assumption
@@ -183,7 +182,7 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
     subst_vars; cases mrg; cases rs
     case ite mrg rsm rsn1 rsn2 =>
       left; cases ps; case ite m n1 n2 ps =>
-      match ihm rfl rfl rsm ps with
+      match ihm rfl rsm ps with
       | .inl ⟨H, m1, st⟩ =>
         have ⟨Hx, x, st⟩ := st.merge mrg
         existsi Hx, .ite x n1 n2
@@ -219,7 +218,7 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
   case conv => subst_vars; aesop
 
 lemma Resolved.progress {H : Heap Srt} {a b c A} :
-    [] ;; [] ;; H ⊢ a ▷ b ◁ c : A ->
+    [] ;; H ⊢ a ▷ b ◁ c :: A ->
     (∃ H' c', (H, c) ~>> (H', c')) ∨ (∃ H' l, Red01 (H, c) (H', .ptr l))  := by
   intro rs
   have sn := Step01.sn (H, c)

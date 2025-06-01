@@ -6,136 +6,133 @@ open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 inductive Erased :
-  Static.Ctx Srt -> Dynamic.Ctx Srt ->
-  SStruct.Tm Srt -> Erasure.Tm Srt ->
-  SStruct.Tm Srt ->
+  Ctx Srt -> SStruct.Tm Srt -> Erasure.Tm Srt -> SStruct.Tm Srt ->
   Prop
 where
-  | var {Γ Δ x s A} :
-    Wf Γ Δ ->
+  | var {Δ x s A} :
+    Wf Δ ->
     Has Δ x s A ->
-    Erased Γ Δ (.var x) (.var x) A
+    Erased Δ (.var x) (.var x) A
 
-  | lam_im {Γ Δ A B m m' s sA iA} :
+  | lam_im {Δ A B m m' s sA iA} :
     Lower Δ s ->
-    Γ ⊢ A : .srt sA iA ->
-    Erased (A :: Γ) (A :⟨.im, sA⟩ Δ) m m' B ->
-    Erased Γ Δ (.lam A m .im s) (.lam m' s) (.pi A B .im s)
+    Δ.static ⊢ A : .srt sA iA ->
+    Erased (A :⟨.im, sA⟩ Δ) m m' B ->
+    Erased Δ (.lam A m .im s) (.lam m' s) (.pi A B .im s)
 
-  | lam_ex {Γ Δ A B m m' s sA iA} :
+  | lam_ex {Δ A B m m' s sA iA} :
     Lower Δ s ->
-    Γ ⊢ A : .srt sA iA ->
-    Erased (A :: Γ) (A :⟨.ex, sA⟩ Δ) m m' B ->
-    Erased Γ Δ (.lam A m .ex s) (.lam m' s) (.pi A B .ex s)
+    Δ.static ⊢ A : .srt sA iA ->
+    Erased (A :⟨.ex, sA⟩ Δ) m m' B ->
+    Erased Δ (.lam A m .ex s) (.lam m' s) (.pi A B .ex s)
 
-  | app_im {Γ Δ A B m m' n s} :
-    Erased Γ Δ m m' (.pi A B .im s) ->
-    Γ ⊢ n : A ->
-    Erased Γ Δ (.app m n .im) (.app m' .null) B.[n/]
+  | app_im {Δ A B m m' n s} :
+    Erased Δ m m' (.pi A B .im s) ->
+    Δ.static ⊢ n : A ->
+    Erased Δ (.app m n .im) (.app m' .null) B.[n/]
 
-  | app_ex {Γ Δ1 Δ2 Δ A B m m' n n' s} :
-    Merge Δ1 Δ2 Δ ->
-    Erased Γ Δ1 m m' (.pi A B .ex s) ->
-    Erased Γ Δ2 n n' A ->
-    Erased Γ Δ (.app m n .ex) (.app m' n') B.[n/]
+  | app_ex {Δ1 Δ2 Δ3 A B m m' n n' s} :
+    Merge Δ1 Δ2 Δ3 ->
+    Erased Δ1 m m' (.pi A B .ex s) ->
+    Erased Δ2 n n' A ->
+    Erased Δ3 (.app m n .ex) (.app m' n') B.[n/]
 
-  | tup_im {Γ Δ A B m m' n s i} :
-    Γ ⊢ .sig A B .im s : .srt s i ->
-    Erased Γ Δ m m' A ->
-    Γ ⊢ n : B.[m/] ->
-    Erased Γ Δ (.tup m n .im s) (.tup m' .null s) (.sig A B .im s)
+  | tup_im {Δ : Ctx Srt} {A B m m' n s i} :
+    Δ.static ⊢ .sig A B .im s : .srt s i ->
+    Erased Δ m m' A ->
+    Δ.static ⊢ n : B.[m/] ->
+    Erased Δ (.tup m n .im s) (.tup m' .null s) (.sig A B .im s)
 
-  | tup_ex {Γ Δ1 Δ2 Δ A B m m' n n' s i} :
-    Merge Δ1 Δ2 Δ ->
-    Γ ⊢ .sig A B .ex s : .srt s i ->
-    Erased Γ Δ1 m m' A ->
-    Erased Γ Δ2 n n' B.[m/] ->
-    Erased Γ Δ (.tup m n .ex s) (.tup m' n' s) (.sig A B .ex s)
+  | tup_ex {Δ1 Δ2 Δ3 A B m m' n n' s i} :
+    Merge Δ1 Δ2 Δ3 ->
+    Δ3.static ⊢ .sig A B .ex s : .srt s i ->
+    Erased Δ1 m m' A ->
+    Erased Δ2 n n' B.[m/] ->
+    Erased Δ3 (.tup m n .ex s) (.tup m' n' s) (.sig A B .ex s)
 
-  | prj_im {Γ Δ1 Δ2 Δ A B C m m' n n' s sA sB sC iC} :
-    Merge Δ1 Δ2 Δ ->
-    .sig A B .im s :: Γ ⊢ C : .srt sC iC ->
-    Erased Γ Δ1 m m' (.sig A B .im s) ->
-    Erased (B :: A :: Γ) (B :⟨.im, sB⟩ A :⟨.ex, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
-    Erased Γ Δ (.prj C m n .im) (.prj m' n') C.[m/]
+  | prj_im {Δ1 Δ2 Δ3 A B C m m' n n' s sA sB sC iC} :
+    Merge Δ1 Δ2 Δ3 ->
+    .sig A B .im s :: Δ3.static ⊢ C : .srt sC iC ->
+    Erased Δ1 m m' (.sig A B .im s) ->
+    Erased (B :⟨.im, sB⟩ A :⟨.ex, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
+    Erased Δ3 (.prj C m n .im) (.prj m' n') C.[m/]
 
-  | prj_ex {Γ Δ1 Δ2 Δ A B C m m' n n' s sA sB sC iC} :
-    Merge Δ1 Δ2 Δ ->
-    .sig A B .ex s :: Γ ⊢ C : .srt sC iC ->
-    Erased Γ Δ1 m m' (.sig A B .ex s) ->
-    Erased (B :: A :: Γ) (B :⟨.ex, sB⟩ A :⟨.ex, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .ex s .: shift 2] ->
-    Erased Γ Δ (.prj C m n .ex) (.prj m' n') C.[m/]
+  | prj_ex {Δ1 Δ2 Δ3 A B C m m' n n' s sA sB sC iC} :
+    Merge Δ1 Δ2 Δ3 ->
+    .sig A B .ex s :: Δ3.static ⊢ C : .srt sC iC ->
+    Erased Δ1 m m' (.sig A B .ex s) ->
+    Erased (B :⟨.ex, sB⟩ A :⟨.ex, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .ex s .: shift 2] ->
+    Erased Δ3 (.prj C m n .ex) (.prj m' n') C.[m/]
 
-  | tt {Γ Δ} :
-    Wf Γ Δ ->
+  | tt {Δ} :
+    Wf Δ ->
     Implicit Δ ->
-    Erased Γ Δ .tt .tt .bool
+    Erased Δ .tt .tt .bool
 
-  | ff {Γ Δ} :
-    Wf Γ Δ ->
+  | ff {Δ} :
+    Wf Δ ->
     Implicit Δ ->
-    Erased Γ Δ .ff .ff .bool
+    Erased Δ .ff .ff .bool
 
-  | ite {Γ Δ1 Δ2 Δ A m m' n1 n1' n2 n2' s i} :
-    Merge Δ1 Δ2 Δ ->
-    .bool :: Γ ⊢ A : .srt s i ->
-    Erased Γ Δ1 m m' .bool ->
-    Erased Γ Δ2 n1 n1' A.[.tt/] ->
-    Erased Γ Δ2 n2 n2' A.[.ff/] ->
-    Erased Γ Δ (.ite A m n1 n2) (.ite m' n1' n2') A.[m/]
+  | ite {Δ1 Δ2 Δ3 A m m' n1 n1' n2 n2' s i} :
+    Merge Δ1 Δ2 Δ3 ->
+    .bool :: Δ3.static ⊢ A : .srt s i ->
+    Erased Δ1 m m' .bool ->
+    Erased Δ2 n1 n1' A.[.tt/] ->
+    Erased Δ2 n2 n2' A.[.ff/] ->
+    Erased Δ3 (.ite A m n1 n2) (.ite m' n1' n2') A.[m/]
 
-  | rw {Γ Δ A B m m' n a b s i} :
-    .idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ ⊢ A : .srt s i ->
-    Erased Γ Δ m m' A.[.rfl a,a/] ->
-    Γ ⊢ n : .idn B a b ->
-    Erased Γ Δ (.rw A m n) m' A.[n,b/]
+  | rw {Δ A B m m' n a b s i} :
+    .idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Δ.static ⊢ A : .srt s i ->
+    Erased Δ m m' A.[.rfl a,a/] ->
+    Δ.static ⊢ n : .idn B a b ->
+    Erased Δ (.rw A m n) m' A.[n,b/]
 
-  | drop {Γ Δ1 Δ2 Δ3 m m' n n' A B s} :
+  | drop {Δ1 Δ2 Δ3 m m' n n' A B s} :
     Merge Δ1 Δ2 Δ3 ->
     Lower Δ1 s -> s ∈ ord.weaken_set ->
-    Erased Γ Δ1 m m' A ->
-    Erased Γ Δ2 n n' B ->
-    Erased Γ Δ3 n (.drop m' n') B
+    Erased Δ1 m m' A ->
+    Erased Δ2 n n' B ->
+    Erased Δ3 n (.drop m' n') B
 
-  | conv {Γ Δ A B m m' s i} :
+  | conv {Δ A B m m' s i} :
     A === B ->
-    Erased Γ Δ m m' A ->
-    Γ ⊢ B : .srt s i ->
-    Erased Γ Δ m m' B
+    Erased Δ m m' A ->
+    Δ.static ⊢ B : .srt s i ->
+    Erased Δ m m' B
 
-notation:50 Γ:50 " ;; " Δ:51 " ⊢ " m:51 " ▷ " m':51 " : " A:51 =>
-  Erased Γ Δ m m' A
+notation:50 Δ:50 " ⊢ " m:51 " ▷ " m':81 " :: " A:51 =>
+  Erased Δ m m' A
 
-lemma Erased.toDynamic {Γ} {Δ : Ctx Srt} {A m m'} :
-    Γ ;; Δ ⊢ m ▷ m' : A -> Γ ;; Δ ⊢ m : A := by
+lemma Erased.toDynamic {Δ : Ctx Srt} {A m m'} :
+    Δ ⊢ m ▷ m' :: A -> Δ ⊢ m :: A := by
   intro ty; induction ty
   all_goals try (constructor <;> assumption)
   apply Typed.conv <;> assumption
 
-
-lemma Erased.toStatic {Γ} {Δ : Ctx Srt} {A m m'} :
-    Γ ;; Δ ⊢ m ▷ m' : A -> Γ ⊢ m : A := by
+lemma Erased.toStatic {Δ : Ctx Srt} {A m m'} :
+    Δ ⊢ m ▷ m' :: A -> Δ.static ⊢ m : A := by
   intro ty; apply ty.toDynamic.toStatic
 
-lemma Erased.toWf {Γ} {Δ : Ctx Srt} {A m m'} :
-    Γ ;; Δ ⊢ m ▷ m' : A -> Γ ;; Δ ⊢ := by
+lemma Erased.toWf {Δ : Ctx Srt} {A m m'} :
+    Δ ⊢ m ▷ m' :: A -> Δ ⊢ := by
   intro ty; apply ty.toDynamic.toWf
 
-lemma Erased.ctx_inv {Γ} {Δ : Ctx Srt} {A B m m' r s} :
-    A :: Γ ;; A :⟨r, s⟩ Δ ⊢ m ▷ m' : B -> ∃ i, Γ ;; Δ ⊢ ∧ Γ ⊢ A : .srt s i := by
+lemma Erased.ctx_inv {Δ : Ctx Srt} {A B m m' r s} :
+    A :⟨r, s⟩ Δ ⊢ m ▷ m' :: B -> ∃ i, Δ ⊢ ∧ Δ.static ⊢ A : .srt s i := by
   intro ty; apply ty.toDynamic.ctx_inv
 
-lemma Erased.drop_spine {Γ} {Δ1 Δ3 : Ctx Srt} {A m m'} :
+lemma Erased.drop_spine {Δ1 Δ3 : Ctx Srt} {A m m'} :
     Spine Δ1 Δ3 ->
-    Γ ;; Δ1 ⊢ m ▷ m' : A ->
-    ∃ m', Γ ;; Δ3 ⊢ m ▷ m' : A := by
+    Δ1 ⊢ m ▷ m' :: A ->
+    ∃ m', Δ3 ⊢ m ▷ m' :: A := by
   intro sp erm; induction sp
   case refl => aesop
   case cons Δ1 Δ2 Δ3 x s A mrg h hs sp ih =>
     replace ⟨m', ih⟩ := ih
     have ⟨wf1, wf2⟩ := ih.toWf.merge mrg
     have ⟨i, tyA⟩ := wf1.has_typed hs
-    have ern : Γ ;; Δ2 ⊢ .var x ▷ .var x : A := by
+    have ern : Δ2 ⊢ .var x ▷ .var x :: A := by
       constructor <;> assumption
     existsi .drop (.var x) m'
     apply Erased.drop mrg.sym
@@ -144,24 +141,50 @@ lemma Erased.drop_spine {Γ} {Δ1 Δ3 : Ctx Srt} {A m m'} :
     . assumption
     . assumption
 
-lemma Erased.drop_merge {Γ} {Δ1 Δ2 Δ3 : Ctx Srt} {A m m' s} :
+lemma Erased.drop_merge {Δ1 Δ2 Δ3 : Ctx Srt} {A m m' s} :
     Merge Δ1 Δ2 Δ3 -> Lower Δ2 s -> s ∈ ord.weaken_set ->
-    Γ ;; Δ1 ⊢ m ▷ m' : A ->
-    ∃ m', Γ ;; Δ3 ⊢ m ▷ m' : A := by
+    Δ1 ⊢ m ▷ m' :: A ->
+    ∃ m', Δ3 ⊢ m ▷ m' :: A := by
   intro mrg lw h tym
   have sp := mrg.toSpine lw h
   apply tym.drop_spine sp
 
-lemma Erased.closed {Γ Δ} {m A : SStruct.Tm Srt} {m'} :
-    Γ ;; Δ ⊢ m ▷ m' : A -> Closed Γ.length m' := by
+lemma Erased.closed {Δ} {m A : SStruct.Tm Srt} {m'} :
+    Δ ⊢ m ▷ m' :: A -> Closed Δ.length m' := by
   intro erm; induction erm
   all_goals try (solve | aesop)
-  case var wf hs =>
+  case var Δ _ _ _ wf hs =>
     replace hs := wf.hasStatic hs
+    rw[<-Δ.static_length]
     apply hs.var_lt_length
+  case app_ex mrg _ _ _ _ =>
+    and_intros
+    . rw[mrg.length]; assumption
+    . rw[mrg.sym.length]; assumption
+  case tup_ex mrg _ _ _ _ _ =>
+    and_intros
+    . rw[mrg.length]; assumption
+    . rw[mrg.sym.length]; assumption
+  case prj_im mrg _ _ _ _ _ =>
+    and_intros
+    . rw[mrg.length]; assumption
+    . rw[mrg.sym.length]; assumption
+  case prj_ex mrg _ _ _ _ _ =>
+    and_intros
+    . rw[mrg.length]; assumption
+    . rw[mrg.sym.length]; assumption
+  case ite mrg _ _ _ _ _ _ _ =>
+    and_intros
+    . rw[mrg.length]; assumption
+    . rw[mrg.sym.length]; assumption
+    . rw[mrg.sym.length]; assumption
+  case drop mrg _ _ _ _ _ _ =>
+    and_intros
+    . rw[mrg.length]; assumption
+    . rw[mrg.sym.length]; assumption
 
-lemma Erased.closed_stack {Γ Δ} {m A : SStruct.Tm Srt} {m' i} :
-    Γ ;; Δ ⊢ m ▷ m' : A -> Closed i m' -> Stack Δ i := by
+lemma Erased.closed_stack {Δ} {m A : SStruct.Tm Srt} {m' i} :
+    Δ ⊢ m ▷ m' :: A -> Closed i m' -> Stack Δ i := by
   intro erm cl; induction erm generalizing i
   case var hs =>
     simp at cl
@@ -240,8 +263,8 @@ namespace SStruct.Dynamic
 open SStruct.Erasure
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-lemma Typed.toErased {Γ} {Δ : Ctx Srt} {A m} :
-    Γ ;; Δ ⊢ m : A -> ∃ m', Γ ;; Δ ⊢ m ▷ m' : A := by
+lemma Typed.toErased {Δ : Ctx Srt} {A m} :
+    Δ ⊢ m :: A -> ∃ m', Δ ⊢ m ▷ m' :: A := by
   intro ty; induction ty
   case var x _ _ _ _ _ =>
     existsi (.var x); constructor <;> aesop
