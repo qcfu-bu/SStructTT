@@ -328,8 +328,8 @@ lemma Typed.substitution {Δ Δ' : Ctx Srt} {A m σ} :
     asimp at ty; assumption
   case tup_im B m n s i tyS tym tyn ihm =>
     replace tyS := tyS.substitution agr.toStatic; asimp at tyS
-    replace tym := ihm agr; asimp at tym
-    replace tyn := tyn.substitution agr.toStatic; asimp at tyn
+    replace tym := tym.substitution agr.toStatic; asimp at tym
+    replace tyn := ihm agr; asimp at tyn
     rw[show B.[m.[σ] .: σ] = B.[up σ].[m.[σ]/] by asimp] at tyn
     have ty := Typed.tup_im tyS tym tyn; assumption
   case tup_ex B m n s i mrg tyS tym tyn ihm ihn =>
@@ -345,7 +345,7 @@ lemma Typed.substitution {Δ Δ' : Ctx Srt} {A m σ} :
     have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
     replace tyC := tyC.substitution (agr.toStatic.cons tyS); asimp at tyC
     replace tym := ihm agr1; asimp at tym
-    replace tyn := ihn ((agr2.cons .ex tyA).cons .im tyB); asimp at tyn
+    replace tyn := ihn ((agr2.cons .im tyA).cons .ex tyB); asimp at tyn
     rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
     apply Typed.prj_im <;> (asimp; assumption)
   case prj_ex C m n s sA sB sC i mrg tyC tym tyn ihm ihn =>

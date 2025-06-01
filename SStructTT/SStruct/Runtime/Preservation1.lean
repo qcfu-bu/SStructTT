@@ -120,6 +120,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         case ptr => cases st
         case null => cases st
     case ptr => cases st
+
   case app_ex mrg1 erm ern ihm ihn =>
     subst_vars; cases mrg1; cases rs
     case app mrg2 rsm rsn =>
@@ -155,15 +156,20 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             apply rsm.subheap sb1
             assumption
     case ptr => cases st
-  case tup_im s i ty erm tyn ihm =>
+
+  case tup_im s i ty tym ern ihn =>
     subst_vars; cases rs
     case tup mrg1 rsm rsn =>
       cases st
       case tup_M st =>
-        have ⟨ct, e⟩ := rsn.null_inv; subst e
-        have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
-        have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ihm rfl mrg3.sym rsm st
-        clear ihm
+        cases rsm
+        case ptr => cases st
+        case null => cases st
+      case tup_N st =>
+        have ⟨ct, e⟩ := rsm.null_inv; subst e
+        have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1
+        have ⟨H1', H2', mrg', sb, ⟨erm', rsm'⟩⟩ := ihn rfl mrg3.sym rsn st
+        clear ihn
         have ⟨H1p, H2p, sb1, sb2, mrg2p⟩ := mrg2.split_subheap sb
         have ⟨Hy, mrg1, mrg2⟩ := mrg'.sym.split mrg2p
         existsi Hy, H2p; and_intros
@@ -171,13 +177,9 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . assumption
         . constructor
           . apply Erased.tup_im <;> assumption
-          . apply Resolve.tup mrg1.sym
+          . apply Resolve.tup mrg1
+            apply rsm.subheap sb1
             assumption
-            apply rsn.subheap sb1
-      case tup_N st =>
-        cases rsn
-        case ptr => cases st
-        case null => cases st
       case alloc_box l l1 h =>
         have ⟨h1, h2⟩ := mrg0.split_none h
         have ⟨h1', h2'⟩ := mrg1.split_none h1
@@ -214,7 +216,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
               . simp[Heap.erase_insert,h1]
                 apply Resolve.tup mrg1 <;> assumption
       case alloc_tup =>
-        have ⟨_, e⟩ := rsn.null_inv; cases e
+        have ⟨_, e⟩ := rsm.null_inv; cases e
     case ptr => cases st
   case tup_ex s i mrg1 ty erm ern ihm ihn =>
     subst_vars; cases mrg1; cases rs
@@ -251,7 +253,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             apply rsm.subheap sb1
             assumption
       case alloc_box =>
-        cases rsn; exfalso; apply ern.null_preimage
+        cases rsm; exfalso; apply erm.null_preimage
       case alloc_tup l l1 l2 h =>
         have ⟨h1, h2⟩ := mrg0.split_none h
         have ⟨h1', h2'⟩ := mrg2.split_none h1

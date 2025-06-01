@@ -24,8 +24,8 @@ lemma Typed.pi_inv {Γ : Ctx Srt} {A B T r s} :
 lemma Typed.sig_inv' {Γ : Ctx Srt} {A B T r s} :
     Γ ⊢ .sig A B r s : T ->
     ∃ sA sB iA iB i,
-      sA ≤ s ∧
-      (r = .ex -> sB ≤ s) ∧
+      (r = .ex -> sA ≤ s) ∧
+      sB ≤ s ∧
       Γ ⊢ A : .srt sA iA ∧
       A :: Γ ⊢ B : .srt sB iB ∧
       T === .srt s i := by

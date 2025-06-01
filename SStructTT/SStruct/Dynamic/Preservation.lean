@@ -33,9 +33,9 @@ lemma Step.toStatic' {A m n : Tm Srt} :
       existsi m.[n/]; and_intros <;> constructor
   case tup m n _ s _ _ _ _ _ ihm ihn =>
     subst_vars; cases st
-    case tup_im_M st _ _ =>
-      have ⟨m', st, rd⟩ := ihm rfl st
-      existsi Tm.tup m' n .im s; and_intros
+    case tup_im_N st _ _ =>
+      have ⟨n', st, rd⟩ := ihn rfl st
+      existsi Tm.tup m n' .im s; and_intros
       . constructor; assumption
       . apply Red.tup <;> aesop
     case tup_ex_M st _ _ =>
@@ -140,17 +140,13 @@ theorem Typed.preservation {A m m' : Tm Srt} :
       apply tym.subst_ex (Lower.nil sA) Merge.nil tyn
   case tup_im tyS tym tyn ih =>
     subst_vars; cases st
-    case tup_im_M st =>
+    case tup_im_N st =>
       have tym' := ih rfl st
       have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
       constructor
       . assumption
       . assumption
-      . apply Static.Typed.conv
-        apply Conv.subst1
-        apply Star.conv (st.toStatic tym.toStatic)
-        assumption
-        apply tyB.subst tym'.toStatic
+      . assumption
   case tup_ex mrg tyS tym tyn ihm ihn =>
     subst_vars; cases mrg; cases st
     case tup_ex_M st =>
@@ -184,8 +180,8 @@ theorem Typed.preservation {A m m' : Tm Srt} :
       rw[show C.[.tup m1 m2 .im s/]
             = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[m2,m1/] by asimp]
       apply tyn.substitution
-      apply AgreeSubst.intro_im tym2
-      apply AgreeSubst.intro_ex Merge.nil; constructor; asimp; assumption
+      apply AgreeSubst.intro_ex Merge.nil; constructor; assumption
+      apply AgreeSubst.intro_im; asimp; assumption
       apply AgreeSubst.refl Wf.nil
   case prj_ex C m n s sA sB sC iC mrg tyC tym tyn ihm ihn =>
     subst_vars; cases mrg; cases st

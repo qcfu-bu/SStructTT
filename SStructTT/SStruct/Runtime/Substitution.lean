@@ -348,26 +348,26 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
     case ptr x lk rsm =>
       cases x
       all_goals simp_all[Cell.tm]; cases rsm
-  case tup_im ty erm tyn ihm =>
+  case tup_im ty tym ern ihn =>
     asimp; cases rs
     case tup mrg1 rsm rsn =>
-      have ⟨H2', mrg2, mrg'⟩ := mrg.split mrg1
-      have ⟨ct, e⟩ := rsn.null_inv; subst e
-      asimp; apply Resolve.tup mrg'
-      . apply ihm rsm mrg2 agr
+      have ⟨H2', mrg2, mrg'⟩ := mrg.split mrg1.sym
+      have ⟨ct, e⟩ := rsm.null_inv; subst e
+      asimp; apply Resolve.tup mrg'.sym
       . assumption
+      . apply ihn rsn mrg2 agr
     case ptr l x lk rsm =>
       cases x
       all_goals simp_all[Cell.tm]; cases rsm
       case box mrg0 rsm rsn =>
-        have cl := rsm.ptr_closed
-        have im := (erm.closed_stack cl).toImplicit
+        have cl := rsn.ptr_closed
+        have im := (ern.closed_stack cl).toImplicit
         have ct := agr.implicit_image im
         rw[<-agr.closed_subst cl (by simp)]
         apply Resolve.mergι_contra mrg ct
         apply Resolve.ptr lk; simp[Cell.tm]
         constructor <;> assumption
-      case tup rs =>
+      case tup rs _ =>
         have ⟨_, e⟩ := rs.null_inv; cases e
   case tup_ex mrg0 ty erm ern ihm ihn =>
     asimp; cases rs
@@ -380,9 +380,9 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
     case ptr l x lk rsm =>
       cases x
       all_goals simp_all[Cell.tm]; cases rsm
-      case box rs =>
+      case box rs _ =>
         cases rs
-        exfalso; apply ern.null_preimage
+        exfalso; apply erm.null_preimage
       case tup mrg1 rsm rsn =>
         have cl1 := rsm.ptr_closed
         have cl2 := rsn.ptr_closed

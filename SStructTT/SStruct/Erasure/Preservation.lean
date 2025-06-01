@@ -24,22 +24,18 @@ lemma Erased.value_preimage {A m1 : SStruct.Tm Srt} {m2} :
     . apply Star.R
     . constructor
     . constructor <;> assumption
-  case tup_im A B m m' n s i tyA erm tyn ihm =>
+  case tup_im A B m n n' s i tyA tym ern ihn =>
     subst_vars; simp_all
     cases vl; case tup vl1 vl2 =>
-    have ⟨v, rd, vl, erv⟩ := ihm vl1
+    have ⟨v, rd, vl, erv⟩ := ihn vl2
     have ⟨_, _, _, tyB, _⟩ := tyA.sig_inv
-    have rd0 := Red.toStatic erm.toStatic rd
-    existsi .tup v n .im s; and_intros
+    have rd0 := Red.toStatic ern.toStatic rd
+    existsi .tup m v .im s; and_intros
     . apply Red.tup_im rd
     . constructor; assumption
     . rw[<-Ctx.static.eq_1] at tyA
-      apply Erased.tup_im tyA erv
-      apply Static.Typed.conv
-      apply Static.Conv.subst1
-      apply Star.conv rd0
+      apply Erased.tup_im tyA tym
       assumption
-      apply tyB.subst erv.toStatic
   case tup_ex A B m m' n n' s i mrg tyA erm ern ihm ihn =>
     subst_vars; cases mrg; simp_all
     cases vl; case tup vl1 vl2 =>
@@ -102,8 +98,8 @@ lemma Erased.preservation0 {A m1 : SStruct.Tm Srt} {m2 m2'} :
     case app_N => constructor <;> aesop
   case tup_im erm tyn ihm =>
     subst_vars; simp_all; cases st
-    case tup_M => constructor <;> aesop
-    case tup_N st => cases st
+    case tup_M st => cases st
+    case tup_N st => constructor <;> aesop
   case tup_ex mrg tyS erm ern ihm ihn =>
     subst_vars; simp_all; cases mrg; cases st
     case tup_M => constructor <;> aesop
@@ -227,27 +223,20 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
           apply (Star.conv st0).sym
           assumption
           apply tyB.subst ern.toStatic
-  case tup_im m m' n s _ tyS erm tyn ih =>
+  case tup_im m m' n s _ tyS tym ern ih =>
     subst_vars; simp_all
     rcases st with ⟨_, rd, st⟩
     have ⟨mx, nx, e, rd1, rd2⟩ := rd.tup_inv
-    replace erm := erm.preservation0' rd1
-    have e := rd2.null_inv
+    have e := rd1.null_inv
+    replace ern := ern.preservation0' rd2
     subst_vars; cases st
-    case tup_M st' =>
-      have ⟨m1, st, erm1⟩ := ih ⟨_, rd1, st'⟩
+    case tup_M st' => cases st'
+    case tup_N st' =>
+      have ⟨n1, st, ern1⟩ := ih ⟨_, rd2, st'⟩
       have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
-      existsi .tup m1 n .im s; and_intros
+      existsi .tup m n1 .im s; and_intros
       . apply Red1.tup_im st
-      . constructor
-        . assumption
-        . assumption
-        . apply Static.Typed.conv
-          apply Static.Conv.subst1
-          apply Star.conv (Red.toStatic erm.toStatic st.toStar)
-          assumption
-          apply tyB.subst erm1.toStatic
-    case tup_N st' => cases st'
+      . constructor <;> assumption
   case tup_ex m m' n n' s _ mrg tyS erm ern ihm ihn =>
     have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
     subst_vars; cases mrg; simp_all
@@ -296,32 +285,26 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
       cases r with
       | im =>
         have ⟨erm1, erm2, _, _⟩ := er.tup_im_inv; subst_vars
-        cases vl'; case tup vl' _ =>
-        have ⟨v, rdv, vl, erv⟩ := erm1.value_preimage vl'
-        have rdv0 := Red.toStatic erm1.toStatic rdv
-        have eq : m === (.tup v m2 .im s) := by
+        cases vl'; case tup _ vl' =>
+        have ⟨v, rdv, vl, erv⟩ := erm2.value_preimage vl'
+        have rdv0 := Red.toStatic erm2.toStatic rdv
+        have eq : m === (.tup m1 v .im s) := by
           apply Star.conv
           apply Star.trans (Red.toStatic erm.toStatic rdm)
-          apply Static.Red.tup _ _ rdv0 Star.R
-        have erm2 : [] ⊢ m2 : B.[v/] := by
-          apply Static.Typed.conv
-          apply Static.Conv.subst1
-          apply Star.conv rdv0
-          assumption
-          apply tyB.subst erv.toStatic
-        existsi n.[m2,v/]; and_intros
+          apply Static.Red.tup _ _ Star.R rdv0
+        existsi n.[v,m1/]; and_intros
         . apply Star1.SE_join
           apply Star.trans (Red.prj rdm)
           apply Red.prj (Red.tup_im rdv)
           constructor; aesop
         . apply Erased.conv
           apply Static.Conv.subst1 _ eq.sym
-          rw[show C.[.tup v m2 .im s/]
-                = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[m2,v/] by asimp]
+          rw[show C.[.tup m1 v .im s/]
+                = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[v,m1/] by asimp]
           apply ern.substitution
-          rw[<-Ctx.static.eq_1] at erm2
-          apply AgreeSubst.intro_im erm2
-          apply AgreeSubst.intro_ex Merge.nil; constructor; asimp; assumption
+          -- rw[<-Ctx.static.eq_1] at erm2
+          apply AgreeSubst.intro_ex Merge.nil; constructor; assumption
+          apply AgreeSubst.intro_im; asimp; assumption
           apply AgreeSubst.refl Wf.nil
           apply tyC.subst erm.toStatic
       | ex =>

@@ -64,8 +64,8 @@ lemma Typed.lam_ex_inv' {Δ : Ctx Srt} {A T m s} :
 lemma Typed.tup_im_inv' {Δ : Ctx Srt} {T m n s} :
     Δ ⊢ .tup m n .im s :: T ->
     ∃ A B,
-      Δ ⊢ m :: A ∧
-      Δ.static ⊢ n : B.[m/] ∧
+      Δ.static ⊢ m : A ∧
+      Δ ⊢ n :: B.[m/] ∧
       T === .sig A B .im s := by
   generalize e: Tm.tup m n .im s = x
   intro ty; induction ty generalizing m n s
@@ -76,9 +76,9 @@ lemma Typed.tup_im_inv' {Δ : Ctx Srt} {T m n s} :
   case drop mrg lw h tyn ihn =>
     have ⟨A, B, tym, tyn, eq2⟩ := ihn e
     existsi A, B; and_intros
-    . apply Typed.drop mrg _ h tym
-      assumption
     . rw[mrg.sym.static]; assumption
+    . apply Typed.drop mrg _ h tyn
+      assumption
     . assumption
   case conv eq1 _ _ ih =>
     have ⟨A, B, _, _, eq2⟩ := ih e
@@ -160,7 +160,7 @@ lemma Typed.lam_ex_inv {Δ : Ctx Srt} {A A' B m s s'} :
 
 lemma Typed.tup_im_inv {Δ : Ctx Srt} {A B m n s s'} :
     Δ ⊢ .tup m n .im s :: .sig A B .im s' ->
-    Δ ⊢ m :: A ∧ Δ.static ⊢ n : B.[m/] ∧ s = s' := by
+    Δ.static ⊢ m : A ∧ Δ ⊢ n :: B.[m/] ∧ s = s' := by
   intro ty
   have ⟨A', B', tym, tyn, eq⟩ := ty.tup_im_inv'
   have ⟨_, _, eqA, eqB⟩ := Static.Conv.sig_inj eq
@@ -168,11 +168,11 @@ lemma Typed.tup_im_inv {Δ : Ctx Srt} {A B m n s s'} :
   have ⟨s, i, tyS⟩ := ty.validity
   have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
   have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
-  replace tym := Typed.conv eqA.sym tym tyA
-  replace tyB := tyB.subst tym.toStatic; asimp at tyB
+  replace tym := Static.Typed.conv eqA.sym tym tyA
+  replace tyB := tyB.subst tym; asimp at tyB
   simp; and_intros
   . assumption
-  . apply Static.Typed.conv
+  . apply Typed.conv
     apply Static.Conv.subst _ eqB.sym
     assumption
     assumption

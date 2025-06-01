@@ -37,11 +37,11 @@ where
     Erased Δ2 n n' A ->
     Erased Δ3 (.app m n .ex) (.app m' n') B.[n/]
 
-  | tup_im {Δ : Ctx Srt} {A B m m' n s i} :
+  | tup_im {Δ : Ctx Srt} {A B m n n' s i} :
     Δ.static ⊢ .sig A B .im s : .srt s i ->
-    Erased Δ m m' A ->
-    Δ.static ⊢ n : B.[m/] ->
-    Erased Δ (.tup m n .im s) (.tup m' .null s) (.sig A B .im s)
+    Δ.static ⊢ m : A ->
+    Erased Δ n n' B.[m/] ->
+    Erased Δ (.tup m n .im s) (.tup .null n' s) (.sig A B .im s)
 
   | tup_ex {Δ1 Δ2 Δ3 A B m m' n n' s i} :
     Merge Δ1 Δ2 Δ3 ->
@@ -54,7 +54,7 @@ where
     Merge Δ1 Δ2 Δ3 ->
     .sig A B .im s :: Δ3.static ⊢ C : .srt sC iC ->
     Erased Δ1 m m' (.sig A B .im s) ->
-    Erased (B :⟨.im, sB⟩ A :⟨.ex, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
+    Erased (B :⟨.ex, sB⟩ A :⟨.im, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
     Erased Δ3 (.prj C m n .im) (.prj m' n') C.[m/]
 
   | prj_ex {Δ1 Δ2 Δ3 A B C m m' n n' s sA sB sC iC} :
@@ -225,8 +225,9 @@ lemma Erased.closed_stack {Δ} {m A : SStruct.Tm Srt} {m' i} :
     replace ihn := ihn cl2
     cases ihn <;> try simp_all
     case cons ihn =>
-      cases ihn <;> try simp_all
-      apply mrg.stack_image <;> assumption
+      apply mrg.stack_image; assumption
+      cases ihn <;> simp_all
+      apply Stack.nil; assumption
   case prj_ex mrg _ _ _ ihm ihn =>
     simp at cl
     have ⟨cl1, cl2⟩ := cl
@@ -285,9 +286,9 @@ lemma Typed.toErased {Δ : Ctx Srt} {A m} :
     have ⟨n', ern⟩ := ihn
     existsi .app m' n'
     constructor <;> aesop
-  case tup_im s _ _  _ _ ihm =>
-    have ⟨m', erm⟩ := ihm
-    existsi .tup m' .null s
+  case tup_im s _ _  _ _ ihn =>
+    have ⟨n', ern⟩ := ihn
+    existsi .tup .null n' s
     constructor <;> aesop
   case tup_ex s _ _ _ _ _ ihm ihn =>
     have ⟨m', erm⟩ := ihm

@@ -171,35 +171,28 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         case null =>
           cases rsn; exfalso; apply ern.null_preimage
     case ptr => cases st
-  case tup_im m' n s i ty erm tyn ihm =>
+  case tup_im m n n' s i ty tym ern ihn =>
     subst_vars; cases rs
     case tup H1' H2' m' n' mrg1 rsm rsn =>
       have ⟨_, _, _, tyB, _⟩ := ty.sig_inv
-      have ⟨ct, e⟩ := rsn.null_inv; subst e
+      have ⟨ct, e⟩ := rsm.null_inv; subst e
       cases st
-      case tup_M st =>
-        have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
-        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl mrg3.sym rsm st
-        clear ihm
+      case tup_M st => cases st
+      case tup_N st =>
+        have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1
+        have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihn rfl mrg3.sym rsn st
+        clear ihn
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
-        existsi Hx, .tup a' n .im s, .tup b' .null s; and_intros
+        existsi Hx, .tup m a' .im s, .tup .null b' s; and_intros
         . assumption
         . constructor
-          . apply Erased.tup_im
-            assumption
-            assumption
-            apply Static.Typed.conv
-            apply Static.Conv.subst1
-            apply Star.conv (Red.toStatic erm.toStatic st1.toStar)
-            assumption
-            apply tyB.subst er'.toStatic
+          . apply Erased.tup_im <;> assumption
           . constructor
-            apply mrg1.sym
+            apply mrg1
             assumption
             assumption
         . apply Red1.tup_im st1
         . constructor; assumption
-      case tup_N st => cases st
     case ptr => cases st
   case tup_ex m0 m1 n0 n1 s i mrg ty erm ern ihm ihn =>
     subst_vars; cases mrg; cases rs
@@ -277,45 +270,37 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         cases rsm'; case tup mx0 nx0 mrg rs1 rs2 =>
         have vl := rsm.ptr_value
         cases vl; case tup vl1 vl2 =>
-        cases rs2
+        cases rs1
         have ⟨mx1, nx1, r, rd1, erx⟩ := erm.tup_preimage
         have ⟨_, _, _, _⟩ := erx.toStatic.tup_inv; subst_vars
-        have ⟨ermx, tynx, _, _⟩ := erx.tup_im_inv
-        have ⟨v0, rd2, vl0, erv0⟩ := ermx.value_preimage vl1
+        have ⟨tymx, ernx, _, _⟩ := erx.tup_im_inv
+        have ⟨v0, rd2, vl0, erv0⟩ := ernx.value_preimage vl2
         have rsn := Resolved.intro ern rsn
-        have hyp := (Resolved.intro erv0 rs1).resolution tyA vl1
-        have rdv0 := Red.toStatic ermx.toStatic rd2
-        have eq : m0 === (.tup v0 nx1 .im s) := by
+        have hyp := (Resolved.intro erv0 rs2).resolution (tyB.subst tymx) vl2
+        have rdv0 := Red.toStatic ernx.toStatic rd2
+        have eq : m0 === (.tup mx1 v0 .im s) := by
           apply Star.conv
           apply Star.trans (Red.toStatic erm.toStatic rd1)
-          apply Static.Red.tup _ _ rdv0 Star.R
-        have tynx1 : [] ⊢ nx1 : B.[v0/] := by
-          apply Static.Typed.conv
-          apply Static.Conv.subst1
-          apply Star.conv rdv0
-          assumption
-          apply tyB.subst erv0.toStatic
-        existsi Hx, n0.[nx1,v0/], n1.[.null,mx0/]; and_intros
+          apply Static.Red.tup _ _ Star.R rdv0
+        existsi Hx, n0.[v0,mx1/], n1.[nx0,.null/]; and_intros
         . assumption
         . constructor
           . apply Erased.conv
             apply Static.Conv.subst1 _ eq.sym
-            rw[show C.[.tup v0 nx1 .im s/]
-                  = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[nx1,v0/] by asimp]
+            rw[show C.[.tup mx1 v0 .im s/]
+                  = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[v0,mx1/] by asimp]
             apply ern.substitution
-            rw[<-Ctx.static.eq_1] at tynx1
-            apply Erasure.AgreeSubst.intro_im tynx1
-            apply Erasure.AgreeSubst.intro_ex Merge.nil (Lower.nil _)
-            asimp; assumption
+            apply Erasure.AgreeSubst.intro_ex Merge.nil (Lower.nil _) erv0
+            apply Erasure.AgreeSubst.intro_im; asimp; assumption
             apply Erasure.AgreeSubst.refl Wf.nil
             apply tyC.subst erm.toStatic
           . apply rsn.substitution mrg4
             constructor
-            constructor
             . assumption
-            . apply mrg.sym
             . assumption
-            . constructor; assumption
+            . assumption
+            . constructor
+              constructor; assumption
         . apply Star1.SE_join
           apply Star.trans
           apply Red.prj rd1
@@ -328,11 +313,11 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         have ⟨_, rsm0, _⟩ := rsm.lookup mrg3.sym lk
         simp[Cell.tm] at rsm0
         cases rsm0
-        case tup rsn =>
+        case tup rs _ =>
           replace ⟨_, _, _, _, erm⟩ := erm.tup_preimage
           have ⟨_, _, _, _⟩ := erm.toStatic.tup_inv; subst_vars
           have ⟨_, _, _, _⟩ := erm.tup_im_inv; subst_vars
-          have ⟨_, e⟩ := rsn.null_inv; cases e
+          have ⟨_, e⟩ := rs.null_inv; cases e
     case ptr => cases st
   case prj_ex B C m0 m1 n0 n1 _ _ _ _ i mrg tyC erm ern ihm ihn =>
     clear ihn; subst_vars; cases mrg; cases rs
@@ -366,11 +351,11 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         have ⟨_, rsm0, _⟩ := rsm.lookup mrg3.sym lk
         simp[Cell.tm] at rsm0
         cases rsm0
-        case tup rsn =>
-          cases rsn
+        case tup rs _ =>
+          cases rs
           replace ⟨_, _, _, _, erm⟩ := erm.tup_preimage
           have ⟨_, _, _, _⟩ := erm.toStatic.tup_inv; subst_vars
-          have ⟨_, _, _, _, er, _⟩ := erm.tup_ex_inv
+          have ⟨_, _, _, er, _, _⟩ := erm.tup_ex_inv
           exfalso; apply er.null_preimage
       case prj_tup H1' s l l1 l2 lk =>
         clear ihm

@@ -294,12 +294,12 @@ lemma Erased.substitution {Δ Δ' : Ctx Srt} {A m m' σ σ'} :
     specialize ihn agr2
     have er := Erased.app_ex mrg ihm ihn
     asimp at er; assumption
-  case tup_im B m m' n s i tyS erm tyn ihm =>
+  case tup_im B m m' n s i tyS tym ern ihn =>
     replace tyS := tyS.substitution agr.toStatic; asimp at tyS
-    replace erm := ihm agr; asimp at erm
-    replace tyn := tyn.substitution agr.toStatic; asimp at tyn
-    rw[show B.[m.[σ] .: σ] = B.[up σ].[m.[σ]/] by asimp] at tyn
-    have er := Erased.tup_im tyS erm tyn; assumption
+    replace tym := tym.substitution agr.toStatic; asimp at tym
+    replace ern := ihn agr; asimp at ern
+    rw[show B.[m.[σ] .: σ] = B.[up σ].[m.[σ]/] by asimp] at ern
+    have er := Erased.tup_im tyS tym ern; assumption
   case tup_ex B m m' n n' s i mrg tyS erm ern ihm ihn =>
     have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
     replace tyS := tyS.substitution agr.toStatic; asimp at tyS
@@ -313,7 +313,7 @@ lemma Erased.substitution {Δ Δ' : Ctx Srt} {A m m' σ σ'} :
     have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
     replace tyC := tyC.substitution (agr.toStatic.cons tyS); asimp at tyC
     replace erm := ihm agr1; asimp at erm
-    replace ern := ihn ((agr2.cons .ex tyA).cons .im tyB); asimp at ern
+    replace ern := ihn ((agr2.cons .im tyA).cons .ex tyB); asimp at ern
     rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
     apply Erased.prj_im <;> (asimp; assumption)
   case prj_ex C m m' n n' s sA sB sC i mrg tyC erm ern ihm ihn =>

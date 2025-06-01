@@ -97,7 +97,7 @@ theorem Typed.progress {m A : Tm Srt} :
         constructor; assumption
   case tup_im m n s _ _ _ _ ih =>
     match ih with
-    | .inl ⟨m, _⟩ =>
+    | .inl ⟨n, _⟩ =>
       left; existsi Tm.tup m n .im s
       constructor; assumption
     | .inr _ => right; constructor; assumption

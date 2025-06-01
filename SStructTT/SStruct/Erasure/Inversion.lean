@@ -59,8 +59,8 @@ lemma Erased.lam_ex_inv' {Δ : Ctx Srt} {A T m m' s} :
 lemma Erased.tup_im_inv' {Δ : Ctx Srt} {T m m' n n' s} :
     Δ ⊢ .tup m n .im s ▷ .tup m' n' s :: T ->
     ∃ A B,
-      Δ ⊢ m ▷ m' :: A ∧
-      Δ.static ⊢ n : B.[m/] ∧ n' = .null ∧
+      Δ.static ⊢ m : A ∧
+      Δ ⊢ n ▷ n' :: B.[m/] ∧ m' = .null ∧
       T === .sig A B .im s := by
   generalize e1: SStruct.Tm.tup m n .im s = x
   generalize e2: Tm.tup m' n' s = y
@@ -145,19 +145,19 @@ lemma Erased.lam_ex_inv {Δ : Ctx Srt} {A A' B m m' s s'} :
 
 lemma Erased.tup_im_inv {Δ : Ctx Srt} {A B m m' n n' s s'} :
     Δ ⊢ .tup m n .im s ▷ .tup m' n' s :: .sig A B .im s' ->
-    Δ ⊢ m ▷ m' :: A ∧ Δ.static ⊢ n : B.[m/] ∧ n' = .null ∧ s = s' := by
+    Δ.static ⊢ m : A ∧ Δ ⊢ n ▷ n' :: B.[m/] ∧ m' = .null ∧ s = s' := by
   intro er
-  have ⟨A', B', erm, tyn, e, eq⟩ := er.tup_im_inv'
+  have ⟨A', B', tym, ern, e, eq⟩ := er.tup_im_inv'
   have ⟨_, _, eqA, eqB⟩ := Static.Conv.sig_inj eq
   subst_vars
   have ⟨s, i, tyS⟩ := er.validity
   have ⟨_, _, _, tyB, _⟩ := tyS.sig_inv
   have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
-  replace erm := Erased.conv eqA.sym erm tyA
-  replace tyB := tyB.subst erm.toStatic; asimp at tyB
+  replace tym := Static.Typed.conv eqA.sym tym tyA
+  replace tyB := tyB.subst tym; asimp at tyB
   simp; and_intros
   . assumption
-  . apply Static.Typed.conv
+  . apply Erased.conv
     apply Static.Conv.subst _ eqB.sym
     assumption
     assumption
@@ -232,7 +232,7 @@ lemma Erased.tup_preimage {B t : SStruct.Tm Srt} {m' n' s} :
   generalize e1: [] = Δ
   generalize e2: Tm.tup m' n' s = k
   intro er; induction er <;> try trivial
-  case tup_im A _ m _ n _ _ _ _ _ _ =>
+  case tup_im A _ m n _ _ _ _ _ _ _ =>
     subst_vars; cases e2
     existsi m, n, .im; and_intros
     . apply Star.R

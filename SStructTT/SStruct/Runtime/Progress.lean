@@ -81,21 +81,21 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
             constructor
             assumption
     case ptr => right; aesop
-  case tup_im s _ _ _ erm ihm =>
+  case tup_im s _ _ _ ern ihn =>
     subst_vars; cases rs
     case tup mrg rsm rsn =>
-      have ⟨_, e⟩ := rsn.null_inv; subst e
+      have ⟨_, e⟩ := rsm.null_inv; subst e
       cases ps
-      case tup_M h ps1 ps2 =>
-        match ihm rfl rsm ps1 with
+      case tup_M h _ _ =>
+        exfalso; apply h .null
+      case tup_N ps1 h ps2 =>
+        match ihn rfl rsn ps2 with
         | .inl ⟨H, m1, st⟩ =>
-          have ⟨Hx, x, st⟩ := st.merge mrg
-          left; existsi Hx, .tup x .null s
+          have ⟨Hx, x, st⟩ := st.merge mrg.sym
+          left; existsi Hx, .tup .null x s
           constructor; assumption
         | .inr ⟨l1, e⟩ =>
           exfalso; apply h; assumption
-      case tup_N h _ =>
-        exfalso; apply h .null
     case ptr => right; aesop
   case tup_ex s _ mrg _ _ _ ihm ihn =>
     subst_vars; cases mrg; cases rs
@@ -108,7 +108,7 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
           left; existsi Hx, .tup x n s
           constructor; assumption
         | .inr ⟨l1, e⟩ =>
-          exfalso; apply h; assumption
+          exfalso; apply h; subst e; constructor
       case tup_N ps1 h ps2 =>
         match ihn rfl rsn ps2 with
         | .inl ⟨H, m1, st⟩ =>
@@ -136,13 +136,13 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
         all_goals simp_all[Cell.tm]; cases rsm
         case box.tup l _ _ _ _ _ rsm rsn =>
           have ⟨Hx, lk, mrg⟩ := lk.merge mrg
-          existsi Hx, n.[.null,.ptr l/]
+          existsi Hx, n.[.ptr l,.null/]
           constructor; assumption
         case tup.tup rsm rsn =>
           have ⟨_, _, _, _, erm⟩ := erm.tup_preimage
           have ⟨_, _, _, _⟩ := erm.toStatic.tup_inv; subst_vars
           have ⟨_, _, _, _⟩ := erm.tup_im_inv; subst_vars
-          exfalso; have ⟨_, e⟩ := rsn.null_inv; cases e
+          exfalso; have ⟨_, e⟩ := rsm.null_inv; cases e
     case ptr => right; aesop
   case prj_ex mrg _ erm _ ihm _ =>
     subst_vars; cases mrg; cases rs
@@ -167,8 +167,8 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
         case box.tup rsm rsn =>
           have ⟨_, _, _, _, erm⟩ := erm.tup_preimage
           have ⟨_, _, _, _⟩ := erm.toStatic.tup_inv; subst_vars
-          have ⟨_, _, _, _, er, _⟩ := erm.tup_ex_inv
-          cases rsn; exfalso; apply er.null_preimage
+          have ⟨_, _, _, er, _, _⟩ := erm.tup_ex_inv
+          cases rsm; exfalso; apply er.null_preimage
     case ptr => right; aesop
   case tt =>
     subst_vars; cases rs

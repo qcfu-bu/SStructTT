@@ -31,9 +31,9 @@ lemma Erased.sig_canonical {A B C m : SStruct.Tm Srt} {m' r s} :
   generalize e: [] = Δ
   intro ty eq vl; induction ty <;> try trivial
   all_goals try false_conv
-  case tup_im A0 B0 m m' n _ _ _ _ _ _ =>
+  case tup_im A0 B0 m n n' _ _ _ _ _ _ =>
     have ⟨_, _, _, _⟩ := Static.Conv.sig_inj eq
-    subst_vars; exists m', .null
+    subst_vars; exists .null, n'
   case tup_ex A0 B0 m m' n n' _ _ _ _ _ _ _ _ =>
     have ⟨_, _, _, _⟩ := Static.Conv.sig_inj eq
     subst_vars; exists m', n'
@@ -105,15 +105,15 @@ theorem Erased.progress {A m} {m' : Tm Srt} :
         constructor; and_intros
         . apply Red0.app rd1 rd2
         . aesop
-  case tup_im m m' n s _ _ _ _ ih =>
+  case tup_im m n n' s _ _ _ _ ih =>
     simp_all
     match ih with
-    | .inl ⟨m, _⟩ =>
-      left; existsi Tm.tup m .null s
-      apply Step.tup_M; assumption
+    | .inl ⟨n, _⟩ =>
+      left; existsi Tm.tup .null n s
+      apply Step.tup_N; assumption
     | .inr ⟨v, rd, vl⟩ =>
-      right; existsi .tup v .null s; and_intros
-      . apply Red0.tup rd Star.R
+      right; existsi .tup .null v s; and_intros
+      . apply Red0.tup Star.R rd
       . aesop
   case tup_ex m m' n n' s _ _ _ ihm ihn mrg _ =>
     cases mrg; simp_all

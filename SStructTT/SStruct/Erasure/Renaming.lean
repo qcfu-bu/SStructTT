@@ -36,9 +36,9 @@ lemma Erased.renaming {Δ Δ' : Ctx Srt} {A m m' ξ} :
     replace ern := ihn agr2; asimp at ern
     have er := Erased.app_ex mrg erm ern
     asimp at er; assumption
-  case tup_im tyS erm tyn ih =>
-    replace erm := ih agr; asimp at erm
-    replace tyn := tyn.renaming agr.toStatic; asimp at tyn
+  case tup_im tyS tym ern ih =>
+    replace tym := tym.renaming agr.toStatic; asimp at tym
+    replace ern := ih agr; asimp at ern
     replace tyS := tyS.renaming agr.toStatic; asimp at tyS
     constructor <;> (asimp; assumption)
   case tup_ex mrg tyS erm ern ihm ihn =>
@@ -53,7 +53,7 @@ lemma Erased.renaming {Δ Δ' : Ctx Srt} {A m m' ξ} :
     have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg
     replace tyC := tyC.renaming (agr.toStatic.cons tyS); asimp at tyC
     replace erm := ihm agr1; asimp at erm
-    replace ern := ihn ((agr2.cons .ex tyA).cons .im tyB)
+    replace ern := ihn ((agr2.cons .im tyA).cons .ex tyB)
     rw[show C.[.tup (.var 1) (.var 0) .im s .: shift 2].[ren (upren (upren ξ))]
           = C.[up (ren ξ)].[.tup (.var 1) (.var 0) .im s .: shift 2]
         by asimp] at ern

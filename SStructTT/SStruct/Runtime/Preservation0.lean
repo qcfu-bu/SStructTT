@@ -71,26 +71,26 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . apply Resolve.app mrg1 rsm rsx
         . constructor; assumption
     case ptr => cases st
-  case tup_im m m' n s i ty erm tyn ih =>
+  case tup_im m m' n s i ty tym ern ih =>
     subst_vars; cases rs
     case tup =>
       cases st
-      case tup_M mrg rsm rsn mx st =>
-        have ⟨Hx, mrg1, mrg2⟩ := mrg0.split mrg.sym
-        have ⟨H1', mx', mrgx, ⟨erx, rsx⟩, stx⟩ := ih rfl mrg2.sym rsm st
+      case tup_M mrg rsm rsn n0 st =>
+        have ⟨_, e⟩ := rsm.null_inv; subst e
+        cases st
+      case tup_N mrg rsm rsn mx st =>
+        have ⟨Hx, mrg1, mrg2⟩ := mrg0.split mrg
+        have ⟨H1', nx', mrgx, ⟨erx, rsx⟩, stx⟩ := ih rfl mrg2.sym rsn st
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg1
-        existsi Hx, .tup mx' .null s; and_intros
+        existsi Hx, .tup .null nx' s; and_intros
         . assumption
         . constructor
           . constructor <;> assumption
           . constructor
-            apply mrg1.sym
+            apply mrg1
             assumption
             assumption
         . constructor; assumption
-      case tup_N mrg rsm rsn n0 st =>
-        have ⟨_, e⟩ := rsn.null_inv; subst e
-        cases st
     case ptr => cases st
   case tup_ex m m' n n' s i mrg ty erm ern ihm ihn =>
     subst_vars; cases mrg; cases rs

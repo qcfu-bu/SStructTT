@@ -13,7 +13,7 @@ inductive Cell Srt where
 
 def Cell.tm : Cell Srt -> Tm Srt
   | .clo m s _   => .lam m s
-  | .box l s     => .tup (.ptr l) .null s
+  | .box l s     => .tup .null (.ptr l) s
   | .tup l1 l2 s => .tup (.ptr l1) (.ptr l2) s
   | .tt          => .tt
   | .ff          => .ff

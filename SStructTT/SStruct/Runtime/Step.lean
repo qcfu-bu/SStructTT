@@ -110,7 +110,7 @@ inductive Step1 : State Srt -> State Srt -> Prop where
     Step1 (H, .lam m s) (H.insert l (.clo m s cl), .ptr l)
   | alloc_box {H s l l1} :
     l ∉ H.keys ->
-    Step1 (H, .tup (.ptr l1) .null s) (H.insert l (.box l1 s), .ptr l)
+    Step1 (H, .tup .null (.ptr l1) s) (H.insert l (.box l1 s), .ptr l)
   | alloc_tup {H s l l1 l2} :
     l ∉ H.keys ->
     Step1 (H, .tup (.ptr l1) (.ptr l2) s) (H.insert l (.tup l1 l2 s), .ptr l)
@@ -151,7 +151,7 @@ inductive Step2 : State Srt -> State Srt -> Prop where
     Step2 (H, .prj m n) (H', .prj m' n)
   | prj_box {H1 H2 n s l l1} :
     HLookup H1 l (.box l1 s) H2 ->
-    Step2 (H1, .prj (.ptr l) n) (H2, n.[.null,.ptr l1/])
+    Step2 (H1, .prj (.ptr l) n) (H2, n.[.ptr l1,.null/])
   | prj_tup {H1 H2 n s l l1 l2} :
     HLookup H1 l (.tup l1 l2 s) H2 ->
     Step2 (H1, .prj (.ptr l) n) (H2, n.[.ptr l2,.ptr l1/])

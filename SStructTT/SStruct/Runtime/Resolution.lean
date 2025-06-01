@@ -353,8 +353,8 @@ lemma Erased.resolve_id {Δ} {H : Heap Srt} {x y z A} :
   case app_ex => cases rs; aesop
   case tup_im =>
     cases rs
-    case tup rsn =>
-      cases rsn; aesop
+    case tup rsm _ =>
+      cases rsm; aesop
   case tup_ex => cases rs; aesop
   case prj_im => cases rs; aesop
   case prj_ex => cases rs; aesop
@@ -627,27 +627,27 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
     have ⟨_, _, _, _, rd⟩ := ty.pi_inv
     have ⟨_, _⟩ := Static.Conv.srt_inj rd; subst_vars
     apply rs.lam_inv
-  case tup_im tyn erm ihm =>
+  case tup_im tym ern ihn =>
     intro h
-    have ⟨_, _, _, _, _, le, _, tyA, tyB, rd⟩ := ty.sig_inv'
+    have ⟨_, _, _, _, _, _, le, tyA, tyB, rd⟩ := ty.sig_inv'
     have ⟨_, _⟩ := Static.Conv.srt_inj rd; subst_vars
     cases vl; case tup vl1 vl2 =>
     simp_all; cases rs
     case tup mrg rsm rsn =>
-      have ct1 := ihm rsm tyA (ord.contra_set.lower le h)
-      have ⟨ct2, _⟩ := rsn.null_inv; subst_vars
+      have ⟨ct1, _⟩ := rsm.null_inv; subst_vars
+      have ct2 := ihn rsn (tyB.subst tym) (ord.contra_set.lower le h)
       apply mrg.contra_image ct1 ct2
     case ptr H l m lk rs =>
       have ifq := lk.lookup
       cases m
       all_goals simp_all[Cell.tm,Cell.srt]; cases rs
       case box mrg rsm rsn =>
-        have ct1 := ihm rsm tyA (ord.contra_set.lower le h)
-        have ⟨ct2, _⟩ := rsn.null_inv
+        have ⟨ct1, _⟩ := rsm.null_inv
+        have ct2 := ihn rsn (tyB.subst tym) (ord.contra_set.lower le h)
         simp[h] at ifq; subst_vars
         apply mrg.contra_image ct1 ct2
-      case tup rsn =>
-        have ⟨_, e⟩ := rsn.null_inv; cases e
+      case tup rsm _ =>
+        have ⟨_, e⟩ := rsm.null_inv; cases e
   case tup_ex erm ern ihm ihn mrg _ =>
     intro h; cases mrg
     have ⟨_, _, _, _, _, le1, le2, tyA, tyB, rd⟩ := ty.sig_inv'
@@ -662,9 +662,9 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
       have ifq := lk.lookup
       cases m
       all_goals simp_all[Cell.tm,Cell.srt]; cases rs
-      case box rsn =>
-        cases rsn
-        exfalso; apply ern.null_preimage
+      case box rsm _ =>
+        cases rsm
+        exfalso; apply erm.null_preimage
       case tup mrg rsm rsn =>
         have ct1 := ihm rsm tyA (ord.contra_set.lower le1 h)
         have ct2 := ihn rsn (tyB.subst erm.toStatic) (ord.contra_set.lower le2 h)
@@ -747,9 +747,8 @@ lemma Erased.resolve_init' {H : Heap Srt} {Δ m n A} :
   case tup_im ih =>
     constructor
     . apply ct.merge_refl
+    . constructor; assumption
     . apply ih
-    . constructor
-      assumption
   case tup_ex =>
     constructor
     . apply ct.merge_refl

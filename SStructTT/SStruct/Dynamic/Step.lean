@@ -12,7 +12,7 @@ inductive Value : Tm Srt -> Prop where
   | lam_ex {A m s} :
     Value (.lam A m .ex s)
   | tup_im {m n s} :
-    Value m ->
+    Value n ->
     Value (.tup m n .im s)
   | tup_ex {m n s} :
     Value m ->
@@ -37,9 +37,9 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
   | beta_ex A m n s :
     Value n ->
     Step (.app (.lam A m .ex s) n .ex) m.[n/]
-  | tup_im_M {m m'} n s :
-    Step m m' ->
-    Step (.tup m n .im s) (.tup m' n .im s)
+  | tup_im_N m {n n'} s :
+    Step n n' ->
+    Step (.tup m n .im s) (.tup m n' .im s)
   | tup_ex_M {m m'} n s :
     Step m m' ->
     Step (.tup m n .ex s) (.tup m' n .ex s)
@@ -83,8 +83,8 @@ lemma Red.app_ex {m m' n n' : Tm Srt} :
   apply Star.hom _ _ rm; aesop
   apply Star.hom _ _ rn; aesop
 
-lemma Red.tup_im {m m' n : Tm Srt} {s} :
-    m ~>>* m' -> .tup m n .im s ~>>* .tup m' n .im s := by
+lemma Red.tup_im {m n n' : Tm Srt} {s} :
+    n ~>>* n' -> .tup m n .im s ~>>* .tup m n' .im s := by
   intro rm; apply Star.hom _ _ rm; aesop
 
 lemma Red.tup_ex {m m' n n' : Tm Srt} {s} :
@@ -114,8 +114,8 @@ lemma Red1.app_ex_N {m n n' : Tm Srt} :
     n ~>>1 n' -> .app m n .ex ~>>1 .app m n' .ex := by
   intro rn; apply Star1.hom _ _ rn; aesop
 
-lemma Red1.tup_im {m m' n : Tm Srt} {s} :
-    m ~>>1 m' -> .tup m n .im s ~>>1 .tup m' n .im s := by
+lemma Red1.tup_im {m n n' : Tm Srt} {s} :
+    n ~>>1 n' -> .tup m n .im s ~>>1 .tup m n' .im s := by
   intro rm; apply Star1.hom _ _ rm; aesop
 
 lemma Red1.tup_ex_M {m m' n : Tm Srt} {s} :

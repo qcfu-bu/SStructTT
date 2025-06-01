@@ -312,7 +312,7 @@ lemma Step2.merge {H1 H1' H2 H3 : Heap Srt} {m n} :
   case prj_box n _ _ l lk =>
     cases e1; cases e2
     have ⟨Hx, lk, mrg⟩ := lk.merge mrg
-    existsi Hx, n.[.null,.ptr l/]
+    existsi Hx, n.[.ptr l,.null/]
     constructor <;> assumption
   case prj_tup n _ _ l1 l2 lk =>
     cases e1; cases e2
@@ -343,12 +343,12 @@ inductive Poised : Tm Srt -> Prop where
     Poised n ->
     Poised (.app m n)
   | tup_M {m n s} :
-    (∀ l, m ≠ .ptr l) ->
+    ¬ Nullptr m ->
     Poised m ->
     Poised n ->
     Poised (.tup m n s)
   | tup_N {m n s} :
-    ¬ Nullptr n ->
+    (∀ l, n ≠ .ptr l) ->
     Poised m ->
     Poised n ->
     Poised (.tup m n s)
@@ -462,16 +462,16 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
           right; apply Step1.app_M
           assumption
     case ptr => constructor
-  case tup_im erm ern ihm =>
+  case tup_im erm ern ihn =>
     subst_vars; cases c
     all_goals cases rs
     case tup m n H1 H2 mrg1 rsm rsn =>
-      have ⟨ct, e⟩ := rsn.null_inv; subst e
-      by_cases h1: ARS.Normal Step01 (H3, m)
+      have ⟨ct, e⟩ := rsm.null_inv; subst e
+      by_cases h1: ARS.Normal Step01 (H3, n)
       case pos =>
-        have ⟨Hx, mrg2, mrg3⟩ := mrg.split mrg1.sym
-        replace ihm := ihm rfl rsm mrg3.sym h1
-        by_cases h2: ∃ l, m = .ptr l
+        have ⟨Hx, mrg2, mrg3⟩ := mrg.split mrg1
+        replace ihn := ihn rfl rsn mrg3.sym h1
+        by_cases h2: ∃ l, n = .ptr l
         case pos =>
           rcases h2 with ⟨l, e⟩; subst e
           exfalso; apply norm
@@ -480,10 +480,10 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
           right; apply Step1.alloc_box
           assumption
         case neg =>
-          constructor
+          apply Poised.tup_N
           simp at h2; assumption
-          assumption
           constructor
+          assumption
       case neg =>
         exfalso; apply norm
         simp[ARS.Normal] at h1
@@ -491,11 +491,11 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
         cases st with
         | inl st =>
           constructor
-          left; apply Step0.tup_M
+          left; apply Step0.tup_N
           assumption
         | inr st =>
           constructor
-          right; apply Step1.tup_M
+          right; apply Step1.tup_N
           assumption
     case ptr => constructor
   case tup_ex mrg0 _ erm ern ihm ihn =>
@@ -509,11 +509,11 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
         by_cases h2: ARS.Normal Step01 (Hx, n)
         case pos =>
           replace ihn := ihn rfl rsn mrg2 h2
-          by_cases h2: ∃ l, m = .ptr l
+          by_cases h3: Nullptr m
           case pos =>
-            rcases h2 with ⟨l, e⟩; subst e
-            by_cases h3: Nullptr n
+            by_cases h4: ∃ l, n = .ptr l
             case pos =>
+              rcases h4 with ⟨l, e⟩; subst e
               have ⟨_, _⟩ := H3.fresh
               exfalso; apply norm
               cases h3
@@ -527,7 +527,7 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
                 assumption
             case neg =>
               apply Poised.tup_N
-              asimp at h3; assumption
+              asimp at h4; assumption
               assumption
               assumption
           case neg =>

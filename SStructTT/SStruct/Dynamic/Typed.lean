@@ -37,8 +37,8 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
 
   | tup_im {Δ A B m n s i} :
     Δ.static ⊢ .sig A B .im s : .srt s i ->
-    Typed Δ m A ->
-    Δ.static ⊢ n : B.[m/] ->
+    Δ.static ⊢ m : A ->
+    Typed Δ n B.[m/] ->
     Typed Δ (.tup m n .im s) (.sig A B .im s)
 
   | tup_ex {Δ1 Δ2 Δ3 A B m n s i} :
@@ -52,7 +52,7 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
     Merge Δ1 Δ2 Δ3 ->
     .sig A B .im s :: Δ3.static ⊢ C : .srt sC iC ->
     Typed Δ1 m (.sig A B .im s) ->
-    Typed (B :⟨.im, sB⟩ A :⟨.ex, sA⟩ Δ2) n C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
+    Typed (B :⟨.ex, sB⟩ A :⟨.im, sA⟩ Δ2) n C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
     Typed Δ3 (.prj C m n .im) C.[m/]
 
   | prj_ex {Δ1 Δ2 Δ3 A B C m n s sA sB sC iC} :

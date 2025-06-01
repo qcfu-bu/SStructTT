@@ -183,8 +183,8 @@ lemma Typed.renaming {Δ Δ' : Ctx Srt} {A m ξ} :
     have ty := Typed.app_ex mrg tym tyn
     asimp at ty; assumption
   case tup_im tyS tym tyn ih =>
-    replace tym := ih agr; asimp at tym
-    replace tyn := tyn.renaming agr.toStatic; asimp at tyn
+    replace tym := tym.renaming agr.toStatic; asimp at tym
+    replace tyn := ih agr; asimp at tyn
     replace tyS := tyS.renaming agr.toStatic; asimp at tyS
     constructor <;> (asimp; assumption)
   case tup_ex mrg tyS tym tyn ihm ihn =>
@@ -199,7 +199,7 @@ lemma Typed.renaming {Δ Δ' : Ctx Srt} {A m ξ} :
     have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg
     replace tyC := tyC.renaming (agr.toStatic.cons tyS); asimp at tyC
     replace tym := ihm agr1; asimp at tym
-    replace tyn := ihn ((agr2.cons .ex tyA).cons .im tyB)
+    replace tyn := ihn ((agr2.cons .im tyA).cons .ex tyB)
     rw[show C.[.tup (.var 1) (.var 0) .im s .: shift 2].[ren (upren (upren ξ))]
           = C.[up (ren ξ)].[.tup (.var 1) (.var 0) .im s .: shift 2]
         by asimp] at tyn
