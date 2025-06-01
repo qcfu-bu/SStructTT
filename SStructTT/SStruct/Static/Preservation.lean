@@ -137,7 +137,7 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
       . apply Typed.prj tyC (ihm st) tyn
       . apply tyC.subst tym
     case prj_N => apply Typed.prj <;> aesop
-    case prj_elim m1 m2 s =>
+    case prj_elim m1 m2 r s =>
       have ⟨tym1, tym2, _, _⟩ := tym.tup_inv; subst_vars
       rw[show C.[.tup m1 m2 r s/]
             = C.[.tup (.var 1) (.var 0) r s .: shift 2].[m2,m1/] by asimp]

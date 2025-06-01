@@ -27,13 +27,13 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
   | app_im {Δ A B m n s} :
     Typed Δ m (.pi A B .im s) ->
     Δ.static ⊢ n : A ->
-    Typed Δ (.app m n .im) B.[n/]
+    Typed Δ (.app m n) B.[n/]
 
   | app_ex {Δ1 Δ2 Δ3 A B m n s} :
     Merge Δ1 Δ2 Δ3 ->
     Typed Δ1 m (.pi A B .ex s) ->
     Typed Δ2 n A ->
-    Typed Δ3 (.app m n .ex) B.[n/]
+    Typed Δ3 (.app m n) B.[n/]
 
   | tup_im {Δ A B m n s i} :
     Δ.static ⊢ .sig A B .im s : .srt s i ->
@@ -53,14 +53,14 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
     .sig A B .im s :: Δ3.static ⊢ C : .srt sC iC ->
     Typed Δ1 m (.sig A B .im s) ->
     Typed (B :⟨.ex, sB⟩ A :⟨.im, sA⟩ Δ2) n C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
-    Typed Δ3 (.prj C m n .im) C.[m/]
+    Typed Δ3 (.prj C m n) C.[m/]
 
   | prj_ex {Δ1 Δ2 Δ3 A B C m n s sA sB sC iC} :
     Merge Δ1 Δ2 Δ3 ->
     .sig A B .ex s :: Δ3.static ⊢ C : .srt sC iC ->
     Typed Δ1 m (.sig A B .ex s) ->
     Typed (B :⟨.ex, sB⟩ A :⟨.ex, sA⟩ Δ2) n C.[.tup (.var 1) (.var 0) .ex s .: shift 2] ->
-    Typed Δ3 (.prj C m n .ex) C.[m/]
+    Typed Δ3 (.prj C m n) C.[m/]
 
   | tt {Δ} :
     Wf Δ ->

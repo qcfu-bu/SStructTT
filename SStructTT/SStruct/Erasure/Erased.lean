@@ -29,13 +29,13 @@ where
   | app_im {Δ A B m m' n s} :
     Erased Δ m m' (.pi A B .im s) ->
     Δ.static ⊢ n : A ->
-    Erased Δ (.app m n .im) (.app m' .null) B.[n/]
+    Erased Δ (.app m n) (.app m' .null) B.[n/]
 
   | app_ex {Δ1 Δ2 Δ3 A B m m' n n' s} :
     Merge Δ1 Δ2 Δ3 ->
     Erased Δ1 m m' (.pi A B .ex s) ->
     Erased Δ2 n n' A ->
-    Erased Δ3 (.app m n .ex) (.app m' n') B.[n/]
+    Erased Δ3 (.app m n) (.app m' n') B.[n/]
 
   | tup_im {Δ : Ctx Srt} {A B m n n' s i} :
     Δ.static ⊢ .sig A B .im s : .srt s i ->
@@ -55,14 +55,14 @@ where
     .sig A B .im s :: Δ3.static ⊢ C : .srt sC iC ->
     Erased Δ1 m m' (.sig A B .im s) ->
     Erased (B :⟨.ex, sB⟩ A :⟨.im, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
-    Erased Δ3 (.prj C m n .im) (.prj m' n') C.[m/]
+    Erased Δ3 (.prj C m n) (.prj m' n') C.[m/]
 
   | prj_ex {Δ1 Δ2 Δ3 A B C m m' n n' s sA sB sC iC} :
     Merge Δ1 Δ2 Δ3 ->
     .sig A B .ex s :: Δ3.static ⊢ C : .srt sC iC ->
     Erased Δ1 m m' (.sig A B .ex s) ->
     Erased (B :⟨.ex, sB⟩ A :⟨.ex, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .ex s .: shift 2] ->
-    Erased Δ3 (.prj C m n .ex) (.prj m' n') C.[m/]
+    Erased Δ3 (.prj C m n) (.prj m' n') C.[m/]
 
   | tt {Δ} :
     Wf Δ ->
@@ -108,6 +108,10 @@ lemma Erased.toDynamic {Δ : Ctx Srt} {A m m'} :
     Δ ⊢ m ▷ m' :: A -> Δ ⊢ m :: A := by
   intro ty; induction ty
   all_goals try (constructor <;> assumption)
+  case app_ex =>
+    apply Typed.app_ex <;> assumption
+  case prj_ex =>
+    apply Typed.prj_ex <;> assumption
   apply Typed.conv <;> assumption
 
 lemma Erased.toStatic {Δ : Ctx Srt} {A m m'} :
@@ -298,12 +302,12 @@ lemma Typed.toErased {Δ : Ctx Srt} {A m} :
   case prj_im sA SB _ _ rs _ _ _ _ ihm ihn =>
     have ⟨m', erm⟩ := ihm
     have ⟨n', ern⟩ := ihn
-    existsi .prj m' n'; constructor
+    existsi .prj m' n'; apply Erased.prj_im
     all_goals aesop
   case prj_ex sA sB _ _ rsA rsB _ _ _ _ ihm ihn =>
     have ⟨m', erm⟩ := ihm
     have ⟨n', ern⟩ := ihn
-    existsi .prj m' n'; constructor
+    existsi .prj m' n'; apply Erased.prj_ex
     all_goals aesop
   case tt => existsi .tt; constructor <;> aesop
   case ff => existsi .ff; constructor <;> aesop

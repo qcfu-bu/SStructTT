@@ -75,7 +75,7 @@ theorem Typed.progress {m A : Tm Srt} :
   case app_im n _ tym tyn ih =>
     match ih with
     | .inl ⟨m, _⟩ =>
-      left; existsi Tm.app m n .im
+      left; existsi Tm.app m n
       constructor; assumption
     | .inr vl =>
       have ⟨_, m, _⟩ := tym.pi_canonical Conv.R vl
@@ -84,12 +84,12 @@ theorem Typed.progress {m A : Tm Srt} :
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; existsi Tm.app m n .ex
+      left; existsi Tm.app m n
       constructor; assumption
     | .inr vl =>
       match ihn with
       | .inl ⟨n, _⟩ =>
-        left; existsi Tm.app m n .ex
+        left; existsi Tm.app m n
         constructor; assumption
       | .inr _ =>
         have ⟨_, m, _⟩ := tym.pi_canonical Conv.R vl
@@ -117,7 +117,7 @@ theorem Typed.progress {m A : Tm Srt} :
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; existsi Tm.prj C m n .im
+      left; existsi Tm.prj C m n
       constructor; assumption
     | .inr vl =>
       have ⟨m1, m2, _⟩ := tym.sig_canonical Conv.R vl
@@ -127,7 +127,7 @@ theorem Typed.progress {m A : Tm Srt} :
     cases mrg; simp_all
     match ihm with
     | .inl ⟨m, _⟩ =>
-      left; existsi Tm.prj C m n .ex
+      left; existsi Tm.prj C m n
       constructor; assumption
     | .inr vl =>
       have ⟨m1, m2, _⟩ := tym.sig_canonical Conv.R vl

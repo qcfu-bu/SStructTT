@@ -106,10 +106,10 @@ lemma Erased.preservation0 {A m1 : SStruct.Tm Srt} {m2 m2'} :
     case tup_N => constructor <;> aesop
   case prj_im mrg tyC erm ern ihm ihn =>
     subst_vars; simp_all; cases mrg; cases st
-    constructor <;> aesop
+    apply Erased.prj_im <;> aesop
   case prj_ex mrg tyC erm ern ihm ihn =>
     subst_vars; simp_all; cases mrg; cases st
-    constructor <;> aesop
+    apply Erased.prj_ex <;> aesop
   case ite mrg tyA erm ern1 ern2 ihm ihn1 ihn2 =>
     subst_vars; simp_all; cases mrg; cases st
     constructor <;> aesop
@@ -156,8 +156,8 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
     subst_vars; cases st
     case app_M st =>
       have ⟨m, st, erm⟩ := ih ⟨_, rd1, st⟩
-      existsi .app m n .im; and_intros
-      . apply Red1.app_im st
+      existsi .app m n; and_intros
+      . apply Red1.app_M st
       . apply Erased.app_im erm tyn
     case app_N st => cases st
     case beta vl e0 =>
@@ -167,7 +167,7 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
         replace ⟨sA, erm⟩ := erm.lam_im_inv
         existsi m.[n/]; and_intros
         . apply Star1.SE_join
-          apply Red.app_im rd
+          apply Red.app rd Star.R
           constructor
         . apply erm.subst_im tyn
       | ex =>
@@ -183,16 +183,16 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
     subst_vars; cases st
     case app_M st' =>
       have ⟨m2, st, erm⟩ := ihm ⟨_, rd1, st'⟩
-      existsi (.app m2 n1 .ex); and_intros
-      . apply Red1.app_ex_M st
+      existsi (.app m2 n1); and_intros
+      . apply Red1.app_M st
       . apply Erased.app_ex Merge.nil erm ern
     case app_N st' =>
       have ⟨_, _, tyP⟩ := erm.validity
       have ⟨_, _, _, tyB, _⟩ := tyP.pi_inv
       have ⟨n2, st, ern2⟩ := ihn ⟨_, rd2, st'⟩
       have rd := Red.toStatic ern.toStatic st.toStar
-      existsi (.app m1 n2 .ex); and_intros
-      . apply Red1.app_ex_N st
+      existsi (.app m1 n2); and_intros
+      . apply Red1.app_N st
       . apply Erased.conv
         apply Static.Conv.subst1
         apply (Star.conv (Red.toStatic ern.toStatic st.toStar)).sym
@@ -215,7 +215,7 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
         have ⟨s, i, tyB⟩ := erm.validity
         existsi m.[v/]; and_intros
         . apply Star1.SE_join
-          apply Red.app_ex rd st
+          apply Red.app rd st
           constructor; aesop
         . have ty := erm.subst_ex (Lower.nil sA) Merge.nil tyv
           apply Erased.conv
@@ -271,7 +271,7 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
     subst_vars; cases st
     case prj_M st' =>
       have ⟨m1, st, erm1⟩ := ihm ⟨_, rd1, st'⟩
-      existsi .prj C m1 n .im; and_intros
+      existsi .prj C m1 n; and_intros
       . apply Red1.prj st
       . apply Erased.conv
         . apply Static.Conv.subst1
@@ -319,7 +319,7 @@ theorem Erased.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
     subst_vars; cases st
     case prj_M st' =>
       have ⟨m1, st, erm1⟩ := ihm ⟨_, rd1, st'⟩
-      existsi .prj C m1 n .ex; and_intros
+      existsi .prj C m1 n; and_intros
       . apply Red1.prj st
       . apply Erased.conv
         . apply Static.Conv.subst1

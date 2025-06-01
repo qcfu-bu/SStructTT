@@ -11,10 +11,10 @@ variable {Srt : Type}
   | .srt _ i => .ty i
   | .pi A B _ _ => .pi (interp A) (interp B)
   | .lam A m _ _ => .lam (interp A) (interp m)
-  | .app m n _ => .app (interp m) (interp n)
+  | .app m n => .app (interp m) (interp n)
   | .sig A B _ _ => .sig (interp A) (interp B)
   | .tup m n _ _ => .tup (interp m) (interp n)
-  | .prj A m n _ => .prj (interp A) (interp m) (interp n)
+  | .prj A m n => .prj (interp A) (interp m) (interp n)
   | .bool => .bool
   | .tt => .tt
   | .ff => .ff

@@ -13,11 +13,11 @@ inductive HeadSim : Tm Srt -> Tm Srt -> Prop where
     HeadSim B1 B2 ->
     HeadSim (.pi A1 B1 r s) (.pi A2 B2 r s)
   | lam {A m r s} : HeadSim (.lam A m r s) (.lam A m r s)
-  | app {m n r} : HeadSim (.app m n r) (.app m n r)
+  | app {m n} : HeadSim (.app m n) (.app m n)
   | sig {A1 A2 B1 B2 r s} :
     HeadSim (.sig A1 B1 r s) (.sig A2 B2 r s)
   | tup {m n r s} : HeadSim (.tup m n r s) (.tup m n r s)
-  | prj {A m n r} : HeadSim (.prj A m n r) (.prj A m n r)
+  | prj {A m n} : HeadSim (.prj A m n) (.prj A m n)
   | bool : HeadSim .bool .bool
   | tt : HeadSim .tt .tt
   | ff : HeadSim .ff .ff
@@ -233,9 +233,9 @@ lemma Typed.lam_unique {Γ : Ctx Srt} {A B C m r s} :
     apply Sim.trans_left <;> assumption
 
 lemma Typed.app_unique {Γ : Ctx Srt} {A B C m n r s} :
-    Γ ⊢ .app m n r : C ->
+    Γ ⊢ .app m n : C ->
     (∀ {C}, Γ ⊢ m : C -> Sim (.pi A B r s) C) -> Sim B.[n/] C := by
-  generalize e: Tm.app m n r = x
+  generalize e: Tm.app m n = x
   intro ty; induction ty generalizing m n
   all_goals try trivial
   case app tym _ _ _ =>
@@ -273,10 +273,10 @@ lemma Typed.tup_unique {Γ : Ctx Srt} {A B C m n r s} :
     apply Sim.trans_left <;> assumption
 
 @[aesop safe (rule_sets := [unique])]
-lemma Typed.prj_unique {Γ : Ctx Srt} {A B m n r} :
-    Γ ⊢ .prj A m n r : B -> Sim A.[m/] B := by
-  generalize e: Tm.prj A m n r = x
-  intro ty; induction ty generalizing A m n r
+lemma Typed.prj_unique {Γ : Ctx Srt} {A B m n} :
+    Γ ⊢ .prj A m n : B -> Sim A.[m/] B := by
+  generalize e: Tm.prj A m n = x
+  intro ty; induction ty generalizing A m n
   all_goals try trivial
   case prj ihA ihm ihn => cases e; apply Sim.refl
   case conv ihm _ =>

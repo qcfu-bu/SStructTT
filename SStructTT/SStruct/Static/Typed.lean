@@ -30,7 +30,7 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
   | app {Γ A B m n r s} :
     Typed Γ m (.pi A B r s) ->
     Typed Γ n A ->
-    Typed Γ (.app m n r) B.[n/]
+    Typed Γ (.app m n) B.[n/]
 
   | sig {Γ A B r s sA sB iA iB} :
     (r = .ex -> sA ≤ s) ->
@@ -49,7 +49,7 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
     Typed (.sig A B r s :: Γ) C (.srt sC iC) ->
     Typed Γ m (.sig A B r s) ->
     Typed (B :: A :: Γ) n C.[.tup (.var 1) (.var 0) r s .: shift 2] ->
-    Typed Γ (.prj C m n r) C.[m/]
+    Typed Γ (.prj C m n) C.[m/]
 
   | bool {Γ} :
     Wf Γ ->

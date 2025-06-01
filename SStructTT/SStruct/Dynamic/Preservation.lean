@@ -12,21 +12,16 @@ lemma Step.toStatic' {A m n : Tm Srt} :
   induction ty generalizing n <;> try trivial
   case app m n _ _ _ _ ihm ihn =>
     subst_vars; cases st
-    case app_im_M st _ =>
+    case app_M st =>
       have ⟨m', st, rd⟩ := ihm rfl st
-      existsi Tm.app m' n .im; and_intros
+      existsi Tm.app m' n; and_intros
       . constructor; assumption
-      . apply Red.app <;> aesop
-    case app_ex_M st _ =>
-      have ⟨m', st, rd⟩ := ihm rfl st
-      existsi Tm.app m' n .ex; and_intros
-      . constructor; assumption
-      . apply Red.app <;> aesop
-    case app_ex_N st _ =>
+      . apply Static.Red.app <;> aesop
+    case app_N st =>
       have ⟨n', st, rd⟩ := ihn rfl st
-      existsi Tm.app m n' .ex; and_intros
+      existsi Tm.app m n'; and_intros
       . constructor; assumption
-      . apply Red.app <;> aesop
+      . apply Static.Red.app <;> aesop
     case beta_im m _ _ =>
       existsi m.[n/]; and_intros <;> constructor
     case beta_ex m _ _ _ =>
@@ -50,19 +45,14 @@ lemma Step.toStatic' {A m n : Tm Srt} :
       . apply Red.tup <;> aesop
   case prj C m n _ _ _ _ _ _ _ _ ihm ihn =>
     subst_vars; cases st
-    case prj_im_M st _ _ _ _ =>
+    case prj_M st =>
       have ⟨m', st, rd⟩ := ihm rfl st
-      existsi Tm.prj C m' n .im; and_intros
+      existsi Tm.prj C m' n; and_intros
       . constructor; assumption
       . apply Static.Red.prj <;> aesop
-    case prj_ex_M st _ _ _ _ =>
-      have ⟨m', st, rd⟩ := ihm rfl st
-      existsi Tm.prj C m' n .ex; and_intros
-      . constructor; assumption
-      . apply Static.Red.prj <;> aesop
-    case prj_im_elim m1 m2 _ _ _ _ _ _ =>
+    case prj_im_elim m1 m2 _ _ _ =>
       existsi n.[m2,m1/]; and_intros <;> constructor
-    case prj_ex_elim m1 m2 _ _ _ _ _ _ =>
+    case prj_ex_elim m1 m2 _ _ _ =>
       existsi n.[m2,m1/]; and_intros <;> constructor
   case ite A m n1 n2 _ _ _ _ _ _ _ ihm ihn1 ihn2 =>
     subst_vars; cases st
@@ -112,18 +102,32 @@ theorem Typed.preservation {A m m' : Tm Srt} :
   all_goals try trivial
   case app_im m n s tym tyn ih =>
     subst_vars; cases st
-    case app_im_M st =>
+    case app_M st =>
       have tym' := ih rfl st
       apply Typed.app_im tym' tyn
+    case app_N st =>
+      have ⟨_, _, tyP⟩ := tym.validity
+      have ⟨_, _, _, tyB, _⟩ := tyP.pi_inv
+      have rd := st.toStatic tyn
+      apply Typed.conv
+      . apply Conv.subst1
+        apply (Star.conv (st.toStatic tyn)).sym
+      . apply Typed.app_im
+        . assumption
+        . apply tyn.preservation' rd
+      . apply tyB.subst tyn
     case beta_im =>
       replace ⟨sA, tym⟩ := tym.lam_im_inv
       apply tym.subst_im tyn
+    case beta_ex =>
+      have ⟨_, _, _, eq⟩ := tym.lam_ex_inv'
+      have ⟨e, _⟩ := Static.Conv.pi_inj eq; cases e
   case app_ex mrg tym tyn ihm ihn =>
     subst_vars; cases mrg; cases st
-    case app_ex_M st =>
+    case app_M st =>
       have tym' := ihm rfl st
       apply Typed.app_ex Merge.nil tym' tyn
-    case app_ex_N st =>
+    case app_N st =>
       have ⟨_, _, tyP⟩ := tym.validity
       have ⟨_, _, _, tyB, _⟩ := tyP.pi_inv
       have rd := st.toStatic tyn.toStatic
@@ -135,6 +139,9 @@ theorem Typed.preservation {A m m' : Tm Srt} :
         . assumption
         . apply ihn rfl st
       . apply tyB.subst tyn.toStatic
+    case beta_im =>
+      have ⟨_, _, _, eq⟩ := tym.lam_im_inv'
+      have ⟨e, _⟩ := Static.Conv.pi_inj eq; cases e
     case beta_ex =>
       replace ⟨sA, tym⟩ := tym.lam_ex_inv
       apply tym.subst_ex (Lower.nil sA) Merge.nil tyn
@@ -169,7 +176,7 @@ theorem Typed.preservation {A m m' : Tm Srt} :
       . apply ihn rfl st
   case prj_im C m n s sA sB sC iC mrg tyC tym tyn ihm _ =>
     subst_vars; cases mrg; cases st
-    case prj_im_M st =>
+    case prj_M st =>
       apply Typed.conv
       . apply Conv.subst1
         apply (Star.conv (st.toStatic tym.toStatic)).sym
@@ -183,14 +190,20 @@ theorem Typed.preservation {A m m' : Tm Srt} :
       apply AgreeSubst.intro_ex Merge.nil; constructor; assumption
       apply AgreeSubst.intro_im; asimp; assumption
       apply AgreeSubst.refl Wf.nil
+    case prj_ex_elim =>
+      have ⟨_, _, _, _, _, _, _, eq⟩ := tym.tup_ex_inv'
+      have ⟨e, _⟩ := Static.Conv.sig_inj eq; cases e
   case prj_ex C m n s sA sB sC iC mrg tyC tym tyn ihm ihn =>
     subst_vars; cases mrg; cases st
-    case prj_ex_M st =>
+    case prj_M st =>
       apply Typed.conv
       . apply Conv.subst1
         apply (Star.conv (st.toStatic tym.toStatic)).sym
       . apply Typed.prj_ex Merge.nil tyC (ihm rfl st) tyn
       . apply tyC.subst tym.toStatic
+    case prj_im_elim =>
+      have ⟨_, _, _, _, eq⟩ := tym.tup_im_inv'
+      have ⟨e, _⟩ := Static.Conv.sig_inj eq; cases e
     case prj_ex_elim m1 m2 s vl =>
       have ⟨Δ1, Δ2, mrg, tym1, tym2, _⟩ := tym.tup_ex_inv; subst_vars
       cases mrg

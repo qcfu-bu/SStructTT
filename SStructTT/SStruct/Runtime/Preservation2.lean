@@ -47,7 +47,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
-        existsi Hx, .app a' n .im, .app b' .null; and_intros
+        existsi Hx, .app a' n, .app b' .null; and_intros
         . assumption
         . constructor
           . constructor <;> assumption
@@ -55,7 +55,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             apply mrg1.sym
             assumption
             assumption
-        . apply Red1.app_im st1
+        . apply Red1.app_M st1
         . constructor; assumption
       case app_N st => cases st
       case beta mx s lf cl np lk =>
@@ -82,7 +82,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . apply erm.subst_im tyn
           . apply rsm.mergι_contra mrg4.sym ct
         . apply Star1.SE_join
-          . apply Dynamic.Red.app_im rd
+          . apply Dynamic.Red.app rd Star.R
           . constructor
         . constructor
           constructor
@@ -100,7 +100,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
-        existsi Hx, .app a' n0 .ex, .app b' n1; and_intros
+        existsi Hx, .app a' n0, .app b' n1; and_intros
         . assumption
         . constructor
           . apply Erased.app_ex Merge.nil <;> assumption
@@ -108,7 +108,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             apply mrg1.sym
             assumption
             assumption
-        . apply Red1.app_ex_M st1
+        . apply Red1.app_M st1
         . constructor; assumption
       case app_N st =>
         clear ihm
@@ -117,7 +117,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         clear ihn
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
         have tyn1 := tyn0.preservation' (Red.toStatic tyn0 st1.toStar)
-        existsi Hx, .app m0 a' .ex, .app m1 b'; and_intros
+        existsi Hx, .app m0 a', .app m1 b'; and_intros
         . assumption
         . constructor
           . apply Erased.conv
@@ -126,7 +126,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             apply Erased.app_ex Merge.nil erm er'
             apply tyB.subst tyn0
           . apply Resolve.app mrg1 <;> assumption
-        . apply Red1.app_ex_N st1
+        . apply Red1.app_N st1
         . constructor; assumption
       case beta mx s lf cl np lk =>
         clear ihm ihn; cases np
@@ -165,7 +165,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
               apply tyB.subst tyn0
             . assumption
           . apply Star1.SE_join
-            apply Dynamic.Red.app_ex rd rd2
+            apply Dynamic.Red.app rd rd2
             constructor; assumption
           . constructor; assumption
         case null =>
@@ -249,7 +249,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
-        existsi Hx, .prj C a' n0 .im, .prj b' n1; and_intros
+        existsi Hx, .prj C a' n0, .prj b' n1; and_intros
         . assumption
         . constructor
           . apply Erased.conv
@@ -332,7 +332,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihm rfl mrg3.sym rsm st
         clear ihm
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
-        existsi Hx, .prj C a' n0 .ex, .prj b' n1; and_intros
+        existsi Hx, .prj C a' n0, .prj b' n1; and_intros
         . assumption
         . constructor
           . apply Erased.conv

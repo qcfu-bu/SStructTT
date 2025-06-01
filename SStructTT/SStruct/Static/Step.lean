@@ -35,14 +35,14 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
   | lam_M A {m m'} r s :
     Step m m' ->
     Step (.lam A m r s) (.lam A m' r s)
-  | app_M {m m'} n r :
+  | app_M {m m'} n :
     Step m m' ->
-    Step (.app m n r) (.app m' n r)
-  | app_N m {n n'} r :
+    Step (.app m n) (.app m' n)
+  | app_N m {n n'} :
     Step n n' ->
-    Step (.app m n r) (.app m n' r)
+    Step (.app m n) (.app m n')
   | beta A m n r s :
-    Step (.app (.lam A m r s) n r) m.[n/]
+    Step (.app (.lam A m r s) n) m.[n/]
   | sig_A {A A'} B r s :
     Step A A' ->
     Step (.sig A B r s) (.sig A' B r s)
@@ -55,17 +55,17 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
   | tup_N m {n n'} r s :
     Step n n' ->
     Step (.tup m n r s) (.tup m n' r s)
-  | prj_A {A A'} m n r :
+  | prj_A {A A'} m n :
     Step A A' ->
-    Step (.prj A m n r) (.prj A' m n r)
-  | prj_M A {m m'} n r :
+    Step (.prj A m n) (.prj A' m n)
+  | prj_M A {m m'} n :
     Step m m' ->
-    Step (.prj A m n r) (.prj A m' n r)
-  | prj_N A m {n n'} r :
+    Step (.prj A m n) (.prj A m' n)
+  | prj_N A m {n n'} :
     Step n n' ->
-    Step (.prj A m n r) (.prj A m n' r)
+    Step (.prj A m n) (.prj A m n')
   | prj_elim A m1 m2 n r s :
-    Step (.prj A (.tup m1 m2 r s) n r) n.[m2,m1/]
+    Step (.prj A (.tup m1 m2 r s) n) n.[m2,m1/]
   | ite_A {A A'} m n1 n2 :
     Step A A' ->
     Step (.ite A m n1 n2) (.ite A' m n1 n2)
