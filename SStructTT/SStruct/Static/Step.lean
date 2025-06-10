@@ -108,4 +108,5 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
 
 notation:50 m:50 " ~> " n:50 => Step m n
 notation:50 m:50 " ~>* " n:50 => ARS.Star Step m n
+notation:50 m:50 " ~>1 " n:50 => ARS.Star1 Step m n
 notation:50 m:50 " === " n:50 => ARS.Conv Step m n

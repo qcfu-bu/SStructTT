@@ -6,63 +6,63 @@ open ARS SStruct.Static
 namespace SStruct.Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-lemma Step.toStatic' {A m n : Tm Srt} :
-    [] ⊢ m : A -> m ~>> n -> ∃ x, m ~> x ∧ x ~>* n := by
+lemma Step.toStatic1 {A m n : Tm Srt} :
+    [] ⊢ m : A -> m ~>> n -> m ~>1 n := by
   generalize e: [] = Γ; intro ty st;
   induction ty generalizing n <;> try trivial
   case app m n _ _ _ _ ihm ihn =>
     subst_vars; cases st
     case app_M st =>
-      have ⟨m', st, rd⟩ := ihm rfl st
-      existsi Tm.app m' n; and_intros
-      . constructor; assumption
+      have ⟨m', st, rd⟩ := (ihm rfl st).ES_split
+      apply Star1.ES_join
+      . apply Static.Step.app_M; assumption
       . apply Static.Red.app <;> aesop
     case app_N st =>
-      have ⟨n', st, rd⟩ := ihn rfl st
-      existsi Tm.app m n'; and_intros
-      . constructor; assumption
+      have ⟨n', st, rd⟩ := (ihn rfl st).ES_split
+      apply Star1.ES_join
+      . apply Static.Step.app_N; assumption
       . apply Static.Red.app <;> aesop
     case beta_im m _ _ =>
-      existsi m.[n/]; and_intros <;> constructor
+      apply Star1.E; constructor
     case beta_ex m _ _ _ =>
-      existsi m.[n/]; and_intros <;> constructor
+      apply Star1.E; constructor
   case tup m n _ s _ _ _ _ _ ihm ihn =>
     subst_vars; cases st
     case tup_im_N st _ _ =>
-      have ⟨n', st, rd⟩ := ihn rfl st
-      existsi Tm.tup m n' .im s; and_intros
-      . constructor; assumption
-      . apply Red.tup <;> aesop
+      have ⟨n', st, rd⟩ := (ihn rfl st).ES_split
+      apply Star1.ES_join
+      . apply Static.Step.tup_N; assumption
+      . apply Static.Red.tup <;> aesop
     case tup_ex_M st _ _ =>
-      have ⟨m', st, rd⟩ := ihm rfl st
-      existsi Tm.tup m' n .ex s; and_intros
-      . constructor; assumption
-      . apply Red.tup <;> aesop
+      have ⟨m', st, rd⟩ := (ihm rfl st).ES_split
+      apply Star1.ES_join
+      . apply Static.Step.tup_M; assumption
+      . apply Static.Red.tup <;> aesop
     case tup_ex_N st _ _ =>
-      have ⟨n', st, rd⟩ := ihn rfl st
-      existsi Tm.tup m n' .ex s; and_intros
-      . constructor; assumption
-      . apply Red.tup <;> aesop
+      have ⟨n', st, rd⟩ := (ihn rfl st).ES_split
+      apply Star1.ES_join
+      . apply Static.Step.tup_N; assumption
+      . apply Static.Red.tup <;> aesop
   case prj C m n _ _ _ _ _ _ _ _ ihm ihn =>
     subst_vars; cases st
     case prj_M st =>
-      have ⟨m', st, rd⟩ := ihm rfl st
-      existsi Tm.prj C m' n; and_intros
-      . constructor; assumption
+      have ⟨m', st, rd⟩ := (ihm rfl st).ES_split
+      apply Star1.ES_join
+      . apply Static.Step.prj_M; assumption
       . apply Static.Red.prj <;> aesop
     case prj_im_elim m1 m2 _ _ _ =>
-      existsi n.[m2,m1/]; and_intros <;> constructor
+      apply Star1.E; constructor
     case prj_ex_elim m1 m2 _ _ _ =>
-      existsi n.[m2,m1/]; and_intros <;> constructor
+      apply Star1.E; constructor
   case ite A m n1 n2 _ _ _ _ _ _ _ ihm ihn1 ihn2 =>
     subst_vars; cases st
     case ite_M st =>
-      have ⟨m', st, rd⟩ := ihm rfl st
-      existsi Tm.ite A m' n1 n2; and_intros
-      . constructor; assumption
+      have ⟨m', st, rd⟩ := (ihm rfl st).ES_split
+      apply Star1.ES_join
+      . apply Static.Step.ite_M; assumption
       . apply Static.Red.ite <;> aesop
-    case ite_tt => existsi n1; and_intros <;> constructor
-    case ite_ff => existsi n2; and_intros <;> constructor
+    case ite_tt => apply Star1.E; constructor
+    case ite_ff => apply Star1.E; constructor
   case rw A B m n _ _ _ _ _ _ tyn _ ihm ihn =>
     subst_vars
     have ⟨n', vl, rd⟩ := Static.Typed.red_value tyn
@@ -70,10 +70,10 @@ lemma Step.toStatic' {A m n : Tm Srt} :
     have ⟨a', _⟩ := tyn'.idn_canonical Conv.R vl; subst_vars
     cases st
     match Star.ES_split rd with
-    | .inl _ => subst_vars; existsi m; and_intros <;> constructor
+    | .inl _ => subst_vars; apply Star1.E; constructor
     | .inr ⟨n', st, rd⟩ =>
-      existsi Tm.rw A m n'; and_intros
-      . constructor; assumption
+      apply Star1.ES_join
+      . apply Static.Step.rw_N; assumption
       . apply Star.trans
         apply Red.rw Star.R Star.R rd
         apply Star.one; constructor
@@ -82,8 +82,7 @@ lemma Step.toStatic' {A m n : Tm Srt} :
 lemma Step.toStatic {A m n : Tm Srt} :
     ([] : Static.Ctx Srt) ⊢ m : A -> m ~>> n -> m ~>* n := by
   intro ty st
-  have ⟨x, st, rd⟩ := st.toStatic' ty
-  apply Star.ES <;> assumption
+  apply (st.toStatic1 ty).toStar
 
 lemma Red.toStatic {A m n : Tm Srt} :
     ([] : Static.Ctx Srt) ⊢ m : A -> m ~>>* n -> m ~>* n := by
