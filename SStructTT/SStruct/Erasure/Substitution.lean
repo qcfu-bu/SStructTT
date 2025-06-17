@@ -85,7 +85,7 @@ lemma AgreeSubst.has {Δ Δ' : Ctx Srt} {A x s σ σ'} :
       rcases wf with _ | ⟨_, wf⟩
       rcases hs with _ | @⟨_, A, x, s, hs⟩; asimp
       rw[show A.[σ !> shift 1] = A.[σ].[shift 1] by asimp]
-      apply Erased.eweaken <;> try first | rfl | assumption
+      apply Erased.eweaken_im <;> try first | rfl | assumption
       apply ih <;> assumption
   case intro_im ih =>
     rcases hs with _ | @⟨_, A, x, s, hs⟩; asimp

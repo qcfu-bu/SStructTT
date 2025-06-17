@@ -118,7 +118,7 @@ lemma Erased.renaming {Δ Δ' : Ctx Srt} {A m m' ξ} :
     . assumption
     . assumption
 
-lemma Erased.weaken {Δ : Dynamic.Ctx Srt} {A B m m' s i} :
+lemma Erased.weaken_im {Δ : Dynamic.Ctx Srt} {A B m m' s i} :
     Δ ⊢ m ▷ m' :: A ->
     Δ.static ⊢ B : .srt s i ->
     B :⟨.im, s⟩ Δ ⊢ m.[shift 1] ▷ m'.[shift 1] :: A.[shift 1] := by
@@ -128,7 +128,32 @@ lemma Erased.weaken {Δ : Dynamic.Ctx Srt} {A B m m' s i} :
   . assumption
   . exact AgreeRen.refl erm.toWf
 
-lemma Erased.eweaken {Δ1 Δ2 : Dynamic.Ctx Srt} {A1 A2 B m1 m2 n1 n2 s i} :
+lemma Erased.weaken_ex {Δ : Dynamic.Ctx Srt} {A B m m' s i} :
+    Δ ⊢ m ▷ m' :: A ->
+    Δ.static ⊢ B : .srt s i ->
+    s ∈ ord.weaken_set ->
+    B :⟨.ex, s⟩ Δ ⊢ m.[shift 1] ▷ .drop (.var 0) m'.[shift 1] :: A.[shift 1] := by
+  intro erm tyB h
+  have mrg : Merge (B :⟨.im, s⟩ Δ) (B :⟨.ex, s⟩ Δ.toImplicit) (B :⟨.ex, s⟩ Δ) := by
+    constructor; apply Merge.self
+  replace erm := erm.weaken_im tyB
+  have ⟨i, wf, tyB⟩ := erm.ctx_inv
+  apply Erased.drop
+  . apply mrg.sym
+  . constructor
+    apply ord.le_refl
+    apply Lower.implicit
+    apply Implicit.toImplicit
+  . apply h
+  . apply Erased.var
+    constructor
+    . rw[Implicit.static]; assumption
+    . apply wf.implicit
+    . constructor
+      apply Implicit.toImplicit
+  . apply erm
+
+lemma Erased.eweaken_im {Δ1 Δ2 : Dynamic.Ctx Srt} {A1 A2 B m1 m2 n1 n2 s i} :
     Δ2 = B :⟨.im, s⟩ Δ1 ->
     m2 = m1.[shift 1] ->
     n2 = n1.[shift 1] ->
@@ -137,4 +162,4 @@ lemma Erased.eweaken {Δ1 Δ2 : Dynamic.Ctx Srt} {A1 A2 B m1 m2 n1 n2 s i} :
     Δ1.static ⊢ B : .srt s i ->
     Δ2 ⊢ m2 ▷ n2 :: A2 := by
   intros; subst_vars
-  apply Erased.weaken <;> assumption
+  apply Erased.weaken_im <;> assumption
