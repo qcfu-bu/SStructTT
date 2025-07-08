@@ -11,7 +11,7 @@ maxHeartbeats = 0
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
-rev = "v4.19.0"
+rev = "v4.21.0"
 
 [[lean_lib]]
 name = "SStructTT"

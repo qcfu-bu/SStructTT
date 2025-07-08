@@ -38,7 +38,7 @@ lemma Heap.fresh (H : Heap Srt) : ∃ l, l ∉ H := by
   | coe x =>
     existsi x + 1
     simp[<-Finmap.mem_keys,e1]
-    apply keys.not_mem_of_max_lt _ e2
+    apply keys.notMem_of_max_lt _ e2
     simp
 
 omit ord in
