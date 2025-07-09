@@ -33,7 +33,7 @@ The sort-order **SO4** gives us the following:
 
 ## Organizational Structure
 - **SStructTT/**
-  - **Basics/**: Basic definitions (autorewrite system and σ-substitution calculus).
+  - **Basics/**: Basic definitions (abstract rewrite system and σ-substitution calculus).
   - **MartinLof/**: Formalization of Martin-Löf Type Theory (axiomatized strong normalization).
   - **SStruct/**
     - **Static/**: Logical level theories. 
