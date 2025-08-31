@@ -31,7 +31,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . apply mrg0.insert_contra
             assumption
           . apply SubHeap.insert
-            simp[<-Finmap.mem_keys,h2]
+            simp[h2]
             assumption
           . constructor
             . apply Erased.lam_im <;> assumption
@@ -70,7 +70,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . apply mrg0.insert_contra
             assumption
           . apply SubHeap.insert
-            simp[<-Finmap.mem_keys,h2]
+            simp[h2]
             assumption
           . constructor
             . apply Erased.lam_ex <;> assumption
@@ -190,7 +190,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . apply mrg0.insert_contra
             assumption
           . apply SubHeap.insert
-            simp[<-Finmap.mem_keys,h2]
+            simp[h2]
             assumption
           . constructor
             . apply Erased.tup_im <;> assumption
@@ -264,7 +264,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . apply mrg0.insert_contra
             assumption
           . apply SubHeap.insert
-            simp[<-Finmap.mem_keys,h2]
+            simp[h2]
             assumption
           . constructor
             . apply Erased.tup_ex Merge.nil <;> assumption

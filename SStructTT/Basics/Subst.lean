@@ -151,7 +151,7 @@ attribute [asimp] rename_subst subst_id id_subst subst_comp
   funext x
   cases x with
   | zero => simp[asimp]
-  | succ => simp[scomp, asimp]
+  | succ => simp[asimp]
 
 @[asimp]lemma ids_comp (σ : Var -> T) : ids !> σ = σ := by
   funext x

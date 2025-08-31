@@ -369,7 +369,7 @@ lemma HMerge.union_contra {H0 H1 H2 H3 : Heap Srt} :
       case h_2 heq1 heq2 heq3 =>
         rw[Finmap.lookup_union_left]
         rw[Finmap.lookup_union_right]
-        simp[heq1,heq2]
+        simp[heq1]
         have h0 := dsj _ h0
         rw[<-Finmap.lookup_eq_none] at h0
         simp[h0,mrg]
@@ -378,7 +378,7 @@ lemma HMerge.union_contra {H0 H1 H2 H3 : Heap Srt} :
       case h_3 heq1 heq2 =>
         rw[Finmap.lookup_union_right]
         rw[Finmap.lookup_union_left]
-        simp[heq1,heq2]
+        simp[heq1]
         have h0 := dsj _ h0
         rw[<-Finmap.lookup_eq_none] at h0
         simp[h0,mrg]

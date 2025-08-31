@@ -231,7 +231,7 @@ lemma HLookup.merge {H1 H1' H2 H3 : Heap Srt} {l m} :
             contradiction
           case h_2 e h1 h2 =>
             rcases mrg with ⟨_, _⟩
-            cases e; simp[h1,h2,e]
+            cases e; simp[h1]
         | isFalse ne =>
           simp[Finmap.lookup_erase_ne ne]
           assumption
