@@ -24,8 +24,8 @@ The sort-order **SO4** gives us the following:
 | unbound  | yes         | yes       | U    |
 
 ## Dependencies
-- Lean 4 toolchain (v4.19.0)
-- [Mathlib4](https://github.com/leanprover-community/mathlib4) (v4.19.0)
+- Lean 4 toolchain (v4.22.0)
+- [Mathlib4](https://github.com/leanprover-community/mathlib4) (v4.22.0)
 
 ## Build Instructions
 1. Fetch cache for Mathlib4 with `lake exec get cache`.
