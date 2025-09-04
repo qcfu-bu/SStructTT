@@ -236,7 +236,7 @@ lemma HLookup.merge {H1 H1' H2 H3 : Heap Srt} {l m} :
           simp[Finmap.lookup_erase_ne ne]
           assumption
 
-lemma HLookup.contra_image {H H' : Heap Srt} {l m} :
+lemma HLookup.shareable_image {H H' : Heap Srt} {l m} :
     HLookup H l m H' -> Shareable H -> Shareable H' := by
   intro lk
   unfold HLookup at lk
@@ -380,7 +380,7 @@ lemma Resolve.closed_preimage {H : Heap Srt} {m m' i} :
   intro rs cl; induction rs generalizing i
   all_goals simp_all
 
-lemma Resolve.insert_contra {H : Heap Srt} {l m m' v} :
+lemma Resolve.insert_shareable {H : Heap Srt} {l m m' v} :
     H ;; m ▷ m' -> v.srt ∈ ord.contra_set -> l ∉ H ->
     H.insert l v ;; m ▷ m' := by
   intro rs h nn; induction rs
@@ -394,7 +394,7 @@ lemma Resolve.insert_contra {H : Heap Srt} {l m m' v} :
     replace ihm := ihm nn1
     replace ihn := ihn nn2
     constructor
-    apply mrg.insert_contra h
+    apply mrg.insert_shareable h
     assumption
     assumption
   case tup mrg rsm rsn ihm ihn =>
@@ -402,7 +402,7 @@ lemma Resolve.insert_contra {H : Heap Srt} {l m m' v} :
     replace ihm := ihm nn1
     replace ihn := ihn nn2
     constructor
-    apply mrg.insert_contra h
+    apply mrg.insert_shareable h
     assumption
     assumption
   case prj mrg rsm rsn ihm ihn =>
@@ -410,7 +410,7 @@ lemma Resolve.insert_contra {H : Heap Srt} {l m m' v} :
     replace ihm := ihm nn1
     replace ihn := ihn nn2
     constructor
-    apply mrg.insert_contra h
+    apply mrg.insert_shareable h
     assumption
     assumption
   case tt ct => constructor; apply ct.insert h; rfl
@@ -421,7 +421,7 @@ lemma Resolve.insert_contra {H : Heap Srt} {l m m' v} :
     replace ihn1 := ihn1 nn2
     replace ihn2 := ihn2 nn2
     constructor
-    apply mrg.insert_contra h
+    apply mrg.insert_shareable h
     assumption
     assumption
     assumption
@@ -430,7 +430,7 @@ lemma Resolve.insert_contra {H : Heap Srt} {l m m' v} :
     replace ihm := ihm nn1
     replace ihn := ihn nn2
     constructor
-    apply mrg.insert_contra h
+    apply mrg.insert_shareable h
     assumption
     assumption
   case ptr lk rs ih =>
@@ -441,18 +441,18 @@ lemma Resolve.insert_contra {H : Heap Srt} {l m m' v} :
     . assumption
   case null ct => constructor; apply ct.insert h; rfl
 
-lemma Resolve.mergι_contra {H1 H2 H3 : Heap Srt} {m m'} :
+lemma Resolve.merge_shareable {H1 H2 H3 : Heap Srt} {m m'} :
     HMerge H1 H2 H3 -> Shareable H2 -> H1 ;; m ▷ m' -> H3 ;; m ▷ m' := by
   intro mrg ct2 rsm; induction rsm generalizing H2 H3
   case var H1 x ct1 =>
-    have ct := mrg.contra_image ct1 ct2
+    have ct := mrg.shareable_image ct1 ct2
     constructor; assumption
   case lam ct1 rsm ihm =>
     replace ihm := ihm mrg ct2
     constructor
     . intro h
       replace ct1 := ct1 h
-      apply mrg.contra_image ct1 ct2
+      apply mrg.shareable_image ct1 ct2
     . assumption
   case app Ha Hb H1 _ _ _ _ mrg1 rsm rsn ihm ihn =>
     have mrg2 := ct2.merge_refl
@@ -473,10 +473,10 @@ lemma Resolve.mergι_contra {H1 H2 H3 : Heap Srt} {m m'} :
     replace ihn := ihn mrgb ct2
     constructor <;> assumption
   case tt ct1 =>
-    have ct := mrg.contra_image ct1 ct2
+    have ct := mrg.shareable_image ct1 ct2
     constructor; assumption
   case ff ct1 =>
-    have ct := mrg.contra_image ct1 ct2
+    have ct := mrg.shareable_image ct1 ct2
     constructor; assumption
   case ite Ha Hb H1 _ _ _ _ _ _ mrg1 rsm rsn1 rsn2 ihm ihn1 ihn2 =>
     have mrg2 := ct2.merge_refl
@@ -494,7 +494,7 @@ lemma Resolve.mergι_contra {H1 H2 H3 : Heap Srt} {m m'} :
     replace ih := ih mrg1 ct2
     constructor <;> assumption
   case null ct1 =>
-    have lw := mrg.contra_image ct1 ct2
+    have lw := mrg.shareable_image ct1 ct2
     constructor; assumption
 
 lemma Resolve.subheap {H1 H2 : Heap Srt} {m m'} :
@@ -507,7 +507,7 @@ lemma Resolve.subheap {H1 H2 : Heap Srt} {m m'} :
     constructor
     . intro h
       replace hyp := hyp h
-      apply sb.contra_image hyp
+      apply sb.shareable_image hyp
     . aesop
   case app mrg rsm rsn ihm ihn =>
     have ⟨H1p, H2p, sb1, sb2, mrg⟩ := mrg.split_subheap sb
@@ -541,7 +541,7 @@ lemma Resolve.subheap {H1 H2 : Heap Srt} {m m'} :
     rcases sb with ⟨H0, ct0, dsj, un⟩; subst un
     constructor; apply ct.union ct0
 
-lemma HLookup.contra_tt {H H' : Heap Srt} {l} :
+lemma HLookup.shareable_tt {H H' : Heap Srt} {l} :
     HLookup H l .tt H' -> H = H' := by
   intro lk
   unfold HLookup at lk
@@ -550,7 +550,7 @@ lemma HLookup.contra_tt {H H' : Heap Srt} {l} :
   simp[ord.ι_contra] at lk
   assumption
 
-lemma HLookup.contra_ff {H H' : Heap Srt} {l} :
+lemma HLookup.shareable_ff {H H' : Heap Srt} {l} :
     HLookup H l .ff H' -> H = H' := by
   intro lk
   unfold HLookup at lk
@@ -636,7 +636,7 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
     case tup mrg rsm rsn =>
       have ⟨ct1, _⟩ := rsm.null_inv; subst_vars
       have ct2 := ihn rsn (tyB.subst tym) (ord.contra_set.lower le h)
-      apply mrg.contra_image ct1 ct2
+      apply mrg.shareable_image ct1 ct2
     case ptr H l m lk rs =>
       have ifq := lk.lookup
       cases m
@@ -645,7 +645,7 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
         have ⟨ct1, _⟩ := rsm.null_inv
         have ct2 := ihn rsn (tyB.subst tym) (ord.contra_set.lower le h)
         simp[h] at ifq; subst_vars
-        apply mrg.contra_image ct1 ct2
+        apply mrg.shareable_image ct1 ct2
       case tup rsm _ =>
         have ⟨_, e⟩ := rsm.null_inv; cases e
   case tup_ex erm ern ihm ihn mrg _ =>
@@ -657,7 +657,7 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
     case tup mrg rsm rsn =>
       have ct1 := ihm rsm tyA (ord.contra_set.lower le1 h)
       have ct2 := ihn rsn (tyB.subst erm.toStatic) (ord.contra_set.lower le2 h)
-      apply mrg.contra_image ct1 ct2
+      apply mrg.shareable_image ct1 ct2
     case ptr l m lk rs =>
       have ifq := lk.lookup
       cases m
@@ -669,7 +669,7 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
         have ct1 := ihm rsm tyA (ord.contra_set.lower le1 h)
         have ct2 := ihn rsn (tyB.subst erm.toStatic) (ord.contra_set.lower le2 h)
         simp[h] at ifq; subst_vars
-        apply mrg.contra_image ct1 ct2
+        apply mrg.shareable_image ct1 ct2
   case tt => have ct := rs.tt_inv; aesop
   case ff => have ct := rs.ff_inv; aesop
   case rw tyA erm tyn ihm =>

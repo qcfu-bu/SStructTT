@@ -21,7 +21,7 @@ lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
     have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
     existsi H5x; and_intros
     . assumption
-    . apply mrg7.contra_image ct3 ct4
+    . apply mrg7.shareable_image ct3 ct4
   case tup mrg0 rsm rsn ihm ihn =>
     cases dp; case tup dp1 dp2 =>
     have ⟨H1x, mrg1, mrg2⟩ := mrg.split mrg0.sym
@@ -31,7 +31,7 @@ lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
     have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
     existsi H5x; and_intros
     . assumption
-    . apply mrg7.contra_image ct3 ct4
+    . apply mrg7.shareable_image ct3 ct4
   case prj mrg0 rsm rsn ihm ihn =>
     cases dp; case prj dp1 dp2 =>
     have ⟨H1x, mrg1, mrg2⟩ := mrg.split mrg0.sym
@@ -41,7 +41,7 @@ lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
     have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
     existsi H5x; and_intros
     . assumption
-    . apply mrg7.contra_image ct3 ct4
+    . apply mrg7.shareable_image ct3 ct4
   case tt => cases dp; aesop
   case ff => cases dp; aesop
   case ite mrg0 rsm1 rsn1 rsn2 ihm ihn1 ihn2 =>
@@ -54,7 +54,7 @@ lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
     have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
     existsi H5x; and_intros
     . assumption
-    . apply mrg7.contra_image ct3 ct4
+    . apply mrg7.shareable_image ct3 ct4
   case drop mrg0 rsm rsn ihm ihn =>
     cases dp; case drop dp1 dp2 =>
     have ⟨H1x, mrg1, mrg2⟩ := mrg.split mrg0.sym
@@ -64,7 +64,7 @@ lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
     have ⟨H5x, mrg7, mrg8⟩ := mrg6.sym.split mrg4.sym
     existsi H5x; and_intros
     . assumption
-    . apply mrg7.contra_image ct3 ct4
+    . apply mrg7.shareable_image ct3 ct4
   case null H1 _ => cases dp; aesop
   case ptr lk1 rs ih =>
     cases dp; case ptr lk2 dp =>
@@ -163,7 +163,7 @@ lemma Resolve.drop_safeX {H1 H2 H3 : Heap Srt} {m m'} :
 lemma Resolve.drop_safe {H1 : Heap Srt} {m m'} :
     H1 ;; m ▷ m' -> ∃ H1', Drop H1 m H1' := by
   intro rs
-  have ⟨H0, mrg, ct⟩ := HMerge.exists_self_contra H1
+  have ⟨H0, mrg, ct⟩ := HMerge.exists_self_shareable H1
   have ⟨H1', H3', dp, mrg⟩ := rs.drop_safeX mrg
-  have e := mrg.self_contra ct; subst e
+  have e := mrg.self_shareable ct; subst e
   existsi H1'; assumption

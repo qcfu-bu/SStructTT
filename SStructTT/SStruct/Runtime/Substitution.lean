@@ -79,7 +79,7 @@ lemma AgreeSubst.implicit_image {Δ : Ctx Srt} {H σ σ' x} :
     apply ih; apply im
   case intro_ex => simp at im
 
-lemma AgreeSubst.contra_image {Δ : Ctx Srt} {H σ σ' x s} :
+lemma AgreeSubst.shareable_image {Δ : Ctx Srt} {H σ σ' x s} :
     AgreeSubst σ σ' x Δ H -> Lower Δ s -> (s ∈ ord.contra_set -> Shareable H) := by
   intro agr lw; induction agr generalizing s
   case nil => intro; assumption
@@ -90,7 +90,7 @@ lemma AgreeSubst.contra_image {Δ : Ctx Srt} {H σ σ' x s} :
     cases lw; case ex le lw =>
     have ct1 := ih lw h
     replace ct2 := hw2 (ord.contra_set.lower le h)
-    apply mrg.contra_image ct1 ct2
+    apply mrg.shareable_image ct1 ct2
 
 lemma AgreeSubst.subst_var {Δ : Ctx Srt} {H σ σ' i x} :
     AgreeSubst σ σ' i Δ H -> x < i -> .var x = σ' x := by
@@ -189,7 +189,7 @@ lemma AgreeSubst.has {Δ : Ctx Srt} {H σ σ' x i s A} :
     cases hs; case nil im =>
     asimp
     have ct := agr.implicit_image im
-    apply rsm.mergι_contra mrg.sym ct
+    apply rsm.merge_shareable mrg.sym ct
 
 lemma AgreeSubst.split {Δ1 Δ2 Δ3 : Ctx Srt} {H3 σ σ' x} :
     AgreeSubst σ σ' x Δ3 H3 -> Merge Δ1 Δ2 Δ3 ->
@@ -273,17 +273,17 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
     asimp; cases rs
     case var ct =>
       asimp
-      apply Resolve.mergι_contra mrg.sym ct
+      apply Resolve.merge_shareable mrg.sym ct
       apply agr.has hs
     case ptr l m h rsm =>
       cases m
       all_goals simp_all[Cell.tm]; cases rsm
   case lam_im Δ A B m m' s sA iA lw tyA erm ihm =>
-    have ct2 := agr.contra_image lw
+    have ct2 := agr.shareable_image lw
     asimp; cases rs
     case lam erm ct1 =>
       asimp
-      have ct3 := mrg.split_contra_hyp ct1 ct2
+      have ct3 := mrg.split_shareable_hyp ct1 ct2
       replace ihm := ihm erm mrg agr.cons
       apply Resolve.lam ct3 ihm
     case ptr l x lk rsm =>
@@ -299,15 +299,15 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
         have agr : AgreeSubst (up σ) (up σ') (x + 1) (A :⟨.im, sA⟩ Δ) H2 := by
           apply AgreeSubst.cons; assumption
         rw[<-agr.closed_subst cl1 (by simp)]
-        apply Resolve.mergι_contra mrg ct
+        apply Resolve.merge_shareable mrg ct
         apply Resolve.ptr lk
         constructor <;> assumption
   case lam_ex Δ A B m m' s sA iA lw tyA erm ihm =>
-    have ct2 := agr.contra_image lw
+    have ct2 := agr.shareable_image lw
     asimp; cases rs
     case lam erm ct1 =>
       asimp
-      have ct3 := mrg.split_contra_hyp ct1 ct2
+      have ct3 := mrg.split_shareable_hyp ct1 ct2
       replace ihm := ihm erm mrg agr.cons
       apply Resolve.lam ct3 ihm
     case ptr l x lk rsm =>
@@ -323,7 +323,7 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
         have agr : AgreeSubst (up σ) (up σ') (x + 1) (A :⟨.im, sA⟩ Δ) H2 := by
           apply AgreeSubst.cons; assumption
         rw[<-agr.closed_subst cl1 (by simp)]
-        apply Resolve.mergι_contra mrg ct
+        apply Resolve.merge_shareable mrg ct
         apply Resolve.ptr lk
         constructor <;> assumption
   case app_im A B m m' n s erm tyn ihm =>
@@ -364,7 +364,7 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
         have im := (ern.closed_stack cl).toImplicit
         have ct := agr.implicit_image im
         rw[<-agr.closed_subst cl (by simp)]
-        apply Resolve.mergι_contra mrg ct
+        apply Resolve.merge_shareable mrg ct
         apply Resolve.ptr lk; simp[Cell.tm]
         constructor <;> assumption
       case tup rs _ =>
@@ -392,7 +392,7 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
         have ct := agr.implicit_image im
         rw[<-agr.closed_subst cl1 (by simp)]
         rw[<-agr.closed_subst cl2 (by simp)]
-        apply Resolve.mergι_contra mrg ct
+        apply Resolve.merge_shareable mrg ct
         apply Resolve.ptr lk
         constructor <;> assumption
   case prj_im mrg0 tyC erm ern ihm ihn =>
@@ -421,26 +421,26 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
     have ct2 := agr.implicit_image im
     asimp; cases rs
     case tt ct1 =>
-      asimp; apply Resolve.tt (mrg.contra_image ct1 ct2)
+      asimp; apply Resolve.tt (mrg.shareable_image ct1 ct2)
     case ptr x lk rsm =>
       cases x
       all_goals simp_all[Cell.tm]; cases rsm
       case tt =>
         asimp
-        apply Resolve.mergι_contra mrg ct2
+        apply Resolve.merge_shareable mrg ct2
         apply Resolve.ptr lk
         constructor; assumption
   case ff im =>
     have ct2 := agr.implicit_image im
     asimp; cases rs
     case ff ct1 =>
-      asimp; apply Resolve.ff (mrg.contra_image ct1 ct2)
+      asimp; apply Resolve.ff (mrg.shareable_image ct1 ct2)
     case ptr x lk rsm =>
       cases x
       all_goals simp_all[Cell.tm]; cases rsm
       case ff =>
         asimp
-        apply Resolve.mergι_contra mrg ct2
+        apply Resolve.merge_shareable mrg ct2
         apply Resolve.ptr lk
         constructor; assumption
   case ite mrg0 tyA erm ern1 ern2 ihm ihn1 ihn2 =>
@@ -461,7 +461,7 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
     case drop mrg1 rsm rsn =>
       have ⟨Ha, Hb, mrg2, agr1, agr2⟩ := agr.split mrg0
       have ⟨H1', H2', mrg3, mrg1', mrg2'⟩ := mrg.distr mrg1 mrg2
-      replace ct0 := agr1.contra_image lw0
+      replace ct0 := agr1.shareable_image lw0
       replace ihm := ihm rsm mrg1' agr1
       replace ihn := ihn rsn mrg2' agr2
       asimp; apply Resolve.drop mrg3 ihm ihn

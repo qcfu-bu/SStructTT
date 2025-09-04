@@ -181,7 +181,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       have ⟨H0, mrg1, mrg2⟩ := mrg0.split mrg1.sym
       have ⟨Hx, mrgx, ct⟩ := dp.resolve rsm mrg2.sym
       have ⟨Hy, mrg1', mrg2'⟩ := mrgx.sym.split mrg1
-      have rsn := rsn.mergι_contra mrg1' ct
+      have rsn := rsn.merge_shareable mrg1' ct
       existsi Hy, n'; and_intros
       . assumption
       . constructor <;> assumption
@@ -201,9 +201,9 @@ lemma Resolved.preservation0 {H H' : Heap Srt} {a b c c' A} :
     [] ;; H ⊢ a ▷ b ◁ c :: A -> Step0 (H, c) (H', c') ->
     ∃ b', [] ;; H' ⊢ a ▷ b' ◁ c' :: A ∧ Erasure.Step0 b b' := by
   intro rs st
-  have ⟨H0, mrg, ct⟩ := HMerge.exists_self_contra H
+  have ⟨H0, mrg, ct⟩ := HMerge.exists_self_shareable H
   have ⟨H0', b', mrg', rs'⟩ := rs.preservation0X mrg st
-  have e := mrg'.self_contra ct; subst e
+  have e := mrg'.self_shareable ct; subst e
   existsi b'; simp_all
 
 lemma Resolved.preservation0' {H H' : Heap Srt} {a b c c' A} :

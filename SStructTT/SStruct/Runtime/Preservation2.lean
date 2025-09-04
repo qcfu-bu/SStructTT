@@ -68,7 +68,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         have ⟨_, _, eq⟩ := rs1.toStatic.lam_inv'
         have ⟨e, _⟩ := Static.Conv.pi_inj eq; subst e
         have ⟨sA, erm⟩ := rs1.lam_im_inv
-        have ⟨H0, mrg0, ct0⟩ := HMerge.exists_self_contra Hy
+        have ⟨H0, mrg0, ct0⟩ := HMerge.exists_self_shareable Hy
         have rsm := Resolved.intro erm rs0
         have rsm : Hy ;; mx.[.null/] ▷ m0.[.null/] := by
           apply rsm.substitution
@@ -80,7 +80,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . assumption
         . constructor
           . apply erm.subst_im tyn
-          . apply rsm.mergι_contra mrg4.sym ct
+          . apply rsm.merge_shareable mrg4.sym ct
         . apply Star1.SE_join
           . apply Dynamic.Red.app rd Star.R
           . constructor
@@ -144,7 +144,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           have vl1 := rsn.ptr_value
           have ⟨n2, rd2, vl2, ern1⟩ := ern.value_preimage vl1
           have hyp := (Resolved.intro ern rsn).resolution tyA vl1
-          have ⟨H0, mrg, ct⟩ := HMerge.exists_self_contra H2'
+          have ⟨H0, mrg, ct⟩ := HMerge.exists_self_shareable H2'
           have rsm : Hz ;; mx.[.ptr lp/] ▷ m0.[n1/] := by
             apply rsm.substitution
             . apply mrg4.sym
@@ -376,7 +376,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         have hyp2 := (Resolved.intro erv2 rs2).resolution (tyB.subst tymx) vln
         have rdv1' := Red.toStatic tymx rdv1
         have rdv2' := Red.toStatic ernx.toStatic rdv2
-        have ⟨Hm', mrg, ct⟩ := HMerge.exists_self_contra Hm
+        have ⟨Hm', mrg, ct⟩ := HMerge.exists_self_shareable Hm
         have eq : m0 === (.tup v1 v2 .ex s) := by
           apply Star.conv
           apply Star.trans (Red.toStatic erm.toStatic rd1)
@@ -449,7 +449,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . constructor; assumption
       case ite_tt l lk =>
         clear ihm
-        have e := lk.contra_tt; subst e
+        have e := lk.shareable_tt; subst e
         have ⟨Hx, rsx, mrgx⟩ := rsm.lookup mrg3.sym lk
         cases rsx
         have ct := rsm.tt_inv
@@ -462,14 +462,14 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             apply (Star.conv (Red.toStatic erm.toStatic rd)).sym
             assumption
             apply tyA.subst erm.toStatic
-          . apply rsn1.mergι_contra mrg1.sym ct
+          . apply rsn1.merge_shareable mrg1.sym ct
         . apply Star1.SE_join
           apply Red.ite rd
           constructor
         . constructor
       case ite_ff l lk =>
         clear ihm
-        have e := lk.contra_ff; subst e
+        have e := lk.shareable_ff; subst e
         have ⟨Hx, rsx, mrgx⟩ := rsm.lookup mrg3.sym lk
         cases rsx
         have ct := rsm.ff_inv
@@ -482,7 +482,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             apply (Star.conv (Red.toStatic erm.toStatic rd)).sym
             assumption
             apply tyA.subst erm.toStatic
-          . apply rsn2.mergι_contra mrg1.sym ct
+          . apply rsn2.merge_shareable mrg1.sym ct
         . apply Star1.SE_join
           apply Red.ite rd
           constructor
@@ -523,7 +523,7 @@ lemma Resolved.preservation2 {H1 H2 : Heap Srt} {a b c c' A} :
     [] ;; H1 ⊢ a ▷ b ◁ c :: A -> Step2 (H1, c) (H2, c') ->
     ∃ a' b', [] ;; H2 ⊢ a' ▷ b' ◁ c' :: A ∧ a ~>>1 a' ∧ Erasure.Step1 b b' := by
   intro rsm st
-  have ⟨H0, mrg, ct⟩ := HMerge.exists_self_contra H1
+  have ⟨H0, mrg, ct⟩ := HMerge.exists_self_shareable H1
   have ⟨H1', a', b', mrg', rsm', rd, st⟩ := rsm.preservation2X mrg st
-  have e := mrg'.self_contra ct; subst e
+  have e := mrg'.self_shareable ct; subst e
   existsi a', b'; simp_all

@@ -28,7 +28,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         if h3: s ∈ ord.contra_set then
           replace ct := hyp h3
           existsi H1.insert l (.clo x s cl), H2.insert l (.clo x s cl); and_intros
-          . apply mrg0.insert_contra
+          . apply mrg0.insert_shareable
             assumption
           . apply SubHeap.insert
             simp[h2]
@@ -42,7 +42,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
               . constructor
                 intro; apply ct.insert; assumption
                 simp[Cell.srt]
-                apply rsx.insert_contra (by aesop) h1
+                apply rsx.insert_shareable (by aesop) h1
         else
           existsi H1.insert l (.clo x s cl), H2; and_intros
           . apply mrg0.insert_left
@@ -67,7 +67,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         if h3: s ∈ ord.contra_set then
           replace ct := hyp h3
           existsi H1.insert l (.clo x s cl), H2.insert l (.clo x s cl); and_intros
-          . apply mrg0.insert_contra
+          . apply mrg0.insert_shareable
             assumption
           . apply SubHeap.insert
             simp[h2]
@@ -80,7 +80,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
                 . simp[Cell.srt,h3]; rfl
               . constructor
                 intro; apply ct.insert; assumption; rfl
-                apply rsx.insert_contra (by aesop) h1
+                apply rsx.insert_shareable (by aesop) h1
         else
           existsi H1.insert l (.clo x s cl), H2; and_intros
           . apply mrg0.insert_left
@@ -120,7 +120,6 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         case ptr => cases st
         case null => cases st
     case ptr => cases st
-
   case app_ex mrg1 erm ern ihm ihn =>
     subst_vars; cases mrg1; cases rs
     case app mrg2 rsm rsn =>
@@ -187,7 +186,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           existsi H1.insert l (.box l1 s)
           existsi H2.insert l (.box l1 s)
           and_intros
-          . apply mrg0.insert_contra
+          . apply mrg0.insert_shareable
             assumption
           . apply SubHeap.insert
             simp[h2]
@@ -198,9 +197,9 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
               . simp[HLookup]; and_intros
                 . rfl
                 . simp[Cell.srt,h3]; rfl
-              . apply Resolve.tup (mrg1.insert_contra (by aesop))
-                apply rsm.insert_contra (by aesop) h1'
-                apply rsn.insert_contra (by aesop) h2'
+              . apply Resolve.tup (mrg1.insert_shareable (by aesop))
+                apply rsm.insert_shareable (by aesop) h1'
+                apply rsn.insert_shareable (by aesop) h2'
         else
           existsi H1.insert l (.box l1 s), H2; and_intros
           . apply mrg0.insert_left
@@ -261,7 +260,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           existsi H1.insert l (.tup l1 l2 s)
           existsi H2.insert l (.tup l1 l2 s)
           and_intros
-          . apply mrg0.insert_contra
+          . apply mrg0.insert_shareable
             assumption
           . apply SubHeap.insert
             simp[h2]
@@ -272,9 +271,9 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
               . simp[HLookup]; and_intros
                 . rfl
                 . simp[Cell.srt,h3]; rfl
-              . apply Resolve.tup (mrg2.insert_contra (by aesop))
-                apply rsm.insert_contra (by aesop) h1'
-                apply rsn.insert_contra (by aesop) h2'
+              . apply Resolve.tup (mrg2.insert_shareable (by aesop))
+                apply rsm.insert_shareable (by aesop) h1'
+                apply rsn.insert_shareable (by aesop) h2'
         else
           existsi H1.insert l (.tup l1 l2 s), H2; and_intros
           . apply mrg0.insert_left
@@ -339,7 +338,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi H1.insert l .tt
         existsi H2.insert l .tt
         and_intros
-        . apply mrg0.insert_contra
+        . apply mrg0.insert_shareable
           simp[Cell.srt]; apply ord.ι_contra
         . apply SubHeap.intro (Finmap.singleton l .tt)
           apply Shareable.empty.insert ord.ι_contra (by aesop)
@@ -368,7 +367,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi H1.insert l .ff
         existsi H2.insert l .ff
         and_intros
-        . apply mrg0.insert_contra
+        . apply mrg0.insert_shareable
           simp[Cell.srt]; apply ord.ι_contra
         . apply SubHeap.intro (Finmap.singleton l .ff)
           apply Shareable.empty.insert ord.ι_contra (by aesop)
@@ -440,10 +439,10 @@ lemma Resolved.preservation1 {H1 H2 : Heap Srt} {a b c c' A} :
     [] ;; H1 ⊢ a ▷ b ◁ c :: A -> Step1 (H1, c) (H2, c') ->
     [] ;; H2 ⊢ a ▷ b ◁ c' :: A := by
   intro rsm st
-  have ⟨H0, mrg, ct⟩ := HMerge.exists_self_contra H1
+  have ⟨H0, mrg, ct⟩ := HMerge.exists_self_shareable H1
   have ⟨H1', H2', mrg', sb, rsm'⟩ := rsm.preservation1X mrg st
-  have ct := sb.contra_image ct
-  have e := mrg'.self_contra ct; subst e
+  have ct := sb.shareable_image ct
+  have e := mrg'.self_shareable ct; subst e
   assumption
 
 lemma Resolved.preservation1' {H1 H2 : Heap Srt} {a b c c' A} :

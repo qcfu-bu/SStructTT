@@ -669,5 +669,5 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
 lemma Resolved.normal_poised {H : Heap Srt} {a b c A} :
     [] ;; H ⊢ a ▷ b ◁ c :: A -> Normal Step01 (H, c) -> Poised c := by
   intro rs norm
-  have ⟨H0, mrg, ct⟩ := HMerge.exists_self_contra H
+  have ⟨H0, mrg, ct⟩ := HMerge.exists_self_shareable H
   apply rs.normal_poisedX mrg norm
