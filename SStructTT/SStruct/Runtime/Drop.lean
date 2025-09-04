@@ -8,7 +8,7 @@ variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
     Drop H3 m H4 -> H1 ;; m ▷ m' -> HMerge H1 H2 H3 ->
-    ∃ H0, HMerge H0 H2 H4 ∧ Contra H0 := by
+    ∃ H0, HMerge H0 H2 H4 ∧ Sharable H0 := by
   intro dp rs mrg; induction rs generalizing H2 H3 H4
   case var => cases dp; aesop
   case lam => cases dp; aesop

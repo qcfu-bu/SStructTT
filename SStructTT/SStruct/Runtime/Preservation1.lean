@@ -342,7 +342,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . apply mrg0.insert_contra
           simp[Cell.srt]; apply ord.ι_contra
         . apply SubHeap.intro (Finmap.singleton l .tt)
-          apply Contra.empty.insert ord.ι_contra (by aesop)
+          apply Sharable.empty.insert ord.ι_contra (by aesop)
           rw[Finmap.Disjoint.eq_1]; intros; aesop
           apply Finmap.ext_lookup; intro x
           if e: x = l then
@@ -371,7 +371,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . apply mrg0.insert_contra
           simp[Cell.srt]; apply ord.ι_contra
         . apply SubHeap.intro (Finmap.singleton l .ff)
-          apply Contra.empty.insert ord.ι_contra (by aesop)
+          apply Sharable.empty.insert ord.ι_contra (by aesop)
           rw[Finmap.Disjoint.eq_1]; intros; aesop
           apply Finmap.ext_lookup; intro x
           if e: x = l then
