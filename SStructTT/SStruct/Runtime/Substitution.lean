@@ -52,7 +52,7 @@ inductive AgreeSubst :
   (Var -> Tm Srt) -> (Var -> Tm Srt) -> Nat -> Ctx Srt -> Heap Srt -> Prop
 where
   | nil {H σ σ'} :
-    Sharable H ->
+    Shareable H ->
     AgreeSubst σ σ' 0 [] H
   | cons {Δ H σ σ' A x r s} :
     AgreeSubst σ σ' x Δ H ->
@@ -61,14 +61,14 @@ where
     AgreeSubst σ σ' 0 Δ H ->
     AgreeSubst (m .: σ) (m' .: σ') 0 (A :⟨.im, s⟩ Δ) H
   | intro_ex {Δ H1 H2 H3 σ σ' m m' A s} :
-    (s ∈ ord.contra_set -> Sharable H2) ->
+    (s ∈ ord.contra_set -> Shareable H2) ->
     HMerge H1 H2 H3 ->
     H2 ;; m ▷ m' ->
     AgreeSubst σ σ' 0 Δ H1 ->
     AgreeSubst (m .: σ) (m' .: σ') 0 (A :⟨.ex, s⟩ Δ) H3
 
 lemma AgreeSubst.implicit_image {Δ : Ctx Srt} {H σ σ' x} :
-    AgreeSubst σ σ' x Δ H -> Implicit Δ -> Sharable H := by
+    AgreeSubst σ σ' x Δ H -> Implicit Δ -> Shareable H := by
   intro agr im; induction agr
   case nil => assumption
   case cons ih =>
@@ -80,7 +80,7 @@ lemma AgreeSubst.implicit_image {Δ : Ctx Srt} {H σ σ' x} :
   case intro_ex => simp at im
 
 lemma AgreeSubst.contra_image {Δ : Ctx Srt} {H σ σ' x s} :
-    AgreeSubst σ σ' x Δ H -> Lower Δ s -> (s ∈ ord.contra_set -> Sharable H) := by
+    AgreeSubst σ σ' x Δ H -> Lower Δ s -> (s ∈ ord.contra_set -> Shareable H) := by
   intro agr lw; induction agr generalizing s
   case nil => intro; assumption
   case cons => cases lw <;> aesop

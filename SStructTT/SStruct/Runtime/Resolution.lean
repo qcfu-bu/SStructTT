@@ -17,11 +17,11 @@ def HLookup (H1 : Heap Srt) (l : Nat) (m : Cell Srt) (H2 : Heap Srt) : Prop :=
 
 inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
   | var {H x} :
-    Sharable H ->
+    Shareable H ->
     Resolve H (.var x) (.var x)
 
   | lam {H m m' s} :
-    (s ∈ ord.contra_set -> Sharable H) ->
+    (s ∈ ord.contra_set -> Shareable H) ->
     Resolve H m m' ->
     Resolve H (.lam m s) (.lam m' s)
 
@@ -44,11 +44,11 @@ inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
     Resolve H3 (.prj m n) (.prj m' n')
 
   | tt {H} :
-    Sharable H ->
+    Shareable H ->
     Resolve H .tt .tt
 
   | ff {H} :
-    Sharable H ->
+    Shareable H ->
     Resolve H .ff .ff
 
   | ite {H1 H2 H3 m m' n1 n1' n2 n2'} :
@@ -70,7 +70,7 @@ inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
     Resolve H1 (.ptr l) m'
 
   | null {H} :
-    Sharable H ->
+    Shareable H ->
     Resolve H .null .null
 
 notation:50 H:50 " ;; " m:51 " ▷ " m':51 => Resolve H m m'
@@ -237,7 +237,7 @@ lemma HLookup.merge {H1 H1' H2 H3 : Heap Srt} {l m} :
           assumption
 
 lemma HLookup.contra_image {H H' : Heap Srt} {l m} :
-    HLookup H l m H' -> Sharable H -> Sharable H' := by
+    HLookup H l m H' -> Shareable H -> Shareable H' := by
   intro lk
   unfold HLookup at lk
   split at lk <;> try trivial
@@ -442,7 +442,7 @@ lemma Resolve.insert_contra {H : Heap Srt} {l m m' v} :
   case null ct => constructor; apply ct.insert h; rfl
 
 lemma Resolve.mergι_contra {H1 H2 H3 : Heap Srt} {m m'} :
-    HMerge H1 H2 H3 -> Sharable H2 -> H1 ;; m ▷ m' -> H3 ;; m ▷ m' := by
+    HMerge H1 H2 H3 -> Shareable H2 -> H1 ;; m ▷ m' -> H3 ;; m ▷ m' := by
   intro mrg ct2 rsm; induction rsm generalizing H2 H3
   case var H1 x ct1 =>
     have ct := mrg.contra_image ct1 ct2
@@ -560,7 +560,7 @@ lemma HLookup.contra_ff {H H' : Heap Srt} {l} :
   assumption
 
 lemma Resolve.var_inv {H : Heap Srt} {m x} :
-    H ;; m ▷ .var x -> Sharable H := by
+    H ;; m ▷ .var x -> Shareable H := by
   generalize e: Tm.var x = m'
   intro rs; induction rs <;> try trivial
   case ptr l m m' lk rsm ih =>
@@ -568,7 +568,7 @@ lemma Resolve.var_inv {H : Heap Srt} {m x} :
     all_goals simp_all[Cell.tm]; cases rsm
 
 lemma Resolve.lam_inv {H : Heap Srt} {m m' s} :
-    H ;; m ▷ .lam m' s -> (s ∈ ord.contra_set -> Sharable H) := by
+    H ;; m ▷ .lam m' s -> (s ∈ ord.contra_set -> Shareable H) := by
   generalize e: Tm.lam m' s = t
   intro rs; induction rs <;> try trivial
   case lam => cases e; assumption
@@ -582,7 +582,7 @@ lemma Resolve.lam_inv {H : Heap Srt} {m m' s} :
       assumption
 
 lemma Resolve.tt_inv {H : Heap Srt} {m} :
-    H ;; m ▷ .tt -> Sharable H := by
+    H ;; m ▷ .tt -> Shareable H := by
   generalize e: Tm.tt = t
   intro rs; induction rs <;> try trivial
   case ptr l m m' lk rsm ih =>
@@ -593,7 +593,7 @@ lemma Resolve.tt_inv {H : Heap Srt} {m} :
     assumption
 
 lemma Resolve.ff_inv {H : Heap Srt} {m} :
-    H ;; m ▷ .ff -> Sharable H := by
+    H ;; m ▷ .ff -> Shareable H := by
   generalize e: Tm.ff = t
   intro rs; induction rs <;> try trivial
   case ptr l m m' lk rsm ih =>
@@ -604,7 +604,7 @@ lemma Resolve.ff_inv {H : Heap Srt} {m} :
     assumption
 
 lemma Resolve.null_inv {H : Heap Srt} {m} :
-    H ;; m ▷ .null -> Sharable H ∧ m = .null := by
+    H ;; m ▷ .null -> Shareable H ∧ m = .null := by
   generalize e: Tm.null = t
   intro rs; induction rs <;> try trivial
   case ptr l m m' lk rsm ih =>
@@ -613,7 +613,7 @@ lemma Resolve.null_inv {H : Heap Srt} {m} :
 
 theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
     [] ;; H ⊢ x ▷ y ◁ z :: A ->
-    [] ⊢ A : .srt s i -> Value y -> (s ∈ ord.contra_set -> Sharable H) := by
+    [] ⊢ A : .srt s i -> Value y -> (s ∈ ord.contra_set -> Shareable H) := by
   intro ⟨er, rs⟩; revert er
   generalize e1: [] = Γ
   generalize e2: [] = Δ
@@ -721,7 +721,7 @@ end Runtime
 open Runtime
 
 lemma Erased.resolve_init' {H : Heap Srt} {Δ m n A} :
-    Δ ⊢ m ▷ n :: A -> Sharable H -> H ;; n ▷ n := by
+    Δ ⊢ m ▷ n :: A -> Shareable H -> H ;; n ▷ n := by
   intro er ct
   induction er
   case var => constructor; assumption
@@ -783,4 +783,4 @@ lemma Erased.resolve_init' {H : Heap Srt} {Δ m n A} :
 lemma Erased.resolve_init {Δ m n A} :
     Δ ⊢ m ▷ n :: A -> (∅ : Heap Srt) ;; n ▷ n := by
   intro erm
-  apply erm.resolve_init' Sharable.empty
+  apply erm.resolve_init' Shareable.empty

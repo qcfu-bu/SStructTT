@@ -96,16 +96,16 @@ lemma Heap.insert_id {H : Heap Srt} {l t} :
   | isTrue => subst_vars; simp[h]
   | isFalse ne => simp[ne]
 
-def Sharable (H : Heap Srt) : Prop :=
+def Shareable (H : Heap Srt) : Prop :=
   ∀ l,
     match H.lookup l with
     | some m => m.srt ∈ ord.contra_set
     | none => True
 
-lemma Sharable.empty : Sharable (∅ : Heap Srt) := by
+lemma Shareable.empty : Shareable (∅ : Heap Srt) := by
   intro l; simp
 
-lemma Sharable.union {H1 H2 : Heap Srt} : Sharable H1 -> Sharable H2 -> Sharable (H1 ∪ H2) := by
+lemma Shareable.union {H1 H2 : Heap Srt} : Shareable H1 -> Shareable H2 -> Shareable (H1 ∪ H2) := by
   intro ct1 ct2 x
   replace ct1 := ct1 x
   replace ct2 := ct2 x
@@ -114,8 +114,8 @@ lemma Sharable.union {H1 H2 : Heap Srt} : Sharable H1 -> Sharable H2 -> Sharable
     simp at heq
     cases heq <;> aesop
 
-lemma Sharable.insert {H : Heap Srt} {l m s} :
-    Sharable H -> s ∈ ord.contra_set -> m.srt = s -> Sharable (H.insert l m) := by
+lemma Shareable.insert {H : Heap Srt} {l m s} :
+    Shareable H -> s ∈ ord.contra_set -> m.srt = s -> Shareable (H.insert l m) := by
   intro ct h e x
   cases x.decEq l with
   | isTrue =>
@@ -123,14 +123,14 @@ lemma Sharable.insert {H : Heap Srt} {l m s} :
     cases m <;> simp_all
   | isFalse ne => simp[ne]; apply ct
 
-lemma Sharable.invert {H : Heap Srt} {l m} :
-    Sharable (H.insert l m) -> m.srt ∈ ord.contra_set := by
+lemma Shareable.invert {H : Heap Srt} {l m} :
+    Shareable (H.insert l m) -> m.srt ∈ ord.contra_set := by
   intro ct
   replace ct := ct l
   simp at ct; assumption
 
-lemma Sharable.erase {H : Heap Srt} l :
-    Sharable H -> Sharable (H.erase l) := by
+lemma Shareable.erase {H : Heap Srt} l :
+    Shareable H -> Shareable (H.erase l) := by
   intro ct x
   cases x.decEq l with
   | isTrue => aesop
@@ -150,8 +150,8 @@ def HMerge (H1 H2 H3 : Heap Srt) : Prop :=
     | none, none, none => True
     | _, _, _ => False
 
-lemma Sharable.merge_refl {H : Heap Srt} :
-    Sharable H -> HMerge H H H := by
+lemma Shareable.merge_refl {H : Heap Srt} :
+    Shareable H -> HMerge H H H := by
   intro ct1 x
   replace ct1 := ct1 x
   split at ct1
@@ -173,7 +173,7 @@ lemma HMerge.empty_inv {H1 H2 : Heap Srt} : HMerge H1 ∅ H2 -> H1 = H2 := by
   all_goals aesop
 
 lemma HMerge.contra_image {H1 H2 H3 : Heap Srt} :
-    HMerge H1 H2 H3 -> Sharable H1 -> Sharable H2 -> Sharable H3 := by
+    HMerge H1 H2 H3 -> Shareable H1 -> Shareable H2 -> Shareable H3 := by
   intro mrg ct1 ct2 x
   split <;> try simp
   case h_1 opt m h =>
@@ -195,16 +195,16 @@ lemma HMerge.contra_image {H1 H2 H3 : Heap Srt} :
 
 lemma HMerge.split_contra_hyp {H1 H2 H3 : Heap Srt} {s} :
     HMerge H1 H2 H3 ->
-    (s ∈ ord.contra_set -> Sharable H1) ->
-    (s ∈ ord.contra_set -> Sharable H2) ->
-    (s ∈ ord.contra_set -> Sharable H3) := by
+    (s ∈ ord.contra_set -> Shareable H1) ->
+    (s ∈ ord.contra_set -> Shareable H2) ->
+    (s ∈ ord.contra_set -> Shareable H3) := by
   intro mrg h1 h2 h
   replace h1 := h1 h
   replace h2 := h2 h
   apply mrg.contra_image h1 h2
 
 lemma HMerge.split_contra' {H1 H2 H3 : Heap Srt} :
-    HMerge H1 H2 H3 -> Sharable H3 -> Sharable H1 := by
+    HMerge H1 H2 H3 -> Shareable H3 -> Shareable H1 := by
   intro mrg wr l
   replace mrg := mrg l; split at mrg <;> try (solve|aesop)
   case h_2 h1 h2 h3 =>
@@ -212,7 +212,7 @@ lemma HMerge.split_contra' {H1 H2 H3 : Heap Srt} :
     rw[h3] at wr; simp_all
 
 lemma HMerge.split_contra {H1 H2 H3 : Heap Srt} :
-    HMerge H1 H2 H3 -> Sharable H3 -> Sharable H1 ∧ Sharable H2 := by
+    HMerge H1 H2 H3 -> Shareable H3 -> Shareable H1 ∧ Shareable H2 := by
   intro mrg lw
   have lw1 := mrg.split_contra' lw
   have lw2 := mrg.sym.split_contra' lw
@@ -264,7 +264,7 @@ lemma HMerge.insert_contra {H1 H2 H3 : Heap Srt} {l m} :
     apply mrg
 
 lemma HMerge.union_contra {H0 H1 H2 H3 : Heap Srt} :
-    HMerge H1 H2 H3 -> Sharable H0 -> H3.Disjoint H0 ->
+    HMerge H1 H2 H3 -> Shareable H0 -> H3.Disjoint H0 ->
     HMerge (H1 ∪ H0) (H2 ∪ H0) (H3 ∪ H0) := by
   intro mrg ct dsj x
   rw[Finmap.Disjoint.eq_1] at dsj
@@ -331,8 +331,8 @@ lemma HMerge.insert_left {H1 H2 H3 : Heap Srt} l m :
     apply mrg
 
 lemma HLower.split_contra {H3 : Heap Srt} :
-    Sharable H3 ->
-    ∃ H1 H2, Sharable H1 ∧ Sharable H2 ∧ HMerge H1 H2 H3 := by
+    Shareable H3 ->
+    ∃ H1 H2, Shareable H1 ∧ Shareable H2 ∧ HMerge H1 H2 H3 := by
   intro lw
   existsi H3, H3; and_intros
   . assumption
@@ -340,7 +340,7 @@ lemma HLower.split_contra {H3 : Heap Srt} :
   . apply lw.merge_refl
 
 lemma HMerge.self_contra {H1 H2 H3 : Heap Srt} :
-    HMerge H1 H2 H3 -> Sharable H2 -> H1 = H3 := by
+    HMerge H1 H2 H3 -> Shareable H2 -> H1 = H3 := by
   intro mrg ct
   apply Finmap.ext_lookup; intro x
   replace mrg := mrg x
@@ -352,13 +352,13 @@ lemma HMerge.self_contra {H1 H2 H3 : Heap Srt} :
   split <;> aesop
 
 lemma HMerge.exists_self_contra (H : Heap Srt) :
-    ∃ H0, HMerge H H0 H ∧ Sharable H0 :=
+    ∃ H0, HMerge H H0 H ∧ Shareable H0 :=
   H.induction_on fun xs => by
     clear H; induction xs
     case H0 =>
       existsi ∅; simp; and_intros
-      apply Sharable.empty.merge_refl
-      apply Sharable.empty
+      apply Shareable.empty.merge_refl
+      apply Shareable.empty
     case IH l hd tl nn ih =>
       rw[<-Finmap.insert_toFinmap]
       rcases ih with ⟨H0, mrg0, ct0⟩
@@ -538,11 +538,11 @@ lemma HMerge.distr {H1 H2 H3 H11 H12 H21 H22 : Heap Srt} :
 
 inductive SubHeap (H1 H2 : Heap Srt) : Prop where
   | intro (H0 : Heap Srt) :
-    Sharable H0 -> Finmap.Disjoint H1 H0 -> H2 = H1 ∪ H0 -> SubHeap H1 H2
+    Shareable H0 -> Finmap.Disjoint H1 H0 -> H2 = H1 ∪ H0 -> SubHeap H1 H2
 
 lemma SubHeap.refl (H : Heap Srt) : SubHeap H H := by
   apply SubHeap.intro ∅
-  apply Sharable.empty
+  apply Shareable.empty
   apply Finmap.Disjoint.symm
   apply Finmap.disjoint_empty
   simp
@@ -572,11 +572,11 @@ lemma SubHeap.insert (H : Heap Srt) l m :
       intro h; simp at h
       contradiction
 
-lemma SubHeap.contra_image {H1 H2 : Heap Srt} : SubHeap H1 H2 -> Sharable H1 -> Sharable H2 := by
+lemma SubHeap.contra_image {H1 H2 : Heap Srt} : SubHeap H1 H2 -> Shareable H1 -> Shareable H2 := by
   intro pd c1
   rcases pd with ⟨H0, ct, dsj, mrg⟩
   rw[mrg]
-  apply Sharable.union <;> assumption
+  apply Shareable.union <;> assumption
 
 lemma HMerge.split_subheap {H1 H2 H3 H3p : Heap Srt} :
     HMerge H1 H2 H3 -> SubHeap H3 H3p ->
