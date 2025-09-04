@@ -6,7 +6,7 @@ namespace Runtime
 
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-def HLookup (H1 : Heap Srt) (l : Nat) (m : Cell Srt) (H2 : Heap Srt) : Prop :=
+def HAccess (H1 : Heap Srt) (l : Nat) (m : Cell Srt) (H2 : Heap Srt) : Prop :=
   match H1.lookup l with
   | some n =>
     m = n ∧ if m.srt ∈ ord.contra_set then H1 = H2 else H2 = H1.erase l
@@ -42,7 +42,7 @@ inductive Drop : Heap Srt -> Tm Srt -> Heap Srt -> Prop where
     Drop H2 n H3 ->
     Drop H1 (.drop m n) H3
   | ptr {H1 H2 H3 m l} :
-    HLookup H1 l m H2 ->
+    HAccess H1 l m H2 ->
     Drop H2 m.tm H3 ->
     Drop H1 (.ptr l) H3
   | null {H} : Drop H .null H -- free(NULL) in C does nothing
@@ -144,7 +144,7 @@ inductive Step2 : State Srt -> State Srt -> Prop where
     Step2 (H, .app m n) (H', .app m n')
   | beta {H1 H2 m s lf p cl} :
     Nullptr p ->
-    HLookup H1 lf (.clo m s cl) H2 ->
+    HAccess H1 lf (.clo m s cl) H2 ->
     Step2 (H1, .app (.ptr lf) p) (H2, m.[p/])
   | tup_M {H H' m m' n s} :
     Step2 (H, m) (H', m') ->
@@ -156,19 +156,19 @@ inductive Step2 : State Srt -> State Srt -> Prop where
     Step2 (H, m) (H', m') ->
     Step2 (H, .prj m n) (H', .prj m' n)
   | prj_box {H1 H2 n s l l1} :
-    HLookup H1 l (.box l1 s) H2 ->
+    HAccess H1 l (.box l1 s) H2 ->
     Step2 (H1, .prj (.ptr l) n) (H2, n.[.ptr l1,.null/])
   | prj_tup {H1 H2 n s l l1 l2} :
-    HLookup H1 l (.tup l1 l2 s) H2 ->
+    HAccess H1 l (.tup l1 l2 s) H2 ->
     Step2 (H1, .prj (.ptr l) n) (H2, n.[.ptr l2,.ptr l1/])
   | ite_M {H H' m m' n1 n2} :
     Step2 (H, m) (H', m') ->
     Step2 (H, .ite m n1 n2) (H', .ite m' n1 n2)
   | ite_tt {H H' n1 n2 l} :
-    HLookup H l .tt H' ->
+    HAccess H l .tt H' ->
     Step2 (H, .ite (.ptr l) n1 n2) (H', n1)
   | ite_ff {H H' n1 n2 l} :
-    HLookup H l .ff H' ->
+    HAccess H l .ff H' ->
     Step2 (H, .ite (.ptr l) n1 n2) (H', n2)
 
 def Step01 (t1 t2 : State Srt) : Prop := (Union Step0 Step1) t1 t2

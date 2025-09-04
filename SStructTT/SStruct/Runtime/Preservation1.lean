@@ -36,7 +36,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . constructor
             . apply Erased.lam_im <;> assumption
             . apply Resolve.ptr
-              . simp[HLookup]; and_intros
+              . simp[HAccess]; and_intros
                 . rfl
                 . simp[Cell.srt,h3]; rfl
               . constructor
@@ -52,7 +52,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . constructor
             . apply Erased.lam_im <;> assumption
             . apply Resolve.ptr
-              . simp[HLookup]; and_intros
+              . simp[HAccess]; and_intros
                 . rfl
                 . simp[Cell.srt,h3]; rfl
               . simp[Heap.erase_insert,h1]
@@ -75,7 +75,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . constructor
             . apply Erased.lam_ex <;> assumption
             . apply Resolve.ptr
-              . simp[HLookup]; and_intros
+              . simp[HAccess]; and_intros
                 . rfl
                 . simp[Cell.srt,h3]; rfl
               . constructor
@@ -90,7 +90,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . constructor
             . apply Erased.lam_ex <;> assumption
             . apply Resolve.ptr
-              . simp[HLookup]; and_intros
+              . simp[HAccess]; and_intros
                 . rfl
                 . simp[Cell.srt,h3]; rfl
               . simp[Heap.erase_insert,h1]
@@ -194,7 +194,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . constructor
             . apply Erased.tup_im <;> assumption
             . apply Resolve.ptr
-              . simp[HLookup]; and_intros
+              . simp[HAccess]; and_intros
                 . rfl
                 . simp[Cell.srt,h3]; rfl
               . apply Resolve.tup (mrg1.insert_shareable (by aesop))
@@ -209,7 +209,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . constructor
             . apply Erased.tup_im <;> assumption
             . apply Resolve.ptr
-              . simp[HLookup]; and_intros
+              . simp[HAccess]; and_intros
                 . rfl
                 . simp[Cell.srt,h3]; rfl
               . simp[Heap.erase_insert,h1]
@@ -268,7 +268,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . constructor
             . apply Erased.tup_ex Merge.nil <;> assumption
             . apply Resolve.ptr
-              . simp[HLookup]; and_intros
+              . simp[HAccess]; and_intros
                 . rfl
                 . simp[Cell.srt,h3]; rfl
               . apply Resolve.tup (mrg2.insert_shareable (by aesop))
@@ -283,7 +283,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . constructor
             . apply Erased.tup_ex Merge.nil <;> assumption
             . apply Resolve.ptr
-              . simp[HLookup]; and_intros
+              . simp[HAccess]; and_intros
                 . rfl
                 . simp[Cell.srt,h3]; rfl
               . simp[Heap.erase_insert,h1]
@@ -353,7 +353,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . constructor
           . constructor <;> assumption
           . apply Resolve.ptr (H2 := H1.insert l .tt)
-            simp[HLookup]; and_intros
+            simp[HAccess]; and_intros
             . rfl
             . simp[Cell.srt,ord.ι_contra]
             . constructor; apply ct.insert ord.ι_contra; rfl
@@ -382,7 +382,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . constructor
           . constructor <;> assumption
           . apply Resolve.ptr (H2 := H1.insert l .ff)
-            simp[HLookup]; and_intros
+            simp[HAccess]; and_intros
             . rfl
             . simp[Cell.srt,ord.ι_contra]
             . constructor; apply ct.insert ord.ι_contra; rfl

@@ -59,7 +59,7 @@ inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
     Resolve H3 (.drop m n) (.drop m' n')
 
   | ptr {H1 H2 l m m'} :
-    HLookup H1 l m H2 ->
+    HAccess H1 l m H2 ->
     Resolve H2 m.tm m' ->
     Resolve H1 (.ptr l) m'
 
@@ -95,16 +95,16 @@ where
 notation:50 Δ:50 " ;; " H:51 " ⊢ " x:51 " ▷ " y:51 " ◁ " z:81 " :: " A:51 =>
   Resolved Δ H x y z A
 
-lemma HLookup.lookup {H1 H2 : Heap Srt} {l m} :
-    HLookup H1 l m H2 ->
+lemma HAccess.lookup {H1 H2 : Heap Srt} {l m} :
+    HAccess H1 l m H2 ->
     if m.srt ∈ ord.contra_set then H2 = H1 else H2 = H1.erase l := by
   intro lk
-  unfold HLookup at lk; split at lk <;> aesop
+  unfold HAccess at lk; split at lk <;> aesop
 
-lemma HLookup.not_mem {H1 H2 : Heap Srt} {l1 l2 m} :
-    HLookup H1 l1 m H2 -> l2 ∉ H1 -> l2 ∉ H2 := by
+lemma HAccess.not_mem {H1 H2 : Heap Srt} {l1 l2 m} :
+    HAccess H1 l1 m H2 -> l2 ∉ H1 -> l2 ∉ H2 := by
   intro lk h
-  rw[HLookup] at lk
+  rw[HAccess] at lk
   rw[<-Finmap.lookup_eq_none] at h
   rw[<-Finmap.lookup_eq_none]
   split at lk <;> try trivial
@@ -117,20 +117,20 @@ lemma HLookup.not_mem {H1 H2 : Heap Srt} {l1 l2 m} :
       | isTrue => subst_vars; apply Finmap.lookup_erase
       | isFalse ne => rw[Finmap.lookup_erase_ne ne]; assumption
 
-lemma HLookup.insert {H1 H2 : Heap Srt} {l1 l2 m n} :
-    HLookup H1 l1 m H2 -> l2 ∉ H1 ->
-    HLookup (H1.insert l2 n) l1 m (H2.insert l2 n) := by
+lemma HAccess.insert {H1 H2 : Heap Srt} {l1 l2 m n} :
+    HAccess H1 l1 m H2 -> l2 ∉ H1 ->
+    HAccess (H1.insert l2 n) l1 m (H2.insert l2 n) := by
   intro lk h
   rw[<-Finmap.lookup_eq_none] at h
-  rw[HLookup]
+  rw[HAccess]
   cases l1.decEq l2 with
   | isTrue =>
     subst_vars
-    rw[HLookup] at lk
+    rw[HAccess] at lk
     rw[h] at lk; simp at lk
   | isFalse ne =>
     rw[H1.lookup_insert_of_ne ne]
-    rw[HLookup] at lk
+    rw[HAccess] at lk
     split at lk <;> try trivial
     replace ⟨_, lk⟩ := lk; subst_vars; simp
     split_ifs at lk <;> try simp_all
@@ -153,14 +153,14 @@ lemma HLookup.insert {H1 H2 : Heap Srt} {l1 l2 m n} :
         repeat rw[Finmap.lookup_erase_ne ne1]
         rw[Finmap.lookup_insert_of_ne _ ne2]
 
-lemma HLookup.insert_lookup {H H' : Heap Srt} {l m n} :
-    HLookup (H.insert l m) l n H' ->
+lemma HAccess.insert_lookup {H H' : Heap Srt} {l m n} :
+    HAccess (H.insert l m) l n H' ->
     m = n ∧
       if m.srt ∈ ord.contra_set
       then H' = H.insert l m
       else H' = H.erase l := by
   intro lk
-  simp_rw[HLookup,Finmap.lookup_insert] at lk
+  simp_rw[HAccess,Finmap.lookup_insert] at lk
   replace ⟨_, lk⟩ := lk; subst_vars; simp
   split_ifs at lk
   case pos h => simp[h]; aesop
@@ -174,11 +174,11 @@ lemma HLookup.insert_lookup {H H' : Heap Srt} {l m n} :
       repeat rw[Finmap.lookup_erase_ne ne]
       rw[Finmap.lookup_insert_of_ne _ ne]
 
-lemma HLookup.merge {H1 H1' H2 H3 : Heap Srt} {l m} :
-    HLookup H1 l m H1' -> HMerge H1 H2 H3 ->
-    ∃ H3', HLookup H3 l m H3' ∧ HMerge H1' H2 H3' := by
+lemma HAccess.merge {H1 H1' H2 H3 : Heap Srt} {l m} :
+    HAccess H1 l m H1' -> HMerge H1 H2 H3 ->
+    ∃ H3', HAccess H3 l m H3' ∧ HMerge H1' H2 H3' := by
   intro lk mrg
-  rw[HLookup] at lk; split at lk <;> try trivial
+  rw[HAccess] at lk; split at lk <;> try trivial
   case h_1 opt n e =>
     replace ⟨_, lk⟩ := lk; subst_vars
     split_ifs at lk
@@ -190,12 +190,12 @@ lemma HLookup.merge {H1 H1' H2 H3 : Heap Srt} {l m} :
         case h_1 e h2 h3 =>
           rcases mrg with ⟨_, _, _⟩
           cases e; subst_vars
-          unfold HLookup
+          unfold HAccess
           simp_rw[h3]; simp[h]
         case h_2 e h2 h3 =>
           rcases mrg with ⟨_, _, _⟩
           cases e
-          unfold HLookup
+          unfold HAccess
           simp_rw[h3]; simp[h]
       . assumption
     case neg h =>
@@ -206,12 +206,12 @@ lemma HLookup.merge {H1 H1' H2 H3 : Heap Srt} {l m} :
         case h_1 e h2 h3 =>
           rcases mrg with ⟨_, _, _⟩
           cases e; subst_vars
-          unfold HLookup
+          unfold HAccess
           simp_rw[h3]; simp[h]
         case h_2 e h2 h3 =>
           rcases mrg with ⟨_, _, _⟩
           cases e
-          unfold HLookup
+          unfold HAccess
           simp_rw[h3]; simp[h]
       . intro x
         replace mrg := mrg x
@@ -230,31 +230,31 @@ lemma HLookup.merge {H1 H1' H2 H3 : Heap Srt} {l m} :
           simp[Finmap.lookup_erase_ne ne]
           assumption
 
-lemma HLookup.shareable_image {H H' : Heap Srt} {l m} :
-    HLookup H l m H' -> Shareable H -> Shareable H' := by
+lemma HAccess.shareable_image {H H' : Heap Srt} {l m} :
+    HAccess H l m H' -> Shareable H -> Shareable H' := by
   intro lk
-  unfold HLookup at lk
+  unfold HAccess at lk
   split at lk <;> try trivial
   replace ⟨_, lk⟩ := lk; subst_vars
   split_ifs at lk <;> subst_vars
   . simp
   . intro ct; apply ct.erase
 
-lemma HLookup.unique {H0 H1 H2 : Heap Srt} {l m1 m2} :
-    HLookup H0 l m1 H1 -> HLookup H0 l m2 H2 -> m1 = m2 ∧ H1 = H2 := by
+lemma HAccess.unique {H0 H1 H2 : Heap Srt} {l m1 m2} :
+    HAccess H0 l m1 H1 -> HAccess H0 l m2 H2 -> m1 = m2 ∧ H1 = H2 := by
   intro lk1 lk2
-  unfold HLookup at lk1
-  unfold HLookup at lk2
+  unfold HAccess at lk1
+  unfold HAccess at lk2
   split at lk1 <;> try trivial
   split at lk2 <;> aesop
 
-lemma HLookup.collision {H1 H1' H2 H3 H3' : Heap Srt} {l m n} :
+lemma HAccess.collision {H1 H1' H2 H3 H3' : Heap Srt} {l m n} :
     HMerge H1 H2 H3 ->
-    HLookup H3 l m H3' ->
-    HLookup H1 l n H1' ->
+    HAccess H3 l m H3' ->
+    HAccess H1 l n H1' ->
     m = n ∧ HMerge H1' H2 H3' := by
   intro mrg lk1 lk2
-  unfold HLookup at lk1 lk2
+  unfold HAccess at lk1 lk2
   split at lk1 <;> try trivial
   split at lk2 <;> try trivial
   replace ⟨_, lk1⟩ := lk1; subst_vars
@@ -275,10 +275,10 @@ lemma HLookup.collision {H1 H1' H2 H3 H3' : Heap Srt} {l m n} :
       simp[Finmap.lookup_erase_ne ne]
       assumption
 
-lemma HLookup.closed {H H' : Heap Srt} {l m} :
-    HLookup H l m H' -> Closed 0 m.tm := by
+lemma HAccess.closed {H H' : Heap Srt} {l m} :
+    HAccess H l m H' -> Closed 0 m.tm := by
   intro lk
-  unfold HLookup at lk; split at lk <;> try trivial
+  unfold HAccess at lk; split at lk <;> try trivial
   case h_1 m' h =>
     replace ⟨_, lk⟩ := lk; subst_vars
     split_ifs at lk
@@ -289,18 +289,18 @@ lemma HLookup.closed {H H' : Heap Srt} {l m} :
       subst_vars; cases m'
       all_goals simp_all[Cell.tm]
 
-lemma HLookup.value {H H' : Heap Srt} {l m} :
-    HLookup H l m H' -> Value m.tm := by
+lemma HAccess.value {H H' : Heap Srt} {l m} :
+    HAccess H l m H' -> Value m.tm := by
   intro lk
   revert lk
-  unfold HLookup
+  unfold HAccess
   generalize H.lookup l = r
   split <;> simp[Cell.tm]; aesop
 
-lemma HLookup.disjoint_image {H0 H1 H2 : Heap Srt} {l m} :
-    HLookup H1 l m H2 -> H1.Disjoint H0 -> H2.Disjoint H0 := by
+lemma HAccess.disjoint_image {H0 H1 H2 : Heap Srt} {l m} :
+    HAccess H1 l m H2 -> H1.Disjoint H0 -> H2.Disjoint H0 := by
   intro lk dsj
-  unfold HLookup at lk; split at lk <;> try trivial
+  unfold HAccess at lk; split at lk <;> try trivial
   case h_1 heq =>
     rcases lk with ⟨_, ifq⟩; subst_vars
     split_ifs at ifq
@@ -309,13 +309,13 @@ lemma HLookup.disjoint_image {H0 H1 H2 : Heap Srt} {l m} :
       rw[Finmap.Disjoint.eq_1] at dsj
       aesop
 
-lemma HLookup.disjoint_union {H0 H1 H2 : Heap Srt} {l m} :
-    HLookup H1 l m H2 -> H1.Disjoint H0 ->
-    HLookup (H1 ∪ H0) l m (H2 ∪ H0) := by
+lemma HAccess.disjoint_union {H0 H1 H2 : Heap Srt} {l m} :
+    HAccess H1 l m H2 -> H1.Disjoint H0 ->
+    HAccess (H1 ∪ H0) l m (H2 ∪ H0) := by
   intro lk dsj
   rw[Finmap.Disjoint.eq_1] at dsj
-  unfold HLookup at lk; split at lk <;> try trivial
-  unfold HLookup
+  unfold HAccess at lk; split at lk <;> try trivial
+  unfold HAccess
   case h_1 heq =>
     have mm := Finmap.mem_of_lookup_eq_some heq
     have nn := dsj _ mm
@@ -535,19 +535,19 @@ lemma Resolve.subheap {H1 H2 : Heap Srt} {m m'} :
     rcases sb with ⟨H0, ct0, dsj, un⟩; subst un
     constructor; apply ct.union ct0
 
-lemma HLookup.shareable_tt {H H' : Heap Srt} {l} :
-    HLookup H l .tt H' -> H = H' := by
+lemma HAccess.shareable_tt {H H' : Heap Srt} {l} :
+    HAccess H l .tt H' -> H = H' := by
   intro lk
-  unfold HLookup at lk
+  unfold HAccess at lk
   split at lk <;> simp_all[Cell.srt]
   replace ⟨_, lk⟩ := lk; subst_vars
   simp[ord.ι_contra] at lk
   assumption
 
-lemma HLookup.shareable_ff {H H' : Heap Srt} {l} :
-    HLookup H l .ff H' -> H = H' := by
+lemma HAccess.shareable_ff {H H' : Heap Srt} {l} :
+    HAccess H l .ff H' -> H = H' := by
   intro lk
-  unfold HLookup at lk
+  unfold HAccess at lk
   split at lk <;> simp_all[Cell.srt]
   replace ⟨_, lk⟩ := lk; subst_vars
   simp[ord.ι_contra] at lk

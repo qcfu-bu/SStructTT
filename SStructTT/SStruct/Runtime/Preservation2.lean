@@ -11,7 +11,7 @@ variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Resolve.lookup {H1 H2 H3 H3' : Heap Srt} {l m m'} :
     H1 ;; .ptr l ▷ m' -> HMerge H1 H2 H3 ->
-    HLookup H3 l m H3' -> ∃ H1', H1' ;; m.tm ▷ m' ∧ HMerge H1' H2 H3' := by
+    HAccess H3 l m H3' -> ∃ H1', H1' ;; m.tm ▷ m' ∧ HMerge H1' H2 H3' := by
   generalize e: Tm.ptr l = t
   intro ty mrg lk; induction ty generalizing H2 H3 H3' l m <;> try trivial
   case ptr Ha Hb l n n' lk0 rsm ihm =>

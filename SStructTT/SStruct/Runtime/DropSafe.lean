@@ -68,7 +68,7 @@ lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
   case null H1 _ => cases dp; aesop
   case ptr lk1 rs ih =>
     cases dp; case ptr lk2 dp =>
-    have ⟨e, mrg1⟩ := HLookup.collision mrg lk2 lk1
+    have ⟨e, mrg1⟩ := HAccess.collision mrg lk2 lk1
     subst e; aesop
 
 lemma Resolve.drop_safeX {H1 H2 H3 : Heap Srt} {m m'} :
