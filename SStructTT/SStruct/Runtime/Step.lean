@@ -1,10 +1,16 @@
-import SStructTT.SStruct.Runtime.Resolution
+import SStructTT.SStruct.Runtime.Heap
 open ARS
 
 namespace SStruct.Erasure
 namespace Runtime
 
 variable {Srt : Type} [ord : SrtOrder Srt]
+
+def HLookup (H1 : Heap Srt) (l : Nat) (m : Cell Srt) (H2 : Heap Srt) : Prop :=
+  match H1.lookup l with
+  | some n =>
+    m = n ∧ if m.srt ∈ ord.contra_set then H1 = H2 else H2 = H1.erase l
+  | none => False
 
 /- Deallocate dropped terms. -/
 @[scoped aesop safe [constructors]]

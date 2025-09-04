@@ -1,4 +1,4 @@
-import SStructTT.SStruct.Runtime.Step
+import SStructTT.SStruct.Runtime.Resolution
 open ARS
 
 namespace SStruct.Erasure

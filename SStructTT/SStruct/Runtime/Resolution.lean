@@ -1,5 +1,5 @@
 import SStructTT.SStruct.Static.Inversion
-import SStructTT.SStruct.Runtime.Heap
+import SStructTT.SStruct.Runtime.Step
 import SStructTT.SStruct.Erasure.Step
 import SStructTT.SStruct.Erasure.Inversion
 
@@ -8,12 +8,6 @@ open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 namespace Runtime
-
-def HLookup (H1 : Heap Srt) (l : Nat) (m : Cell Srt) (H2 : Heap Srt) : Prop :=
-  match H1.lookup l with
-  | some n =>
-    m = n ∧ if m.srt ∈ ord.contra_set then H1 = H2 else H2 = H1.erase l
-  | none => False
 
 inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
   | var {H x} :
