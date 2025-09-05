@@ -47,20 +47,6 @@ inductive Drop : Heap Srt -> Tm Srt -> Heap Srt -> Prop where
     Drop H1 (.ptr l) H3
   | null {H} : Drop H .null H -- free(NULL) in C does nothing
 
-/- Force drop-reductions to have deterministic eval order.  -/
-@[simp]def drop_count : Tm Srt -> Nat
-  | .var _ => 0
-  | .lam _ _ => 0
-  | .app m n => drop_count m + drop_count n
-  | .tup m n _ => drop_count m + drop_count n
-  | .prj m _ => drop_count m
-  | .tt => 0
-  | .ff => 0
-  | .ite m _ _ => drop_count m
-  | .drop _ _ => 1
-  | .ptr _ => 0
-  | .null => 0
-
 /- State (Heap + Term) of the evaluator. -/
 abbrev State Srt := Heap Srt × Tm Srt
 
