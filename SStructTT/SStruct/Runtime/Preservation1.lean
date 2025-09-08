@@ -443,15 +443,3 @@ lemma Resolved.preservation1 {H1 H2 : Heap Srt} {a b c c' A} :
   have ct := sb.shareable_image ct
   have e := mrg'.self_shareable ct; subst e
   assumption
-
-lemma Resolved.preservation1' {H1 H2 : Heap Srt} {a b c c' A} :
-    [] ;; H1 ⊢ a ▷ b ◁ c :: A -> Red1 (H1, c) (H2, c') ->
-    [] ;; H2 ⊢ a ▷ b ◁ c' :: A := by
-  generalize e: (H2, c') = t
-  intro rs rd; induction rd generalizing H2 a b c' A
-  case R => cases e; assumption
-  case SE y z rd st ih =>
-    subst_vars
-    rcases y with ⟨H2, c'⟩
-    replace rs' := ih rfl rs
-    apply rs'.preservation1 st

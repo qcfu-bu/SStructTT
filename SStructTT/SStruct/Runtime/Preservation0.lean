@@ -205,18 +205,3 @@ lemma Resolved.preservation0 {H H' : Heap Srt} {a b c c' A} :
   have ⟨H0', b', mrg', rs'⟩ := rs.preservation0X mrg st
   have e := mrg'.self_shareable ct; subst e
   existsi b'; simp_all
-
-lemma Resolved.preservation0' {H H' : Heap Srt} {a b c c' A} :
-    [] ;; H ⊢ a ▷ b ◁ c :: A -> Red0 (H, c) (H', c') ->
-    ∃ b', [] ;; H' ⊢ a ▷ b' ◁ c' :: A ∧ Erasure.Red0 b b' := by
-  generalize e: (H', c') = t
-  intro rs rd; induction rd generalizing H' a b c' A
-  case R => cases e; existsi b; aesop
-  case SE x y rd st ih =>
-    subst_vars
-    rcases x with ⟨H2, c'⟩
-    replace ⟨b', rs, rd⟩ := ih rfl rs
-    have ⟨b', rs, st⟩ := rs.preservation0 st
-    existsi b'; and_intros
-    . assumption
-    . apply Star.SE rd st

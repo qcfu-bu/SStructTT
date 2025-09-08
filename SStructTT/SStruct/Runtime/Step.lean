@@ -158,9 +158,6 @@ inductive Step2 : State Srt -> State Srt -> Prop where
     Step2 (H, .ite (.ptr l) n1 n2) (H', n2)
 
 def Step01 (t1 t2 : State Srt) : Prop := (Union Step0 Step1) t1 t2
-
-def Red0 (t1 t2 : State Srt) : Prop := Star Step0 t1 t2
-def Red1 (t1 t2 : State Srt) : Prop := Star Step1 t1 t2
 def Red01 (t1 t2 : State Srt) : Prop := Star Step01 t1 t2
 
 inductive Step (x z : State Srt) : Prop where
