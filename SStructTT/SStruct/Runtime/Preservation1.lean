@@ -155,7 +155,6 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             apply rsm.subheap sb1
             assumption
     case ptr => cases st
-
   case tup_im s i ty tym ern ihn =>
     subst_vars; cases rs
     case tup mrg1 rsm rsn =>
