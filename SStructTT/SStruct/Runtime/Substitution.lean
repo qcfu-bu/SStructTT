@@ -469,3 +469,22 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       cases x
       all_goals simp_all[Cell.tm]; cases rsm
   case conv => aesop
+
+lemma Resolved.subst_im {H : Heap Srt} {m n n' v v' A B s} :
+    A :⟨.im, s⟩ [] ;; H ⊢ m ▷ n ◁ n' :: B -> H ;; n'.[v'/] ▷ n.[v/] := by
+  intro rsm
+  have ⟨H0, mrg, sh⟩ := HMerge.exists_self_shareable H
+  apply rsm.substitution mrg (x := 0)
+  apply AgreeSubst.intro_im
+  constructor; assumption
+
+lemma Resolved.subst_ex {H1 H2 H3 : Heap Srt} {m n n' v v' A B s} :
+    HMerge H1 H2 H3 -> (s ∈ ord.contra_set -> Shareable H2) ->
+    A :⟨.ex, s⟩ [] ;; H1 ⊢ m ▷ n ◁ n' :: B ->
+    H2 ;; v' ▷ v ->
+    H3 ;; n'.[v'/] ▷ n.[v/] := by
+  intro mrg h rsm rsv
+  have ⟨H0, mrg0, sh⟩ := HMerge.exists_self_shareable H2
+  apply rsm.substitution mrg (x := 0)
+  apply AgreeSubst.intro_ex h mrg0.sym rsv
+  constructor; assumption
