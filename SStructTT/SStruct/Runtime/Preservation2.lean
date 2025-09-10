@@ -9,7 +9,7 @@ namespace Runtime
 open Dynamic
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-lemma Resolve.lookup {H1 H2 H3 H3' : Heap Srt} {l m m'} :
+lemma Resolve.access {H1 H2 H3 H3' : Heap Srt} {l m m'} :
     H1 ;; .ptr l ▷ m' -> HMerge H1 H2 H3 ->
     HAccess H3 l m H3' -> ∃ H1', H1' ;; m.tm ▷ m' ∧ HMerge H1' H2 H3' := by
   generalize e: Tm.ptr l = t
@@ -61,7 +61,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case beta mx s lf cl np lk =>
         clear ihm
         have ⟨Hx, mrg1, mrg2⟩ := mrg0.split mrg1.sym
-        have ⟨Hy, rs0, mrg3⟩ := rsm.lookup mrg2.sym lk
+        have ⟨Hy, rs0, mrg3⟩ := rsm.access mrg2.sym lk
         have ⟨Hz, mrg4, mrg5⟩ := mrg3.sym.split mrg1
         cases rs0; case lam m0 rs0 hyp =>
         have ⟨A, m1, r, rd, rs1⟩ := erm.lam_preimage
@@ -132,7 +132,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         clear ihm ihn; cases np
         case ptr lp =>
           have ⟨Hx, mrg1, mrg2⟩ := mrg0.split mrg1.sym
-          have ⟨Hy, rs0, mrg3⟩ := rsm.lookup mrg2.sym lk
+          have ⟨Hy, rs0, mrg3⟩ := rsm.access mrg2.sym lk
           have ⟨Hz, mrg4, mrg5⟩ := mrg3.sym.split mrg1
           cases rs0; case lam m0 rs0 hyp =>
           have ⟨A, m1, r, rd, rs1⟩ := erm.lam_preimage
@@ -265,7 +265,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case prj_box H1' s l l1 lk =>
         clear ihm
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
-        have ⟨H4, rsm', mrg'⟩ := rsm.lookup mrg3.sym lk
+        have ⟨H4, rsm', mrg'⟩ := rsm.access mrg3.sym lk
         have ⟨Hx, mrg4, mrg5⟩ := mrg'.sym.split mrg2
         cases rsm'; case tup mx0 nx0 mrg rs1 rs2 =>
         have vl := rsm.ptr_value
@@ -310,7 +310,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case prj_tup lk =>
         clear ihm
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
-        have ⟨_, rsm0, _⟩ := rsm.lookup mrg3.sym lk
+        have ⟨_, rsm0, _⟩ := rsm.access mrg3.sym lk
         simp[Cell.tm] at rsm0
         cases rsm0
         case tup rs _ =>
@@ -348,7 +348,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case prj_box lk =>
         clear ihm
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
-        have ⟨_, rsm0, _⟩ := rsm.lookup mrg3.sym lk
+        have ⟨_, rsm0, _⟩ := rsm.access mrg3.sym lk
         simp[Cell.tm] at rsm0
         cases rsm0
         case tup rs _ =>
@@ -360,7 +360,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case prj_tup H1' s l l1 l2 lk =>
         clear ihm
         have ⟨Hx, mrg2, mrg3⟩ := mrg0.split mrg1.sym
-        have ⟨H4, rsm', mrg'⟩ := rsm.lookup mrg3.sym lk
+        have ⟨H4, rsm', mrg'⟩ := rsm.access mrg3.sym lk
         have ⟨Hx, mrg4, mrg5⟩ := mrg'.sym.split mrg2
         cases rsm'; case tup Hm Hn mx0 nx0 mrg rs1 rs2 =>
         have vl := rsm.ptr_value
@@ -450,7 +450,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case ite_tt l lk =>
         clear ihm
         have e := lk.shareable_tt; subst e
-        have ⟨Hx, rsx, mrgx⟩ := rsm.lookup mrg3.sym lk
+        have ⟨Hx, rsx, mrgx⟩ := rsm.access mrg3.sym lk
         cases rsx
         have ct := rsm.tt_inv
         have rd := erm.tt_preimage
@@ -470,7 +470,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       case ite_ff l lk =>
         clear ihm
         have e := lk.shareable_ff; subst e
-        have ⟨Hx, rsx, mrgx⟩ := rsm.lookup mrg3.sym lk
+        have ⟨Hx, rsx, mrgx⟩ := rsm.access mrg3.sym lk
         cases rsx
         have ct := rsm.ff_inv
         have rd := erm.ff_preimage
