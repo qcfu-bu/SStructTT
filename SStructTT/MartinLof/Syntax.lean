@@ -54,7 +54,7 @@ variable (ξ : Var -> Var) (A B m n n1 n2 : Tm) (x i : Nat)
 @[asimp]lemma app  : rename ξ (app m n) = app (rename ξ m) (rename ξ n) := by rfl
 @[asimp]lemma sig1 : rename ξ (sig A B) = sig (rename ξ A) (rename (upren ξ) B) := by rfl
 @[asimp]lemma tup1 : rename ξ (tup m n) = tup (rename ξ m) (rename ξ n) := by rfl
-@[asimp]lemma prj : rename ξ (prj A m n) = prj (rename (upren ξ) A) (rename ξ m) (rename (upren $ upren ξ) n) := by rfl
+@[asimp]lemma prj  : rename ξ (prj A m n) = prj (rename (upren ξ) A) (rename ξ m) (rename (upren $ upren ξ) n) := by rfl
 @[asimp]lemma bool : rename ξ bool = bool := by rfl
 @[asimp]lemma tt   : rename ξ tt = tt := by rfl
 @[asimp]lemma ff   : rename ξ ff = ff := by rfl
@@ -96,7 +96,7 @@ variable (σ : Var -> Tm) (A B m n n1 n2 : Tm) (x i : Nat)
 @[asimp]lemma app  : subst σ (app m n) = app (subst σ m) (subst σ n) := by rfl
 @[asimp]lemma sig  : subst σ (sig A B) = sig (subst σ A) (subst (up σ) B) := by rfl
 @[asimp]lemma tup  : subst σ (tup m n) = tup (subst σ m) (subst σ n) := by rfl
-@[asimp]lemma prj : subst σ (prj A m n) = prj (subst (up σ) A) (subst σ m) (subst (upn 2 σ) n) := by rfl
+@[asimp]lemma prj  : subst σ (prj A m n) = prj (subst (up σ) A) (subst σ m) (subst (upn 2 σ) n) := by rfl
 @[asimp]lemma bool : subst σ bool = bool := by rfl
 @[asimp]lemma tt   : subst σ tt = tt := by rfl
 @[asimp]lemma ff   : subst σ ff = ff := by rfl
