@@ -233,9 +233,10 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
         apply Conv.onei st
       . constructor
         apply ihA st
-        apply tym.conv
+        apply Typed.conv
         apply Conv.subst
         apply Conv.one st
+        apply tym
         assumption
         assumption
       . assumption
