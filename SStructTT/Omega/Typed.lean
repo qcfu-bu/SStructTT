@@ -1,8 +1,8 @@
-import SStructTT.MartinLof.Syntax
-import SStructTT.MartinLof.Context
-import SStructTT.MartinLof.Confluence
+import SStructTT.Omega.Syntax
+import SStructTT.Omega.Context
+import SStructTT.Omega.Confluence
 
-namespace MartinLof
+namespace Omega
 
 mutual
 inductive Typed : Ctx -> Tm -> Tm -> Prop where

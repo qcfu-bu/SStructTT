@@ -1,6 +1,6 @@
 import SStructTT.Basics.Subst
 
-namespace MartinLof
+namespace Omega
 
 inductive Tm where
   | var (x : Var)

@@ -1,5 +1,5 @@
 import SStructTT.Basics.Subst
-import SStructTT.MartinLof.Syntax
+import SStructTT.Omega.Syntax
 
 namespace SStruct
 -- Sorts

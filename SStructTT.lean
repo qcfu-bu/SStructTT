@@ -8,14 +8,14 @@ import SStructTT.Basics.Subst
 
 -------------------------------------------------------------------------------------------------
 
-import SStructTT.MartinLof.Syntax
-import SStructTT.MartinLof.Context
-import SStructTT.MartinLof.Step
-import SStructTT.MartinLof.Confluence
-import SStructTT.MartinLof.Typed
-import SStructTT.MartinLof.Renaming
-import SStructTT.MartinLof.Substitution
-import SStructTT.MartinLof.Normalize
+import SStructTT.Omega.Syntax
+import SStructTT.Omega.Context
+import SStructTT.Omega.Step
+import SStructTT.Omega.Confluence
+import SStructTT.Omega.Typed
+import SStructTT.Omega.Renaming
+import SStructTT.Omega.Substitution
+import SStructTT.Omega.Normalize
 
 -------------------------------------------------------------------------------------------------
 

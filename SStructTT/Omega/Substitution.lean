@@ -1,6 +1,6 @@
-import SStructTT.MartinLof.Renaming
+import SStructTT.Omega.Renaming
 
-namespace MartinLof
+namespace Omega
 
 @[aesop safe (rule_sets := [subst]) [constructors]]
 inductive AgreeSubst : (Var -> Tm) -> Ctx -> Ctx -> Prop where

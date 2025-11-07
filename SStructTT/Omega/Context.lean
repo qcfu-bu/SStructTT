@@ -1,6 +1,6 @@
-import SStructTT.MartinLof.Syntax
+import SStructTT.Omega.Syntax
 
-namespace MartinLof
+namespace Omega
 abbrev Ctx := List Tm
 
 @[scoped aesop safe [constructors]]

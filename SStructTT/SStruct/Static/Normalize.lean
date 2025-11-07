@@ -1,12 +1,12 @@
-import SStructTT.MartinLof.Normalize
-import SStructTT.MartinLof.Substitution
+import SStructTT.Omega.Normalize
+import SStructTT.Omega.Substitution
 import SStructTT.SStruct.Static.Progress
 open ARS
 
 namespace SStruct.Static
 variable {Srt : Type}
 
-@[simp]def interp : Tm Srt -> MartinLof.Tm
+@[simp]def interp : Tm Srt -> Omega.Tm
   | .var x => .var x
   | .srt _ i => .ty i
   | .pi A B _ _ => .pi (interp A) (interp B)
@@ -23,7 +23,7 @@ variable {Srt : Type}
   | .rfl m => .rfl (interp m)
   | .rw A m n => .rw (interp A) (interp m) (interp n)
 
-@[simp]def interp_ctx : Ctx Srt -> MartinLof.Ctx
+@[simp]def interp_ctx : Ctx Srt -> Omega.Ctx
   | [] => []
   | A :: Γ => interp A :: interp_ctx Γ
 
@@ -57,7 +57,7 @@ lemma interp_ren_com {m : Tm Srt} {ξ} :
 
 def InterpSubst
   (σ : Var -> Tm Srt)
-  (τ : Var -> MartinLof.Tm) : Prop := ∀ x, [| σ x |] = τ x
+  (τ : Var -> Omega.Tm) : Prop := ∀ x, [| σ x |] = τ x
 
 lemma interp_subst_up {σ : Var -> Tm Srt} {τ} :
     InterpSubst σ τ -> InterpSubst (up σ) (up τ) := by
@@ -94,7 +94,7 @@ lemma interp_subst_com {m : Tm Srt} {σ τ} :
     asimp
 
 lemma interp_step {m n : Tm Srt} :
-    Step m n -> MartinLof.Step [| m |] [| n |] := by
+    Step m n -> Omega.Step [| m |] [| n |] := by
   intro st; induction st <;> simp
   all_goals try (constructor; try assumption)
   case beta =>
@@ -107,7 +107,7 @@ lemma interp_step {m n : Tm Srt} :
     . intro x; rcases x with _ | ⟨_ | _⟩ <;> asimp
 
 lemma interp_red {m n : Tm Srt} :
-    Star Step m n -> Star MartinLof.Step [| m |] [| n |] := by
+    Star Step m n -> Star Omega.Step [| m |] [| n |] := by
   intro rd; induction rd
   case R => constructor
   case SE =>
@@ -116,7 +116,7 @@ lemma interp_red {m n : Tm Srt} :
     . apply interp_step; assumption
 
 lemma interp_conv {m n : Tm Srt} :
-    Conv Step m n -> Conv MartinLof.Step [| m |] [| n |] := by
+    Conv Step m n -> Conv Omega.Step [| m |] [| n |] := by
   intro eq; induction eq
   case R => constructor
   case SE =>
@@ -129,7 +129,7 @@ lemma interp_conv {m n : Tm Srt} :
     . apply interp_step; assumption
 
 lemma interp_has {Γ : Ctx Srt} {A x} :
-    Has Γ x A -> MartinLof.Has [| Γ |]* x [| A |] := by
+    Has Γ x A -> Omega.Has [| Γ |]* x [| A |] := by
   intro hs; induction hs
   case zero =>
     simp; rw[interp_subst_com]
@@ -140,8 +140,8 @@ lemma interp_has {Γ : Ctx Srt} {A x} :
     . constructor; assumption
     . intro x; cases x <;> asimp
 
-lemma interp_sn' {m : MartinLof.Tm} :
-    SN MartinLof.Step m ->
+lemma interp_sn' {m : Omega.Tm} :
+    SN Omega.Step m ->
     ∀ {n : Tm Srt}, [| n |] = m -> SN Step n := by
   intro sn; induction sn
   case intro ih =>
@@ -152,15 +152,15 @@ lemma interp_sn' {m : MartinLof.Tm} :
     contradiction
 
 lemma interp_sn {m : Tm Srt} :
-    SN MartinLof.Step [| m |] -> SN Step m := by
+    SN Omega.Step [| m |] -> SN Step m := by
   intro sn; apply interp_sn' <;> aesop
 
 variable [ord : SrtOrder Srt]
 
-theorem Typed.toMartinLof {Γ : Ctx Srt} {A m} :
-    Typed Γ m A -> MartinLof.Typed [| Γ |]* [| m |] [| A |] := by
+theorem Typed.toOmega {Γ : Ctx Srt} {A m} :
+    Typed Γ m A -> Omega.Typed [| Γ |]* [| m |] [| A |] := by
   intro ty; induction ty using
-    @Typed.rec _ ord (motive_2 := fun Γ _ => MartinLof.Wf [| Γ |]*)
+    @Typed.rec _ ord (motive_2 := fun Γ _ => Omega.Wf [| Γ |]*)
   all_goals try (simp_all; try constructor <;> assumption)
   case var =>
     constructor
@@ -200,7 +200,7 @@ theorem Typed.toMartinLof {Γ : Ctx Srt} {A m} :
         intro x; rcases x with _ | ⟨_ | _⟩ <;> asimp
     . intro x; rcases x with _ | ⟨_ | _⟩ <;> asimp
   case conv =>
-    apply MartinLof.Typed.conv
+    apply Omega.Typed.conv
     . apply interp_conv; assumption
     . assumption
     . assumption
@@ -208,7 +208,7 @@ theorem Typed.toMartinLof {Γ : Ctx Srt} {A m} :
 theorem Typed.normalize {Γ : Ctx Srt} {A m} :
     Γ ⊢ m : A -> SN Step m := by
   intro ty
-  replace ty := ty.toMartinLof
+  replace ty := ty.toOmega
   have sn := ty.normalize
   apply interp_sn sn
 

@@ -1,7 +1,7 @@
-import SStructTT.MartinLof.Step
+import SStructTT.Omega.Step
 open ARS
 
-namespace MartinLof
+namespace Omega
 
 @[aesop safe (rule_sets := [pstep]) [constructors]]
 inductive PStep : Tm -> Tm -> Prop where

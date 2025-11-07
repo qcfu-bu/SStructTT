@@ -1,8 +1,8 @@
 import SStructTT.Basics.ARS
-import SStructTT.MartinLof.Syntax
+import SStructTT.Omega.Syntax
 open ARS
 
-namespace MartinLof
+namespace Omega
 
 @[scoped aesop safe [constructors]]
 inductive Step : Tm -> Tm -> Prop where
