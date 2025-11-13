@@ -1,10 +1,10 @@
-import SStructTT.SStruct.Static.Inversion
+import SStructTT.SStruct.Logical.Inversion
 import SStructTT.SStruct.Runtime.Step
-import SStructTT.SStruct.Erasure.Step
-import SStructTT.SStruct.Erasure.Inversion
+import SStructTT.SStruct.Extraction.Step
+import SStructTT.SStruct.Extraction.Inversion
 
-namespace SStruct.Erasure
-open Dynamic
+namespace SStruct.Extraction
+open Program
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 namespace Runtime
@@ -334,7 +334,7 @@ lemma HAccess.disjoint_union {H0 H1 H2 : Heap Srt} {l m} :
       else aesop
     aesop
 
-lemma Erased.resolve_id {Δ} {H : Heap Srt} {x y z A} :
+lemma Extract.resolve_id {Δ} {H : Heap Srt} {x y z A} :
     Δ ⊢ x ▷ y :: A -> H ;; y ▷ z -> y = z := by
   intro ty rs; induction ty generalizing H z
   case var => cases rs; simp
@@ -615,16 +615,16 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
   all_goals subst_vars; try (solve | cases vl)
   case lam_im =>
     have ⟨_, _, _, _, rd⟩ := ty.pi_inv
-    have ⟨_, _⟩ := Static.Conv.srt_inj rd; subst_vars
+    have ⟨_, _⟩ := Logical.Conv.srt_inj rd; subst_vars
     apply rs.lam_inv
   case lam_ex =>
     have ⟨_, _, _, _, rd⟩ := ty.pi_inv
-    have ⟨_, _⟩ := Static.Conv.srt_inj rd; subst_vars
+    have ⟨_, _⟩ := Logical.Conv.srt_inj rd; subst_vars
     apply rs.lam_inv
   case tup_im tym ern ihn =>
     intro h
     have ⟨_, _, _, _, _, _, le, tyA, tyB, rd⟩ := ty.sig_inv'
-    have ⟨_, _⟩ := Static.Conv.srt_inj rd; subst_vars
+    have ⟨_, _⟩ := Logical.Conv.srt_inj rd; subst_vars
     cases vl; case tup vl1 vl2 =>
     simp_all; cases rs
     case tup mrg rsm rsn =>
@@ -645,12 +645,12 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
   case tup_ex erm ern ihm ihn mrg _ =>
     intro h; cases mrg
     have ⟨_, _, _, _, _, le1, le2, tyA, tyB, rd⟩ := ty.sig_inv'
-    have ⟨_, _⟩ := Static.Conv.srt_inj rd; subst_vars
+    have ⟨_, _⟩ := Logical.Conv.srt_inj rd; subst_vars
     cases vl; case tup vl1 vl2 =>
     simp_all; cases rs
     case tup mrg rsm rsn =>
       have ct1 := ihm rsm tyA (ord.contra_set.lower le1 h)
-      have ct2 := ihn rsn (tyB.subst erm.toStatic) (ord.contra_set.lower le2 h)
+      have ct2 := ihn rsn (tyB.subst erm.toLogical) (ord.contra_set.lower le2 h)
       apply mrg.shareable_image ct1 ct2
     case ptr l m lk rs =>
       have ifq := lk.lookup
@@ -661,7 +661,7 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
         exfalso; apply erm.null_preimage
       case tup mrg rsm rsn =>
         have ct1 := ihm rsm tyA (ord.contra_set.lower le1 h)
-        have ct2 := ihn rsn (tyB.subst erm.toStatic) (ord.contra_set.lower le2 h)
+        have ct2 := ihn rsn (tyB.subst erm.toLogical) (ord.contra_set.lower le2 h)
         simp[h] at ifq; subst_vars
         apply mrg.shareable_image ct1 ct2
   case tt => have ct := rs.tt_inv; aesop
@@ -669,15 +669,15 @@ theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
   case rw tyA erm tyn ihm =>
     have ⟨eq, _⟩ := tyn.closed_idn tyA
     have ⟨s, i, ty'⟩ := erm.validity
-    have ⟨x, rd1, rd2⟩ := Static.Step.cr eq.sym
+    have ⟨x, rd1, rd2⟩ := Logical.Step.cr eq.sym
     have ty1 := ty.preservation' rd1
     have ty2 := ty'.preservation' rd2
-    have e := Static.Typed.unique ty1 ty2
+    have e := Logical.Typed.unique ty1 ty2
     simp_all; apply ihm <;> try assumption
   case conv eq erm _ ih =>
     simp_all
     have ⟨s, i, tyA⟩ := erm.validity
-    have ⟨x, rd1, rd2⟩ := Static.Step.cr eq
+    have ⟨x, rd1, rd2⟩ := Logical.Step.cr eq
     have tyx1 := tyA.preservation' rd1
     have tyx2 := ty.preservation' rd2
     have e := tyx1.unique tyx2; subst_vars
@@ -714,7 +714,7 @@ end Runtime
 
 open Runtime
 
-lemma Erased.resolve_init' {H : Heap Srt} {Δ m n A} :
+lemma Extract.resolve_init' {H : Heap Srt} {Δ m n A} :
     Δ ⊢ m ▷ n :: A -> Shareable H -> H ;; n ▷ n := by
   intro er ct
   induction er
@@ -774,7 +774,7 @@ lemma Erased.resolve_init' {H : Heap Srt} {Δ m n A} :
     . assumption
   case conv => aesop
 
-lemma Erased.resolve_init {Δ m n A} :
+lemma Extract.resolve_init {Δ m n A} :
     Δ ⊢ m ▷ n :: A -> (∅ : Heap Srt) ;; n ▷ n := by
   intro erm
   apply erm.resolve_init' Shareable.empty

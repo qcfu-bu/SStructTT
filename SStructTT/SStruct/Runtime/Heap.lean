@@ -1,7 +1,7 @@
-import SStructTT.SStruct.Erasure.Erased
+import SStructTT.SStruct.Extraction.Extract
 import Mathlib.Data.Finmap
 
-namespace SStruct.Erasure
+namespace SStruct.Extraction
 namespace Runtime
 variable {Srt : Type} [ord : SrtOrder Srt]
 

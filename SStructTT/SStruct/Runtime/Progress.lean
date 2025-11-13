@@ -1,7 +1,7 @@
 import SStructTT.SStruct.Runtime.Poised
 open ARS
 
-namespace SStruct.Erasure
+namespace SStruct.Extraction
 namespace Runtime
 variable {Srt : Type} [ord : SrtOrder Srt]
 
@@ -140,7 +140,7 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
           constructor; assumption
         case tup.tup rsm rsn =>
           have ⟨_, _, _, _, erm⟩ := erm.tup_preimage
-          have ⟨_, _, _, _⟩ := erm.toStatic.tup_inv; subst_vars
+          have ⟨_, _, _, _⟩ := erm.toLogical.tup_inv; subst_vars
           have ⟨_, _, _, _⟩ := erm.tup_im_inv; subst_vars
           exfalso; have ⟨_, e⟩ := rsm.null_inv; cases e
     case ptr => right; aesop
@@ -166,7 +166,7 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
           constructor; assumption
         case box.tup rsm rsn =>
           have ⟨_, _, _, _, erm⟩ := erm.tup_preimage
-          have ⟨_, _, _, _⟩ := erm.toStatic.tup_inv; subst_vars
+          have ⟨_, _, _, _⟩ := erm.toLogical.tup_inv; subst_vars
           have ⟨_, _, _, er, _, _⟩ := erm.tup_ex_inv
           cases rsm; exfalso; apply er.null_preimage
     case ptr => right; aesop

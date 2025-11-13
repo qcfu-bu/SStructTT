@@ -1,7 +1,7 @@
 import SStructTT.SStruct.Runtime.Heap
 open ARS
 
-namespace SStruct.Erasure
+namespace SStruct.Extraction
 namespace Runtime
 
 variable {Srt : Type} [ord : SrtOrder Srt]

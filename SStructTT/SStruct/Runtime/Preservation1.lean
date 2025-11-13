@@ -1,11 +1,11 @@
-import SStructTT.SStruct.Erasure.Preservation
+import SStructTT.SStruct.Extraction.Preservation
 import SStructTT.SStruct.Runtime.Step
 import SStructTT.SStruct.Runtime.Resolution
 open ARS
 
-namespace SStruct.Erasure
+namespace SStruct.Extraction
 namespace Runtime
-open Dynamic
+open Program
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
@@ -34,7 +34,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             simp[h2]
             assumption
           . constructor
-            . apply Erased.lam_im <;> assumption
+            . apply Extract.lam_im <;> assumption
             . apply Resolve.ptr
               . simp[HAccess]; and_intros
                 . rfl
@@ -50,7 +50,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             assumption
           . apply SubHeap.refl
           . constructor
-            . apply Erased.lam_im <;> assumption
+            . apply Extract.lam_im <;> assumption
             . apply Resolve.ptr
               . simp[HAccess]; and_intros
                 . rfl
@@ -73,7 +73,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             simp[h2]
             assumption
           . constructor
-            . apply Erased.lam_ex <;> assumption
+            . apply Extract.lam_ex <;> assumption
             . apply Resolve.ptr
               . simp[HAccess]; and_intros
                 . rfl
@@ -88,7 +88,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             assumption
           . apply SubHeap.refl
           . constructor
-            . apply Erased.lam_ex <;> assumption
+            . apply Extract.lam_ex <;> assumption
             . apply Resolve.ptr
               . simp[HAccess]; and_intros
                 . rfl
@@ -135,7 +135,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . assumption
         . assumption
         . constructor
-          . apply Erased.app_ex Merge.nil <;> assumption
+          . apply Extract.app_ex Merge.nil <;> assumption
           . apply Resolve.app mrg1.sym
             assumption
             apply rsn.subheap sb1
@@ -150,7 +150,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . assumption
         . assumption
         . constructor
-          . apply Erased.app_ex Merge.nil <;> assumption
+          . apply Extract.app_ex Merge.nil <;> assumption
           . apply Resolve.app mrg1
             apply rsm.subheap sb1
             assumption
@@ -174,7 +174,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . assumption
         . assumption
         . constructor
-          . apply Erased.tup_im <;> assumption
+          . apply Extract.tup_im <;> assumption
           . apply Resolve.tup mrg1
             apply rsm.subheap sb1
             assumption
@@ -191,7 +191,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             simp[h2]
             assumption
           . constructor
-            . apply Erased.tup_im <;> assumption
+            . apply Extract.tup_im <;> assumption
             . apply Resolve.ptr
               . simp[HAccess]; and_intros
                 . rfl
@@ -206,7 +206,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             assumption
           . apply SubHeap.refl
           . constructor
-            . apply Erased.tup_im <;> assumption
+            . apply Extract.tup_im <;> assumption
             . apply Resolve.ptr
               . simp[HAccess]; and_intros
                 . rfl
@@ -231,7 +231,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . assumption
         . assumption
         . constructor
-          . apply Erased.tup_ex Merge.nil <;> assumption
+          . apply Extract.tup_ex Merge.nil <;> assumption
           . apply Resolve.tup mrg1.sym
             assumption
             apply rsn.subheap sb1
@@ -246,7 +246,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . assumption
         . assumption
         . constructor
-          . apply Erased.tup_ex Merge.nil <;> assumption
+          . apply Extract.tup_ex Merge.nil <;> assumption
           . apply Resolve.tup mrg1
             apply rsm.subheap sb1
             assumption
@@ -265,7 +265,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             simp[h2]
             assumption
           . constructor
-            . apply Erased.tup_ex Merge.nil <;> assumption
+            . apply Extract.tup_ex Merge.nil <;> assumption
             . apply Resolve.ptr
               . simp[HAccess]; and_intros
                 . rfl
@@ -280,7 +280,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
             assumption
           . apply SubHeap.refl
           . constructor
-            . apply Erased.tup_ex Merge.nil <;> assumption
+            . apply Extract.tup_ex Merge.nil <;> assumption
             . apply Resolve.ptr
               . simp[HAccess]; and_intros
                 . rfl
@@ -303,7 +303,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . assumption
         . assumption
         . constructor
-          . apply Erased.prj_im Merge.nil <;> assumption
+          . apply Extract.prj_im Merge.nil <;> assumption
           . apply Resolve.prj mrg1.sym
             assumption
             apply rsn.subheap sb1
@@ -323,7 +323,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . assumption
         . assumption
         . constructor
-          . apply Erased.prj_ex Merge.nil <;> assumption
+          . apply Extract.prj_ex Merge.nil <;> assumption
           . apply Resolve.prj mrg1.sym
             assumption
             apply rsn.subheap sb1
@@ -401,7 +401,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         . assumption
         . assumption
         . constructor
-          . apply Erased.ite Merge.nil <;> assumption
+          . apply Extract.ite Merge.nil <;> assumption
           . apply Resolve.ite mrg1.sym
             assumption
             apply rsn1.subheap sb1
@@ -414,7 +414,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     . assumption
     . assumption
     . constructor
-      . apply Erased.rw tyA
+      . apply Extract.rw tyA
         assumption
         assumption
       . assumption
@@ -429,7 +429,7 @@ lemma Resolved.preservation1X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     . assumption
     . assumption
     . constructor
-      . apply Erased.conv eq
+      . apply Extract.conv eq
         assumption
         assumption
       . assumption

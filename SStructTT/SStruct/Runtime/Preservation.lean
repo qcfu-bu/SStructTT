@@ -3,14 +3,14 @@ import SStructTT.SStruct.Runtime.Preservation1
 import SStructTT.SStruct.Runtime.Preservation2
 open ARS
 
-namespace SStruct.Erasure
+namespace SStruct.Extraction
 namespace Runtime
-open Dynamic
+open Program
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Resolved.preservationX {H H' : Heap Srt} {a b c c' A} :
     [] ;; H ⊢ a ▷ b ◁ c :: A -> Red01 (H, c) (H', c') ->
-    ∃ b', [] ;; H' ⊢ a ▷ b' ◁ c' :: A ∧ Erasure.Red0 b b' := by
+    ∃ b', [] ;; H' ⊢ a ▷ b' ◁ c' :: A ∧ Extraction.Red0 b b' := by
   generalize e: (H', c') = t
   intro rs rd; induction rd generalizing H' a b c' A
   case R => cases e; existsi b; aesop

@@ -8,51 +8,51 @@ import SStructTT.Basics.Subst
 
 -------------------------------------------------------------------------------------------------
 
-import SStructTT.Omega.Syntax
-import SStructTT.Omega.Context
-import SStructTT.Omega.Step
-import SStructTT.Omega.Confluence
-import SStructTT.Omega.Typed
-import SStructTT.Omega.Renaming
-import SStructTT.Omega.Substitution
-import SStructTT.Omega.Normalize
+import SStructTT.ECC.Syntax
+import SStructTT.ECC.Context
+import SStructTT.ECC.Step
+import SStructTT.ECC.Confluence
+import SStructTT.ECC.Typed
+import SStructTT.ECC.Renaming
+import SStructTT.ECC.Substitution
+import SStructTT.ECC.Normalize
 
 -------------------------------------------------------------------------------------------------
 
 import SStructTT.SStruct.SrtOrder
 import SStructTT.SStruct.Syntax
 
-import SStructTT.SStruct.Static.Context
-import SStructTT.SStruct.Static.Step
-import SStructTT.SStruct.Static.Confluence
-import SStructTT.SStruct.Static.Typed
-import SStructTT.SStruct.Static.Renaming
-import SStructTT.SStruct.Static.Substitution
-import SStructTT.SStruct.Static.Inversion
-import SStructTT.SStruct.Static.Unique
-import SStructTT.SStruct.Static.Preservation
-import SStructTT.SStruct.Static.Progress
-import SStructTT.SStruct.Static.Normalize
+import SStructTT.SStruct.Logical.Context
+import SStructTT.SStruct.Logical.Step
+import SStructTT.SStruct.Logical.Confluence
+import SStructTT.SStruct.Logical.Typed
+import SStructTT.SStruct.Logical.Renaming
+import SStructTT.SStruct.Logical.Substitution
+import SStructTT.SStruct.Logical.Inversion
+import SStructTT.SStruct.Logical.Unique
+import SStructTT.SStruct.Logical.Preservation
+import SStructTT.SStruct.Logical.Progress
+import SStructTT.SStruct.Logical.Normalize
 
-import SStructTT.SStruct.Dynamic.Context
-import SStructTT.SStruct.Dynamic.Step
-import SStructTT.SStruct.Dynamic.Typed
-import SStructTT.SStruct.Dynamic.Renaming
-import SStructTT.SStruct.Dynamic.Substitution
-import SStructTT.SStruct.Dynamic.Inversion
-import SStructTT.SStruct.Dynamic.Preservation
-import SStructTT.SStruct.Dynamic.Progress
-import SStructTT.SStruct.Dynamic.Normalize
+import SStructTT.SStruct.Program.Context
+import SStructTT.SStruct.Program.Step
+import SStructTT.SStruct.Program.Typed
+import SStructTT.SStruct.Program.Renaming
+import SStructTT.SStruct.Program.Substitution
+import SStructTT.SStruct.Program.Inversion
+import SStructTT.SStruct.Program.Preservation
+import SStructTT.SStruct.Program.Progress
+import SStructTT.SStruct.Program.Normalize
 
-import SStructTT.SStruct.Erasure.Syntax
-import SStructTT.SStruct.Erasure.Step
-import SStructTT.SStruct.Erasure.Erased
-import SStructTT.SStruct.Erasure.Renaming
-import SStructTT.SStruct.Erasure.Substitution
-import SStructTT.SStruct.Erasure.Inversion
-import SStructTT.SStruct.Erasure.Preservation
-import SStructTT.SStruct.Erasure.Progress
-import SStructTT.SStruct.Erasure.Normalize
+import SStructTT.SStruct.Extraction.Syntax
+import SStructTT.SStruct.Extraction.Step
+import SStructTT.SStruct.Extraction.Extract
+import SStructTT.SStruct.Extraction.Renaming
+import SStructTT.SStruct.Extraction.Substitution
+import SStructTT.SStruct.Extraction.Inversion
+import SStructTT.SStruct.Extraction.Preservation
+import SStructTT.SStruct.Extraction.Progress
+import SStructTT.SStruct.Extraction.Normalize
 
 import SStructTT.SStruct.Runtime.Heap
 import SStructTT.SStruct.Runtime.Step

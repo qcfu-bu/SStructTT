@@ -1,6 +1,6 @@
 import SStructTT.SStruct.Runtime.Resolution
 
-namespace SStruct.Erasure
+namespace SStruct.Extraction
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 def IdRename (i : Var) (ξ : Var -> Var) : Prop := ∀ x, x < i -> ξ x = x
@@ -45,7 +45,7 @@ private lemma closed_rename {m : Tm Srt} {i ξ} :
     asimp; aesop
 
 namespace Runtime
-open Dynamic
+open Program
 
 @[aesop safe (rule_sets := [subst]) [constructors]]
 inductive AgreeSubst :
@@ -293,7 +293,7 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
         asimp
         have cl1 := rsm.closed_image cl0
         have cl2 : Closed 0 (Tm.lam m' s) := by simp; assumption
-        have erm := Erased.lam_im lw tyA erm
+        have erm := Extract.lam_im lw tyA erm
         have im := (erm.closed_stack cl2).toImplicit
         have ct := agr.implicit_image im
         have agr : AgreeSubst (up σ) (up σ') (x + 1) (A :⟨.im, sA⟩ Δ) H2 := by
@@ -317,7 +317,7 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
         asimp
         have cl1 := rsm.closed_image cl0
         have cl2 : Closed 0 (Tm.lam m' s) := by simp; assumption
-        have erm := Erased.lam_ex lw tyA erm
+        have erm := Extract.lam_ex lw tyA erm
         have im := (erm.closed_stack cl2).toImplicit
         have ct := agr.implicit_image im
         have agr : AgreeSubst (up σ) (up σ') (x + 1) (A :⟨.im, sA⟩ Δ) H2 := by

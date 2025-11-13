@@ -1,8 +1,8 @@
-import SStructTT.SStruct.Erasure.Progress
+import SStructTT.SStruct.Extraction.Progress
 import SStructTT.SStruct.Runtime.Preservation
 open ARS
 
-namespace SStruct.Erasure
+namespace SStruct.Extraction
 namespace Runtime
 variable {Srt : Type} [ord : SrtOrder Srt]
 

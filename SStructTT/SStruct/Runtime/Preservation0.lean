@@ -1,10 +1,10 @@
-import SStructTT.SStruct.Erasure.Preservation
+import SStructTT.SStruct.Extraction.Preservation
 import SStructTT.SStruct.Runtime.DropSafe
 open ARS
 
-namespace SStruct.Erasure
+namespace SStruct.Extraction
 namespace Runtime
-open Dynamic
+open Program
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
@@ -12,7 +12,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     [] ;; H1 ⊢ a ▷ b ◁ c :: A -> Step0 (H3, c) (H3', c') ->
     ∃ H1' b',
       HMerge H1' H2 H3' ∧
-      [] ;; H1' ⊢ a ▷ b' ◁ c' :: A ∧ Erasure.Step0 b b' := by
+      [] ;; H1' ⊢ a ▷ b' ◁ c' :: A ∧ Extraction.Step0 b b' := by
   generalize e: [] = Δ
   intro mrg0 ⟨er, rs⟩ st; induction er generalizing H1 H2 H3 H3' c c'
   case var hs =>
@@ -57,7 +57,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi Hx, .app mx' n'; and_intros
         . assumption
         . constructor
-          . apply Erased.app_ex Merge.nil erx ern
+          . apply Extract.app_ex Merge.nil erx ern
           . apply Resolve.app mrg1.sym rsx rsn
         . constructor; assumption
       case app_N mrg rsm rsn nx st =>
@@ -67,7 +67,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi Hx, .app m' nx'; and_intros
         . assumption
         . constructor
-          . apply Erased.app_ex Merge.nil erm erx
+          . apply Extract.app_ex Merge.nil erm erx
           . apply Resolve.app mrg1 rsm rsx
         . constructor; assumption
     case ptr => cases st
@@ -103,7 +103,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi Hx, .tup mx' n' s; and_intros
         . assumption
         . constructor
-          . apply Erased.tup_ex Merge.nil ty erx ern
+          . apply Extract.tup_ex Merge.nil ty erx ern
           . apply Resolve.tup mrg1.sym rsx rsn
         . constructor; assumption
       case tup_N mrg rsm rsn nx st =>
@@ -113,7 +113,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi Hx, .tup m' nx' s; and_intros
         . assumption
         . constructor
-          . apply Erased.tup_ex Merge.nil ty erm erx
+          . apply Extract.tup_ex Merge.nil ty erm erx
           . apply Resolve.tup mrg1 rsm rsx
         . constructor; assumption
     case ptr => cases st
@@ -128,7 +128,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi Hx, .prj mx' n'; and_intros
         . assumption
         . constructor
-          . apply Erased.prj_im Merge.nil tyC erx ern
+          . apply Extract.prj_im Merge.nil tyC erx ern
           . apply Resolve.prj mrg1.sym rsx rsn
         . constructor; assumption
     case ptr => cases st
@@ -143,7 +143,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi Hx, .prj mx' n'; and_intros
         . assumption
         . constructor
-          . apply Erased.prj_ex Merge.nil tyC erx ern
+          . apply Extract.prj_ex Merge.nil tyC erx ern
           . apply Resolve.prj mrg1.sym rsx rsn
         . constructor; assumption
     case ptr => cases st
@@ -160,7 +160,7 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi Hx, .ite mx' n1' n2'; and_intros
         . assumption
         . constructor
-          . apply Erased.ite Merge.nil tyA erx ern1 ern2
+          . apply Extract.ite Merge.nil tyA erx ern1 ern2
           . apply Resolve.ite mrg1.sym rsx rsn1 rsn2
         . constructor; assumption
     case ptr => cases st
@@ -193,13 +193,13 @@ lemma Resolved.preservation0X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     existsi Hx, x; and_intros
     . assumption
     . constructor
-      apply Erased.conv eq erx tyB
+      apply Extract.conv eq erx tyB
       assumption
     . assumption
 
 lemma Resolved.preservation0 {H H' : Heap Srt} {a b c c' A} :
     [] ;; H ⊢ a ▷ b ◁ c :: A -> Step0 (H, c) (H', c') ->
-    ∃ b', [] ;; H' ⊢ a ▷ b' ◁ c' :: A ∧ Erasure.Step0 b b' := by
+    ∃ b', [] ;; H' ⊢ a ▷ b' ◁ c' :: A ∧ Extraction.Step0 b b' := by
   intro rs st
   have ⟨H0, mrg, ct⟩ := HMerge.exists_self_shareable H
   have ⟨H0', b', mrg', rs'⟩ := rs.preservation0X mrg st

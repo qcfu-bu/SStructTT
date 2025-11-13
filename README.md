@@ -34,11 +34,11 @@ The sort-order **SO4** gives us the following:
 ## Organizational Structure
 - **SStructTT/**
   - **Basics/**: Basic definitions (abstract rewrite system and σ-substitution calculus).
-  - **Omega/**: Formalization of Predicative Calculus of Constructions (CCω) (axiomatized strong normalization).
+  - **ECC/**: Formalization of predicative Extended Calculus of Constructions (ECC) (axiomatized strong normalization).
   - **SStruct/**
-    - **Static/**: Logical level theories. 
-    - **Dynamic/**: Program level theories.
-    - **Erasure/**:  Erasure soundness theories.
+    - **Logical/**: Logical level theories. 
+    - **Program/**: Program level theories.
+    - **Extraction/**:  Extraction soundness theories.
     - **Runtime/**:  Runtime soundness theories
     - `SrtOrder.lean`: Typeclass for sort-orderings.
     - `Syntax.lean`: Abstract syntax of SStruct.

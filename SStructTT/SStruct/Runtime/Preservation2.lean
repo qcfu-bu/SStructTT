@@ -1,12 +1,12 @@
-import SStructTT.SStruct.Erasure.Preservation
+import SStructTT.SStruct.Extraction.Preservation
 import SStructTT.SStruct.Runtime.Step
 import SStructTT.SStruct.Runtime.Resolution
 import SStructTT.SStruct.Runtime.Substitution
 open ARS
 
-namespace SStruct.Erasure
+namespace SStruct.Extraction
 namespace Runtime
-open Dynamic
+open Program
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 lemma Resolve.access {H1 H2 H3 H3' : Heap Srt} {l m m'} :
@@ -24,7 +24,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     [] ;; H1 ⊢ a ▷ b ◁ c :: A -> Step2 (H3, c) (H3', c') ->
     ∃ H1' a' b',
       HMerge H1' H2 H3' ∧
-      [] ;; H1' ⊢ a' ▷ b' ◁ c' :: A ∧ a ~>>1 a' ∧ Erasure.Step1 b b' := by
+      [] ;; H1' ⊢ a' ▷ b' ◁ c' :: A ∧ a ~>>1 a' ∧ Extraction.Step1 b b' := by
   generalize e: [] = Δ
   intro mrg0 ⟨er, rs⟩ st; induction er generalizing H1 H2 H3 H3' c c'
   case var hs =>
@@ -65,8 +65,8 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         have ⟨Hz, mrg4, mrg5⟩ := mrg3.sym.split mrg1
         cases rs0; case lam m0 rs0 hyp =>
         have ⟨A, m1, r, rd, rs1⟩ := erm.lam_preimage
-        have ⟨_, _, eq⟩ := rs1.toStatic.lam_inv'
-        have ⟨e, _⟩ := Static.Conv.pi_inj eq; subst e
+        have ⟨_, _, eq⟩ := rs1.toLogical.lam_inv'
+        have ⟨e, _⟩ := Logical.Conv.pi_inj eq; subst e
         have ⟨sA, erm⟩ := rs1.lam_im_inv
         have ⟨H0, mrg0, ct0⟩ := HMerge.exists_self_shareable Hy
         have rsm := Resolved.intro erm rs0
@@ -82,7 +82,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           . apply erm.subst_im tyn
           . apply rsm.merge_shareable mrg4.sym ct
         . apply Star1.SE_join
-          . apply Dynamic.Red.app rd Star.R
+          . apply Program.Red.app rd Star.R
           . constructor
         . constructor
           constructor
@@ -92,7 +92,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     case app H1' H2' m' n' mrg1 rsm rsn =>
       have ⟨_, _, ty⟩ := erm.validity
       have ⟨_, _, _, tyB, _⟩ := ty.pi_inv
-      have tyn0 := ern.toStatic
+      have tyn0 := ern.toLogical
       cases st
       case app_M st =>
         clear ihn
@@ -103,7 +103,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi Hx, .app a' n0, .app b' n1; and_intros
         . assumption
         . constructor
-          . apply Erased.app_ex Merge.nil <;> assumption
+          . apply Extract.app_ex Merge.nil <;> assumption
           . constructor
             apply mrg1.sym
             assumption
@@ -116,14 +116,14 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         have ⟨H1', a', b', mrgx, ⟨er', rs'⟩, st1, st2⟩ := ihn rfl mrg3.sym rsn st
         clear ihn
         have ⟨Hx, mrg1, mrg2⟩ := mrgx.sym.split mrg2
-        have tyn1 := tyn0.preservation' (Red.toStatic tyn0 st1.toStar)
+        have tyn1 := tyn0.preservation' (Red.toLogical tyn0 st1.toStar)
         existsi Hx, .app m0 a', .app m1 b'; and_intros
         . assumption
         . constructor
-          . apply Erased.conv
-            apply Static.Conv.subst1
-            apply (Star.conv (Red.toStatic tyn0 st1.toStar)).sym
-            apply Erased.app_ex Merge.nil erm er'
+          . apply Extract.conv
+            apply Logical.Conv.subst1
+            apply (Star.conv (Red.toLogical tyn0 st1.toStar)).sym
+            apply Extract.app_ex Merge.nil erm er'
             apply tyB.subst tyn0
           . apply Resolve.app mrg1 <;> assumption
         . apply Red1.app_N st1
@@ -136,8 +136,8 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           have ⟨Hz, mrg4, mrg5⟩ := mrg3.sym.split mrg1
           cases rs0; case lam m0 rs0 hyp =>
           have ⟨A, m1, r, rd, rs1⟩ := erm.lam_preimage
-          have ⟨_, _, eq⟩ := rs1.toStatic.lam_inv'
-          have ⟨e, _⟩ := Static.Conv.pi_inj eq; subst e
+          have ⟨_, _, eq⟩ := rs1.toLogical.lam_inv'
+          have ⟨e, _⟩ := Logical.Conv.pi_inj eq; subst e
           have ⟨sA, erm⟩ := rs1.lam_ex_inv
           have ⟨_, _, tyA⟩ := erm.ctx_inv
           have rsm := Resolved.intro erm rs0
@@ -158,14 +158,14 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           existsi Hz, m1.[n2/], m0.[n1/]; and_intros
           . assumption
           . constructor
-            . apply Erased.conv
-              apply Static.Conv.subst1
-              apply (Star.conv (Red.toStatic ern.toStatic rd2)).sym
+            . apply Extract.conv
+              apply Logical.Conv.subst1
+              apply (Star.conv (Red.toLogical ern.toLogical rd2)).sym
               apply erm.subst_ex (Lower.nil _) Merge.nil ern1
               apply tyB.subst tyn0
             . assumption
           . apply Star1.SE_join
-            apply Dynamic.Red.app rd rd2
+            apply Program.Red.app rd rd2
             constructor; assumption
           . constructor; assumption
         case null =>
@@ -186,7 +186,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi Hx, .tup m a' .im s, .tup .null b' s; and_intros
         . assumption
         . constructor
-          . apply Erased.tup_im <;> assumption
+          . apply Extract.tup_im <;> assumption
           . constructor
             apply mrg1
             assumption
@@ -208,14 +208,14 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi Hx, .tup a' n0 .ex s, .tup b' n1 s; and_intros
         . assumption
         . constructor
-          . apply Erased.tup_ex Merge.nil
+          . apply Extract.tup_ex Merge.nil
             assumption
             assumption
-            apply Erased.conv
-            apply Static.Conv.subst1
-            apply Star.conv (Red.toStatic erm.toStatic st1.toStar)
+            apply Extract.conv
+            apply Logical.Conv.subst1
+            apply Star.conv (Red.toLogical erm.toLogical st1.toStar)
             assumption
-            apply tyB.subst er'.toStatic
+            apply tyB.subst er'.toLogical
           . constructor
             apply mrg1.sym
             assumption
@@ -231,7 +231,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi Hx, .tup m0 a' .ex s, .tup m1 b' s; and_intros
         . assumption
         . constructor
-          . apply Erased.tup_ex Merge.nil <;> assumption
+          . apply Extract.tup_ex Merge.nil <;> assumption
           . constructor <;> assumption
         . apply Red1.tup_ex_N st1
         . constructor; assumption
@@ -239,7 +239,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
   case prj_im B C m0 m1 n0 n1 _ _ _ _ i mrg tyC erm ern ihm ihn =>
     clear ihn; subst_vars; cases mrg; cases rs
     case prj H1' H2' m' n' mrg1 rsm rsn =>
-      have tym0 := erm.toStatic
+      have tym0 := erm.toLogical
       have wf := ern.toWf
       cases wf; case cons wf tyB =>
       cases wf; case cons tyA =>
@@ -252,10 +252,10 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi Hx, .prj C a' n0, .prj b' n1; and_intros
         . assumption
         . constructor
-          . apply Erased.conv
-            apply Static.Conv.subst1
-            apply (Star.conv (Red.toStatic tym0 st1.toStar)).sym
-            apply Erased.prj_im Merge.nil tyC
+          . apply Extract.conv
+            apply Logical.Conv.subst1
+            apply (Star.conv (Red.toLogical tym0 st1.toStar)).sym
+            apply Extract.prj_im Merge.nil tyC
             assumption
             assumption
             apply tyC.subst tym0
@@ -272,28 +272,28 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         cases vl; case tup vl1 vl2 =>
         cases rs1
         have ⟨mx1, nx1, r, rd1, erx⟩ := erm.tup_preimage
-        have ⟨_, _, _, _⟩ := erx.toStatic.tup_inv; subst_vars
+        have ⟨_, _, _, _⟩ := erx.toLogical.tup_inv; subst_vars
         have ⟨tymx, ernx, _, _⟩ := erx.tup_im_inv
         have ⟨v0, rd2, vl0, erv0⟩ := ernx.value_preimage vl2
         have rsn := Resolved.intro ern rsn
         have hyp := (Resolved.intro erv0 rs2).resolution (tyB.subst tymx) vl2
-        have rdv0 := Red.toStatic ernx.toStatic rd2
+        have rdv0 := Red.toLogical ernx.toLogical rd2
         have eq : m0 === (.tup mx1 v0 .im s) := by
           apply Star.conv
-          apply Star.trans (Red.toStatic erm.toStatic rd1)
-          apply Static.Red.tup _ _ Star.R rdv0
+          apply Star.trans (Red.toLogical erm.toLogical rd1)
+          apply Logical.Red.tup _ _ Star.R rdv0
         existsi Hx, n0.[v0,mx1/], n1.[nx0,.null/]; and_intros
         . assumption
         . constructor
-          . apply Erased.conv
-            apply Static.Conv.subst1 _ eq.sym
+          . apply Extract.conv
+            apply Logical.Conv.subst1 _ eq.sym
             rw[show C.[.tup mx1 v0 .im s/]
                   = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[v0,mx1/] by asimp]
             apply ern.substitution
-            apply Erasure.AgreeSubst.intro_ex Merge.nil (Lower.nil _) erv0
-            apply Erasure.AgreeSubst.intro_im; asimp; assumption
-            apply Erasure.AgreeSubst.refl Wf.nil
-            apply tyC.subst erm.toStatic
+            apply Extraction.AgreeSubst.intro_ex Merge.nil (Lower.nil _) erv0
+            apply Extraction.AgreeSubst.intro_im; asimp; assumption
+            apply Extraction.AgreeSubst.refl Wf.nil
+            apply tyC.subst erm.toLogical
           . apply rsn.substitution mrg4
             constructor
             . assumption
@@ -315,14 +315,14 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         cases rsm0
         case tup rs _ =>
           replace ⟨_, _, _, _, erm⟩ := erm.tup_preimage
-          have ⟨_, _, _, _⟩ := erm.toStatic.tup_inv; subst_vars
+          have ⟨_, _, _, _⟩ := erm.toLogical.tup_inv; subst_vars
           have ⟨_, _, _, _⟩ := erm.tup_im_inv; subst_vars
           have ⟨_, e⟩ := rs.null_inv; cases e
     case ptr => cases st
   case prj_ex B C m0 m1 n0 n1 _ _ _ _ i mrg tyC erm ern ihm ihn =>
     clear ihn; subst_vars; cases mrg; cases rs
     case prj H1' H2' m' n' mrg1 rsm rsn =>
-      have tym0 := erm.toStatic
+      have tym0 := erm.toLogical
       have wf := ern.toWf
       cases wf; case cons wf tyB =>
       cases wf; case cons tyA =>
@@ -335,10 +335,10 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi Hx, .prj C a' n0, .prj b' n1; and_intros
         . assumption
         . constructor
-          . apply Erased.conv
-            apply Static.Conv.subst1
-            apply (Star.conv (Red.toStatic tym0 st1.toStar)).sym
-            apply Erased.prj_ex Merge.nil tyC
+          . apply Extract.conv
+            apply Logical.Conv.subst1
+            apply (Star.conv (Red.toLogical tym0 st1.toStar)).sym
+            apply Extract.prj_ex Merge.nil tyC
             assumption
             assumption
             apply tyC.subst tym0
@@ -354,7 +354,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         case tup rs _ =>
           cases rs
           replace ⟨_, _, _, _, erm⟩ := erm.tup_preimage
-          have ⟨_, _, _, _⟩ := erm.toStatic.tup_inv; subst_vars
+          have ⟨_, _, _, _⟩ := erm.toLogical.tup_inv; subst_vars
           have ⟨_, _, _, er, _, _⟩ := erm.tup_ex_inv
           exfalso; apply er.null_preimage
       case prj_tup H1' s l l1 l2 lk =>
@@ -366,40 +366,40 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         have vl := rsm.ptr_value
         cases vl; case tup vlm vln =>
         have ⟨mx1, nx1, r, rd1, erx⟩ := erm.tup_preimage
-        have ⟨_, _, _, _⟩ := erx.toStatic.tup_inv; subst_vars
+        have ⟨_, _, _, _⟩ := erx.toLogical.tup_inv; subst_vars
         have ⟨_, _, mrg, ermx, ernx, _⟩ := erx.tup_ex_inv; cases mrg
         have ⟨v1, rdv1, vl1, erv1⟩ := ermx.value_preimage vlm
         have ⟨v2, rdv2, vl2, erv2⟩ := ernx.value_preimage vln
-        have tymx := ermx.toStatic
+        have tymx := ermx.toLogical
         have rsn := Resolved.intro ern rsn
         have hyp1 := (Resolved.intro erv1 rs1).resolution tyA vlm
         have hyp2 := (Resolved.intro erv2 rs2).resolution (tyB.subst tymx) vln
-        have rdv1' := Red.toStatic tymx rdv1
-        have rdv2' := Red.toStatic ernx.toStatic rdv2
+        have rdv1' := Red.toLogical tymx rdv1
+        have rdv2' := Red.toLogical ernx.toLogical rdv2
         have ⟨Hm', mrg, ct⟩ := HMerge.exists_self_shareable Hm
         have eq : m0 === (.tup v1 v2 .ex s) := by
           apply Star.conv
-          apply Star.trans (Red.toStatic erm.toStatic rd1)
-          apply Static.Red.tup _ _ rdv1' rdv2'
+          apply Star.trans (Red.toLogical erm.toLogical rd1)
+          apply Logical.Red.tup _ _ rdv1' rdv2'
         have erv2 : [] ⊢ v2 ▷ nx0 :: B.[v1/] := by
-          apply Erased.conv
-          apply Static.Conv.subst1
+          apply Extract.conv
+          apply Logical.Conv.subst1
           apply Star.conv rdv1'
           apply erv2
-          apply tyB.subst erv1.toStatic
+          apply tyB.subst erv1.toLogical
         existsi Hx, n0.[v2,v1/], n1.[nx0,mx0/]; and_intros
         . assumption
         . constructor
-          . apply Erased.conv
-            apply Static.Conv.subst1 _ eq.sym
+          . apply Extract.conv
+            apply Logical.Conv.subst1 _ eq.sym
             rw[show C.[.tup v1 v2 .ex s/]
                   = C.[.tup (.var 1) (.var 0) .ex s .: shift 2].[v2,v1/] by asimp]
             apply ern.substitution
-            apply Erasure.AgreeSubst.intro_ex Merge.nil (Lower.nil _) erv2
-            apply Erasure.AgreeSubst.intro_ex Merge.nil (Lower.nil _)
+            apply Extraction.AgreeSubst.intro_ex Merge.nil (Lower.nil _) erv2
+            apply Extraction.AgreeSubst.intro_ex Merge.nil (Lower.nil _)
             asimp; assumption
-            apply Erasure.AgreeSubst.refl Wf.nil
-            apply tyC.subst erm.toStatic
+            apply Extraction.AgreeSubst.refl Wf.nil
+            apply tyC.subst erm.toLogical
           . apply rsn.substitution mrg4
             constructor
             . assumption
@@ -439,11 +439,11 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi Hx, .ite A a' n1 n2, .ite b' n1' n2'; and_intros
         . assumption
         . constructor
-          . apply Erased.conv
-            apply Static.Conv.subst1
-            apply (Star.conv (Red.toStatic erm.toStatic st1.toStar)).sym
-            apply Erased.ite Merge.nil <;> assumption
-            apply tyA.subst erm.toStatic
+          . apply Extract.conv
+            apply Logical.Conv.subst1
+            apply (Star.conv (Red.toLogical erm.toLogical st1.toStar)).sym
+            apply Extract.ite Merge.nil <;> assumption
+            apply tyA.subst erm.toLogical
           . apply Resolve.ite mrg1.sym <;> assumption
         . apply Red1.ite st1
         . constructor; assumption
@@ -457,11 +457,11 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi H1, n1, n1'; and_intros
         . assumption
         . constructor
-          . apply Erased.conv
-            apply Static.Conv.subst1
-            apply (Star.conv (Red.toStatic erm.toStatic rd)).sym
+          . apply Extract.conv
+            apply Logical.Conv.subst1
+            apply (Star.conv (Red.toLogical erm.toLogical rd)).sym
             assumption
-            apply tyA.subst erm.toStatic
+            apply tyA.subst erm.toLogical
           . apply rsn1.merge_shareable mrg1.sym ct
         . apply Star1.SE_join
           apply Red.ite rd
@@ -477,11 +477,11 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         existsi H1, n2, n2'; and_intros
         . assumption
         . constructor
-          . apply Erased.conv
-            apply Static.Conv.subst1
-            apply (Star.conv (Red.toStatic erm.toStatic rd)).sym
+          . apply Extract.conv
+            apply Logical.Conv.subst1
+            apply (Star.conv (Red.toLogical erm.toLogical rd)).sym
             assumption
-            apply tyA.subst erm.toStatic
+            apply tyA.subst erm.toLogical
           . apply rsn2.merge_shareable mrg1.sym ct
         . apply Star1.SE_join
           apply Red.ite rd
@@ -496,7 +496,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     existsi H1', a', b'; and_intros
     . assumption
     . constructor
-      . apply Erased.conv eq
+      . apply Extract.conv eq
         assumption
         assumption
       . assumption
@@ -512,7 +512,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
     existsi H1', a', b'; and_intros
     . assumption
     . constructor
-      . apply Erased.conv eq
+      . apply Extract.conv eq
         assumption
         assumption
       . assumption
@@ -521,7 +521,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
 
 lemma Resolved.preservation2 {H1 H2 : Heap Srt} {a b c c' A} :
     [] ;; H1 ⊢ a ▷ b ◁ c :: A -> Step2 (H1, c) (H2, c') ->
-    ∃ a' b', [] ;; H2 ⊢ a' ▷ b' ◁ c' :: A ∧ a ~>>1 a' ∧ Erasure.Step1 b b' := by
+    ∃ a' b', [] ;; H2 ⊢ a' ▷ b' ◁ c' :: A ∧ a ~>>1 a' ∧ Extraction.Step1 b b' := by
   intro rsm st
   have ⟨H0, mrg, ct⟩ := HMerge.exists_self_shareable H1
   have ⟨H1', a', b', mrg', rsm', rd, st⟩ := rsm.preservation2X mrg st
