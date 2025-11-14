@@ -268,7 +268,7 @@ namespace SStruct.Program
 open SStruct.Extraction
 variable {Srt : Type} [ord : SrtOrder Srt]
 
-lemma Typed.toExtract {Δ : Ctx Srt} {A m} :
+theorem Typed.toExtract {Δ : Ctx Srt} {A m} :
     Δ ⊢ m :: A -> ∃ m', Δ ⊢ m ▷ m' :: A := by
   intro ty; induction ty
   case var x _ _ _ _ _ =>
