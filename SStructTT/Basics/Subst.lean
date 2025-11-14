@@ -5,7 +5,6 @@ import SStructTT.Basics.Attr.Register
 
 section Definitions
 abbrev Var := Nat
-abbrev Binder (T : Type) : Type := T
 
 class Ids (T : Type) where
   ids : Var -> T
