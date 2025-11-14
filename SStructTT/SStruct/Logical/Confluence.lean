@@ -954,8 +954,9 @@ def applyCR (goal : MVarId) (m l1 l2 : Expr) : MetaM Expr := do
       mkAppOptM ``Tm.noConfusion #[none, <-goal.getType, none, none, e2]
 
 /-
-  Get the associated inversion lemma for `m`. For more complex languages, the
-  list of inversion lemmas need to be extended. -/
+Get the associated inversion lemma for `m`. For more complex languages, the
+list of inversion lemmas need to be extended.
+-/
 def getInvLemma (m : Expr) : MetaM Expr := do
   match m.getAppFn.constName? with
   | ``Tm.var  => return .const ``Red.var_inv  []
@@ -971,8 +972,7 @@ def getInvLemma (m : Expr) : MetaM Expr := do
   | ``Tm.rfl  => return .const ``Red.rfl_inv  []
   | _ => throwError `getInvLemma
 
-/--
-  `false_conv` refutes impossible conversion proofs. -/
+/-- `false_conv` refutes impossible conversion proofs. -/
 elab "false_conv" : tactic =>
   withMainContext do
     let goal <- getMainGoal
