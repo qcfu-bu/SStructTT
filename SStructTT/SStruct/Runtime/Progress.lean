@@ -217,7 +217,7 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
   case rw => subst_vars; aesop
   case conv => subst_vars; aesop
 
-lemma Resolved.progress {H : Heap Srt} {a b c A} :
+theorem Resolved.progress {H : Heap Srt} {a b c A} :
     [] ;; H ⊢ a ▷ b ◁ c :: A ->
     (∃ H' c', (H, c) ~>> (H', c')) ∨ (∃ H' l, Red01 (H, c) (H', .ptr l))  := by
   intro rs
