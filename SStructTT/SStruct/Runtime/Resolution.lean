@@ -774,7 +774,7 @@ lemma Extract.resolve_init' {H : Heap Srt} {Δ m n A} :
     . assumption
   case conv => aesop
 
-lemma Extract.resolve_init {Δ m n A} :
+theorem Extract.resolve_init {Δ m n A} :
     Δ ⊢ m ▷ n :: A -> (∅ : Heap Srt) ;; n ▷ n := by
   intro erm
   apply erm.resolve_init' Shareable.empty
