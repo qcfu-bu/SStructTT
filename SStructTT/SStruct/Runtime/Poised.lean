@@ -343,7 +343,7 @@ inductive Poised : Tm Srt -> Prop where
     Poised n ->
     Poised (.app m n)
   | tup_M {m n s} :
-    ¬ Nullptr m ->
+    ¬ Nullable m ->
     Poised m ->
     Poised n ->
     Poised (.tup m n s)
@@ -509,7 +509,7 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
         by_cases h2: ARS.Normal Step01 (Hx, n)
         case pos =>
           replace ihn := ihn rfl rsn mrg2 h2
-          by_cases h3: Nullptr m
+          by_cases h3: Nullable m
           case pos =>
             by_cases h4: ∃ l, n = .ptr l
             case pos =>

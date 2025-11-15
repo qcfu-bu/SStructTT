@@ -115,9 +115,9 @@ inductive Step1 : State Srt -> State Srt -> Prop where
 
 /- Possibly NULL pointers. -/
 @[scoped aesop safe [constructors]]
-inductive Nullptr : Tm Srt -> Prop where
-  | ptr {l} : Nullptr (.ptr l)
-  | null    : Nullptr .null
+inductive Nullable : Tm Srt -> Prop where
+  | ptr {l} : Nullable (.ptr l)
+  | null    : Nullable .null
 
 /- Core-reductions. -/
 @[scoped aesop safe [constructors]]
@@ -129,7 +129,7 @@ inductive Step2 : State Srt -> State Srt -> Prop where
     Step2 (H, n) (H', n') ->
     Step2 (H, .app m n) (H', .app m n')
   | beta {H1 H2 m s lf p cl} :
-    Nullptr p ->
+    Nullable p ->
     HAccess H1 lf (.clo m s cl) H2 ->
     Step2 (H1, .app (.ptr lf) p) (H2, m.[p/])
   | tup_M {H H' m m' n s} :
