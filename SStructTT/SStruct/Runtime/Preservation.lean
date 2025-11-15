@@ -28,7 +28,7 @@ lemma Resolved.preservationX {H H' : Heap Srt} {a b c c' A} :
       have rs := rs.preservation1 st
       exists b'
 
-lemma Resolved.preservation {H H' : Heap Srt} {a b c c' A} :
+theorem Resolved.preservation {H H' : Heap Srt} {a b c c' A} :
     [] ;; H ⊢ a ▷ b ◁ c :: A -> (H, c) ~>> (H', c') ->
     ∃ a' b', [] ;; H' ⊢ a' ▷ b' ◁ c' :: A ∧ a ~>>1 a' ∧ b ~>> b' := by
   intro rs st
