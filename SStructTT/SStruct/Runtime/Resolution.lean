@@ -607,7 +607,7 @@ lemma Resolve.null_inv {H : Heap Srt} {m} :
 
 theorem Resolved.resolution {H : Heap Srt} {x y z A s i} :
     [] ;; H ⊢ x ▷ y ◁ z :: A ->
-    [] ⊢ A : .srt s i -> Value y -> (s ∈ ord.contra_set -> Shareable H) := by
+    [] ⊢ A : .srt s i -> Value y -> s ∈ ord.contra_set -> Shareable H := by
   intro ⟨er, rs⟩; revert er
   generalize e1: [] = Γ
   generalize e2: [] = Δ
