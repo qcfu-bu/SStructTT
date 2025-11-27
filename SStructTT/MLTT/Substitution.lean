@@ -1,6 +1,6 @@
-import SStructTT.ECC.Renaming
+import SStructTT.MLTT.Renaming
 
-namespace ECC
+namespace MLTT
 
 @[aesop safe (rule_sets := [subst]) [constructors]]
 inductive AgreeSubst : (Var -> Tm) -> Ctx -> Ctx -> Prop where

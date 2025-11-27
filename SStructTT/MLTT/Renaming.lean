@@ -1,6 +1,6 @@
-import SStructTT.ECC.Typed
+import SStructTT.MLTT.Typed
 
-namespace ECC
+namespace MLTT
 
 @[aesop safe (rule_sets := [rename]) [constructors]]
 inductive AgreeRen : (Var -> Var) -> Ctx -> Ctx -> Prop where

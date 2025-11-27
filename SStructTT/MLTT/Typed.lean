@@ -1,8 +1,8 @@
-import SStructTT.ECC.Syntax
-import SStructTT.ECC.Context
-import SStructTT.ECC.Confluence
+import SStructTT.MLTT.Syntax
+import SStructTT.MLTT.Context
+import SStructTT.MLTT.Confluence
 
-namespace ECC
+namespace MLTT
 
 mutual
 inductive Typed : Ctx -> Tm -> Tm -> Prop where

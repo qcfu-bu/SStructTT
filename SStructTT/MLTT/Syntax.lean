@@ -1,6 +1,6 @@
 import SStructTT.Basics.Subst
 
-namespace ECC
+namespace MLTT
 
 inductive Tm where
   | var (x : Var)

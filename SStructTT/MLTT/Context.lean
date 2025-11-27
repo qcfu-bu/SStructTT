@@ -1,6 +1,6 @@
-import SStructTT.ECC.Syntax
+import SStructTT.MLTT.Syntax
 
-namespace ECC
+namespace MLTT
 abbrev Ctx := List Tm
 
 @[scoped aesop safe [constructors]]

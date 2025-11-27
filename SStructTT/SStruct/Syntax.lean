@@ -1,5 +1,4 @@
 import SStructTT.Basics.Subst
-import SStructTT.ECC.Syntax
 
 namespace SStruct
 -- Sorts

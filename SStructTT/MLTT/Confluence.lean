@@ -1,7 +1,7 @@
-import SStructTT.ECC.Step
+import SStructTT.MLTT.Step
 open ARS
 
-namespace ECC
+namespace MLTT
 
 @[aesop safe (rule_sets := [pstep]) [constructors]]
 inductive PStep : Tm -> Tm -> Prop where

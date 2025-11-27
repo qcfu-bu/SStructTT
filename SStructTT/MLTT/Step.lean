@@ -1,8 +1,8 @@
 import SStructTT.Basics.ARS
-import SStructTT.ECC.Syntax
+import SStructTT.MLTT.Syntax
 open ARS
 
-namespace ECC
+namespace MLTT
 
 @[scoped aesop safe [constructors]]
 inductive Step : Tm -> Tm -> Prop where

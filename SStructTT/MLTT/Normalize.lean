@@ -1,7 +1,7 @@
-import SStructTT.ECC.Typed
+import SStructTT.MLTT.Typed
 open ARS
 
-namespace ECC
+namespace MLTT
 
 /-
 Postulate: Extended Calculus of Constructions is strongly normalizing.

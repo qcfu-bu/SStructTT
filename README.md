@@ -34,7 +34,7 @@ The sort-order **SO4** gives us the following:
 ## Organizational Structure
 - **SStructTT/**
   - **Basics/**: Basic definitions (abstract rewrite system and σ-substitution calculus).
-  - **ECC/**: Formalization of predicative Extended Calculus of Constructions (ECC) (axiomatized strong normalization).
+  - **MLTT/**: Formalization of Martin-Löf Type Theory (MLTT) (axiomatized strong normalization).
   - **SStruct/**
     - **Logical/**: Logical level theories. 
     - **Program/**: Program level theories.

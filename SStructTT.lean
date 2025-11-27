@@ -8,14 +8,14 @@ import SStructTT.Basics.Subst
 
 -------------------------------------------------------------------------------------------------
 
-import SStructTT.ECC.Syntax
-import SStructTT.ECC.Context
-import SStructTT.ECC.Step
-import SStructTT.ECC.Confluence
-import SStructTT.ECC.Typed
-import SStructTT.ECC.Renaming
-import SStructTT.ECC.Substitution
-import SStructTT.ECC.Normalize
+import SStructTT.MLTT.Syntax
+import SStructTT.MLTT.Context
+import SStructTT.MLTT.Step
+import SStructTT.MLTT.Confluence
+import SStructTT.MLTT.Typed
+import SStructTT.MLTT.Renaming
+import SStructTT.MLTT.Substitution
+import SStructTT.MLTT.Normalize
 
 -------------------------------------------------------------------------------------------------
 
