@@ -1,4 +1,4 @@
-import SStructTT.SStruct.Logical.Progress
+import SStructTT.SStruct.Logical.Normalize
 import SStructTT.SStruct.Program.Step
 import SStructTT.SStruct.Program.Inversion
 open ARS SStruct.Logical
@@ -148,3 +148,5 @@ theorem Typed.progress {m A : Tm Srt} :
   case drop mrg => cases mrg; aesop
   case rw m _ _ _ _ _ _ _ _ _ =>
     left; existsi m; apply Step.rw_elim
+  case exf tym =>
+    exact (Logical.Typed.bot_not_derivable tym).elim

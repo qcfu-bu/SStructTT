@@ -67,6 +67,10 @@ inductive Resolve : Heap Srt -> Tm Srt -> Tm Srt -> Prop where
     Shareable H ->
     Resolve H .null .null
 
+  | dead {H} :
+    Shareable H ->
+    Resolve H .dead .dead
+
 notation:50 H:50 " ;; " m:51 " ▷ " m':51 => Resolve H m m'
 
 @[simp]def IsResolved : Tm Srt -> Prop
@@ -81,6 +85,7 @@ notation:50 H:50 " ;; " m:51 " ▷ " m':51 => Resolve H m m'
   | .drop m n => IsResolved m ∧ IsResolved n
   | .ptr _ => False
   | .null => True
+  | .dead => True
 
 lemma Resolve.is_resolved {H : Heap Srt} {m m'} : H ;; m ▷ m' -> IsResolved m' := by
   intro rs; induction rs
@@ -356,6 +361,10 @@ lemma Extract.resolve_id {Δ} {H : Heap Srt} {x y z A} :
   case ff => cases rs; simp
   case ite => cases rs; aesop
   case rw => aesop
+  case exf =>
+    cases rs
+    rfl
+  case exf_drop => cases rs; aesop
   case drop => cases rs; aesop
   case conv => aesop
 
@@ -434,6 +443,7 @@ lemma Resolve.insert_shareable {H : Heap Srt} {l m m' v} :
     . apply lk.insert nn
     . assumption
   case null ct => constructor; apply ct.insert h; rfl
+  case dead ct => constructor; apply ct.insert h; rfl
 
 lemma Resolve.merge_shareable {H1 H2 H3 : Heap Srt} {m m'} :
     HMerge H1 H2 H3 -> Shareable H2 -> H1 ;; m ▷ m' -> H3 ;; m ▷ m' := by
@@ -490,6 +500,9 @@ lemma Resolve.merge_shareable {H1 H2 H3 : Heap Srt} {m m'} :
   case null ct1 =>
     have lw := mrg.shareable_image ct1 ct2
     constructor; assumption
+  case dead ct1 =>
+    have ct := mrg.shareable_image ct1 ct2
+    constructor; assumption
 
 lemma Resolve.subheap {H1 H2 : Heap Srt} {m m'} :
     H1 ;; m ▷ m' -> SubHeap H1 H2 -> H2 ;; m ▷ m' := by
@@ -534,6 +547,9 @@ lemma Resolve.subheap {H1 H2 : Heap Srt} {m m'} :
   case null ct =>
     rcases sb with ⟨H0, ct0, dsj, un⟩; subst un
     constructor; apply ct.union ct0
+  case dead ct =>
+    constructor
+    apply sb.shareable_image ct
 
 lemma HAccess.shareable_tt {H H' : Heap Srt} {l} :
     HAccess H l .tt H' -> H = H' := by
@@ -767,6 +783,12 @@ lemma Extract.resolve_init' {H : Heap Srt} {Δ m n A} :
     . assumption
     . assumption
   case rw => aesop
+  case exf => constructor; assumption
+  case exf_drop =>
+    constructor
+    . apply ct.merge_refl
+    . assumption
+    . assumption
   case drop ih =>
     constructor
     . apply ct.merge_refl

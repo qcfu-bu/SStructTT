@@ -177,6 +177,8 @@ theorem Extract.progress {A m} {m' : Tm Srt} :
         constructor; and_intros
         . apply Red0.ite rd
         . constructor
+  case exf_drop ern erb ihn ihb mrg tyA tym =>
+    exact (Logical.Typed.bot_not_derivable tym).elim
   case drop s lw h erm ern ihm ihn mrg =>
     cases mrg; simp_all
     match ihn with
@@ -189,5 +191,8 @@ theorem Extract.progress {A m} {m' : Tm Srt} :
         constructor
         assumption
       . assumption
+  case exf =>
+    rename_i wf tyA tym
+    exact (Logical.Typed.bot_not_derivable tym).elim
   case rw => aesop
   case conv => aesop

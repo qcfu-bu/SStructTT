@@ -86,6 +86,12 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
     Δ.logical ⊢ n : .idn B a b ->
     Typed Δ (.rw A m n) A.[n,b/]
 
+  | exf {Δ A m s i} :
+    Wf Δ ->
+    .bot :: Δ.logical ⊢ A : .srt s i ->
+    Δ.logical ⊢ m : .bot ->
+    Typed Δ (.exf A m) A.[m/]
+
   | drop {Δ1 Δ2 Δ3 n A s} :
     Merge Δ1 Δ2 Δ3 ->
     Lower Δ1 s -> s ∈ ord.weaken_set ->
@@ -322,6 +328,7 @@ lemma Typed.toLogical {Δ : Ctx Srt} {m A} :
     rw[<-mrg.sym.logical] at ihn2
     constructor <;> aesop
   case rw => constructor <;> aesop
+  case exf => constructor <;> aesop
   case drop mrg _ _ ihm ihn =>
     rw[<-mrg.sym.logical] at ihn
     assumption

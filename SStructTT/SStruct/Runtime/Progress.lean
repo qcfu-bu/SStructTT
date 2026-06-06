@@ -209,6 +209,12 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
             existsi Hx, n2
             constructor; assumption
     case ptr => right; aesop
+  case exf wf im tyA tym =>
+    subst_vars
+    exact (Logical.Typed.bot_not_derivable tym).elim
+  case exf_drop mrg tyA tym ern erb ihn ihb =>
+    subst_vars
+    exact (Logical.Typed.bot_not_derivable tym).elim
   case drop ihm ihn =>
     subst_vars; clear ihm ihn
     cases rs

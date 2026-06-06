@@ -354,6 +354,25 @@ lemma Extract.substitution {Δ Δ' : Ctx Srt} {A m m' σ σ'} :
          by asimp] at erm
     have := Extract.rw tyA erm tyn
     asimp at this; assumption
+  case exf Δ A m s i wf im tyA tym =>
+    have tyBot := Logical.Typed.bot wf.toLogical
+    replace tyA := tyA.substitution (agr.toLogical.cons tyBot); asimp at tyA
+    replace tym := tym.substitution agr.toLogical; asimp at tym
+    have wf' := agr.wf wf
+    have im' := agr.implicit_image im
+    have er := Extract.exf wf' im' tyA tym
+    asimp at er; assumption
+  case exf_drop Δ1 Δ2 Δ3 A0 m0 n0 B0 s0 i0 n0' b0' mrg tyA tym ern erb ihn ihb =>
+    have wf3 := (Wf.merge mrg ern.toWf).right
+    have tyBot := Logical.Typed.bot wf3.toLogical
+    have ⟨Δ1', Δ2', mrg, agr1, agr2⟩ := agr.split mrg
+    replace tyA := tyA.substitution (agr.toLogical.cons tyBot); asimp at tyA
+    replace tym := tym.substitution agr.toLogical; asimp at tym
+    replace ern := ihn agr1; asimp at ern
+    replace erb := ihb agr2; asimp at erb
+    rw[show A0.[m0.[σ] .: σ] = A0.[up σ].[m0.[σ]/] by asimp] at erb
+    have er := Extract.exf_drop mrg tyA tym ern erb
+    asimp at er; assumption
   case drop mrg lw h erm ern ihm ihn =>
     have ⟨Δa', Δb', mrg', agr1, agr2⟩ := agr.split mrg
     replace ihm := ihm agr1

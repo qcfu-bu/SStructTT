@@ -46,6 +46,7 @@ inductive Drop : Heap Srt -> Tm Srt -> Heap Srt -> Prop where
     Drop H2 m.tm H3 ->
     Drop H1 (.ptr l) H3
   | null {H} : Drop H .null H -- free(NULL) in C does nothing
+  | dead {H} : Drop H .dead H
 
 /- State (Heap + Term) of the evaluator. -/
 abbrev State Srt := Heap Srt × Tm Srt

@@ -250,6 +250,13 @@ lemma Typed.renaming {Δ Δ' : Ctx Srt} {A m ξ} :
          by asimp] at tym
     have := Typed.rw tyA tym tyn
     asimp at this; assumption
+  case exf wf tyA tym ih =>
+    have tyBot := Logical.Typed.bot wf.toLogical
+    replace tyA := tyA.renaming (agr.toLogical.cons tyBot); asimp at tyA
+    replace tym := tym.renaming agr.toLogical; asimp at tym
+    have wf' := agr.wf wf
+    have ty := Typed.exf wf' tyA tym
+    asimp at ty; assumption
   case drop mrg lw h _ ihn =>
     have ⟨Δ1', Δ2', mrg', agr1, agr2⟩ := agr.split mrg
     replace ihn := ihn agr2

@@ -66,6 +66,7 @@ lemma Drop.resolve {H1 H2 H3 H4 : Heap Srt} {m m'} :
     . assumption
     . apply mrg7.shareable_image ct3 ct4
   case null H1 _ => cases dp; aesop
+  case dead => cases dp; aesop
   case ptr lk1 rs ih =>
     cases dp; case ptr lk2 dp =>
     have ⟨e, mrg1⟩ := HAccess.collision mrg lk2 lk1
@@ -157,6 +158,10 @@ lemma Resolve.drop_safeX {H1 H2 H3 : Heap Srt} {m m'} :
     . assumption
   case null H1 _ =>
     exists H1, H3; and_intros
+    . constructor
+    . assumption
+  case dead H ct =>
+    exists H, H3; and_intros
     . constructor
     . assumption
 

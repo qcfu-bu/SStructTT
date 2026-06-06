@@ -88,6 +88,21 @@ where
     Δ.logical ⊢ n : .idn B a b ->
     Extract Δ (.rw A m n) m' A.[n,b/]
 
+  | exf {Δ A m s i} :
+    Wf Δ ->
+    Implicit Δ ->
+    .bot :: Δ.logical ⊢ A : .srt s i ->
+    Δ.logical ⊢ m : .bot ->
+    Extract Δ (.exf A m) .dead A.[m/]
+
+  | exf_drop {Δ1 Δ2 Δ3 A m n B s i} {n' b' : Extraction.Tm Srt} :
+    Merge Δ1 Δ2 Δ3 ->
+    .bot :: Δ3.logical ⊢ A : .srt s i ->
+    Δ3.logical ⊢ m : .bot ->
+    Extract Δ1 n n' B ->
+    Extract Δ2 (.exf A m) b' A.[m/] ->
+    Extract Δ3 (.exf A m) (.drop n' b') A.[m/]
+
   | drop {Δ1 Δ2 Δ3 m m' n n' A B s} :
     Merge Δ1 Δ2 Δ3 ->
     Lower Δ1 s -> s ∈ ord.weaken_set ->
@@ -107,12 +122,18 @@ notation:50 Δ:50 " ⊢ " m:51 " ▷ " m':81 " :: " A:51 =>
 lemma Extract.toProgram {Δ : Ctx Srt} {A m m'} :
     Δ ⊢ m ▷ m' :: A -> Δ ⊢ m :: A := by
   intro ty; induction ty
-  all_goals try (constructor <;> assumption)
+  all_goals try (solve | constructor <;> assumption)
   case app_ex =>
     apply Typed.app_ex <;> assumption
   case prj_ex =>
     apply Typed.prj_ex <;> assumption
-  apply Typed.conv <;> assumption
+  case exf_drop mrg tyA tym ern _ ihn _ =>
+    apply Typed.exf
+    . exact (Wf.merge mrg ihn.toWf).right
+    . assumption
+    . assumption
+  case conv =>
+    apply Typed.conv <;> assumption
 
 lemma Extract.toLogical {Δ : Ctx Srt} {A m m'} :
     Δ ⊢ m ▷ m' :: A -> Δ.logical ⊢ m : A := by
@@ -182,20 +203,39 @@ lemma Extract.closed {Δ} {m A : SStruct.Tm Srt} {m'} :
     . rw[mrg.length]; assumption
     . rw[mrg.sym.length]; assumption
     . rw[mrg.sym.length]; assumption
+  case exf_drop mrg _ _ _ _ _ _ =>
+    and_intros
+    . rw[mrg.length]; assumption
+    . rw[mrg.sym.length]; assumption
   case drop mrg _ _ _ _ _ _ =>
     and_intros
     . rw[mrg.length]; assumption
     . rw[mrg.sym.length]; assumption
 
+@[simp]def NoNull : Tm Srt -> Prop
+  | .var _ => True
+  | .lam m _ => NoNull m
+  | .app m n => NoNull m ∧ NoNull n
+  | .tup m n _ => NoNull m ∧ NoNull n
+  | .prj m n => NoNull m ∧ NoNull n
+  | .tt => True
+  | .ff => True
+  | .ite m n1 n2 => NoNull m ∧ NoNull n1 ∧ NoNull n2
+  | .drop m n => NoNull m ∧ NoNull n
+  | .ptr _ => True
+  | .null => False
+  | .dead => False
+
 lemma Extract.closed_stack {Δ} {m A : SStruct.Tm Srt} {m' i} :
-    Δ ⊢ m ▷ m' :: A -> Closed i m' -> Stack Δ i := by
-  intro erm cl; induction erm generalizing i
+    Δ ⊢ m ▷ m' :: A -> Closed i m' -> NoNull m' -> Stack Δ i := by
+  intro erm cl nn; induction erm generalizing i
   case var hs =>
     simp at cl
     apply hs.stack cl
   case lam_im ihm =>
     simp at cl
-    have st := ihm cl
+    simp at nn
+    have st := ihm cl nn
     cases st
     case nil im =>
       simp at im
@@ -204,29 +244,36 @@ lemma Extract.closed_stack {Δ} {m A : SStruct.Tm Srt} {m' i} :
     case cons => assumption
   case lam_ex ihm =>
     simp at cl
-    have st := ihm cl
+    simp at nn
+    have st := ihm cl nn
     cases st
     case nil im => simp at im
     case cons => assumption
-  case app_im ihm => simp at cl; aesop
+  case app_im => simp at nn
   case app_ex mrg _ _ ihm ihn =>
     simp at cl
+    simp at nn
     have ⟨cl1, cl2⟩ := cl
-    replace ihm := ihm cl1
-    replace ihn := ihn cl2
+    have ⟨nn1, nn2⟩ := nn
+    replace ihm := ihm cl1 nn1
+    replace ihn := ihn cl2 nn2
     apply mrg.stack_image ihm ihn
-  case tup_im ihm => simp at cl; aesop
+  case tup_im => simp at nn
   case tup_ex mrg _ _ _ ihm ihn =>
     simp at cl
+    simp at nn
     have ⟨cl1, cl2⟩ := cl
-    replace ihm := ihm cl1
-    replace ihn := ihn cl2
+    have ⟨nn1, nn2⟩ := nn
+    replace ihm := ihm cl1 nn1
+    replace ihn := ihn cl2 nn2
     apply mrg.stack_image ihm ihn
   case prj_im mrg _ _ _ ihm ihn =>
     simp at cl
+    simp at nn
     have ⟨cl1, cl2⟩ := cl
-    replace ihm := ihm cl1
-    replace ihn := ihn cl2
+    have ⟨nn1, nn2⟩ := nn
+    replace ihm := ihm cl1 nn1
+    replace ihn := ihn cl2 nn2
     cases ihn <;> try simp_all
     case cons ihn =>
       apply mrg.stack_image; assumption
@@ -234,9 +281,11 @@ lemma Extract.closed_stack {Δ} {m A : SStruct.Tm Srt} {m' i} :
       apply Stack.nil; assumption
   case prj_ex mrg _ _ _ ihm ihn =>
     simp at cl
+    simp at nn
     have ⟨cl1, cl2⟩ := cl
-    replace ihm := ihm cl1
-    replace ihn := ihn cl2
+    have ⟨nn1, nn2⟩ := nn
+    replace ihm := ihm cl1 nn1
+    replace ihn := ihn cl2 nn2
     cases ihn <;> try simp_all
     case cons ihn =>
       cases ihn <;> try simp_all
@@ -249,18 +298,96 @@ lemma Extract.closed_stack {Δ} {m A : SStruct.Tm Srt} {m' i} :
     assumption
   case ite mrg _ _ _ _ ihm ihn1 ihn2 =>
     simp at cl
+    simp at nn
     rcases cl with ⟨cl0, cl1, cl2⟩
-    replace ihm := ihm cl0
-    replace ihn1 := ihn1 cl1
+    rcases nn with ⟨nn0, nn1, nn2⟩
+    replace ihm := ihm cl0 nn0
+    replace ihn1 := ihn1 cl1 nn1
     apply mrg.stack_image ihm ihn1
   case rw => aesop
+  case exf => simp at nn
+  case exf_drop mrg _ _ _ _ ihm ihb =>
+    simp at cl
+    simp at nn
+    have ⟨cl1, cl2⟩ := cl
+    have ⟨nn1, nn2⟩ := nn
+    replace ihm := ihm cl1 nn1
+    replace ihb := ihb cl2 nn2
+    apply mrg.stack_image ihm ihb
   case drop mrg _ _ _ _ ihm ihn =>
     simp at cl
+    simp at nn
     have ⟨cl1, cl2⟩ := cl
-    replace ihm := ihm cl1
-    replace ihn := ihn cl2
+    have ⟨nn1, nn2⟩ := nn
+    replace ihm := ihm cl1 nn1
+    replace ihn := ihn cl2 nn2
     apply mrg.stack_image ihm ihn
   case conv => aesop
+
+inductive ExfSpine (Δ0 : Ctx Srt) : Ctx Srt -> Prop where
+  | refl : ExfSpine Δ0 Δ0
+  | cons {Δ1 Δ2 Δ3 x s A} :
+    Merge Δ1 Δ2 Δ3 ->
+    Has Δ2 x s A ->
+    ExfSpine Δ0 Δ1 ->
+    ExfSpine Δ0 Δ3
+
+lemma ExfSpine.extend {Δ1 Δ2 : Ctx Srt} {A r s} :
+    ExfSpine Δ1 Δ2 -> ExfSpine (A :⟨r, s⟩ Δ1) (A :⟨r, s⟩ Δ2) := by
+  intro sp; induction sp
+  case refl => constructor
+  case cons Δ1 Δ2 Δ3 x _ _ mrg hs sp ih =>
+    replace mrg : Merge (A :⟨r, s⟩ Δ1) (A :⟨.im, s⟩ Δ2) (A :⟨r, s⟩ Δ3) := by
+      cases r
+      . constructor; assumption
+      . constructor; assumption
+    constructor
+    . apply mrg
+    . constructor
+      assumption
+    . assumption
+
+lemma ExfSpine.toImplicit {Δ : Ctx Srt} :
+    ExfSpine Δ.toImplicit Δ := by
+  induction Δ
+  case nil =>
+    simp; constructor
+  case cons hd tl ih =>
+    rcases hd with ⟨A, r, s⟩
+    cases r
+    · simp
+      apply ih.extend
+    · simp
+      have sp := @ExfSpine.extend Srt ord (Ctx.toImplicit tl) tl A .im s ih
+      have mrg : Merge (A :⟨.im, s⟩ tl) (A :⟨.ex, s⟩ Ctx.toImplicit tl) (A :⟨.ex, s⟩ tl) := by
+        constructor
+        apply Merge.self
+      have hs : Has (A :⟨.ex, s⟩ Ctx.toImplicit tl) 0 s A.[shift 1] := by
+        constructor
+        apply Implicit.toImplicit
+      exact ExfSpine.cons mrg hs sp
+
+lemma Extract.exf_drop_spine {Δ1 Δ3 : Ctx Srt} {A m m' s i} :
+    ExfSpine Δ1 Δ3 ->
+    Δ1 ⊢ .exf A m ▷ m' :: A.[m/] ->
+    .bot :: Δ3.logical ⊢ A : .srt s i ->
+    Δ3.logical ⊢ m : .bot ->
+    ∃ m', Δ3 ⊢ .exf A m ▷ m' :: A.[m/] := by
+  intro sp er tyA tym
+  induction sp
+  case refl =>
+    existsi m'; assumption
+  case cons Δ1 Δ2 Δ3 x t B mrg hs sp ih =>
+    have tyA1 : .bot :: Δ1.logical ⊢ A : .srt s i := by
+      rw[<-mrg.logical]; assumption
+    have tym1 : Δ1.logical ⊢ m : .bot := by
+      rw[<-mrg.logical]; assumption
+    have ⟨b', erb⟩ := ih tyA1 tym1
+    have ⟨wf1, wf2⟩ := erb.toWf.merge mrg
+    have ern : Δ2 ⊢ .var x ▷ .var x :: B := by
+      constructor <;> assumption
+    existsi .drop (.var x) b'
+    apply Extract.exf_drop mrg.sym tyA tym ern erb
 
 end SStruct.Extraction
 
@@ -320,6 +447,14 @@ theorem Typed.toExtract {Δ : Ctx Srt} {A m} :
   case rw ihm =>
     have ⟨m', erm⟩ := ihm
     existsi m'; constructor <;> aesop
+  case exf Δ A m s i wf tyA tym _ =>
+    have er : Δ.toImplicit ⊢ .exf A m ▷ .dead :: A.[m/] := by
+      apply Extract.exf
+      . apply wf.implicit
+      . apply Implicit.toImplicit
+      . rw[Implicit.logical]; assumption
+      . rw[Implicit.logical]; assumption
+    apply er.exf_drop_spine ExfSpine.toImplicit tyA tym
   case drop mrg lw h tyn ihn =>
     have ⟨n', ern⟩ := ihn
     apply ern.drop_merge mrg.sym lw h

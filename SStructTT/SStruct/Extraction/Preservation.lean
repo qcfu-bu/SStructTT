@@ -113,6 +113,9 @@ lemma Extract.preservation0 {A m1 : SStruct.Tm Srt} {m2 m2'} :
   case ite mrg tyA erm ern1 ern2 ihm ihn1 ihn2 =>
     subst_vars; simp_all; cases mrg; cases st
     constructor <;> aesop
+  case exf_drop mrg tyA tym ern erb ihn ihb =>
+    subst_vars
+    exact (Logical.Typed.bot_not_derivable tym).elim
   case drop mrg lw h erm ern ihm ihn =>
     subst_vars; cases mrg; cases st
     assumption
@@ -410,6 +413,12 @@ theorem Extract.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
         apply (Star.conv (Red.toLogical erm.toLogical rd)).sym
         assumption
         apply tyA.subst erm.toLogical
+  case exf Δ A m s i wf tyA tym =>
+    subst_vars
+    exact (Logical.Typed.bot_not_derivable tym).elim
+  case exf_drop mrg tyA tym ern erb ihn ihb =>
+    subst_vars
+    exact (Logical.Typed.bot_not_derivable tym).elim
   case rw A B m m' n a b s i tyA erm tyn ih =>
     subst_vars; simp_all
     have ⟨eq, tyA⟩ := tyn.closed_idn tyA

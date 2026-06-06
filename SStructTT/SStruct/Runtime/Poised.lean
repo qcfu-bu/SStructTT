@@ -18,6 +18,7 @@ variable {Srt : Type} [ord : SrtOrder Srt]
   | .drop _ m => measure m + 1
   | .ptr _ => 0
   | .null => 0
+  | .dead => 0
 
 def Measure : State Srt -> State Srt -> Prop  :=
   InvImage (. < .) (fun m => measure m.2)
@@ -89,6 +90,10 @@ lemma measure_decrease {H1 H2 : Heap Srt} {m1 m2} :
     | inl st => cases st
     | inr st => cases st
   case null =>
+    cases st with
+    | inl st => cases st
+    | inr st => cases st
+  case dead =>
     cases st with
     | inl st => cases st
     | inr st => cases st
@@ -168,6 +173,10 @@ lemma Drop.merge {H1 H1' H2 H3 : Heap Srt} {m} :
       assumption
     . assumption
   case null =>
+    existsi H3; and_intros
+    . constructor
+    . assumption
+  case dead =>
     existsi H3; and_intros
     . constructor
     . assumption
@@ -362,6 +371,8 @@ inductive Poised : Tm Srt -> Prop where
     Poised (.ptr l)
   | null :
     Poised .null
+  | dead :
+    Poised .dead
 
 lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
     [] ;; H1 ⊢ a ▷ b ◁ c :: A -> HMerge H1 H2 H3 ->
@@ -651,6 +662,12 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
           right; apply Step1.ite_M
           assumption
     case ptr => constructor
+  case exf wf im tyA tym =>
+    subst_vars
+    exact (Logical.Typed.bot_not_derivable tym).elim
+  case exf_drop mrg0 tyA tym ern erb ihn ihb =>
+    subst_vars
+    exact (Logical.Typed.bot_not_derivable tym).elim
   case rw => subst_vars; aesop
   case drop mrg0 _ _ erm ern ihm ihn =>
     subst_vars; cases mrg0; cases c

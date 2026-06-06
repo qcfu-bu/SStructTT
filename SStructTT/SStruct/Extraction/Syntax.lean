@@ -15,6 +15,7 @@ inductive Tm where
   | drop (m n : Tm)
   | ptr  (l : Nat)
   | null
+  | dead
 
 @[simp]def Closed {Srt} (i : Nat) : Tm Srt -> Prop
   | .var x => x < i
@@ -28,6 +29,7 @@ inductive Tm where
   | .drop m n => Closed i m ∧ Closed i n
   | .ptr _ => True
   | .null => True
+  | .dead => True
 
 lemma Closed.weaken {Srt : Type} {m : Tm Srt} {i j} :
     Closed i m -> i ≤ j -> Closed j m := by
@@ -58,6 +60,7 @@ def rename_rec (ξ : Var -> Var) (m : Tm Srt) : Tm Srt :=
   | drop m n => drop (rename_rec ξ m) (rename_rec ξ n)
   | ptr l => ptr l
   | null => null
+  | dead => dead
 
 instance : Rename (Tm Srt) where
   rename := rename_rec
@@ -76,6 +79,7 @@ variable (ξ : Var -> Var) (A B m n n1 n2 : Tm Srt) (ms : List (Tm Srt)) (x i l 
 @[asimp]lemma drop : rename ξ (drop m n) = drop (rename ξ m) (rename ξ n) := by rfl
 @[asimp]lemma ptr  : rename ξ (@ptr Srt l) = ptr l := by rfl
 @[asimp]lemma null : rename ξ (@null Srt) = null := by rfl
+@[asimp]lemma dead : rename ξ (@dead Srt) = dead := by rfl
 @[asimp]lemma rename_rec : rename_rec ξ m = rename ξ m := by rfl
 end Rename
 
@@ -92,6 +96,7 @@ def subst_rec (σ : Var -> Tm Srt) (m : Tm Srt) : Tm Srt :=
   | ptr l => ptr l
   | drop m n => drop (subst_rec σ m) (subst_rec σ n)
   | null => null
+  | dead => dead
 
 instance : Subst (Tm Srt) where
   subst := subst_rec
@@ -110,6 +115,7 @@ variable (σ : Var -> Tm Srt) (A B m n n1 n2 : Tm Srt) (ms : List (Tm Srt)) (x i
 @[asimp]lemma drop : subst σ (drop m n) = drop (subst σ m) (subst σ n) := by rfl
 @[asimp]lemma ptr  : subst σ (@ptr Srt l) = ptr l := by rfl
 @[asimp]lemma null : subst σ (@null Srt) = null := by rfl
+@[asimp]lemma dead : subst σ (@dead Srt) = dead := by rfl
 @[asimp]lemma subst_rec : subst_rec σ m = subst σ m := by rfl
 end Subst
 
@@ -131,6 +137,7 @@ lemma rename_subst ξ (m : Tm Srt) : rename ξ m = m.[ren ξ] := by
   | drop m n ihm ihn => asimp[up_upren, ihm, ihn]
   | ptr l => asimp
   | null => asimp
+  | dead => asimp
 
 lemma up_ids : up ids = @ids (Tm Srt) _ := by
   funext x
@@ -151,6 +158,7 @@ lemma subst_id (m : Tm Srt) : m.[ids] = m := by
   | drop m n ihm ihn => asimp[ihm, ihn]
   | ptr l => asimp
   | null => asimp
+  | dead => asimp
 
 lemma up_comp_upren (ξ : Var -> Var) (σ : Var -> Tm Srt) :
     up (ξ !>> σ) = upren ξ !>> up σ := by
@@ -172,6 +180,7 @@ lemma ren_subst_comp ξ σ (m : Tm Srt) : m.[ren ξ].[σ] = m.[ξ !>> σ] := by
   | drop m n ihm ihn => asimp[ihm, ihn]
   | ptr l => asimp
   | null => asimp
+  | dead => asimp
 
 lemma up_comp_ren (σ : Var -> Tm Srt) (ξ : Var -> Var) :
     up σ !>> rename (upren ξ) = up (σ !>> rename ξ)  := by
@@ -197,6 +206,7 @@ lemma subst_ren_comp σ ξ (m : Tm Srt) : m.[σ].[ren ξ] = m.[σ !>> rename ξ]
   | drop m n ihm ihn => asimp[ihm, ihn]
   | ptr l => asimp
   | null => asimp
+  | dead => asimp
 
 lemma up_comp (σ τ : Var -> Tm Srt) :  up σ !> up τ = up (σ !> τ) := by
   funext x
@@ -222,6 +232,7 @@ lemma subst_comp (σ τ : Var -> Tm Srt) m : m.[σ].[τ] = m.[σ !> τ] := by
   | drop m n ihm ihn => asimp[ihm, ihn]
   | ptr l => asimp
   | null => asimp
+  | dead => asimp
 
 instance : SubstLemmas (Tm Srt) where
   rename_subst := rename_subst

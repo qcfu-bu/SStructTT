@@ -388,6 +388,13 @@ lemma Typed.substitution {Δ Δ' : Ctx Srt} {A m σ} :
          by asimp] at tym
     have := Typed.rw tyA tym tyn
     asimp at this; assumption
+  case exf wf tyA tym ih =>
+    have tyBot := Logical.Typed.bot wf.toLogical
+    replace tyA := tyA.substitution (agr.toLogical.cons tyBot); asimp at tyA
+    replace tym := tym.substitution agr.toLogical; asimp at tym
+    have wf' := agr.wf wf
+    have ty := Typed.exf wf' tyA tym
+    asimp at ty; assumption
   case drop Δ1 Δ2 Δ3 n s i mrg lw h tyn ihn =>
     have ⟨Δ1', Δ2', mrg', agr1, agr2⟩ := agr.split mrg
     replace lw := agr1.lower_image lw

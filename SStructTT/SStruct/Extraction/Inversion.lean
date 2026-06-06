@@ -190,8 +190,8 @@ lemma Extract.tup_ex_inv {Δ : Ctx Srt} {A B m m' n n' s s'} :
     assumption
 
 lemma Extract.null_preimage {Δ : Ctx Srt} {t B} :
-    Δ ⊢ t ▷ .null :: B -> False := by
-  generalize e: Tm.null = k
+    Δ ⊢ t ▷ (@Tm.null Srt) :: B -> False := by
+  generalize e2: (@Tm.null Srt) = k
   intro er; induction er <;> trivial
 
 lemma Extract.lam_preimage {B t : SStruct.Tm Srt} {m' s} :

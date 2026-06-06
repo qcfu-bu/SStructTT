@@ -504,6 +504,12 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
       constructor
       assumption
     . assumption
+  case exf wf tyA tym =>
+    subst_vars
+    exact (Logical.Typed.bot_not_derivable tym).elim
+  case exf_drop mrg tyA tym ern erb ihn ihb =>
+    subst_vars
+    exact (Logical.Typed.bot_not_derivable tym).elim
   case drop => cases rs; cases st; cases st
   case conv eq erm tyB ihm =>
     subst_vars
