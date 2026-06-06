@@ -75,6 +75,11 @@ inductive PStep : Tm Srt -> Tm Srt -> Prop where
   | rw_elim A {m m'} n :
     PStep m m' ->
     PStep (.rw A m (.rfl n)) m'
+  | bot : PStep .bot .bot
+  | exf {A A' m m'} :
+    PStep A A' ->
+    PStep m m' ->
+    PStep (.exf A m) (.exf A' m')
 
 infix:50 " ≈> " => PStep
 
@@ -177,6 +182,14 @@ lemma Red.rw {A A' m m' n n' : Tm Srt} :
   apply (@Star.trans _ _ (.rw A' m' n))
   apply Star.hom _ _ rm; aesop
   apply Star.hom _ _ rn; aesop
+
+@[aesop safe (rule_sets := [red])]
+lemma Red.exf {A A' m m' : Tm Srt} :
+    A ~>* A' -> m ~>* m' -> .exf A m ~>* .exf A' m' := by
+  intro rA rm
+  apply (@Star.trans _ _ (.exf A' m))
+  apply Star.hom _ _ rA; aesop
+  apply Star.hom _ _ rm; aesop
 
 @[aesop safe (rule_sets := [red])]
 lemma Red.subst {m n : Tm Srt} σ : m ~>* n -> m.[σ] ~>* n.[σ] := by
@@ -295,6 +308,14 @@ lemma Conv.rw {A A' m m' n n' : Tm Srt} :
   apply (@Conv.trans _ _ (.rw A' m' n))
   apply Conv.hom _ _ rm; aesop
   apply Conv.hom _ _ rn; aesop
+
+@[aesop safe (rule_sets := [conv])]
+lemma Conv.exf {A A' m m' : Tm Srt} :
+    A === A' -> m === m' -> .exf A m === .exf A' m' := by
+  intro rA rm
+  apply (@Conv.trans _ _ (.exf A' m))
+  apply Conv.hom _ _ rA; aesop
+  apply Conv.hom _ _ rm; aesop
 
 @[aesop safe (rule_sets := [conv])]
 lemma Conv.subst {m n : Tm Srt} σ : m === n -> m.[σ] === n.[σ] := by
@@ -646,6 +667,18 @@ lemma PStep.diamond : @Diamond (Tm Srt) PStep := by
     | rw_elim _ _ psm =>
       have ⟨m, psm1, psm2⟩ := ih psm
       exists m
+  case bot =>
+    intro ps; existsi m2; constructor
+    . assumption
+    . apply PStep.refl
+  case exf ihA ihm =>
+    intro
+    | exf psA psm =>
+      have ⟨A, psA1, psA2⟩ := ihA psA
+      have ⟨m, psm1, psm2⟩ := ihm psm
+      existsi .exf A m; constructor
+      . apply PStep.exf psA1 psm1
+      . apply PStep.exf psA2 psm2
 
 lemma PStep.strip {m m1 m2 : Tm Srt} :
     m ≈> m1 -> m ~>* m2 -> ∃ n, m1 ~>* n ∧ m2 ≈> n := by
@@ -796,6 +829,12 @@ lemma Red.ff_inv {x : Tm Srt} : .ff ~>* x -> x = .ff := by
   | R => rfl
   | SE _ st e => subst e; cases st
 
+lemma Red.bot_inv {x : Tm Srt} : .bot ~>* x -> x = .bot := by
+  intro rd
+  induction rd with
+  | R => rfl
+  | SE _ st e => subst e; cases st
+
 lemma Red.idn_inv {A m n x : Tm Srt} :
     .idn A m n ~>* x ->
     ∃ A' m' n', A ~>* A' ∧ m ~>* m' ∧ n ~>* n' ∧ x = .idn A' m' n' := by
@@ -836,6 +875,27 @@ lemma Red.rfl_inv {m x : Tm Srt} :
     | @rfl_M _ m2 =>
       existsi m2
       constructor
+      . apply Star.SE <;> assumption
+      . rfl
+
+lemma Red.exf_inv {A m x : Tm Srt} :
+    .exf A m ~>* x ->
+    ∃ A' m', A ~>* A' ∧ m ~>* m' ∧ x = .exf A' m' := by
+  intro rd; induction rd
+  case R => aesop
+  case SE rd st ih =>
+    have ⟨A1, m1, rA1, rm1, _⟩ := ih
+    subst_vars; cases st with
+    | @exf_A _ A2 =>
+      existsi A2, m1
+      repeat' apply And.intro
+      . apply Star.SE <;> assumption
+      . apply rm1
+      . rfl
+    | @exf_M _ _ m2 =>
+      existsi A1, m2
+      repeat' apply And.intro
+      . apply rA1
       . apply Star.SE <;> assumption
       . rfl
 
@@ -973,6 +1033,8 @@ def getInvLemma (m : Expr) : MetaM Expr := do
   | ``Tm.ff   => return .const ``Red.ff_inv   []
   | ``Tm.idn  => return .const ``Red.idn_inv  []
   | ``Tm.rfl  => return .const ``Red.rfl_inv  []
+  | ``Tm.bot  => return .const ``Red.bot_inv  []
+  | ``Tm.exf  => return .const ``Red.exf_inv  []
   | _ => throwError `getInvLemma
 
 /-- `false_conv` refutes impossible conversion proofs. -/

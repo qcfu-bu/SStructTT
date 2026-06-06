@@ -22,6 +22,8 @@ variable {Srt : Type}
   | .idn A m n => .idn (interp A) (interp m) (interp n)
   | .rfl m => .rfl (interp m)
   | .rw A m n => .rw (interp A) (interp m) (interp n)
+  | .bot => .bot
+  | .exf A m => .exf (interp A) (interp m)
 
 @[simp]def interp_ctx : Ctx Srt -> MLTT.Ctx
   | [] => []
@@ -54,6 +56,8 @@ lemma interp_ren_com {m : Tm Srt} {ξ} :
     repeat rw[SubstLemmas.upn1_up]
     repeat rw[<-SubstLemmas.upren_up]
     rw[ihA,ihm,ihn]; asimp
+  case exf ihA ihm =>
+    simp only [<-SubstLemmas.upren_up]; exact ⟨ihA, ihm⟩
 
 def InterpSubst
   (σ : Var -> Tm Srt)
@@ -92,6 +96,8 @@ lemma interp_subst_com {m : Tm Srt} {σ τ} :
     rw[ihm h, ihn h,
        ihA (interp_subst_up (interp_subst_up h))]
     asimp
+  case exf ihA ihm =>
+    exact ⟨ihA (interp_subst_up h), ihm h⟩
 
 lemma interp_step {m n : Tm Srt} :
     Step m n -> MLTT.Step [| m |] [| n |] := by
@@ -189,6 +195,10 @@ theorem Typed.toMLTT {Γ : Ctx Srt} {A m} :
       . rwa[<-interp_subst_com]
         intro x; cases x <;> asimp
     . intro x; cases x <;> asimp
+  case exf =>
+    rw[interp_subst_com]
+    . constructor <;> assumption
+    . intro x; cases x <;> asimp
   case rw =>
     rw[interp_subst_com]
     . constructor <;> try assumption
@@ -228,6 +238,18 @@ lemma Typed.red_value {A m : Tm Srt} :
       existsi n; and_intros
       . assumption
       . apply Star.R
+
+/--
+The empty type `bot` is not derivable: there is no closed term of type `bot`.
+
+Proof via strong normalization. By `red_value` (a corollary of `Typed.normalize`),
+any closed well-typed term reduces to a `Value`; subject reduction (`preservation'`)
+keeps it at type `bot`; but `bot_canonical` shows no `Value` inhabits `bot`.
+-/
+theorem Typed.bot_not_derivable {m : Tm Srt} : ¬ ([] ⊢ m : .bot) := by
+  intro ty
+  have ⟨n, vl, rd⟩ := ty.red_value
+  exact (ty.preservation' rd).bot_canonical Conv.R vl
 
 lemma Typed.closed_idn {A B m a b : Tm Srt} {s i} :
     [] ⊢ m : B.idn a b ->

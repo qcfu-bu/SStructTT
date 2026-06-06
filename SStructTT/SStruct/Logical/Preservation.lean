@@ -282,6 +282,20 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
       . apply Conv.compat; assumption
       . assumption
       . assumption
+  case exf tyA tym ihA ihm =>
+    cases st
+    case exf_A st =>
+      apply Typed.conv
+      . apply Conv.subst
+        apply Conv.onei st
+      . exact Typed.exf (ihA st) tym
+      . have := tyA.subst tym; asimp at this; exact this
+    case exf_M st =>
+      apply Typed.conv
+      . apply Conv.subst1
+        apply Conv.onei st
+      . exact Typed.exf tyA (ihm st)
+      . have := tyA.subst tym; asimp at this; exact this
   case conv eq _ tyB ihm _ =>
     have tym := ihm st
     apply Typed.conv eq tym tyB

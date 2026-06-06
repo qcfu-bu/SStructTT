@@ -86,6 +86,15 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
     Typed Γ n (.idn B a b) ->
     Typed Γ (.rw A m n) A.[n,b/]
 
+  | bot {Γ} :
+    Wf Γ ->
+    Typed Γ .bot (.srt ord.ι 0)
+
+  | exf {Γ A m s i} :
+    Typed (.bot :: Γ) A (.srt s i) ->
+    Typed Γ m .bot ->
+    Typed Γ (.exf A m) A.[m/]
+
   | conv {Γ A B m s i} :
     A === B ->
     Typed Γ m A ->

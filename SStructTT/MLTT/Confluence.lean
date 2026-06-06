@@ -74,6 +74,11 @@ inductive PStep : Tm -> Tm -> Prop where
   | rw_elim A {m m'} n :
     PStep m m' ->
     PStep (.rw A m (.rfl n)) m'
+  | bot : PStep .bot .bot
+  | exf {A A' m m'} :
+    PStep A A' ->
+    PStep m m' ->
+    PStep (.exf A m) (.exf A' m')
 
 infix:50 " ≈> " => PStep
 
@@ -176,6 +181,14 @@ lemma Red.rw {A A' m m' n n' : Tm} :
   apply (@Star.trans _ _ (.rw A' m' n))
   apply Star.hom _ _ rm; aesop
   apply Star.hom _ _ rn; aesop
+
+@[aesop safe (rule_sets := [red])]
+lemma Red.exf {A A' m m' : Tm} :
+    A ~>* A' -> m ~>* m' -> .exf A m ~>* .exf A' m' := by
+  intro rA rm
+  apply (@Star.trans _ _ (.exf A' m))
+  apply Star.hom _ _ rA; aesop
+  apply Star.hom _ _ rm; aesop
 
 @[aesop safe (rule_sets := [red])]
 lemma Red.subst {m n : Tm} σ : m ~>* n -> m.[σ] ~>* n.[σ] := by
@@ -294,6 +307,14 @@ lemma Conv.rw {A A' m m' n n' : Tm} :
   apply (@Conv.trans _ _ (.rw A' m' n))
   apply Conv.hom _ _ rm; aesop
   apply Conv.hom _ _ rn; aesop
+
+@[aesop safe (rule_sets := [conv])]
+lemma Conv.exf {A A' m m' : Tm} :
+    A === A' -> m === m' -> .exf A m === .exf A' m' := by
+  intro rA rm
+  apply (@Conv.trans _ _ (.exf A' m))
+  apply Conv.hom _ _ rA; aesop
+  apply Conv.hom _ _ rm; aesop
 
 @[aesop safe (rule_sets := [conv])]
 lemma Conv.subst {m n : Tm} σ : m === n -> m.[σ] === n.[σ] := by
@@ -645,6 +666,18 @@ lemma PStep.diamond : Diamond PStep := by
     | rw_elim _ _ psm =>
       have ⟨m, psm1, psm2⟩ := ih psm
       exists m
+  case bot =>
+    intro ps; existsi m2; constructor
+    . assumption
+    . apply PStep.refl
+  case exf ihA ihm =>
+    intro
+    | exf psA psm =>
+      have ⟨A, psA1, psA2⟩ := ihA psA
+      have ⟨m, psm1, psm2⟩ := ihm psm
+      existsi .exf A m; constructor
+      . apply PStep.exf psA1 psm1
+      . apply PStep.exf psA2 psm2
 
 lemma PStep.strip {m m1 m2 : Tm} :
     m ≈> m1 -> m ~>* m2 -> ∃ n, m1 ~>* n ∧ m2 ≈> n := by
@@ -790,6 +823,12 @@ lemma Red.tt_inv {x} : .tt ~>* x -> x = .tt := by
   | SE _ st e => subst e; cases st
 
 lemma Red.ff_inv {x} : .ff ~>* x -> x = .ff := by
+  intro rd
+  induction rd with
+  | R => rfl
+  | SE _ st e => subst e; cases st
+
+lemma Red.bot_inv {x} : .bot ~>* x -> x = .bot := by
   intro rd
   induction rd with
   | R => rfl

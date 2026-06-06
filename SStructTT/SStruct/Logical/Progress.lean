@@ -51,6 +51,16 @@ lemma Typed.idn_canonical {A C m a b : Tm Srt} :
     apply ihm <;> try assumption
     apply Conv.trans <;> assumption
 
+-- No value inhabits the empty type `bot`.
+lemma Typed.bot_canonical {C m : Tm Srt} :
+    [] ⊢ m : C -> C === .bot -> Value m -> False := by
+  generalize e: [] = Γ
+  intro ty eq vl; induction ty <;> try trivial
+  all_goals try false_conv
+  case conv ihm _ =>
+    apply ihm <;> try assumption
+    apply Conv.trans <;> assumption
+
 theorem Typed.progress {m A : Tm Srt} :
     [] ⊢ m : A -> (∃ n, m ~> n) ∨ Value m := by
   generalize e: [] = Γ
@@ -111,3 +121,11 @@ theorem Typed.progress {m A : Tm Srt} :
     | .inr vl =>
       have ⟨_, _⟩ := Typed.idn_canonical tyn Conv.R vl
       subst_vars; left; existsi m; constructor
+  case bot => right; constructor
+  case exf A m _ _ _ tym ihm =>
+    match ihm with
+    | .inl ⟨m', _⟩ =>
+      left; existsi Tm.exf A m'
+      constructor; assumption
+    | .inr vl =>
+      exact (Typed.bot_canonical tym Conv.R vl).elim

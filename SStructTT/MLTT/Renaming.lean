@@ -162,6 +162,15 @@ lemma Typed.renaming {Γ Γ' A m ξ} :
          by asimp] at ihm
     have := Typed.rw ihA ihm ihn
     asimp at this; assumption
+  case bot ih =>
+    constructor;
+    apply ih; assumption
+  case exf A _ _ tyA _ ihA ihm =>
+    have ⟨_, _, tyb⟩ := tyA.ctx_inv
+    replace ihA := ihA (agr.cons tyb); asimp at ihA
+    replace ihm := ihm agr; asimp at ihm
+    have := Typed.exf ihA ihm
+    asimp at this; assumption
   case conv eq tym tyB ihm ihB =>
     replace ihB := ihB agr
     replace ihm := ihm agr

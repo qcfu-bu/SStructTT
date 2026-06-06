@@ -20,6 +20,7 @@ inductive Value : Tm Srt -> Prop where
   | ff : Value .ff
   | idn A m n : Value (.idn A m n)
   | rfl m : Value (.rfl m)
+  | bot : Value .bot
 
 @[scoped aesop safe [constructors]]
 inductive Step : Tm Srt -> Tm Srt -> Prop where
@@ -105,6 +106,12 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
     Step (.rw A m n) (.rw A m n')
   | rw_elim A m n :
     Step (.rw A m (.rfl n)) m
+  | exf_A {A A'} m :
+    Step A A' ->
+    Step (.exf A m) (.exf A' m)
+  | exf_M A {m m'} :
+    Step m m' ->
+    Step (.exf A m) (.exf A m')
 
 notation:50 m:50 " ~> " n:50 => Step m n
 notation:50 m:50 " ~>* " n:50 => ARS.Star Step m n

@@ -27,6 +27,8 @@ inductive HeadSim : Tm Srt -> Tm Srt -> Prop where
     HeadSim (.idn A1 m n) (.idn A2 m n)
   | rfl {m} : HeadSim (.rfl m) (.rfl m)
   | rw {A m n} : HeadSim (.rw A m n) (.rw A m n)
+  | bot : HeadSim .bot .bot
+  | exf {A m} : HeadSim (.exf A m) (.exf A m)
 
 @[aesop safe (rule_sets := [unique]) [constructors]]
 inductive Sim (m n : Tm Srt) : Prop where
@@ -379,6 +381,28 @@ lemma Typed.rw_unique {Γ : Ctx Srt} {A B C m n a b} :
     have := ihm (Eq.refl _) h
     apply Sim.trans_left <;> assumption
 
+lemma Typed.bot_unique {Γ : Ctx Srt} {A} :
+    Γ ⊢ .bot : A -> Sim (.srt ord.ι 0) A := by
+  generalize e: Tm.bot = m
+  intro ty; induction ty
+  all_goals try trivial
+  case bot => apply Sim.refl
+  case conv ihm _ =>
+    subst_vars
+    have := ihm (Eq.refl _)
+    apply Sim.trans_left <;> assumption
+
+lemma Typed.exf_unique {Γ : Ctx Srt} {A B m} :
+    Γ ⊢ .exf A m : B -> Sim A.[m/] B := by
+  generalize e: Tm.exf A m = x
+  intro ty; induction ty generalizing A m
+  all_goals try trivial
+  case exf => cases e; apply Sim.refl
+  case conv ihm _ =>
+    subst_vars
+    have := ihm (Eq.refl _)
+    apply Sim.trans_left <;> assumption
+
 lemma Typed.unique' {Γ : Ctx Srt} {A B m} :
     Γ ⊢ m : A -> Γ ⊢ m : B -> Sim A B := by
   intro ty; induction ty generalizing B
@@ -398,6 +422,8 @@ lemma Typed.unique' {Γ : Ctx Srt} {A B m} :
   case idn => apply Typed.idn_unique <;> aesop
   case rfl => apply Typed.rfl_unique <;> aesop
   case rw => apply Typed.rw_unique <;> aesop
+  case bot => apply Typed.bot_unique <;> aesop
+  case exf => apply Typed.exf_unique <;> aesop
   case conv ihm _ =>
     apply Sim.trans_right
     apply ihm ty

@@ -159,6 +159,10 @@ theorem Typed.validity {Γ : Ctx Srt} {A m} :
   case bool => existsi ord.ι, 1; constructor; assumption
   case tt => existsi ord.ι, 0; constructor; assumption
   case ff => existsi ord.ι, 0; constructor; assumption
+  case bot => existsi ord.ι, 1; constructor; assumption
+  case exf _ _ _ s i tyA tym _ _ =>
+    existsi s, i
+    have := tyA.subst tym; asimp at this; assumption
   case ite s i _ _ _ _ _ _ _ _ =>
     existsi s, i
     apply Typed.esubst <;> try first | rfl | assumption

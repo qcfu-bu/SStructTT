@@ -172,6 +172,13 @@ lemma Typed.substitution {Γ Γ' : Ctx Srt} {A m σ} :
     . asimp; assumption
     . asimp; assumption
     . assumption
+  case bot ih => constructor; apply ih; assumption
+  case exf A m _ _ tyA _ ihA ihm =>
+    rw[show A.[m.[σ] .: σ] = A.[up σ].[m.[σ]/] by asimp]
+    have ⟨_, _, _, tyb⟩ := tyA.ctx_inv
+    constructor
+    . apply ihA; constructor <;> assumption
+    . apply ihm; assumption
   case conv eq _ _ ihm ihB =>
     apply Typed.conv
     . apply Conv.subst _ eq

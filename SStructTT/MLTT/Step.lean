@@ -88,6 +88,12 @@ inductive Step : Tm -> Tm -> Prop where
     Step (.rw A m n) (.rw A m n')
   | rw_elim A m n :
     Step (.rw A m (.rfl n)) m
+  | exf_A {A A'} m :
+    Step A A' ->
+    Step (.exf A m) (.exf A' m)
+  | exf_M A {m m'} :
+    Step m m' ->
+    Step (.exf A m) (.exf A m')
 
 notation:50 m:50 " ~> " n:50 => Step m n
 notation:50 m:50 " ~>* " n:50 => ARS.Star Step m n

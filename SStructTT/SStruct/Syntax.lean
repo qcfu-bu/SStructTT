@@ -21,6 +21,8 @@ inductive Tm where
   | idn (A m n : Tm)
   | rfl (m : Tm)
   | rw  (A m n : Tm)
+  | bot
+  | exf (A m : Tm)
 
 namespace Tm
 variable {Srt : Type}
@@ -46,6 +48,8 @@ def rename_rec (ξ : Var -> Var) (m : Tm Srt) : Tm Srt :=
   | idn A m n => idn (rename_rec ξ A) (rename_rec ξ m) (rename_rec ξ n)
   | rfl m => rfl (rename_rec ξ m)
   | rw A m n => rw (rename_rec (upren (upren ξ)) A) (rename_rec ξ m) (rename_rec ξ n)
+  | bot => bot
+  | exf A m => exf (rename_rec (upren ξ) A) (rename_rec ξ m)
 
 instance : Rename (Tm Srt) where
   rename := rename_rec
@@ -68,6 +72,8 @@ variable (ξ : Var -> Var) (A B m n n1 n2 : Tm Srt) (x i : Nat) (r : Rlv) (s : S
 @[asimp]lemma idn  : rename ξ (idn A m n) = idn (rename ξ A) (rename ξ m) (rename ξ n) := by rfl
 @[asimp]lemma rfl  : rename ξ (rfl m) = rfl (rename ξ m) := by rfl
 @[asimp]lemma rw   : rename ξ (rw A m n) = rw (rename (upren $ upren ξ) A) (rename ξ m) (rename ξ n) := by rfl
+@[asimp]lemma bot  : rename ξ (@bot Srt) = bot := by rfl
+@[asimp]lemma exf  : rename ξ (exf A m) = exf (rename (upren ξ) A) (rename ξ m) := by rfl
 @[asimp]lemma rename_rec : rename_rec ξ m = rename ξ m := by rfl
 end Rename
 
@@ -88,6 +94,8 @@ def subst_rec (σ : Var -> Tm Srt) (m : Tm Srt) : Tm Srt :=
   | idn A m n => idn (subst_rec σ A) (subst_rec σ m) (subst_rec σ n)
   | rfl m => rfl (subst_rec σ m)
   | rw A m n => rw (subst_rec (upn 2 σ) A) (subst_rec σ m) (subst_rec σ n)
+  | bot => bot
+  | exf A m => exf (subst_rec (up σ) A) (subst_rec σ m)
 
 instance : Subst (Tm Srt) where
   subst := subst_rec
@@ -110,6 +118,8 @@ variable (σ : Var -> Tm Srt) (A B m n n1 n2 : Tm Srt) (x i : Nat) (r : Rlv) (s 
 @[asimp]lemma idn  : subst σ (idn A m n) = idn (subst σ A) (subst σ m) (subst σ n) := by rfl
 @[asimp]lemma rfl  : subst σ (rfl m) = rfl (subst σ m) := by rfl
 @[asimp]lemma rw   : subst σ (rw A m n) = rw (subst (upn 2 σ) A) (subst σ m) (subst σ n) := by rfl
+@[asimp]lemma bot  : subst σ (@bot Srt) = bot := by rfl
+@[asimp]lemma exf  : subst σ (exf A m) = exf (subst (up σ) A) (subst σ m) := by rfl
 @[asimp]lemma subst_rec : subst_rec σ m = subst σ m := by rfl
 end Subst
 
@@ -135,6 +145,8 @@ lemma rename_subst ξ (m : Tm Srt) : rename ξ m = m.[ren ξ] := by
   | idn A m n ihA ihm ihn => asimp[ihA, ihm, ihn]
   | rfl m ihm => asimp[ihm]
   | rw A m n ihA ihm ihn => asimp[up_upren, ihA, ihm, ihn]
+  | bot => asimp
+  | exf A m ihA ihm => asimp[up_upren, ihA, ihm]
 
 lemma up_ids : up ids = @ids (Tm Srt) _ := by
   funext x
@@ -159,6 +171,8 @@ lemma subst_id (m : Tm Srt) : m.[ids] = m := by
   | idn A m n ihA ihm ihn => asimp[ihA, ihm, ihn]
   | rfl m ihm => asimp[ihm]
   | rw A m n ihA ihm ihn => asimp[up_ids, ihA, ihm, ihn]
+  | bot => asimp
+  | exf A m ihA ihm => asimp[up_ids, ihA, ihm]
 
 lemma up_comp_upren (ξ : Var -> Var) (σ : Var -> Tm Srt) :
     up (ξ !>> σ) = upren ξ !>> up σ := by
@@ -184,6 +198,8 @@ lemma ren_subst_comp ξ σ (m : Tm Srt) : m.[ren ξ].[σ] = m.[ξ !>> σ] := by
   | idn A m n ihA ihm ihn => asimp[ihA, ihm, ihn]
   | rfl m ihm => asimp[ihm]
   | rw A m n ihA ihm ihn => asimp[up_upren, up_comp_upren, ihA, ihm, ihn]
+  | bot => asimp
+  | exf A m ihA ihm => asimp[up_upren, up_comp_upren, ihA, ihm]
 
 lemma up_comp_ren (σ : Var -> Tm Srt) (ξ : Var -> Var) :
     up σ !>> rename (upren ξ) = up (σ !>> rename ξ)  := by
@@ -213,6 +229,8 @@ lemma subst_ren_comp σ ξ (m : Tm Srt) : m.[σ].[ren ξ] = m.[σ !>> rename ξ]
   | idn A m n ihA ihm ihn => asimp[ihA, ihm, ihn]
   | rfl m ihm => asimp[ihm]
   | rw A m n ihA ihm ihn => asimp[up_upren, up_comp_ren, ihA, ihm, ihn]
+  | bot => asimp
+  | exf A m ihA ihm => asimp[up_upren, up_comp_ren, ihA, ihm]
 
 lemma up_comp (σ τ : Var -> Tm Srt) :  up σ !> up τ = up (σ !> τ) := by
   funext x
@@ -242,6 +260,8 @@ lemma subst_comp (σ τ : Var -> Tm Srt) m : m.[σ].[τ] = m.[σ !> τ] := by
   | idn A m n ihA ihm ihn => asimp[ihA, ihm, ihn]
   | rfl m ihm => asimp[ihm]
   | rw A m n ihA ihm ihn => asimp[up_comp, ihA, ihm, ihn]
+  | bot => asimp
+  | exf A m ihA ihm => asimp[up_comp, ihA, ihm]
 
 instance : SubstLemmas (Tm Srt) where
   rename_subst := rename_subst
