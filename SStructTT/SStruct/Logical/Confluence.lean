@@ -951,7 +951,10 @@ def applyCR (goal : MVarId) (m l1 l2 : Expr) : MetaM Expr := do
     prjEqs h2 fun es2 => do
       let e1 <- mkAppM ``Eq.symm #[es1[0]!]
       let e2 <- mkAppM ``Eq.trans #[e1, es2[0]!]
-      mkAppOptM ``Tm.noConfusion #[none, <-goal.getType, none, none, e2]
+      -- `Tm.noConfusion` is heterogeneous: it takes `Srt = Srt'` and `t ≍ t'`.
+      let srt := (<-inferType e2).getAppArgs[0]!.appArg!
+      mkAppOptM ``Tm.noConfusion
+        #[<-goal.getType, none, none, none, none, <-mkEqRefl srt, <-mkAppM ``heq_of_eq #[e2]]
 
 /-
 Get the associated inversion lemma for `m`. For more complex languages, the

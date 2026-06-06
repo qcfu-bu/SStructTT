@@ -165,7 +165,7 @@ lemma Resolve.id_rename {H : Heap Srt} {m m' i ξ} :
   case ptr l m n lk rsm ihm =>
     asimp
     have clm := lk.closed
-    have clm' := (rsm.closed_image clm).weaken (zero_le i)
+    have clm' := (rsm.closed_image clm).weaken (Nat.zero_le i)
     rw[<-closed_rename clm' idr]
     constructor <;> assumption
   case null => asimp; constructor; assumption
