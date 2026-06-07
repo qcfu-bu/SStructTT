@@ -99,6 +99,28 @@ lemma Neutral.red {m n : Tm} :
   case SE rd st ih =>
     exact ih.step st
 
+lemma Neutral.shift {m : Tm} (neu : Neutral m) (i : Nat) :
+    Neutral m.[shift i] := by
+  induction neu generalizing i with
+  | var x =>
+    asimp
+    exact Neutral.var (x + i)
+  | app m n _ ih =>
+    asimp
+    exact Neutral.app _ _ (ih i)
+  | prj A m n _ ih =>
+    asimp
+    exact Neutral.prj _ _ _ (ih i)
+  | ite A m n1 n2 _ ih =>
+    asimp
+    exact Neutral.ite _ _ _ _ (ih i)
+  | rw A m n _ ih =>
+    asimp
+    exact Neutral.rw _ _ _ (ih i)
+  | exf A m _ ih =>
+    asimp
+    exact Neutral.exf _ _ (ih i)
+
 lemma Neutral.not_red_lam {m A body : Tm} :
     Neutral m -> ¬ m ~>* .lam A body := by
   intro neu rd
@@ -175,6 +197,11 @@ lemma shiftSubst_add (σ : Var -> Tm) (i j : Nat) :
   funext x
   simp [shiftSubst, subst_shift_shift]
 
+lemma subst_shiftSubst (m : Tm) (σ : Var -> Tm) (i : Nat) :
+    m.[σ].[shift i] = m.[shiftSubst σ i] := by
+  rw [Tm.subst_comp]
+  rfl
+
 lemma SRed.scons_same {σ τ : Var -> Tm} {m : Tm} :
     SRed σ τ -> SRed (m .: σ) (m .: τ) := by
   intro h x
@@ -196,6 +223,16 @@ lemma SConv.scons_same {σ τ : Var -> Tm} {m : Tm} :
   | succ x =>
     asimp
     exact h x
+
+lemma SRed.shiftSubst {σ τ : Var -> Tm} :
+    SRed σ τ -> ∀ i, SRed (shiftSubst σ i) (shiftSubst τ i) := by
+  intro h i x
+  exact Red.subst (shift i) (h x)
+
+lemma SConv.shiftSubst {σ τ : Var -> Tm} :
+    SConv σ τ -> ∀ i, SConv (shiftSubst σ i) (shiftSubst τ i) := by
+  intro h i x
+  exact Conv.subst (shift i) (h x)
 
 lemma sn_shift {m : Tm} : SN Step m -> SN Step m.[shift 1] := by
   intro hsn
@@ -2049,6 +2086,49 @@ end DCandCtx
 
 namespace TypeInterp
 
+def weakenCtx {Δ : DCandCtx} {A B : Tm}
+    (I : TypeInterp Δ A) (J : TypeInterp Δ B) :
+    TypeInterp (DCandCtx.extend J) A.[shift 1] where
+  cand σ := I.cand (fun x => σ (x + 1))
+  type_sn := by
+    intro σ hσ
+    asimp
+    exact I.type_sn (fun x => σ (x + 1)) hσ.1
+  stable_red := by
+    intro σ τ m hσ hred hm
+    exact I.stable_red hσ.1 (fun x => hred (x + 1)) hm
+  stable_red_fwd := by
+    intro σ τ m hσ hred hm
+    exact I.stable_red_fwd hσ.1 (fun x => hred (x + 1)) hm
+  stable_conv := by
+    intro σ τ m hσ hτ hconv hm
+    exact I.stable_conv hσ.1 hτ.1 (fun x => hconv (x + 1)) hm
+
+lemma weakenCtx_weakens {Δ : DCandCtx} {A B : Tm}
+    {I : TypeInterp Δ A} {J : TypeInterp Δ B} :
+    I.Weakens -> (TypeInterp.weakenCtx I J).Weakens := by
+  intro hI σ m hσ hm
+  have htail : (fun x => (σ (x + 1)).[shift 1]) =
+      (fun x => (fun y => (σ y).[shift 1]) (x + 1)) := by
+    rfl
+  change (I.cand (fun x => ((fun y => (σ y).[shift 1]) (x + 1)))).mem m.[shift 1]
+  rw [← htail]
+  exact hI hσ.1 hm
+
+lemma semVarZero {Δ : DCandCtx} {A : Tm} (I : TypeInterp Δ A) :
+    (TypeInterp.weakenCtx I I).SemTm (.var 0) := by
+  intro σ hσ
+  asimp
+  exact hσ.2
+
+lemma semVarSucc {Δ : DCandCtx} {A B : Tm}
+    (I : TypeInterp Δ A) (J : TypeInterp Δ B) {x : Var} :
+    I.SemTm (.var x) ->
+    (TypeInterp.weakenCtx I J).SemTm (.var (x + 1)) := by
+  intro hx σ hσ
+  asimp
+  exact hx (fun y => σ (y + 1)) hσ.1
+
 def family {Δ : DCandCtx} {A B : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
     (σ : Var -> Tm) (hσ : Δ.valid σ) : CandidateFamily (IA.cand σ) where
@@ -2090,6 +2170,172 @@ lemma family_expansive {Δ : DCandCtx} {A B : Tm}
   intro a ha
   exact hIB (a .: σ) (DCandCtx.extend_cons hσ ha)
 
+def kpiCand {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens)
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ))
+    (σ : Var -> Tm) (hσ : Δ.valid σ) : Candidate where
+  mem f :=
+    SN Step f ∧
+    ∀ i n, (IA.cand (shiftSubst σ i)).mem n ->
+      (IB.cand (n .: shiftSubst σ i)).mem (.app f.[shift i] n)
+  sn hf := hf.1
+  closed_step := by
+    intro f f' hf st
+    constructor
+    . exact sn_step hf.1 st
+    . intro i n hn
+      exact (IB.cand (n .: shiftSubst σ i)).closed_step
+        (hf.2 i n hn) (Step.app_M n (Step.subst (shift i) st))
+  neutral := by
+    intro f neu hsn _hred
+    constructor
+    . exact hsn
+    . intro i n hn
+      let σi := shiftSubst σ i
+      have hσi : Δ.valid σi := DCandCtx.weakens_iter hΔ hσ i
+      have app_mem :
+          ∀ {g a}, SN Step g -> SN Step a -> Neutral g -> (IA.cand σi).mem a ->
+            (IB.cand (a .: σi)).mem (.app g a) := by
+        intro g a sng
+        induction sng generalizing a with
+        | intro stepG ihG =>
+          rename_i g0
+          intro sna neug ha
+          induction sna with
+          | intro stepA ihA =>
+            rename_i a0
+            apply Candidate.expansive_of_steps
+              (hIB (a0 .: σi) (DCandCtx.extend_cons hσi ha))
+            intro x st
+            cases st with
+            | app_M a stG =>
+              exact ihG stG (SN.intro stepA) (Neutral.step neug stG) ha
+            | app_N g stA =>
+              rename_i a1
+              have ha' : (IA.cand σi).mem a1 :=
+                (IA.cand σi).closed_step ha stA
+              have hred : SRed (a0 .: σi) (a1 .: σi) := by
+                intro x
+                cases x with
+                | zero =>
+                  asimp
+                  exact Star.one stA
+                | succ x =>
+                  asimp
+                  exact Star.R
+              exact IB.stable_red (DCandCtx.extend_cons hσi ha) hred (ihA stA ha')
+            | beta A body a =>
+              exact (Neutral.not_lam neug).elim
+      exact app_mem (sn_shiftn i hsn) ((IA.cand σi).sn hn) (neu.shift i) hn
+
+noncomputable def kpiCandTotal {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens)
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ))
+    (σ : Var -> Tm) : Candidate := by
+  classical
+  exact if hσ : Δ.valid σ then TypeInterp.kpiCand IA IB hΔ hIB σ hσ
+    else Candidate.snCandidate
+
+lemma kpiCandTotal_valid {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens)
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ))
+    {σ : Var -> Tm} (hσ : Δ.valid σ) :
+    TypeInterp.kpiCandTotal IA IB hΔ hIB σ =
+      TypeInterp.kpiCand IA IB hΔ hIB σ hσ := by
+  classical
+  simp [TypeInterp.kpiCandTotal, hσ]
+
+noncomputable def kpi {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens)
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ)) :
+    TypeInterp Δ (.pi A B) where
+  cand := TypeInterp.kpiCandTotal IA IB hΔ hIB
+  type_sn := by
+    intro σ hσ
+    asimp
+    exact sn_pi (IA.type_sn σ hσ)
+      (IB.type_sn (up σ) (DCandCtx.extend_up_valid hΔ hσ))
+  stable_red := by
+    intro σ τ f hσ hred hf
+    have hτ : Δ.valid τ := Δ.closed_red hσ hred
+    rw [TypeInterp.kpiCandTotal_valid IA IB hΔ hIB hτ] at hf
+    rw [TypeInterp.kpiCandTotal_valid IA IB hΔ hIB hσ]
+    dsimp [TypeInterp.kpiCand] at hf ⊢
+    constructor
+    . exact hf.1
+    . intro i n hnσ
+      have hσi : Δ.valid (shiftSubst σ i) :=
+        DCandCtx.weakens_iter hΔ hσ i
+      have hred_i : SRed (shiftSubst σ i) (shiftSubst τ i) :=
+        SRed.shiftSubst hred i
+      have hnτ : (IA.cand (shiftSubst τ i)).mem n :=
+        IA.stable_red_fwd hσi hred_i hnσ
+      have happτ := hf.2 i n hnτ
+      exact IB.stable_red (DCandCtx.extend_cons hσi hnσ)
+        (SRed.scons_same hred_i) happτ
+  stable_red_fwd := by
+    intro σ τ f hσ hred hf
+    have hτ : Δ.valid τ := Δ.closed_red hσ hred
+    rw [TypeInterp.kpiCandTotal_valid IA IB hΔ hIB hσ] at hf
+    rw [TypeInterp.kpiCandTotal_valid IA IB hΔ hIB hτ]
+    dsimp [TypeInterp.kpiCand] at hf ⊢
+    constructor
+    . exact hf.1
+    . intro i n hnτ
+      have hσi : Δ.valid (shiftSubst σ i) :=
+        DCandCtx.weakens_iter hΔ hσ i
+      have hred_i : SRed (shiftSubst σ i) (shiftSubst τ i) :=
+        SRed.shiftSubst hred i
+      have hnσ : (IA.cand (shiftSubst σ i)).mem n :=
+        IA.stable_red hσi hred_i hnτ
+      have happσ := hf.2 i n hnσ
+      exact IB.stable_red_fwd (DCandCtx.extend_cons hσi hnσ)
+        (SRed.scons_same hred_i) happσ
+  stable_conv := by
+    intro σ τ f hσ hτ hconv hf
+    rw [TypeInterp.kpiCandTotal_valid IA IB hΔ hIB hσ] at hf
+    rw [TypeInterp.kpiCandTotal_valid IA IB hΔ hIB hτ]
+    dsimp [TypeInterp.kpiCand] at hf ⊢
+    constructor
+    . exact hf.1
+    . intro i n hnτ
+      have hσi : Δ.valid (shiftSubst σ i) :=
+        DCandCtx.weakens_iter hΔ hσ i
+      have hτi : Δ.valid (shiftSubst τ i) :=
+        DCandCtx.weakens_iter hΔ hτ i
+      have hconv_i : SConv (shiftSubst σ i) (shiftSubst τ i) :=
+        SConv.shiftSubst hconv i
+      have hnσ : (IA.cand (shiftSubst σ i)).mem n :=
+        IA.stable_conv_sym hσi hτi hconv_i hnτ
+      have happσ := hf.2 i n hnσ
+      exact IB.stable_conv (DCandCtx.extend_cons hσi hnσ)
+        (DCandCtx.extend_cons hτi hnτ) (SConv.scons_same hconv_i) happσ
+
+lemma kpi_weakens {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens)
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ)) :
+    (TypeInterp.kpi IA IB hΔ hIB).Weakens := by
+  intro σ f hσ hf
+  have hσ1 : Δ.valid (shiftSubst σ 1) := hΔ hσ
+  change (TypeInterp.kpiCandTotal IA IB hΔ hIB (shiftSubst σ 1)).mem f.[shift 1]
+  rw [TypeInterp.kpiCandTotal_valid IA IB hΔ hIB hσ1]
+  change (TypeInterp.kpiCandTotal IA IB hΔ hIB σ).mem f at hf
+  rw [TypeInterp.kpiCandTotal_valid IA IB hΔ hIB hσ] at hf
+  dsimp [TypeInterp.kpiCand] at hf ⊢
+  constructor
+  . exact sn_shift hf.1
+  . intro i n hn
+    have hsubst : shiftSubst (shiftSubst σ 1) i = shiftSubst σ (1 + i) :=
+      shiftSubst_add σ 1 i
+    rw [hsubst] at hn
+    have happ := hf.2 (1 + i) n hn
+    simpa [hsubst, subst_shift_shift] using happ
+
 def piCand {Δ : DCandCtx} {A B : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
     (σ : Var -> Tm) (hσ : Δ.valid σ) : Candidate :=
@@ -2099,6 +2345,132 @@ def sigCand {Δ : DCandCtx} {A B : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
     (σ : Var -> Tm) (hσ : Δ.valid σ) : Candidate :=
   Candidate.sigma (IA.cand σ) (TypeInterp.family IA IB σ hσ)
+
+def ksigCand {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (σ : Var -> Tm) : Candidate where
+  mem p :=
+    SN Step p ∧
+    ∀ i a b, p.[shift i] ~>* .tup a b ->
+      (IA.cand (shiftSubst σ i)).mem a ∧
+      (IB.cand (a .: shiftSubst σ i)).mem b
+  sn hp := hp.1
+  closed_step := by
+    intro p p' hp st
+    constructor
+    . exact sn_step hp.1 st
+    . intro i a b rd
+      exact hp.2 i a b (Star.ES (Step.subst (shift i) st) rd)
+  neutral := by
+    intro p neu hsn _hred
+    constructor
+    . exact hsn
+    . intro i a b rd
+      exact (Neutral.not_red_tup (neu.shift i) rd).elim
+
+noncomputable def ksigCandTotal {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (σ : Var -> Tm) : Candidate := by
+  classical
+  exact if _hσ : Δ.valid σ then TypeInterp.ksigCand IA IB σ
+    else Candidate.snCandidate
+
+lemma ksigCandTotal_valid {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    {σ : Var -> Tm} (hσ : Δ.valid σ) :
+    TypeInterp.ksigCandTotal IA IB σ =
+      TypeInterp.ksigCand IA IB σ := by
+  classical
+  simp [TypeInterp.ksigCandTotal, hσ]
+
+noncomputable def ksig {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens) : TypeInterp Δ (.sig A B) where
+  cand := TypeInterp.ksigCandTotal IA IB
+  type_sn := by
+    intro σ hσ
+    asimp
+    exact sn_sig (IA.type_sn σ hσ)
+      (IB.type_sn (up σ) (DCandCtx.extend_up_valid hΔ hσ))
+  stable_red := by
+    intro σ τ p hσ hred hp
+    have hτ : Δ.valid τ := Δ.closed_red hσ hred
+    rw [TypeInterp.ksigCandTotal_valid IA IB hτ] at hp
+    rw [TypeInterp.ksigCandTotal_valid IA IB hσ]
+    dsimp [TypeInterp.ksigCand] at hp ⊢
+    constructor
+    . exact hp.1
+    . intro i a b rd
+      have hσi : Δ.valid (shiftSubst σ i) :=
+        DCandCtx.weakens_iter hΔ hσ i
+      have hred_i : SRed (shiftSubst σ i) (shiftSubst τ i) :=
+        SRed.shiftSubst hred i
+      have ⟨haτ, hbτ⟩ := hp.2 i a b rd
+      have haσ : (IA.cand (shiftSubst σ i)).mem a :=
+        IA.stable_red hσi hred_i haτ
+      exact ⟨haσ,
+        IB.stable_red (DCandCtx.extend_cons hσi haσ)
+          (SRed.scons_same hred_i) hbτ⟩
+  stable_red_fwd := by
+    intro σ τ p hσ hred hp
+    have hτ : Δ.valid τ := Δ.closed_red hσ hred
+    rw [TypeInterp.ksigCandTotal_valid IA IB hσ] at hp
+    rw [TypeInterp.ksigCandTotal_valid IA IB hτ]
+    dsimp [TypeInterp.ksigCand] at hp ⊢
+    constructor
+    . exact hp.1
+    . intro i a b rd
+      have hσi : Δ.valid (shiftSubst σ i) :=
+        DCandCtx.weakens_iter hΔ hσ i
+      have hred_i : SRed (shiftSubst σ i) (shiftSubst τ i) :=
+        SRed.shiftSubst hred i
+      have ⟨haσ, hbσ⟩ := hp.2 i a b rd
+      have haτ : (IA.cand (shiftSubst τ i)).mem a :=
+        IA.stable_red_fwd hσi hred_i haσ
+      exact ⟨haτ,
+        IB.stable_red_fwd (DCandCtx.extend_cons hσi haσ)
+          (SRed.scons_same hred_i) hbσ⟩
+  stable_conv := by
+    intro σ τ p hσ hτ hconv hp
+    rw [TypeInterp.ksigCandTotal_valid IA IB hσ] at hp
+    rw [TypeInterp.ksigCandTotal_valid IA IB hτ]
+    dsimp [TypeInterp.ksigCand] at hp ⊢
+    constructor
+    . exact hp.1
+    . intro i a b rd
+      have hσi : Δ.valid (shiftSubst σ i) :=
+        DCandCtx.weakens_iter hΔ hσ i
+      have hτi : Δ.valid (shiftSubst τ i) :=
+        DCandCtx.weakens_iter hΔ hτ i
+      have hconv_i : SConv (shiftSubst σ i) (shiftSubst τ i) :=
+        SConv.shiftSubst hconv i
+      have ⟨haσ, hbσ⟩ := hp.2 i a b rd
+      have haτ : (IA.cand (shiftSubst τ i)).mem a :=
+        IA.stable_conv hσi hτi hconv_i haσ
+      exact ⟨haτ,
+        IB.stable_conv (DCandCtx.extend_cons hσi haσ)
+          (DCandCtx.extend_cons hτi haτ) (SConv.scons_same hconv_i) hbσ⟩
+
+lemma ksig_weakens {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens) :
+    (TypeInterp.ksig IA IB hΔ).Weakens := by
+  intro σ p hσ hp
+  have hσ1 : Δ.valid (shiftSubst σ 1) := hΔ hσ
+  change (TypeInterp.ksigCandTotal IA IB (shiftSubst σ 1)).mem p.[shift 1]
+  rw [TypeInterp.ksigCandTotal_valid IA IB hσ1]
+  change (TypeInterp.ksigCandTotal IA IB σ).mem p at hp
+  rw [TypeInterp.ksigCandTotal_valid IA IB hσ] at hp
+  dsimp [TypeInterp.ksigCand] at hp ⊢
+  constructor
+  . exact sn_shift hp.1
+  . intro i a b rd
+    have hsubst : shiftSubst (shiftSubst σ 1) i = shiftSubst σ (1 + i) :=
+      shiftSubst_add σ 1 i
+    have rd' : p.[shift (1 + i)] ~>* .tup a b := by
+      simpa [subst_shift_shift] using rd
+    rw [hsubst]
+    exact hp.2 (1 + i) a b rd'
 
 noncomputable def piCandTotal {Δ : DCandCtx} {A B : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
@@ -2366,6 +2738,28 @@ lemma semLamPiInterp {Δ : DCandCtx} {A B T m : Tm}
   rw [TypeInterp.piCandTotal_valid IA IB hσ]
   exact TypeInterp.semLamPi IA IB hT hm hIB hbody σ hσ
 
+lemma semLamKPiInterp {Δ : DCandCtx} {A B T m : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens)
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ)) :
+    (∀ σ, Δ.valid σ -> SN Step T.[σ]) ->
+    (∀ σ, Δ.valid σ -> SN Step m.[up σ]) ->
+    TypeInterp.SemBody IA IB m ->
+    (TypeInterp.kpi IA IB hΔ hIB).SemTm (.lam T m) := by
+  intro hT hm hbody σ hσ
+  change (TypeInterp.kpiCandTotal IA IB hΔ hIB σ).mem (.lam T m).[σ]
+  rw [TypeInterp.kpiCandTotal_valid IA IB hΔ hIB hσ]
+  dsimp [TypeInterp.kpiCand]
+  constructor
+  . asimp
+    exact sn_lam (hT σ hσ) (hm σ hσ)
+  . intro i n hn
+    have hσi : Δ.valid (shiftSubst σ i) :=
+      DCandCtx.weakens_iter hΔ hσ i
+    have hpi := TypeInterp.semLamPi IA IB hT hm hIB hbody (shiftSubst σ i) hσi
+    have happ := Candidate.pi_app hpi hn
+    simpa [subst_shiftSubst] using happ
+
 lemma semAppPi {Δ : DCandCtx} {A B m n : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B) :
     (∀ σ, (hσ : Δ.valid σ) -> (TypeInterp.piCand IA IB σ hσ).mem m.[σ]) ->
@@ -2392,6 +2786,25 @@ lemma semAppPiInterp {Δ : DCandCtx} {A B m n : Tm}
     exact h
   . exact hn
 
+lemma semAppKPiInterp {Δ : DCandCtx} {A B m n : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens)
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ)) :
+    (TypeInterp.kpi IA IB hΔ hIB).SemTm m ->
+    IA.SemTm n ->
+    ∀ σ, (hσ : Δ.valid σ) ->
+      (IB.cand (n.[σ] .: σ)).mem (.app m n).[σ] := by
+  intro hm hn σ hσ
+  have h := hm σ hσ
+  change (TypeInterp.kpiCandTotal IA IB hΔ hIB σ).mem m.[σ] at h
+  rw [TypeInterp.kpiCandTotal_valid IA IB hΔ hIB hσ] at h
+  dsimp [TypeInterp.kpiCand] at h
+  have hn0 : (IA.cand (shiftSubst σ 0)).mem n.[σ] := by
+    simpa [shiftSubst_zero] using hn σ hσ
+  have happ := h.2 0 n.[σ] hn0
+  rw [shiftSubst_zero σ] at happ
+  simpa [SubstLemmas.shift0, Tm.subst_id] using happ
+
 lemma semTupSigma {Δ : DCandCtx} {A B m n : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B) :
     IA.SemTm m ->
@@ -2412,6 +2825,46 @@ lemma semTupSigmaInterp {Δ : DCandCtx} {A B m n : Tm}
   change (TypeInterp.sigCandTotal IA IB σ).mem (.tup m n).[σ]
   rw [TypeInterp.sigCandTotal_valid IA IB hσ]
   exact TypeInterp.semTupSigma IA IB hm hn σ hσ
+
+lemma semTupKSigmaInterp {Δ : DCandCtx} {A B m n : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens) :
+    IA.SemTm m ->
+    (∀ σ, (hσ : Δ.valid σ) -> (IB.cand (m.[σ] .: σ)).mem n.[σ]) ->
+    (TypeInterp.ksig IA IB hΔ).SemTm (.tup m n) := by
+  intro hm hn σ hσ
+  change (TypeInterp.ksigCandTotal IA IB σ).mem (.tup m n).[σ]
+  rw [TypeInterp.ksigCandTotal_valid IA IB hσ]
+  dsimp [TypeInterp.ksigCand]
+  constructor
+  . asimp
+    exact sn_tup ((IA.cand σ).sn (hm σ hσ))
+      ((IB.cand (m.[σ] .: σ)).sn (hn σ hσ))
+  . intro i a b rd
+    let σi := shiftSubst σ i
+    have hσi : Δ.valid σi := DCandCtx.weakens_iter hΔ hσ i
+    have hm_i : (IA.cand σi).mem m.[σi] := hm σi hσi
+    have hn_i : (IB.cand (m.[σi] .: σi)).mem n.[σi] := hn σi hσi
+    have rd' : (.tup m n).[σi] ~>* .tup a b := by
+      simpa [subst_shiftSubst] using rd
+    have rd_tup : .tup m.[σi] n.[σi] ~>* .tup a b := by
+      simpa using rd'
+    rcases Red.tup_inv rd_tup with ⟨a0, b0, rdm, rdn, e⟩
+    cases e
+    have ha : (IA.cand σi).mem a :=
+      (IA.cand σi).closed_red hm_i rdm
+    have hb : (IB.cand (m.[σi] .: σi)).mem b :=
+      (IB.cand (m.[σi] .: σi)).closed_red hn_i rdn
+    have hred : SRed (m.[σi] .: σi) (a .: σi) := by
+      intro x
+      cases x with
+      | zero =>
+        asimp
+        exact rdm
+      | succ x =>
+        asimp
+        exact Star.R
+    exact ⟨ha, IB.stable_red_fwd (DCandCtx.extend_cons hσi hm_i) hred hb⟩
 
 end TypeInterp
 
