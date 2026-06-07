@@ -15,6 +15,10 @@ import SStructTT.MLTT.Confluence
 import SStructTT.MLTT.Typed
 import SStructTT.MLTT.Renaming
 import SStructTT.MLTT.Substitution
+import SStructTT.MLTT.Inversion
+import SStructTT.MLTT.Preservation
+import SStructTT.MLTT.Progress
+import SStructTT.MLTT.SN
 import SStructTT.MLTT.Normalize
 
 -------------------------------------------------------------------------------------------------

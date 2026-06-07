@@ -921,3 +921,108 @@ lemma Conv.idn_inj {A1 A2 m1 m2 n1 n2} :
   . apply Conv.join <;> assumption
   . apply Conv.join <;> assumption
   . apply Conv.join <;> assumption
+
+namespace Tactic
+open Lean Elab Tactic Meta
+
+-- Eliminate an `Exists` proof `m` using `elim`.
+def existsElim (m : Expr) (elim : Expr -> Expr -> MetaM Expr) : MetaM Expr := do
+  let mType <- whnf $ <-inferType m
+  match mType.getAppFnArgs with
+  | (``Exists, #[a, p]) =>
+    withLocalDecl `x BinderInfo.default a fun x =>
+    withLocalDecl `y BinderInfo.default (.app p x) fun y => do
+      let body <- mkLambdaFVars #[x, y] (<-elim x y)
+      mkAppOptM ``Exists.elim #[none, none, none, m, body]
+  | _ => throwError f!"existsElim {mType}"
+
+-- Eliminate an `And` proof `m` using `elim`.
+def andElim (m : Expr) (elim : Expr -> Expr -> MetaM Expr) : MetaM Expr := do
+  let mType <- whnf $ <-inferType m
+  match mType.and? with
+  | some (a, b) =>
+    withLocalDecl `x BinderInfo.default a fun x =>
+    withLocalDecl `y BinderInfo.default b fun y => do
+      let body <- mkLambdaFVars #[x, y] (<-elim x y)
+      mkAppM ``And.elim #[body, m]
+  | none => throwError f!"andElim {mType}"
+
+-- Given a proposition consisting of `Exists` and `And`, find all `Eq`s among the conjuncts.
+partial def prjEqs (m : Expr) (elim : Array Expr -> MetaM Expr) : MetaM Expr := do
+  let mType <- whnf $ <-inferType m
+  match mType.getAppFn.constName? with
+  | some ``Exists =>
+    existsElim m fun x y => do
+      prjEqs x fun eqs1 =>
+      prjEqs y fun eqs2 =>
+      elim (eqs1 ++ eqs2)
+  | some ``And =>
+    andElim m fun x y =>
+      prjEqs x fun eqs1 =>
+      prjEqs y fun eqs2 =>
+      elim (eqs1 ++ eqs2)
+  | some ``Eq => elim #[m]
+  | _ => elim #[]
+
+-- Assuming `id : a === b`, get the associated expression of `id` and the inversion lemmas of `a` and `b`.
+def getConvs (goal : MVarId) : MetaM (Array (Expr × Expr × Expr)) := do
+  goal.withContext do
+    let lctx <- getLCtx
+    let mut acc := #[]
+    for ldecl in lctx do
+      let declExpr := ldecl.toExpr
+      let declType <- whnf $ <-inferType declExpr
+      match declType.app4? ``Conv with
+      | some (_, _, a, b) =>
+        acc := acc.push (declExpr, a, b)
+      | _ => pure ()
+    return acc
+
+-- Apply Church-Rosser to refute impossible conversion.
+def applyCR (goal : MVarId) (m l1 l2 : Expr) : MetaM Expr := do
+  let cr <- mkAppM ``Step.cr #[m]
+  existsElim cr fun _ h =>
+  andElim h fun h1 h2 => do
+    let h1 <- mkAppM' l1 #[h1]
+    let h2 <- mkAppM' l2 #[h2]
+    prjEqs h1 fun es1 =>
+    prjEqs h2 fun es2 => do
+      let e1 <- mkAppM ``Eq.symm #[es1[0]!]
+      let e2 <- mkAppM ``Eq.trans #[e1, es2[0]!]
+      mkAppOptM ``Tm.noConfusion #[<-goal.getType, none, none, e2]
+
+/-
+Get the associated inversion lemma for `m`. For more complex languages, the
+list of inversion lemmas need to be extended.
+-/
+def getInvLemma (m : Expr) : MetaM Expr := do
+  match m.getAppFn.constName? with
+  | ``Tm.var  => return .const ``Red.var_inv  []
+  | ``Tm.ty   => return .const ``Red.ty_inv   []
+  | ``Tm.pi   => return .const ``Red.pi_inv   []
+  | ``Tm.lam  => return .const ``Red.lam_inv  []
+  | ``Tm.sig  => return .const ``Red.sig_inv  []
+  | ``Tm.tup  => return .const ``Red.tup_inv  []
+  | ``Tm.bool => return .const ``Red.bool_inv []
+  | ``Tm.tt   => return .const ``Red.tt_inv   []
+  | ``Tm.ff   => return .const ``Red.ff_inv   []
+  | ``Tm.idn  => return .const ``Red.idn_inv  []
+  | ``Tm.rfl  => return .const ``Red.rfl_inv  []
+  | ``Tm.bot  => return .const ``Red.bot_inv  []
+  | _ => throwError `getInvLemma
+
+/-- `mltt_false_conv` refutes impossible MLTT conversion proofs. -/
+elab "mltt_false_conv" : tactic =>
+  withMainContext do
+    let goal <- getMainGoal
+    let goalType <- getMainTarget
+    for (m, a, b) in <-getConvs goal do
+      let s <- saveState
+      try
+        let lemma_a <- getInvLemma a
+        let lemma_b <- getInvLemma b
+        let pf <- applyCR goal m lemma_a lemma_b
+        if <-isDefEq goalType (<-inferType pf) then
+          closeMainGoal `mltt_false_conv pf
+      catch _ => restoreState s
+end Tactic
