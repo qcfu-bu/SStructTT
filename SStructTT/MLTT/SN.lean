@@ -7117,6 +7117,13 @@ noncomputable def sigmaBranch {Γ : Ctx} {A B C : Tm} {i : Nat}
       C.[.tup (.var 1) (.var 0) .: shift 2] i :=
   CanTypeJudgment.ofTypeData (CanTypeData.sigmaBranch TC.typeData)
 
+noncomputable def subst1 {Γ : Ctx} {A B n : Tm} {i : Nat}
+    (TA : CanTypeData Γ A)
+    (TB : CanTypeJudgment (A :: Γ) B i)
+    (Jn : CanTermDataAt Γ n A TA) :
+    CanTypeJudgment Γ B.[n/] i :=
+  CanTypeJudgment.ofTypeData (CanTypeData.subst1 TA TB.typeData Jn.canSemTm)
+
 noncomputable def idn {Γ : Ctx} {A m n : Tm} {i : Nat}
     (TA : CanTypeJudgment Γ A i)
     (hm : TA.typeData.CanSemTm m) (hn : TA.typeData.CanSemTm n) :
@@ -8253,6 +8260,14 @@ noncomputable def sigmaBranchJudgment {Γ : Ctx} {A B C : Tm} {i : Nat}
     CanTypeJudgment (B :: A :: Γ)
       C.[.tup (.var 1) (.var 0) .: shift 2] i :=
   CanTypeJudgment.sigmaBranch (CanTypeFundExp.judgment TC)
+
+noncomputable def subst1Judgment {Γ : Ctx} {A B n : Tm} {i iA : Nat}
+    (TA : CanTypeFundExp Γ A iA)
+    (TB : CanTypeFundExp (A :: Γ) B i)
+    (Jn : CanFundAt Γ n A (CanTypeFundExp.typeData TA)) :
+    CanTypeJudgment Γ B.[n/] i :=
+  CanTypeJudgment.subst1 (CanTypeFundExp.typeData TA)
+    (CanTypeFundExp.judgment TB) (Classical.choice Jn)
 
 lemma idnByEquiv {Γ : Ctx} {A m n : Tm} {i : Nat}
     (TA : CanTypeFundExp Γ A i)
