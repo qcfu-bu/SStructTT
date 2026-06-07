@@ -9327,6 +9327,49 @@ noncomputable def Typed.canTypeJudgment_of_can_fund
   | _ =>
       CanTypeJudgment.ofTermDataWeak (CanFund.choose (fund ty))
 
+namespace Typed
+
+lemma canTypeJudgment_of_can_fund_ty
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanFund Γ m A)
+    {Γ : Ctx} {i j : Nat} (ty : Γ ⊢ .ty j : .ty i) :
+    Typed.canTypeJudgment_of_can_fund fund ty =
+      CanTypeJudgment.ofTypeData (CanTypeData.univ Γ j) :=
+  by rfl
+
+lemma canTypeJudgment_of_can_fund_pi
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanFund Γ m A)
+    {Γ : Ctx} {A B : Tm} {i : Nat} (ty : Γ ⊢ .pi A B : .ty i) :
+    Typed.canTypeJudgment_of_can_fund fund ty =
+      CanTypeFundExp.piJudgmentAt (i := i)
+        (CanTypeFundExp.ofCanFund (fund (Typed.piDomainTyped ty)))
+        (CanTypeFundExp.ofCanFund (fund (Typed.piCodomainTyped ty))) :=
+  by rfl
+
+lemma canTypeJudgment_of_can_fund_sig
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanFund Γ m A)
+    {Γ : Ctx} {A B : Tm} {i : Nat} (ty : Γ ⊢ .sig A B : .ty i) :
+    Typed.canTypeJudgment_of_can_fund fund ty =
+      CanTypeFundExp.sigJudgmentAt (i := i)
+        (CanTypeFundExp.ofCanFund (fund (Typed.sigDomainTyped ty)))
+        (CanTypeFundExp.ofCanFund (fund (Typed.sigCodomainTyped ty))) :=
+  by rfl
+
+lemma canTypeJudgment_of_can_fund_bool
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanFund Γ m A)
+    {Γ : Ctx} {i : Nat} (ty : Γ ⊢ .bool : .ty i) :
+    Typed.canTypeJudgment_of_can_fund fund ty =
+      CanTypeJudgment.ofTypeData (CanTypeData.bool Γ) :=
+  by rfl
+
+lemma canTypeJudgment_of_can_fund_bot
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanFund Γ m A)
+    {Γ : Ctx} {i : Nat} (ty : Γ ⊢ .bot : .ty i) :
+    Typed.canTypeJudgment_of_can_fund fund ty =
+      CanTypeJudgment.ofTypeData (CanTypeData.bot Γ) :=
+  by rfl
+
+end Typed
+
 namespace SemFund
 
 noncomputable def choose {Γ : Ctx} {m A : Tm}
