@@ -6314,6 +6314,39 @@ lemma tupKSig {Γ : Ctx} {A B m n : Tm}
   · intro σ hσ
     exact hn hΓ σ hσ
 
+lemma prj_branch {Γ : Ctx} {A B C m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (TC : CanTypeData (.sig A B :: Γ) C)
+    (hTC : TC.Expansive)
+    (hm : (CanTypeData.ksig TA TB).CanSemTm m)
+    (hn : ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ),
+      let IA := TA.interp hΓ
+      let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+        CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+      let IB := TB.interp hΓA
+      let K := TypeInterp.ksig IA IB (CanSemCtx.weakens hΓ)
+      let hΓS : CanSemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        CanSemCtx.consInterp hΓ K
+          (TypeInterp.ksig_weakens IA IB (CanSemCtx.weakens hΓ))
+      (TypeInterp.sigmaBranch IA IB (CanSemCtx.weakens hΓ) (TA.weakens hΓ)
+        (TB.weakens hΓA) (TC.interp hΓS)).SemTm n) :
+    (CanTypeData.subst1 (CanTypeData.ksig TA TB) TC hm).CanSemTm
+      (.prj C m n) := by
+  intro Δ hΓ
+  let IA := TA.interp hΓ
+  let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+  let IB := TB.interp hΓA
+  let K := TypeInterp.ksig IA IB (CanSemCtx.weakens hΓ)
+  let hΓS : CanSemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+    CanSemCtx.consInterp hΓ K
+      (TypeInterp.ksig_weakens IA IB (CanSemCtx.weakens hΓ))
+  change (TypeInterp.subst1 K (TC.interp hΓS) (hm hΓ)).SemTm
+    (.prj C m n)
+  exact TypeInterp.semPrjKSigmaSubst1_branch IA IB (CanSemCtx.weakens hΓ)
+    (TA.weakens hΓ) (TB.weakens hΓA) (TC.interp hΓS) (hTC hΓS)
+    (hm hΓ) (hn hΓ)
+
 lemma iteBool {Γ : Ctx} {A m n1 n2 : Tm}
     (TB : CanTypeData (.bool :: Γ) A)
     (hTB : TB.Expansive)
@@ -6662,6 +6695,28 @@ noncomputable def tup {Γ : Ctx} {A B m n : Tm}
   CanTermDataAt.ofTermData (CanTypeData.ksig TA TB)
     (CanTermData.tup TA TB Jm.termData Jn.termData Jm.equiv Jn.equiv)
     (CanTypeData.Equiv.refl (CanTypeData.ksig TA TB))
+
+noncomputable def prjBranch {Γ : Ctx} {A B C m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (TC : CanTypeData (.sig A B :: Γ) C)
+    (hTC : TC.Expansive)
+    (Jm : CanTermDataAt Γ m (.sig A B) (CanTypeData.ksig TA TB))
+    (hn : ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ),
+      let IA := TA.interp hΓ
+      let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+        CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+      let IB := TB.interp hΓA
+      let K := TypeInterp.ksig IA IB (CanSemCtx.weakens hΓ)
+      let hΓS : CanSemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        CanSemCtx.consInterp hΓ K
+          (TypeInterp.ksig_weakens IA IB (CanSemCtx.weakens hΓ))
+      (TypeInterp.sigmaBranch IA IB (CanSemCtx.weakens hΓ) (TA.weakens hΓ)
+        (TB.weakens hΓA) (TC.interp hΓS)).SemTm n) :
+    CanTermDataAt Γ (.prj C m n) C.[m/]
+      (CanTypeData.subst1 (CanTypeData.ksig TA TB) TC Jm.canSemTm) :=
+  CanTermDataAt.ofTypeData
+    (CanTypeData.subst1 (CanTypeData.ksig TA TB) TC Jm.canSemTm)
+    (CanTypeData.prj_branch TA TB TC hTC Jm.canSemTm hn)
 
 noncomputable def ite {Γ : Ctx} {A m n1 n2 : Tm}
     (TB : CanTypeData (.bool :: Γ) A)
@@ -8241,6 +8296,28 @@ lemma tupExp {Γ : Ctx} {A B m n : Tm} {i iA iB : Nat}
       (CanTypeFundExp.sigJudgmentAt (i := i) TA TB).typeData :=
   CanFundAt.tup (CanTypeFundExp.typeData TA)
     (CanTypeFundExp.typeData TB) Jm Jn
+
+lemma prjBranch {Γ : Ctx} {A B C m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (TC : CanTypeData (.sig A B :: Γ) C)
+    (hTC : TC.Expansive)
+    (Jm : CanFundAt Γ m (.sig A B) (CanTypeData.ksig TA TB))
+    (hn : ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ),
+      let IA := TA.interp hΓ
+      let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+        CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+      let IB := TB.interp hΓA
+      let K := TypeInterp.ksig IA IB (CanSemCtx.weakens hΓ)
+      let hΓS : CanSemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        CanSemCtx.consInterp hΓ K
+          (TypeInterp.ksig_weakens IA IB (CanSemCtx.weakens hΓ))
+      (TypeInterp.sigmaBranch IA IB (CanSemCtx.weakens hΓ) (TA.weakens hΓ)
+        (TB.weakens hΓA) (TC.interp hΓS)).SemTm n) :
+    CanFundAt Γ (.prj C m n) C.[m/]
+      (CanTypeData.subst1 (CanTypeData.ksig TA TB) TC
+        (CanFundAt.choose Jm).canSemTm) :=
+  CanFundAt.ofTermDataAt
+    (CanTermDataAt.prjBranch TA TB TC hTC (CanFundAt.choose Jm) hn)
 
 lemma ite {Γ : Ctx} {A m n1 n2 : Tm}
     (TB : CanTypeData (.bool :: Γ) A)
