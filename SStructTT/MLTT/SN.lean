@@ -7320,6 +7320,107 @@ lemma lookup_var
   TypeFundCtxCore.Lookup.semTm
     (TypeFundCtxCore.lookup_spec (typeFund := typeFund) hCore hs)
 
+def EquivAt
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A)
+    {Γ : Ctx} (hCore : TypeFundCtxCore Γ)
+    {A B : Tm} (TA : CanTypeData Γ A) (TB : CanTypeData Γ B) : Prop :=
+  ∀ σ, (TypeFundCtxCore.interp typeFund hCore).valid σ -> ∀ t,
+    ((TA.interp (TypeFundCtxCore.canCtx typeFund hCore)).cand σ).mem t ↔
+      ((TB.interp (TypeFundCtxCore.canCtx typeFund hCore)).cand σ).mem t
+
+namespace EquivAt
+
+lemma refl
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A)
+    {Γ : Ctx} (hCore : TypeFundCtxCore Γ)
+    {A : Tm} (TA : CanTypeData Γ A) :
+    TypeFundCtxCore.EquivAt typeFund hCore TA TA := by
+  intro σ hσ t
+  exact Iff.rfl
+
+lemma sym
+    {typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A}
+    {Γ : Ctx} {hCore : TypeFundCtxCore Γ}
+    {A B : Tm} {TA : CanTypeData Γ A} {TB : CanTypeData Γ B} :
+    TypeFundCtxCore.EquivAt typeFund hCore TA TB ->
+    TypeFundCtxCore.EquivAt typeFund hCore TB TA := by
+  intro hEq σ hσ t
+  exact (hEq σ hσ t).symm
+
+lemma trans
+    {typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A}
+    {Γ : Ctx} {hCore : TypeFundCtxCore Γ}
+    {A B C : Tm}
+    {TA : CanTypeData Γ A} {TB : CanTypeData Γ B}
+    {TC : CanTypeData Γ C} :
+    TypeFundCtxCore.EquivAt typeFund hCore TA TB ->
+    TypeFundCtxCore.EquivAt typeFund hCore TB TC ->
+    TypeFundCtxCore.EquivAt typeFund hCore TA TC := by
+  intro hAB hBC σ hσ t
+  exact Iff.trans (hAB σ hσ t) (hBC σ hσ t)
+
+lemma of_global
+    {typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A}
+    {Γ : Ctx} {hCore : TypeFundCtxCore Γ}
+    {A B : Tm} {TA : CanTypeData Γ A} {TB : CanTypeData Γ B} :
+    CanTypeData.Equiv TA TB ->
+    TypeFundCtxCore.EquivAt typeFund hCore TA TB := by
+  intro hEq σ hσ t
+  exact hEq (TypeFundCtxCore.canCtx typeFund hCore) σ hσ t
+
+lemma semTm
+    {typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A}
+    {Γ : Ctx} {hCore : TypeFundCtxCore Γ}
+    {A B m : Tm} {TA : CanTypeData Γ A} {TB : CanTypeData Γ B} :
+    TypeFundCtxCore.EquivAt typeFund hCore TA TB ->
+    (TA.interp (TypeFundCtxCore.canCtx typeFund hCore)).SemTm m ->
+    (TB.interp (TypeFundCtxCore.canCtx typeFund hCore)).SemTm m := by
+  intro hEq hm σ hσ
+  exact (hEq σ hσ m.[σ]).1 (hm σ hσ)
+
+end EquivAt
+
+abbrev AtSemTm
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A)
+    {Γ : Ctx} {A : Tm} (TA : CanTypeData Γ A) (m : Tm) : Prop :=
+  ∀ hCore : TypeFundCtxCore Γ,
+    (TA.interp (TypeFundCtxCore.canCtx typeFund hCore)).SemTm m
+
+namespace AtSemTm
+
+lemma of_can_sem_tm
+    {typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A}
+    {Γ : Ctx} {A m : Tm} {TA : CanTypeData Γ A} :
+    TA.CanSemTm m ->
+    TypeFundCtxCore.AtSemTm typeFund TA m := by
+  intro hm hCore
+  exact hm (TypeFundCtxCore.canCtx typeFund hCore)
+
+lemma retag
+    {typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A}
+    {Γ : Ctx} {A B m : Tm}
+    {TA : CanTypeData Γ A} {TB : CanTypeData Γ B} :
+    (∀ hCore : TypeFundCtxCore Γ,
+      TypeFundCtxCore.EquivAt typeFund hCore TA TB) ->
+    TypeFundCtxCore.AtSemTm typeFund TA m ->
+    TypeFundCtxCore.AtSemTm typeFund TB m := by
+  intro hEq hm hCore
+  exact TypeFundCtxCore.EquivAt.semTm (hEq hCore) (hm hCore)
+
+end AtSemTm
+
+lemma lookup_var_retag
+    {typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A}
+    {Γ : Ctx} {x : Var} {A B : Tm}
+    (hCore : TypeFundCtxCore Γ)
+    (hs : Has Γ x A)
+    (TB : CanTypeData Γ B)
+    (hEq : TypeFundCtxCore.EquivAt typeFund hCore
+      (TypeFundCtxCore.lookupTypeData typeFund hCore hs) TB) :
+    (TB.interp (TypeFundCtxCore.canCtx typeFund hCore)).SemTm (.var x) :=
+  TypeFundCtxCore.EquivAt.semTm hEq
+    (TypeFundCtxCore.lookup_var (typeFund := typeFund) hCore hs)
+
 end TypeFundCtxCore
 
 structure FundTermData (Γ : Ctx) (m A : Tm) where
@@ -8977,6 +9078,35 @@ lemma exfExpJudgment {Γ : Ctx} {A m : Tm} {i : Nat}
 
 end CanFundAt
 
+namespace TypeFundCtxCore
+
+namespace AtSemTm
+
+lemma of_can_term_data
+    {typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A}
+    {Γ : Ctx} {m A : Tm}
+    (J : CanTermData Γ m A) :
+    TypeFundCtxCore.AtSemTm typeFund J.typeData m :=
+  TypeFundCtxCore.AtSemTm.of_can_sem_tm J.canSemTm
+
+lemma of_can_term_data_at
+    {typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A}
+    {Γ : Ctx} {m A : Tm} {TA : CanTypeData Γ A}
+    (J : CanTermDataAt Γ m A TA) :
+    TypeFundCtxCore.AtSemTm typeFund TA m :=
+  TypeFundCtxCore.AtSemTm.of_can_sem_tm J.canSemTm
+
+lemma of_can_fund_at
+    {typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A}
+    {Γ : Ctx} {m A : Tm} {TA : CanTypeData Γ A}
+    (J : CanFundAt Γ m A TA) :
+    TypeFundCtxCore.AtSemTm typeFund TA m :=
+  TypeFundCtxCore.AtSemTm.of_can_term_data_at (CanFundAt.choose J)
+
+end AtSemTm
+
+end TypeFundCtxCore
+
 namespace CanFund
 
 lemma ofSubstSN {Γ : Ctx} {m A : Tm}
@@ -9366,6 +9496,15 @@ lemma rwSNBranchExpAt {Γ : Ctx} {A B m n a b : Tm} {i iB : Nat}
 end CanFund
 
 namespace Typed
+
+noncomputable def validityLevel {Γ : Ctx} {m A : Tm}
+    (ty : Γ ⊢ m : A) : Nat :=
+  Classical.choose ty.validity
+
+lemma validityTyped {Γ : Ctx} {m A : Tm}
+    (ty : Γ ⊢ m : A) :
+    Γ ⊢ A : .ty (Typed.validityLevel ty) :=
+  Classical.choose_spec ty.validity
 
 noncomputable def piCodomainLevel {Γ : Ctx} {A B T : Tm}
     (ty : Γ ⊢ .pi A B : T) : Nat :=
@@ -10117,15 +10256,29 @@ theorem Typed.normalize_of_type_fund_ctx
     {Γ : Ctx} {m A : Tm}
     (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A)
     (fund : ∀ {Γ m A i} (_ty : Γ ⊢ m : A) (tyA : Γ ⊢ A : .ty i),
-      ∀ hCore : TypeFundCtxCore Γ,
-        ((typeFund tyA).interp
-          (TypeFundCtxCore.canCtx typeFund hCore)).SemTm m) :
+      TypeFundCtxCore.AtSemTm typeFund (typeFund tyA) m) :
     Γ ⊢ m : A -> SN Step m := by
   intro ty
   rcases ty.validity with ⟨i, tyA⟩
   rcases TypeFundCtxCore.exists_of_wf ty.toWf with ⟨hCore⟩
   let hΓ := TypeFundCtxCore.canCtx typeFund hCore
   have hm := fund ty tyA hCore
+  have hsn := ((typeFund tyA).interp hΓ).semTm_sn hm ids
+    (CanSemCtx.ids_valid hΓ)
+  simpa [Tm.subst_id] using hsn
+
+theorem Typed.normalize_of_type_fund_ctx_validity
+    {Γ : Ctx} {m A : Tm}
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A)
+    (fund : ∀ {Γ m A} (_ty : Γ ⊢ m : A),
+      TypeFundCtxCore.AtSemTm typeFund
+        (typeFund (Typed.validityTyped _ty)) m) :
+    Γ ⊢ m : A -> SN Step m := by
+  intro ty
+  let tyA := Typed.validityTyped ty
+  rcases TypeFundCtxCore.exists_of_wf ty.toWf with ⟨hCore⟩
+  let hΓ := TypeFundCtxCore.canCtx typeFund hCore
+  have hm := fund ty hCore
   have hsn := ((typeFund tyA).interp hΓ).semTm_sn hm ids
     (CanSemCtx.ids_valid hΓ)
   simpa [Tm.subst_id] using hsn
