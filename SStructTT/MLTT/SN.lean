@@ -1958,6 +1958,32 @@ lemma stable_conv_sym {Δ : DCandCtx} {A m : Tm} (I : TypeInterp Δ A)
   intro hσ hτ hconv hm
   exact I.stable_conv hτ hσ (fun x => (hconv x).sym) hm
 
+def convType {Δ : DCandCtx} {A B : Tm} (I : TypeInterp Δ A)
+    (hB : ∀ σ, Δ.valid σ -> SN Step B.[σ]) : TypeInterp Δ B where
+  cand := I.cand
+  type_sn := hB
+  stable_red := I.stable_red
+  stable_red_fwd := I.stable_red_fwd
+  stable_conv := I.stable_conv
+
+lemma convType_weakens {Δ : DCandCtx} {A B : Tm} (I : TypeInterp Δ A)
+    (hB : ∀ σ, Δ.valid σ -> SN Step B.[σ]) :
+    I.Weakens -> (I.convType hB).Weakens := by
+  intro hI
+  exact hI
+
+lemma convType_expansive {Δ : DCandCtx} {A B : Tm} (I : TypeInterp Δ A)
+    (hB : ∀ σ, Δ.valid σ -> SN Step B.[σ]) :
+    I.Expansive -> (I.convType hB).Expansive := by
+  intro hI
+  exact hI
+
+lemma convType_semTm {Δ : DCandCtx} {A B m : Tm} (I : TypeInterp Δ A)
+    (hB : ∀ σ, Δ.valid σ -> SN Step B.[σ]) :
+    I.SemTm m -> (I.convType hB).SemTm m := by
+  intro hm
+  exact hm
+
 def toTypeCode {Δ : DCandCtx} {A : Tm} (I : TypeInterp Δ A)
     (i : Nat) (σ : Var -> Tm) (hσ : Δ.valid σ) : TypeCodeInterp i A.[σ] where
   cand := I.cand σ
@@ -4126,6 +4152,42 @@ def Expansive {Γ : Ctx} {A : Tm} (TA : SemTypeData Γ A) : Prop :=
 def SemTm {Γ : Ctx} {A : Tm} (TA : SemTypeData Γ A) (m : Tm) : Prop :=
   ∀ {Δ : DCandCtx} (hΓ : SemCtx Γ Δ), (TA.interp hΓ).SemTm m
 
+def Equiv {Γ : Ctx} {A B : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData Γ B) : Prop :=
+  ∀ {Δ : DCandCtx} (hΓ : SemCtx Γ Δ) σ,
+    Δ.valid σ -> ∀ t,
+      ((TA.interp hΓ).cand σ).mem t ↔ ((TB.interp hΓ).cand σ).mem t
+
+namespace Equiv
+
+lemma refl {Γ : Ctx} {A : Tm} (TA : SemTypeData Γ A) :
+    SemTypeData.Equiv TA TA := by
+  intro Δ hΓ σ hσ t
+  exact Iff.rfl
+
+lemma sym {Γ : Ctx} {A B : Tm}
+    {TA : SemTypeData Γ A} {TB : SemTypeData Γ B} :
+    SemTypeData.Equiv TA TB -> SemTypeData.Equiv TB TA := by
+  intro hEq Δ hΓ σ hσ t
+  exact (hEq hΓ σ hσ t).symm
+
+lemma trans {Γ : Ctx} {A B C : Tm}
+    {TA : SemTypeData Γ A} {TB : SemTypeData Γ B}
+    {TC : SemTypeData Γ C} :
+    SemTypeData.Equiv TA TB ->
+    SemTypeData.Equiv TB TC ->
+    SemTypeData.Equiv TA TC := by
+  intro hAB hBC Δ hΓ σ hσ t
+  exact Iff.trans (hAB hΓ σ hσ t) (hBC hΓ σ hσ t)
+
+lemma semTm {Γ : Ctx} {A B m : Tm}
+    {TA : SemTypeData Γ A} {TB : SemTypeData Γ B} :
+    SemTypeData.Equiv TA TB -> TA.SemTm m -> TB.SemTm m := by
+  intro hEq hm Δ hΓ σ hσ
+  exact (hEq hΓ σ hσ m.[σ]).1 (hm hΓ σ hσ)
+
+end Equiv
+
 lemma toSemType {Γ : Ctx} {A : Tm} (TA : SemTypeData Γ A) :
     SemType Γ A := by
   intro Δ hΓ
@@ -4189,6 +4251,42 @@ lemma semTm_conv_syntactic {Γ : Ctx} {A m n : Tm}
     TA.SemTm m := by
   intro hTA hsn eq hn
   exact TA.semTm_conv hTA hsn (fun _hΓ σ _hσ => Conv.subst σ eq) hn
+
+def convType {Γ : Ctx} {A B : Tm} (TA : SemTypeData Γ A)
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : SemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ]) : SemTypeData Γ B where
+  interp hΓ := (TA.interp hΓ).convType (hB hΓ)
+  weakens hΓ := TypeInterp.convType_weakens (TA.interp hΓ) (hB hΓ)
+    (TA.weakens hΓ)
+
+lemma convType_expansive {Γ : Ctx} {A B : Tm} (TA : SemTypeData Γ A)
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : SemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ]) :
+    TA.Expansive -> (TA.convType hB).Expansive := by
+  intro hTA Δ hΓ
+  exact TypeInterp.convType_expansive (TA.interp hΓ) (hB hΓ) (hTA hΓ)
+
+lemma convType_semTm {Γ : Ctx} {A B m : Tm} (TA : SemTypeData Γ A)
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : SemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ]) :
+    TA.SemTm m -> (TA.convType hB).SemTm m := by
+  intro hm Δ hΓ
+  exact TypeInterp.convType_semTm (TA.interp hΓ) (hB hΓ) (hm hΓ)
+
+lemma convType_equiv_right {Γ : Ctx} {A B : Tm}
+    (TA : SemTypeData Γ A)
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : SemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ]) :
+    SemTypeData.Equiv TA (TA.convType hB) := by
+  intro Δ hΓ σ hσ t
+  exact Iff.rfl
+
+lemma convType_equiv_left {Γ : Ctx} {A B : Tm}
+    (TA : SemTypeData Γ A)
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : SemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ]) :
+    SemTypeData.Equiv (TA.convType hB) TA :=
+  SemTypeData.Equiv.sym (SemTypeData.convType_equiv_right TA hB)
 
 noncomputable def lookup {Γ : Ctx} {x : Var} {A : Tm}
     (hs : Has Γ x A) : SemTypeData Γ A where
@@ -4268,6 +4366,16 @@ lemma idn_expansive {Γ : Ctx} {A m n : Tm}
   exact TypeInterp.idn_expansive (I := TA.interp hΓ)
     (hm := hm hΓ) (hn := hn hΓ)
 
+lemma idn_equiv {Γ : Ctx} {A B m n m' n' : Tm}
+    {TA : SemTypeData Γ A} {TB : SemTypeData Γ B}
+    {hm : TA.SemTm m} {hn : TA.SemTm n}
+    {hm' : TB.SemTm m'} {hn' : TB.SemTm n'} :
+    SemTypeData.Equiv
+      (SemTypeData.idn TA hm hn)
+      (SemTypeData.idn TB hm' hn') := by
+  intro Δ hΓ σ hσ t
+  rfl
+
 lemma rfl {Γ : Ctx} {A m : Tm}
     (TA : SemTypeData Γ A) (hm : TA.SemTm m) :
     (SemTypeData.idn TA hm hm).SemTm (.rfl m) := by
@@ -4307,6 +4415,40 @@ noncomputable def idBranch {Γ : Ctx} {A B a : Tm}
     change (TypeInterp.idBranch IB (ha hΓ) (TA.interp hΓP)).Weakens
     exact TypeInterp.idBranch_weakens IB (ha hΓ) (TA.interp hΓP)
       (TA.weakens hΓP)
+
+lemma idBranch_equiv_same {Γ : Ctx} {A B a : Tm}
+    (TB : SemTypeData Γ B) (ha ha' : TB.SemTm a)
+    (TA : SemTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    SemTypeData.Equiv
+      (SemTypeData.idBranch TB ha TA)
+      (SemTypeData.idBranch TB ha' TA) := by
+  intro Δ hΓ σ hσ t
+  simp [SemTypeData.idBranch, TypeInterp.idBranch]
+
+lemma idBranch_equiv_of_family {Γ : Ctx} {A B a : Tm}
+    (TB : SemTypeData Γ B) (ha : TB.SemTm a)
+    (TA TA' : SemTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    SemTypeData.Equiv TA TA' ->
+    SemTypeData.Equiv
+      (SemTypeData.idBranch TB ha TA)
+      (SemTypeData.idBranch TB ha TA') := by
+  intro hA Δ hΓ σ hσ t
+  let IB := TB.interp hΓ
+  let hΓB : SemCtx (B :: Γ) (DCandCtx.extend IB) :=
+    SemCtx.cons hΓ IB (TB.weakens hΓ)
+  let IP := TypeInterp.idProof IB (ha hΓ)
+  let hΓP : SemCtx
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+      (DCandCtx.extend IP) :=
+    SemCtx.cons hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+  have hvalid :
+      (DCandCtx.extend IP).valid
+        (TypeInterp.idBranchSubst a σ) :=
+    TypeInterp.idBranchSubst_valid IB (ha hΓ) hσ
+  simpa [SemTypeData.idBranch, TypeInterp.idBranch] using
+    hA hΓP (TypeInterp.idBranchSubst a σ) hvalid t
 
 lemma idBranch_expansive {Γ : Ctx} {A B a : Tm}
     (TB : SemTypeData Γ B) (ha : TB.SemTm a)
@@ -4355,6 +4497,45 @@ noncomputable def idTarget {Γ : Ctx} {A B a b n : Tm}
     exact TypeInterp.idTarget_weakens IB (ha hΓ) (hb hΓ) (hn hΓ)
       (TA.interp hΓP) (TA.weakens hΓP)
 
+lemma idTarget_equiv_same {Γ : Ctx} {A B a b n : Tm}
+    (TB : SemTypeData Γ B)
+    (ha ha' : TB.SemTm a) (hb hb' : TB.SemTm b)
+    (hn : (SemTypeData.idn TB ha hb).SemTm n)
+    (hn' : (SemTypeData.idn TB ha' hb').SemTm n)
+    (TA : SemTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    SemTypeData.Equiv
+      (SemTypeData.idTarget TB ha hb hn TA)
+      (SemTypeData.idTarget TB ha' hb' hn' TA) := by
+  intro Δ hΓ σ hσ t
+  simp [SemTypeData.idTarget, TypeInterp.idTarget]
+
+lemma idTarget_equiv_of_family {Γ : Ctx} {A B a b n : Tm}
+    (TB : SemTypeData Γ B)
+    (ha : TB.SemTm a) (hb : TB.SemTm b)
+    (hn : (SemTypeData.idn TB ha hb).SemTm n)
+    (TA TA' : SemTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    SemTypeData.Equiv TA TA' ->
+    SemTypeData.Equiv
+      (SemTypeData.idTarget TB ha hb hn TA)
+      (SemTypeData.idTarget TB ha hb hn TA') := by
+  intro hA Δ hΓ σ hσ t
+  let IB := TB.interp hΓ
+  let hΓB : SemCtx (B :: Γ) (DCandCtx.extend IB) :=
+    SemCtx.cons hΓ IB (TB.weakens hΓ)
+  let IP := TypeInterp.idProof IB (ha hΓ)
+  let hΓP : SemCtx
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+      (DCandCtx.extend IP) :=
+    SemCtx.cons hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+  have hvalid :
+      (DCandCtx.extend IP).valid
+        (TypeInterp.idTargetSubst b n σ) :=
+    TypeInterp.idTargetSubst_valid IB (ha hΓ) (hb hΓ) (hn hΓ) hσ
+  simpa [SemTypeData.idTarget, TypeInterp.idTarget] using
+    hA hΓP (TypeInterp.idTargetSubst b n σ) hvalid t
+
 lemma idTarget_expansive {Γ : Ctx} {A B a b n : Tm}
     (TB : SemTypeData Γ B) (ha : TB.SemTm a) (hb : TB.SemTm b)
     (hn : (SemTypeData.idn TB ha hb).SemTm n)
@@ -4391,6 +4572,14 @@ lemma ofSemTypedType_expansive {Γ : Ctx} {A : Tm} {i : Nat}
   intro Δ hΓ
   exact TypeInterp.const_expansive Candidate.snCandidate_expansive
 
+lemma ofSemTypedType_equiv {Γ : Ctx} {A B : Tm} {i j : Nat}
+    (hA : SemTyped Γ A (.ty i)) (hB : SemTyped Γ B (.ty j)) :
+    SemTypeData.Equiv
+      (SemTypeData.ofSemTypedType hA)
+      (SemTypeData.ofSemTypedType hB) := by
+  intro Δ hΓ σ hσ t
+  rfl
+
 noncomputable def kpi {Γ : Ctx} {A B : Tm}
     (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
     (hTB : TB.Expansive) : SemTypeData Γ (.pi A B) where
@@ -4407,6 +4596,54 @@ noncomputable def kpi {Γ : Ctx} {A B : Tm}
       (SemCtx.weakens hΓ) (hTB hΓA)).Weakens
     exact TypeInterp.kpi_weakens IA (TB.interp hΓA)
       (SemCtx.weakens hΓ) (hTB hΓA)
+
+lemma kpi_equiv_same {Γ : Ctx} {A B : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hTB hTB' : TB.Expansive) :
+    SemTypeData.Equiv
+      (SemTypeData.kpi TA TB hTB)
+      (SemTypeData.kpi TA TB hTB') := by
+  intro Δ hΓ σ hσ t
+  simp [SemTypeData.kpi, TypeInterp.kpi, TypeInterp.kpiCandTotal, hσ,
+    TypeInterp.kpiCand]
+
+lemma kpi_equiv_of_codomain {Γ : Ctx} {A B : Tm}
+    (TA : SemTypeData Γ A)
+    (TB TB' : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive) (hTB' : TB'.Expansive) :
+    SemTypeData.Equiv TB TB' ->
+    SemTypeData.Equiv
+      (SemTypeData.kpi TA TB hTB)
+      (SemTypeData.kpi TA TB' hTB') := by
+  intro hB Δ hΓ σ hσ f
+  let IA := TA.interp hΓ
+  let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ IA (TA.weakens hΓ)
+  constructor
+  · intro hf
+    simp [SemTypeData.kpi, TypeInterp.kpi, TypeInterp.kpiCandTotal, hσ,
+      TypeInterp.kpiCand] at hf ⊢
+    constructor
+    · exact hf.1
+    · intro i n hn
+      have hσi : Δ.valid (shiftSubst σ i) :=
+        DCandCtx.weakens_iter (SemCtx.weakens hΓ) hσ i
+      have hvalid : (DCandCtx.extend IA).valid (n .: shiftSubst σ i) :=
+        DCandCtx.extend_cons hσi hn
+      exact (hB hΓA (n .: shiftSubst σ i) hvalid (.app f.[shift i] n)).1
+        (hf.2 i n hn)
+  · intro hf
+    simp [SemTypeData.kpi, TypeInterp.kpi, TypeInterp.kpiCandTotal, hσ,
+      TypeInterp.kpiCand] at hf ⊢
+    constructor
+    · exact hf.1
+    · intro i n hn
+      have hσi : Δ.valid (shiftSubst σ i) :=
+        DCandCtx.weakens_iter (SemCtx.weakens hΓ) hσ i
+      have hvalid : (DCandCtx.extend IA).valid (n .: shiftSubst σ i) :=
+        DCandCtx.extend_cons hσi hn
+      exact (hB hΓA (n .: shiftSubst σ i) hvalid (.app f.[shift i] n)).2
+        (hf.2 i n hn)
 
 lemma pi_type {Γ : Ctx} {A B : Tm}
     (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
@@ -4428,6 +4665,43 @@ noncomputable def ksig {Γ : Ctx} {A B : Tm}
       SemCtx.cons hΓ IA (TA.weakens hΓ)
     change (TypeInterp.ksig IA (TB.interp hΓA) (SemCtx.weakens hΓ)).Weakens
     exact TypeInterp.ksig_weakens IA (TB.interp hΓA) (SemCtx.weakens hΓ)
+
+lemma ksig_equiv_of_codomain {Γ : Ctx} {A B : Tm}
+    (TA : SemTypeData Γ A)
+    (TB TB' : SemTypeData (A :: Γ) B) :
+    SemTypeData.Equiv TB TB' ->
+    SemTypeData.Equiv
+      (SemTypeData.ksig TA TB)
+      (SemTypeData.ksig TA TB') := by
+  intro hB Δ hΓ σ hσ p
+  let IA := TA.interp hΓ
+  let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ IA (TA.weakens hΓ)
+  constructor
+  · intro hp
+    simp [SemTypeData.ksig, TypeInterp.ksig, TypeInterp.ksigCandTotal, hσ,
+      TypeInterp.ksigCand] at hp ⊢
+    constructor
+    · exact hp.1
+    · intro i a b rd
+      have hσi : Δ.valid (shiftSubst σ i) :=
+        DCandCtx.weakens_iter (SemCtx.weakens hΓ) hσ i
+      rcases hp.2 i a b rd with ⟨ha, hb⟩
+      have hvalid : (DCandCtx.extend IA).valid (a .: shiftSubst σ i) :=
+        DCandCtx.extend_cons hσi ha
+      exact ⟨ha, (hB hΓA (a .: shiftSubst σ i) hvalid b).1 hb⟩
+  · intro hp
+    simp [SemTypeData.ksig, TypeInterp.ksig, TypeInterp.ksigCandTotal, hσ,
+      TypeInterp.ksigCand] at hp ⊢
+    constructor
+    · exact hp.1
+    · intro i a b rd
+      have hσi : Δ.valid (shiftSubst σ i) :=
+        DCandCtx.weakens_iter (SemCtx.weakens hΓ) hσ i
+      rcases hp.2 i a b rd with ⟨ha, hb⟩
+      have hvalid : (DCandCtx.extend IA).valid (a .: shiftSubst σ i) :=
+        DCandCtx.extend_cons hσi ha
+      exact ⟨ha, (hB hΓA (a .: shiftSubst σ i) hvalid b).2 hb⟩
 
 noncomputable def ksigAt {Γ : Ctx} {A B : Tm}
     (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
@@ -4492,6 +4766,32 @@ noncomputable def subst1 {Γ : Ctx} {A B n : Tm}
     change (TypeInterp.subst1 IA (TB.interp hΓA) (hn hΓ)).Weakens
     exact TypeInterp.subst1_weakens IA (TB.interp hΓA)
       (TB.weakens hΓA)
+
+lemma subst1_equiv_same {Γ : Ctx} {A B n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hn hn' : TA.SemTm n) :
+    SemTypeData.Equiv
+      (SemTypeData.subst1 TA TB hn)
+      (SemTypeData.subst1 TA TB hn') := by
+  intro Δ hΓ σ hσ t
+  simp [SemTypeData.subst1, TypeInterp.subst1]
+
+lemma subst1_equiv_of_family {Γ : Ctx} {A B n : Tm}
+    (TA : SemTypeData Γ A)
+    (TB TB' : SemTypeData (A :: Γ) B)
+    (hn : TA.SemTm n) :
+    SemTypeData.Equiv TB TB' ->
+    SemTypeData.Equiv
+      (SemTypeData.subst1 TA TB hn)
+      (SemTypeData.subst1 TA TB' hn) := by
+  intro hB Δ hΓ σ hσ t
+  let IA := TA.interp hΓ
+  let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ IA (TA.weakens hΓ)
+  have hvalid : (DCandCtx.extend IA).valid (n.[σ] .: σ) :=
+    DCandCtx.extend_cons hσ (hn hΓ σ hσ)
+  simpa [SemTypeData.subst1, TypeInterp.subst1] using
+    hB hΓA (n.[σ] .: σ) hvalid t
 
 lemma subst1_expansive {Γ : Ctx} {A B n : Tm}
     (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
@@ -4729,6 +5029,3295 @@ lemma rw_sn_branch {Γ : Ctx} {A B m n a b : Tm}
 
 end SemTypeData
 
+inductive CanSemCtxCore : ∀ (Γ : Ctx) (Δ : DCandCtx), SemCtx Γ Δ -> Type where
+  | nil : CanSemCtxCore [] DCandCtx.empty SemCtx.nil
+  | cons {Γ : Ctx} {Δ : DCandCtx} {A : Tm} {hΓ : SemCtx Γ Δ} :
+    CanSemCtxCore Γ Δ hΓ ->
+    (TA : SemTypeData Γ A) ->
+    CanSemCtxCore (A :: Γ) (DCandCtx.extend (TA.interp hΓ))
+      (SemCtx.cons hΓ (TA.interp hΓ) (TA.weakens hΓ))
+  | consInterp {Γ : Ctx} {Δ : DCandCtx} {A : Tm} {hΓ : SemCtx Γ Δ} :
+    CanSemCtxCore Γ Δ hΓ ->
+    (I : TypeInterp Δ A) ->
+    (hI : I.Weakens) ->
+    CanSemCtxCore (A :: Γ) (DCandCtx.extend I)
+      (SemCtx.cons hΓ I hI)
+
+structure CanSemCtx (Γ : Ctx) (Δ : DCandCtx) where
+  semCtx : SemCtx Γ Δ
+  canonical : CanSemCtxCore Γ Δ semCtx
+
+namespace CanSemCtx
+
+def nil : CanSemCtx [] DCandCtx.empty where
+  semCtx := SemCtx.nil
+  canonical := CanSemCtxCore.nil
+
+def cons {Γ : Ctx} {Δ : DCandCtx} {A : Tm}
+    (hΓ : CanSemCtx Γ Δ) (TA : SemTypeData Γ A) :
+    CanSemCtx (A :: Γ) (DCandCtx.extend (TA.interp hΓ.semCtx)) where
+  semCtx := SemCtx.cons hΓ.semCtx (TA.interp hΓ.semCtx) (TA.weakens hΓ.semCtx)
+  canonical := CanSemCtxCore.cons hΓ.canonical TA
+
+def consInterp {Γ : Ctx} {Δ : DCandCtx} {A : Tm}
+    (hΓ : CanSemCtx Γ Δ) (I : TypeInterp Δ A) (hI : I.Weakens) :
+    CanSemCtx (A :: Γ) (DCandCtx.extend I) where
+  semCtx := SemCtx.cons hΓ.semCtx I hI
+  canonical := CanSemCtxCore.consInterp hΓ.canonical I hI
+
+lemma weakens {Γ : Ctx} {Δ : DCandCtx} :
+    CanSemCtx Γ Δ -> Δ.Weakens := by
+  intro hΓ
+  exact SemCtx.weakens hΓ.semCtx
+
+lemma ids_valid {Γ : Ctx} {Δ : DCandCtx} :
+    CanSemCtx Γ Δ -> Δ.valid ids := by
+  intro hΓ
+  exact SemCtx.ids_valid hΓ.semCtx
+
+lemma var {Γ : Ctx} {Δ : DCandCtx} {x : Var} {A : Tm} :
+    CanSemCtx Γ Δ ->
+    Has Γ x A ->
+    ∃ I : TypeInterp Δ A, I.Weakens ∧ I.SemTm (.var x) := by
+  intro hΓ hs
+  exact SemCtx.var hΓ.semCtx hs
+
+end CanSemCtx
+
+def CanSemType (Γ : Ctx) (A : Tm) : Prop :=
+  ∀ {Δ : DCandCtx}, CanSemCtx Γ Δ -> ∃ I : TypeInterp Δ A, I.Weakens
+
+def CanSemTyped (Γ : Ctx) (m A : Tm) : Prop :=
+  ∀ {Δ : DCandCtx}, CanSemCtx Γ Δ -> ∃ I : TypeInterp Δ A, I.Weakens ∧ I.SemTm m
+
+namespace CanSemTyped
+
+lemma sn_subst {Γ : Ctx} {m A : Tm} {Δ : DCandCtx} :
+    CanSemTyped Γ m A -> CanSemCtx Γ Δ -> ∀ σ, Δ.valid σ -> SN Step m.[σ] := by
+  intro hm hΓ σ hσ
+  rcases hm hΓ with ⟨I, _hI, hIm⟩
+  exact I.semTm_sn hIm σ hσ
+
+lemma sn {Γ : Ctx} {m A : Tm} {Δ : DCandCtx} :
+    CanSemCtx Γ Δ -> CanSemTyped Γ m A -> SN Step m := by
+  intro hΓ hm
+  have h := CanSemTyped.sn_subst hm hΓ ids (CanSemCtx.ids_valid hΓ)
+  simpa [Tm.subst_id] using h
+
+lemma of_sem_typed {Γ : Ctx} {m A : Tm} :
+    SemTyped Γ m A -> CanSemTyped Γ m A := by
+  intro hm Δ hΓ
+  exact hm hΓ.semCtx
+
+lemma var {Γ : Ctx} {x : Var} {A : Tm} :
+    Has Γ x A -> CanSemTyped Γ (.var x) A := by
+  intro hs Δ hΓ
+  exact CanSemCtx.var hΓ hs
+
+lemma srt {Γ : Ctx} (i : Nat) :
+    CanSemTyped Γ (.ty i) (.ty (i + 1)) :=
+  CanSemTyped.of_sem_typed (SemTyped.srt i)
+
+lemma bool {Γ : Ctx} :
+    CanSemTyped Γ .bool (.ty 0) :=
+  CanSemTyped.of_sem_typed SemTyped.bool
+
+lemma bot {Γ : Ctx} :
+    CanSemTyped Γ .bot (.ty 0) :=
+  CanSemTyped.of_sem_typed SemTyped.bot
+
+lemma tt {Γ : Ctx} :
+    CanSemTyped Γ .tt .bool :=
+  CanSemTyped.of_sem_typed SemTyped.tt
+
+lemma ff {Γ : Ctx} :
+    CanSemTyped Γ .ff .bool :=
+  CanSemTyped.of_sem_typed SemTyped.ff
+
+lemma rfl {Γ : Ctx} {A m : Tm} :
+    CanSemTyped Γ m A ->
+    CanSemTyped Γ (.rfl m) (.idn A m m) := by
+  intro hm Δ hΓ
+  rcases hm hΓ with ⟨I, hI, hmI⟩
+  exact ⟨TypeInterp.idn I hmI hmI,
+    TypeInterp.idn_weakens,
+    TypeInterp.semRfl hmI⟩
+
+lemma convWeak {Γ : Ctx} {A B m : Tm} {i : Nat} :
+    A === B ->
+    CanSemTyped Γ m A ->
+    CanSemTyped Γ B (.ty i) ->
+    CanSemTyped Γ m B := by
+  intro _eq hm hB Δ hΓ
+  rcases hm hΓ with ⟨I, _hI, hmI⟩
+  rcases hB hΓ with ⟨IB, _hIB, hBI⟩
+  refine ⟨TypeInterp.const Δ B Candidate.snCandidate ?_,
+    TypeInterp.const_weakens Candidate.snCandidate_weakens, ?_⟩
+  · intro σ hσ
+    exact (IB.cand σ).sn (hBI σ hσ)
+  · intro σ hσ
+    exact I.semTm_sn hmI σ hσ
+
+lemma pi {Γ : Ctx} {A B : Tm} {iA iB : Nat} :
+    CanSemTyped Γ A (.ty iA) ->
+    CanSemTyped (A :: Γ) B (.ty iB) ->
+    CanSemTyped Γ (.pi A B) (.ty (max iA iB)) := by
+  intro hA hB Δ hΓ
+  refine ⟨TypeInterp.univ Δ (max iA iB),
+    TypeInterp.univ_weakens Δ (max iA iB), ?_⟩
+  intro σ hσ
+  asimp
+  have hΔ : Δ.Weakens := CanSemCtx.weakens hΓ
+  let IA : TypeInterp Δ A :=
+    TypeInterp.const Δ A Candidate.snCandidate
+      (by
+        intro τ hτ
+        exact CanSemTyped.sn_subst hA hΓ τ hτ)
+  have hIA : IA.Weakens :=
+    TypeInterp.const_weakens Candidate.snCandidate_weakens
+  have hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    CanSemCtx.consInterp hΓ IA hIA
+  have hσup : (DCandCtx.extend IA).valid (up σ) :=
+    DCandCtx.extend_up_valid (I := IA) hΔ hσ
+  exact Candidate.pi_type
+    (CanSemTyped.sn_subst hA hΓ σ hσ)
+    (CanSemTyped.sn_subst hB hΓA (up σ) hσup)
+
+lemma sig {Γ : Ctx} {A B : Tm} {iA iB : Nat} :
+    CanSemTyped Γ A (.ty iA) ->
+    CanSemTyped (A :: Γ) B (.ty iB) ->
+    CanSemTyped Γ (.sig A B) (.ty (max iA iB)) := by
+  intro hA hB Δ hΓ
+  refine ⟨TypeInterp.univ Δ (max iA iB),
+    TypeInterp.univ_weakens Δ (max iA iB), ?_⟩
+  intro σ hσ
+  asimp
+  have hΔ : Δ.Weakens := CanSemCtx.weakens hΓ
+  let IA : TypeInterp Δ A :=
+    TypeInterp.const Δ A Candidate.snCandidate
+      (by
+        intro τ hτ
+        exact CanSemTyped.sn_subst hA hΓ τ hτ)
+  have hIA : IA.Weakens :=
+    TypeInterp.const_weakens Candidate.snCandidate_weakens
+  have hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    CanSemCtx.consInterp hΓ IA hIA
+  have hσup : (DCandCtx.extend IA).valid (up σ) :=
+    DCandCtx.extend_up_valid (I := IA) hΔ hσ
+  exact Candidate.sig_type
+    (CanSemTyped.sn_subst hA hΓ σ hσ)
+    (CanSemTyped.sn_subst hB hΓA (up σ) hσup)
+
+lemma idn {Γ : Ctx} {A m n : Tm} {i : Nat} :
+    CanSemTyped Γ A (.ty i) ->
+    CanSemTyped Γ m A ->
+    CanSemTyped Γ n A ->
+    CanSemTyped Γ (.idn A m n) (.ty i) := by
+  intro hA hm hn Δ hΓ
+  refine ⟨TypeInterp.univ Δ i, TypeInterp.univ_weakens Δ i, ?_⟩
+  intro σ hσ
+  asimp
+  exact Candidate.idn_type
+    (CanSemTyped.sn_subst hA hΓ σ hσ)
+    (CanSemTyped.sn_subst hm hΓ σ hσ)
+    (CanSemTyped.sn_subst hn hΓ σ hσ)
+
+lemma lam {Γ : Ctx} {A B m : Tm} {iA : Nat} :
+    CanSemTyped Γ A (.ty iA) ->
+    CanSemTyped (A :: Γ) m B ->
+    CanSemTyped Γ (.lam A m) (.pi A B) := by
+  intro hA hm Δ hΓ
+  have hΔ : Δ.Weakens := CanSemCtx.weakens hΓ
+  let IA : TypeInterp Δ A :=
+    TypeInterp.const Δ A Candidate.snCandidate
+      (by
+        intro σ hσ
+        exact CanSemTyped.sn_subst hA hΓ σ hσ)
+  have hIA : IA.Weakens :=
+    TypeInterp.const_weakens Candidate.snCandidate_weakens
+  have hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    CanSemCtx.consInterp hΓ IA hIA
+  rcases hm hΓA with ⟨IBody, _hIBodyW, _hmBody⟩
+  let IB : TypeInterp (DCandCtx.extend IA) B :=
+    TypeInterp.const (DCandCtx.extend IA) B Candidate.snCandidate
+      (by
+        intro σ hσ
+        exact IBody.type_sn σ hσ)
+  have hIBexp :
+      ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) ->
+        Candidate.Expansive (IB.cand σ) := by
+    intro σ hσ
+    exact Candidate.snCandidate_expansive
+  refine ⟨TypeInterp.kpi IA IB hΔ hIBexp,
+    TypeInterp.kpi_weakens IA IB hΔ hIBexp, ?_⟩
+  apply TypeInterp.semLamKPiInterp IA IB hΔ hIBexp
+  · intro σ hσ
+    exact CanSemTyped.sn_subst hA hΓ σ hσ
+  · intro σ hσ
+    have hσup : (DCandCtx.extend IA).valid (up σ) :=
+      DCandCtx.extend_up_valid (I := IA) hΔ hσ
+    exact CanSemTyped.sn_subst hm hΓA (up σ) hσup
+  · intro σ hσ a ha
+    exact CanSemTyped.sn_subst hm hΓA (a .: σ)
+      (DCandCtx.extend_cons hσ ha)
+
+lemma iteSN {Γ : Ctx} {A m n1 n2 : Tm} {i : Nat} :
+    CanSemTyped (.bool :: Γ) A (.ty i) ->
+    CanSemTyped Γ m .bool ->
+    CanSemTyped Γ n1 A.[.tt/] ->
+    CanSemTyped Γ n2 A.[.ff/] ->
+    CanSemTyped Γ (.ite A m n1 n2) A.[m/] := by
+  intro hA hm hn1 hn2 Δ hΓ
+  let hΓB : CanSemCtx (.bool :: Γ) (DCandCtx.extend (TypeInterp.bool Δ)) :=
+    CanSemCtx.consInterp hΓ (TypeInterp.bool Δ) (TypeInterp.bool_weakens Δ)
+  refine ⟨TypeInterp.const Δ A.[m/] Candidate.snCandidate ?_,
+    TypeInterp.const_weakens Candidate.snCandidate_weakens, ?_⟩
+  · intro σ hσ
+    have snm : SN Step m.[σ] := CanSemTyped.sn_subst hm hΓ σ hσ
+    have hσm : (DCandCtx.extend (TypeInterp.bool Δ)).valid (m.[σ] .: σ) :=
+      DCandCtx.extend_cons hσ snm
+    have hsn := CanSemTyped.sn_subst hA hΓB (m.[σ] .: σ) hσm
+    rw [show A.[m/].[σ] = A.[m.[σ] .: σ] by asimp]
+    exact hsn
+  · intro σ hσ
+    have hσB : (DCandCtx.extend (TypeInterp.bool Δ)).valid (up σ) :=
+      DCandCtx.extend_up_valid (I := TypeInterp.bool Δ) (CanSemCtx.weakens hΓ) hσ
+    have snA : SN Step A.[up σ] :=
+      CanSemTyped.sn_subst hA hΓB (up σ) hσB
+    have snm : SN Step m.[σ] :=
+      CanSemTyped.sn_subst hm hΓ σ hσ
+    have sn1 : SN Step n1.[σ] :=
+      CanSemTyped.sn_subst hn1 hΓ σ hσ
+    have sn2 : SN Step n2.[σ] :=
+      CanSemTyped.sn_subst hn2 hΓ σ hσ
+    change SN Step (.ite A.[up σ] m.[σ] n1.[σ] n2.[σ])
+    exact sn_ite snA snm sn1 sn2
+
+lemma exfSN {Γ : Ctx} {A m : Tm} {i : Nat} :
+    CanSemTyped (.bot :: Γ) A (.ty i) ->
+    CanSemTyped Γ m .bot ->
+    CanSemTyped Γ (.exf A m) A.[m/] := by
+  intro hA hm Δ hΓ
+  let hΓB : CanSemCtx (.bot :: Γ) (DCandCtx.extend (TypeInterp.bot Δ)) :=
+    CanSemCtx.consInterp hΓ (TypeInterp.bot Δ) (TypeInterp.bot_weakens Δ)
+  refine ⟨TypeInterp.const Δ A.[m/] Candidate.snCandidate ?_,
+    TypeInterp.const_weakens Candidate.snCandidate_weakens, ?_⟩
+  · intro σ hσ
+    have snm : SN Step m.[σ] := CanSemTyped.sn_subst hm hΓ σ hσ
+    have hσm : (DCandCtx.extend (TypeInterp.bot Δ)).valid (m.[σ] .: σ) :=
+      DCandCtx.extend_cons hσ snm
+    have hsn := CanSemTyped.sn_subst hA hΓB (m.[σ] .: σ) hσm
+    rw [show A.[m/].[σ] = A.[m.[σ] .: σ] by asimp]
+    exact hsn
+  · intro σ hσ
+    have hσB : (DCandCtx.extend (TypeInterp.bot Δ)).valid (up σ) :=
+      DCandCtx.extend_up_valid (I := TypeInterp.bot Δ) (CanSemCtx.weakens hΓ) hσ
+    have snA : SN Step A.[up σ] :=
+      CanSemTyped.sn_subst hA hΓB (up σ) hσB
+    have snm : SN Step m.[σ] :=
+      CanSemTyped.sn_subst hm hΓ σ hσ
+    change SN Step (.exf A.[up σ] m.[σ])
+    exact sn_exf snA snm
+
+end CanSemTyped
+
+namespace SemTypeData
+
+def CanSemTm {Γ : Ctx} {A : Tm} (TA : SemTypeData Γ A) (m : Tm) : Prop :=
+  ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ), (TA.interp hΓ.semCtx).SemTm m
+
+def CanEquiv {Γ : Ctx} {A B : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData Γ B) : Prop :=
+  ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ) σ,
+    Δ.valid σ -> ∀ t,
+      ((TA.interp hΓ.semCtx).cand σ).mem t ↔
+        ((TB.interp hΓ.semCtx).cand σ).mem t
+
+namespace CanEquiv
+
+lemma refl {Γ : Ctx} {A : Tm} (TA : SemTypeData Γ A) :
+    SemTypeData.CanEquiv TA TA := by
+  intro Δ hΓ σ hσ t
+  exact Iff.rfl
+
+lemma sym {Γ : Ctx} {A B : Tm}
+    {TA : SemTypeData Γ A} {TB : SemTypeData Γ B} :
+    SemTypeData.CanEquiv TA TB -> SemTypeData.CanEquiv TB TA := by
+  intro hEq Δ hΓ σ hσ t
+  exact (hEq hΓ σ hσ t).symm
+
+lemma trans {Γ : Ctx} {A B C : Tm}
+    {TA : SemTypeData Γ A} {TB : SemTypeData Γ B}
+    {TC : SemTypeData Γ C} :
+    SemTypeData.CanEquiv TA TB ->
+    SemTypeData.CanEquiv TB TC ->
+    SemTypeData.CanEquiv TA TC := by
+  intro hAB hBC Δ hΓ σ hσ t
+  exact Iff.trans (hAB hΓ σ hσ t) (hBC hΓ σ hσ t)
+
+lemma semTm {Γ : Ctx} {A B m : Tm}
+    {TA : SemTypeData Γ A} {TB : SemTypeData Γ B} :
+    SemTypeData.CanEquiv TA TB -> TA.CanSemTm m -> TB.CanSemTm m := by
+  intro hEq hm Δ hΓ σ hσ
+  exact (hEq hΓ σ hσ m.[σ]).1 (hm hΓ σ hσ)
+
+end CanEquiv
+
+lemma Equiv.toCanEquiv {Γ : Ctx} {A B : Tm}
+    {TA : SemTypeData Γ A} {TB : SemTypeData Γ B} :
+    SemTypeData.Equiv TA TB -> SemTypeData.CanEquiv TA TB := by
+  intro hEq Δ hΓ σ hσ t
+  exact hEq hΓ.semCtx σ hσ t
+
+lemma CanSemTm.toCanSemTyped {Γ : Ctx} {A m : Tm}
+    (TA : SemTypeData Γ A) :
+    TA.CanSemTm m -> CanSemTyped Γ m A := by
+  intro hm Δ hΓ
+  exact ⟨TA.interp hΓ.semCtx, TA.weakens hΓ.semCtx, hm hΓ⟩
+
+lemma CanSemTm.sn_subst {Γ : Ctx} {A m : Tm}
+    {TA : SemTypeData Γ A} :
+    TA.CanSemTm m ->
+    ∀ {Δ : DCandCtx} (_hΓ : CanSemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step m.[σ] := by
+  intro hm Δ hΓ σ hσ
+  exact (TA.interp hΓ.semCtx).semTm_sn (hm hΓ) σ hσ
+
+lemma canAppKPi {Γ : Ctx} {A B m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive) :
+    (SemTypeData.kpi TA TB hTB).CanSemTm m ->
+    TA.CanSemTm n ->
+    CanSemTyped Γ (.app m n) B.[n/] := by
+  intro hm hn Δ hΓ
+  let IA := TA.interp hΓ.semCtx
+  let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ.semCtx IA (TA.weakens hΓ.semCtx)
+  let IB := TB.interp hΓA
+  let hnI : IA.SemTm n := hn hΓ
+  refine ⟨TypeInterp.subst1 IA IB hnI,
+    TypeInterp.subst1_weakens IA IB (TB.weakens hΓA), ?_⟩
+  change (TypeInterp.subst1 IA IB hnI).SemTm (.app m n)
+  exact TypeInterp.semAppKPiSubst1 IA IB (SemCtx.weakens hΓ.semCtx)
+    (hTB hΓA) (hm hΓ) hnI
+
+lemma canLamKPi {Γ : Ctx} {A B m : Tm}
+    (TA : SemTypeData Γ A)
+    (TB : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive) :
+    TB.CanSemTm m ->
+    (SemTypeData.kpi TA TB hTB).CanSemTm (.lam A m) := by
+  intro hm Δ hΓ
+  let IA := TA.interp hΓ.semCtx
+  let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    CanSemCtx.cons hΓ TA
+  let IB := TB.interp hΓA.semCtx
+  change (TypeInterp.kpi IA IB (SemCtx.weakens hΓ.semCtx) (hTB hΓA.semCtx)).SemTm
+    (.lam A m)
+  apply TypeInterp.semLamKPiInterp IA IB (SemCtx.weakens hΓ.semCtx) (hTB hΓA.semCtx)
+  · intro σ hσ
+    exact IA.type_sn σ hσ
+  · intro σ hσ
+    have hσup : (DCandCtx.extend IA).valid (up σ) :=
+      DCandCtx.extend_up_valid (I := IA) (SemCtx.weakens hΓ.semCtx) hσ
+    exact (IB.cand (up σ)).sn (hm hΓA (up σ) hσup)
+  · intro σ hσ a ha
+    exact hm hΓA (a .: σ) (DCandCtx.extend_cons hσ ha)
+
+lemma canTupKSig {Γ : Ctx} {A B m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hm : TA.CanSemTm m)
+    (hn : ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ),
+      let IA := TA.interp hΓ.semCtx
+      let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+        SemCtx.cons hΓ.semCtx IA (TA.weakens hΓ.semCtx)
+      let IB := TB.interp hΓA
+      (TypeInterp.subst1 IA IB (hm hΓ)).SemTm n) :
+    (SemTypeData.ksig TA TB).CanSemTm (.tup m n) := by
+  intro Δ hΓ
+  let IA := TA.interp hΓ.semCtx
+  let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ.semCtx IA (TA.weakens hΓ.semCtx)
+  let IB := TB.interp hΓA
+  change (TypeInterp.ksig IA IB (SemCtx.weakens hΓ.semCtx)).SemTm (.tup m n)
+  apply TypeInterp.semTupKSigmaInterp IA IB (SemCtx.weakens hΓ.semCtx)
+  · exact hm hΓ
+  · intro σ hσ
+    exact hn hΓ σ hσ
+
+end SemTypeData
+
+structure CanTypeData (Γ : Ctx) (A : Tm) where
+  interp : ∀ {Δ : DCandCtx}, CanSemCtx Γ Δ -> TypeInterp Δ A
+  weakens : ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ), (interp hΓ).Weakens
+
+namespace CanTypeData
+
+def Expansive {Γ : Ctx} {A : Tm} (TA : CanTypeData Γ A) : Prop :=
+  ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ), (TA.interp hΓ).Expansive
+
+def CanSemTm {Γ : Ctx} {A : Tm} (TA : CanTypeData Γ A) (m : Tm) : Prop :=
+  ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ), (TA.interp hΓ).SemTm m
+
+def Equiv {Γ : Ctx} {A B : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData Γ B) : Prop :=
+  ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ) σ,
+    Δ.valid σ -> ∀ t,
+      ((TA.interp hΓ).cand σ).mem t ↔ ((TB.interp hΓ).cand σ).mem t
+
+namespace Equiv
+
+lemma refl {Γ : Ctx} {A : Tm} (TA : CanTypeData Γ A) :
+    CanTypeData.Equiv TA TA := by
+  intro Δ hΓ σ hσ t
+  exact Iff.rfl
+
+lemma sym {Γ : Ctx} {A B : Tm}
+    {TA : CanTypeData Γ A} {TB : CanTypeData Γ B} :
+    CanTypeData.Equiv TA TB -> CanTypeData.Equiv TB TA := by
+  intro hEq Δ hΓ σ hσ t
+  exact (hEq hΓ σ hσ t).symm
+
+lemma trans {Γ : Ctx} {A B C : Tm}
+    {TA : CanTypeData Γ A} {TB : CanTypeData Γ B}
+    {TC : CanTypeData Γ C} :
+    CanTypeData.Equiv TA TB ->
+    CanTypeData.Equiv TB TC ->
+    CanTypeData.Equiv TA TC := by
+  intro hAB hBC Δ hΓ σ hσ t
+  exact Iff.trans (hAB hΓ σ hσ t) (hBC hΓ σ hσ t)
+
+lemma semTm {Γ : Ctx} {A B m : Tm}
+    {TA : CanTypeData Γ A} {TB : CanTypeData Γ B} :
+    CanTypeData.Equiv TA TB -> TA.CanSemTm m -> TB.CanSemTm m := by
+  intro hEq hm Δ hΓ σ hσ
+  exact (hEq hΓ σ hσ m.[σ]).1 (hm hΓ σ hσ)
+
+end Equiv
+
+def convType {Γ : Ctx} {A B : Tm} (TA : CanTypeData Γ A)
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : CanSemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ]) :
+    CanTypeData Γ B where
+  interp hΓ := (TA.interp hΓ).convType (hB hΓ)
+  weakens hΓ := TypeInterp.convType_weakens (TA.interp hΓ) (hB hΓ)
+    (TA.weakens hΓ)
+
+lemma convType_expansive {Γ : Ctx} {A B : Tm} (TA : CanTypeData Γ A)
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : CanSemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ]) :
+    TA.Expansive -> (TA.convType hB).Expansive := by
+  intro hTA Δ hΓ
+  exact TypeInterp.convType_expansive (TA.interp hΓ) (hB hΓ) (hTA hΓ)
+
+lemma convType_semTm {Γ : Ctx} {A B m : Tm} (TA : CanTypeData Γ A)
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : CanSemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ]) :
+    TA.CanSemTm m -> (TA.convType hB).CanSemTm m := by
+  intro hm Δ hΓ
+  exact TypeInterp.convType_semTm (TA.interp hΓ) (hB hΓ) (hm hΓ)
+
+lemma convType_equiv_right {Γ : Ctx} {A B : Tm}
+    (TA : CanTypeData Γ A)
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : CanSemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ]) :
+    CanTypeData.Equiv TA (TA.convType hB) := by
+  intro Δ hΓ σ hσ t
+  rfl
+
+lemma convType_equiv_left {Γ : Ctx} {A B : Tm}
+    (TA : CanTypeData Γ A)
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : CanSemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ]) :
+    CanTypeData.Equiv (TA.convType hB) TA :=
+  CanTypeData.Equiv.sym (CanTypeData.convType_equiv_right TA hB)
+
+def ofSemTypeData {Γ : Ctx} {A : Tm} (TA : SemTypeData Γ A) :
+    CanTypeData Γ A where
+  interp hΓ := TA.interp hΓ.semCtx
+  weakens hΓ := TA.weakens hΓ.semCtx
+
+lemma ofSemTypeData_expansive {Γ : Ctx} {A : Tm} (TA : SemTypeData Γ A) :
+    TA.Expansive -> (CanTypeData.ofSemTypeData TA).Expansive := by
+  intro hTA Δ hΓ
+  exact hTA hΓ.semCtx
+
+noncomputable def weaken {Γ : Ctx} {A B : Tm}
+    (TA : CanTypeData Γ A) : CanTypeData (B :: Γ) A.[shift 1] where
+  interp {Δ} hΓB := by
+    rcases hΓB with ⟨_hSem, hCan⟩
+    cases hCan with
+    | cons hTail TB =>
+      let hTailCtx : CanSemCtx Γ _ := ⟨_, hTail⟩
+      exact TypeInterp.weakenCtx (TA.interp hTailCtx)
+        (TB.interp hTailCtx.semCtx)
+    | consInterp hTail I _hI =>
+      let hTailCtx : CanSemCtx Γ _ := ⟨_, hTail⟩
+      exact TypeInterp.weakenCtx (TA.interp hTailCtx) I
+  weakens {Δ} hΓB := by
+    rcases hΓB with ⟨_hSem, hCan⟩
+    cases hCan with
+    | cons hTail TB =>
+      let hTailCtx : CanSemCtx Γ _ := ⟨_, hTail⟩
+      change (TypeInterp.weakenCtx (TA.interp hTailCtx)
+        (TB.interp hTailCtx.semCtx)).Weakens
+      exact TypeInterp.weakenCtx_weakens (TA.weakens hTailCtx)
+    | consInterp hTail I _hI =>
+      let hTailCtx : CanSemCtx Γ _ := ⟨_, hTail⟩
+      change (TypeInterp.weakenCtx (TA.interp hTailCtx) I).Weakens
+      exact TypeInterp.weakenCtx_weakens (TA.weakens hTailCtx)
+
+lemma weaken_semTm {Γ : Ctx} {A B m : Tm}
+    (TA : CanTypeData Γ A) :
+    TA.CanSemTm m -> (TA.weaken (B := B)).CanSemTm m.[shift 1] := by
+  intro hm Δ hΓB
+  rcases hΓB with ⟨_hSem, hCan⟩
+  cases hCan with
+  | cons hTail TB =>
+    let hTailCtx : CanSemCtx Γ _ := ⟨_, hTail⟩
+    change (TypeInterp.weakenCtx (TA.interp hTailCtx)
+      (TB.interp hTailCtx.semCtx)).SemTm m.[shift 1]
+    exact TypeInterp.semTm_weakenCtx (TA.interp hTailCtx)
+      (TB.interp hTailCtx.semCtx) (hm hTailCtx)
+  | consInterp hTail I _hI =>
+    let hTailCtx : CanSemCtx Γ _ := ⟨_, hTail⟩
+    change (TypeInterp.weakenCtx (TA.interp hTailCtx) I).SemTm m.[shift 1]
+    exact TypeInterp.semTm_weakenCtx (TA.interp hTailCtx) I (hm hTailCtx)
+
+lemma weaken_expansive {Γ : Ctx} {A B : Tm}
+    (TA : CanTypeData Γ A) :
+    TA.Expansive -> (TA.weaken (B := B)).Expansive := by
+  intro hTA Δ hΓB σ hσ
+  rcases hΓB with ⟨_hSem, hCan⟩
+  cases hCan with
+  | cons hTail TB =>
+    let hTailCtx : CanSemCtx Γ _ := ⟨_, hTail⟩
+    change Candidate.Expansive
+      ((TA.interp hTailCtx).cand (fun x => σ (x + 1)))
+    exact hTA hTailCtx (fun x => σ (x + 1)) hσ.1
+  | consInterp hTail I _hI =>
+    let hTailCtx : CanSemCtx Γ _ := ⟨_, hTail⟩
+    change Candidate.Expansive
+      ((TA.interp hTailCtx).cand (fun x => σ (x + 1)))
+    exact hTA hTailCtx (fun x => σ (x + 1)) hσ.1
+
+lemma weaken_equiv {Γ : Ctx} {A B : Tm}
+    {TA TB : CanTypeData Γ A} :
+    CanTypeData.Equiv TA TB ->
+    CanTypeData.Equiv (CanTypeData.weaken (B := B) TA)
+      (CanTypeData.weaken (B := B) TB) := by
+  intro hEq Δ hΓB σ hσ t
+  rcases hΓB with ⟨_hSem, hCan⟩
+  cases hCan with
+  | cons hTail TH =>
+    let hTailCtx : CanSemCtx Γ _ := ⟨_, hTail⟩
+    change ((TA.interp hTailCtx).cand (fun x => σ (x + 1))).mem t ↔
+      ((TB.interp hTailCtx).cand (fun x => σ (x + 1))).mem t
+    exact hEq hTailCtx (fun x => σ (x + 1)) hσ.1 t
+  | consInterp hTail I _hI =>
+    let hTailCtx : CanSemCtx Γ _ := ⟨_, hTail⟩
+    change ((TA.interp hTailCtx).cand (fun x => σ (x + 1))).mem t ↔
+      ((TB.interp hTailCtx).cand (fun x => σ (x + 1))).mem t
+    exact hEq hTailCtx (fun x => σ (x + 1)) hσ.1 t
+
+lemma weaken_var {Γ : Ctx} {A B : Tm} {x : Var}
+    (TA : CanTypeData Γ A) :
+    TA.CanSemTm (.var x) ->
+    (CanTypeData.weaken (B := B) TA).CanSemTm (.var (x + 1)) := by
+  intro hvar Δ hΓ
+  have h := CanTypeData.weaken_semTm (B := B) TA hvar hΓ
+  simpa using h
+
+noncomputable def varZero (Γ : Ctx) (A : Tm) :
+    CanTypeData (A :: Γ) A.[shift 1] where
+  interp {Δ} hΓA := by
+    rcases hΓA with ⟨_hSem, hCan⟩
+    cases hCan with
+    | cons hTail TA =>
+      let hTailCtx : CanSemCtx Γ _ := ⟨_, hTail⟩
+      let I := TA.interp hTailCtx.semCtx
+      exact TypeInterp.weakenCtx I I
+    | consInterp hTail I _hI =>
+      exact TypeInterp.weakenCtx I I
+  weakens {Δ} hΓA := by
+    rcases hΓA with ⟨_hSem, hCan⟩
+    cases hCan with
+    | cons hTail TA =>
+      let hTailCtx : CanSemCtx Γ _ := ⟨_, hTail⟩
+      let I := TA.interp hTailCtx.semCtx
+      change (TypeInterp.weakenCtx I I).Weakens
+      exact TypeInterp.weakenCtx_weakens (TA.weakens hTailCtx.semCtx)
+    | consInterp hTail I hI =>
+      change (TypeInterp.weakenCtx I I).Weakens
+      exact TypeInterp.weakenCtx_weakens hI
+
+lemma varZero_semTm (Γ : Ctx) (A : Tm) :
+    (CanTypeData.varZero Γ A).CanSemTm (.var 0) := by
+  intro Δ hΓA
+  rcases hΓA with ⟨_hSem, hCan⟩
+  cases hCan with
+  | cons hTail TA =>
+    let hTailCtx : CanSemCtx Γ _ := ⟨_, hTail⟩
+    let I := TA.interp hTailCtx.semCtx
+    change (TypeInterp.weakenCtx I I).SemTm (.var 0)
+    exact TypeInterp.semVarZero I
+  | consInterp hTail I hI =>
+    change (TypeInterp.weakenCtx I I).SemTm (.var 0)
+    exact TypeInterp.semVarZero I
+
+lemma exists_lookup {Γ : Ctx} {x : Var} {A : Tm}
+    (hs : Has Γ x A) :
+    ∃ TA : CanTypeData Γ A, TA.CanSemTm (.var x) := by
+  induction hs with
+  | zero Γ A =>
+    exact ⟨CanTypeData.varZero Γ A, CanTypeData.varZero_semTm Γ A⟩
+  | succ Γ A B x hs ih =>
+    rcases ih with ⟨TA, hvar⟩
+    exact ⟨CanTypeData.weaken (B := B) TA,
+      CanTypeData.weaken_var TA hvar⟩
+
+noncomputable def lookup {Γ : Ctx} {x : Var} {A : Tm}
+    (hs : Has Γ x A) : CanTypeData Γ A :=
+  Classical.choose (CanTypeData.exists_lookup hs)
+
+lemma lookup_var {Γ : Ctx} {x : Var} {A : Tm}
+    (hs : Has Γ x A) :
+    (CanTypeData.lookup hs).CanSemTm (.var x) :=
+  Classical.choose_spec (CanTypeData.exists_lookup hs)
+
+noncomputable def ofCanSemTypedType {Γ : Ctx} {A : Tm} {i : Nat}
+    (hA : CanSemTyped Γ A (.ty i)) : CanTypeData Γ A where
+  interp hΓ := TypeInterp.const _ A Candidate.snCandidate
+    (fun σ hσ => CanSemTyped.sn_subst hA hΓ σ hσ)
+  weakens _hΓ := TypeInterp.const_weakens Candidate.snCandidate_weakens
+
+lemma ofCanSemTypedType_expansive {Γ : Ctx} {A : Tm} {i : Nat}
+    (hA : CanSemTyped Γ A (.ty i)) :
+    (CanTypeData.ofCanSemTypedType hA).Expansive := by
+  intro Δ hΓ
+  exact TypeInterp.const_expansive Candidate.snCandidate_expansive
+
+def univ (Γ : Ctx) (i : Nat) : CanTypeData Γ (.ty i) :=
+  CanTypeData.ofSemTypeData (SemTypeData.univ Γ i)
+
+lemma univ_expansive (Γ : Ctx) (i : Nat) :
+    (CanTypeData.univ Γ i).Expansive :=
+  CanTypeData.ofSemTypeData_expansive (SemTypeData.univ Γ i)
+    (SemTypeData.univ_expansive Γ i)
+
+def bool (Γ : Ctx) : CanTypeData Γ .bool :=
+  CanTypeData.ofSemTypeData (SemTypeData.bool Γ)
+
+lemma bool_expansive (Γ : Ctx) :
+    (CanTypeData.bool Γ).Expansive :=
+  CanTypeData.ofSemTypeData_expansive (SemTypeData.bool Γ)
+    (SemTypeData.bool_expansive Γ)
+
+def bot (Γ : Ctx) : CanTypeData Γ .bot :=
+  CanTypeData.ofSemTypeData (SemTypeData.bot Γ)
+
+lemma bot_expansive (Γ : Ctx) :
+    (CanTypeData.bot Γ).Expansive :=
+  CanTypeData.ofSemTypeData_expansive (SemTypeData.bot Γ)
+    (SemTypeData.bot_expansive Γ)
+
+lemma type {Γ : Ctx} {A : Tm} (TA : CanTypeData Γ A) (i : Nat) :
+    (CanTypeData.univ Γ i).CanSemTm A := by
+  intro Δ hΓ
+  exact TypeInterp.semUniv (TA.interp hΓ) i
+
+lemma ty {Γ : Ctx} (i : Nat) :
+    (CanTypeData.univ Γ (i + 1)).CanSemTm (.ty i) :=
+  CanTypeData.type (CanTypeData.univ Γ i) (i + 1)
+
+lemma bool_type {Γ : Ctx} :
+    (CanTypeData.univ Γ 0).CanSemTm .bool :=
+  CanTypeData.type (CanTypeData.bool Γ) 0
+
+lemma bot_type {Γ : Ctx} :
+    (CanTypeData.univ Γ 0).CanSemTm .bot :=
+  CanTypeData.type (CanTypeData.bot Γ) 0
+
+lemma tt {Γ : Ctx} :
+    (CanTypeData.bool Γ).CanSemTm .tt := by
+  intro Δ hΓ
+  exact TypeInterp.semTt
+
+lemma ff {Γ : Ctx} :
+    (CanTypeData.bool Γ).CanSemTm .ff := by
+  intro Δ hΓ
+  exact TypeInterp.semFf
+
+noncomputable def idn {Γ : Ctx} {A m n : Tm}
+    (TA : CanTypeData Γ A) (hm : TA.CanSemTm m) (hn : TA.CanSemTm n) :
+    CanTypeData Γ (.idn A m n) where
+  interp hΓ := TypeInterp.idn (TA.interp hΓ) (hm hΓ) (hn hΓ)
+  weakens _hΓ := TypeInterp.idn_weakens
+
+lemma idn_expansive {Γ : Ctx} {A m n : Tm}
+    (TA : CanTypeData Γ A) (hm : TA.CanSemTm m) (hn : TA.CanSemTm n) :
+    (CanTypeData.idn TA hm hn).Expansive := by
+  intro Δ hΓ
+  change (TypeInterp.idn (TA.interp hΓ) (hm hΓ) (hn hΓ)).Expansive
+  exact TypeInterp.idn_expansive (I := TA.interp hΓ)
+
+lemma idn_type {Γ : Ctx} {A m n : Tm}
+    (TA : CanTypeData Γ A) (hm : TA.CanSemTm m) (hn : TA.CanSemTm n)
+    (i : Nat) :
+    (CanTypeData.univ Γ i).CanSemTm (.idn A m n) :=
+  CanTypeData.type (CanTypeData.idn TA hm hn) i
+
+noncomputable def idBranch {Γ : Ctx} {A B a : Tm}
+    (TB : CanTypeData Γ B) (ha : TB.CanSemTm a)
+    (TA : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    CanTypeData Γ A.[.rfl a,a/] where
+  interp hΓ :=
+    let IB := TB.interp hΓ
+    let hΓB : CanSemCtx (B :: Γ) (DCandCtx.extend IB) :=
+      CanSemCtx.consInterp hΓ IB (TB.weakens hΓ)
+    let IP := TypeInterp.idProof IB (ha hΓ)
+    let hΓP : CanSemCtx
+        (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+        (DCandCtx.extend IP) :=
+      CanSemCtx.consInterp hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+    TypeInterp.idBranch IB (ha hΓ) (TA.interp hΓP)
+  weakens hΓ := by
+    let IB := TB.interp hΓ
+    let hΓB : CanSemCtx (B :: Γ) (DCandCtx.extend IB) :=
+      CanSemCtx.consInterp hΓ IB (TB.weakens hΓ)
+    let IP := TypeInterp.idProof IB (ha hΓ)
+    let hΓP : CanSemCtx
+        (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+        (DCandCtx.extend IP) :=
+      CanSemCtx.consInterp hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+    change (TypeInterp.idBranch IB (ha hΓ) (TA.interp hΓP)).Weakens
+    exact TypeInterp.idBranch_weakens IB (ha hΓ) (TA.interp hΓP)
+      (TA.weakens hΓP)
+
+lemma idBranch_equiv_same {Γ : Ctx} {A B a : Tm}
+    (TB : CanTypeData Γ B) (ha ha' : TB.CanSemTm a)
+    (TA : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    CanTypeData.Equiv
+      (CanTypeData.idBranch TB ha TA)
+      (CanTypeData.idBranch TB ha' TA) := by
+  intro Δ hΓ σ hσ t
+  simp [CanTypeData.idBranch, TypeInterp.idBranch]
+
+lemma idBranch_equiv_of_family {Γ : Ctx} {A B a : Tm}
+    (TB : CanTypeData Γ B) (ha : TB.CanSemTm a)
+    (TA TA' : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    CanTypeData.Equiv TA TA' ->
+    CanTypeData.Equiv
+      (CanTypeData.idBranch TB ha TA)
+      (CanTypeData.idBranch TB ha TA') := by
+  intro hA Δ hΓ σ hσ t
+  let IB := TB.interp hΓ
+  let hΓB : CanSemCtx (B :: Γ) (DCandCtx.extend IB) :=
+    CanSemCtx.consInterp hΓ IB (TB.weakens hΓ)
+  let IP := TypeInterp.idProof IB (ha hΓ)
+  let hΓP : CanSemCtx
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+      (DCandCtx.extend IP) :=
+    CanSemCtx.consInterp hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+  have hvalid :
+      (DCandCtx.extend IP).valid
+        (TypeInterp.idBranchSubst a σ) :=
+    TypeInterp.idBranchSubst_valid IB (ha hΓ) hσ
+  simpa [CanTypeData.idBranch, TypeInterp.idBranch] using
+    hA hΓP (TypeInterp.idBranchSubst a σ) hvalid t
+
+lemma idBranch_expansive {Γ : Ctx} {A B a : Tm}
+    (TB : CanTypeData Γ B) (ha : TB.CanSemTm a)
+    (TA : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    TA.Expansive -> (CanTypeData.idBranch TB ha TA).Expansive := by
+  intro hTA Δ hΓ
+  let IB := TB.interp hΓ
+  let hΓB : CanSemCtx (B :: Γ) (DCandCtx.extend IB) :=
+    CanSemCtx.consInterp hΓ IB (TB.weakens hΓ)
+  let IP := TypeInterp.idProof IB (ha hΓ)
+  let hΓP : CanSemCtx
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+      (DCandCtx.extend IP) :=
+    CanSemCtx.consInterp hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+  change (TypeInterp.idBranch IB (ha hΓ) (TA.interp hΓP)).Expansive
+  exact TypeInterp.idBranch_expansive IB (ha hΓ) (TA.interp hΓP) (hTA hΓP)
+
+noncomputable def idTarget {Γ : Ctx} {A B a b n : Tm}
+    (TB : CanTypeData Γ B) (ha : TB.CanSemTm a) (hb : TB.CanSemTm b)
+    (hn : (CanTypeData.idn TB ha hb).CanSemTm n)
+    (TA : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    CanTypeData Γ A.[n,b/] where
+  interp hΓ :=
+    let IB := TB.interp hΓ
+    let hΓB : CanSemCtx (B :: Γ) (DCandCtx.extend IB) :=
+      CanSemCtx.consInterp hΓ IB (TB.weakens hΓ)
+    let IP := TypeInterp.idProof IB (ha hΓ)
+    let hΓP : CanSemCtx
+        (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+        (DCandCtx.extend IP) :=
+      CanSemCtx.consInterp hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+    TypeInterp.idTarget IB (ha hΓ) (hb hΓ) (hn hΓ) (TA.interp hΓP)
+  weakens hΓ := by
+    let IB := TB.interp hΓ
+    let hΓB : CanSemCtx (B :: Γ) (DCandCtx.extend IB) :=
+      CanSemCtx.consInterp hΓ IB (TB.weakens hΓ)
+    let IP := TypeInterp.idProof IB (ha hΓ)
+    let hΓP : CanSemCtx
+        (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+        (DCandCtx.extend IP) :=
+      CanSemCtx.consInterp hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+    change (TypeInterp.idTarget IB (ha hΓ) (hb hΓ) (hn hΓ)
+      (TA.interp hΓP)).Weakens
+    exact TypeInterp.idTarget_weakens IB (ha hΓ) (hb hΓ) (hn hΓ)
+      (TA.interp hΓP) (TA.weakens hΓP)
+
+lemma idTarget_equiv_same {Γ : Ctx} {A B a b n : Tm}
+    (TB : CanTypeData Γ B)
+    (ha ha' : TB.CanSemTm a) (hb hb' : TB.CanSemTm b)
+    (hn : (CanTypeData.idn TB ha hb).CanSemTm n)
+    (hn' : (CanTypeData.idn TB ha' hb').CanSemTm n)
+    (TA : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    CanTypeData.Equiv
+      (CanTypeData.idTarget TB ha hb hn TA)
+      (CanTypeData.idTarget TB ha' hb' hn' TA) := by
+  intro Δ hΓ σ hσ t
+  simp [CanTypeData.idTarget, TypeInterp.idTarget]
+
+lemma idTarget_equiv_of_family {Γ : Ctx} {A B a b n : Tm}
+    (TB : CanTypeData Γ B)
+    (ha : TB.CanSemTm a) (hb : TB.CanSemTm b)
+    (hn : (CanTypeData.idn TB ha hb).CanSemTm n)
+    (TA TA' : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    CanTypeData.Equiv TA TA' ->
+    CanTypeData.Equiv
+      (CanTypeData.idTarget TB ha hb hn TA)
+      (CanTypeData.idTarget TB ha hb hn TA') := by
+  intro hA Δ hΓ σ hσ t
+  let IB := TB.interp hΓ
+  let hΓB : CanSemCtx (B :: Γ) (DCandCtx.extend IB) :=
+    CanSemCtx.consInterp hΓ IB (TB.weakens hΓ)
+  let IP := TypeInterp.idProof IB (ha hΓ)
+  let hΓP : CanSemCtx
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+      (DCandCtx.extend IP) :=
+    CanSemCtx.consInterp hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+  have hvalid :
+      (DCandCtx.extend IP).valid
+        (TypeInterp.idTargetSubst b n σ) :=
+    TypeInterp.idTargetSubst_valid IB (ha hΓ) (hb hΓ) (hn hΓ) hσ
+  simpa [CanTypeData.idTarget, TypeInterp.idTarget] using
+    hA hΓP (TypeInterp.idTargetSubst b n σ) hvalid t
+
+lemma idTarget_expansive {Γ : Ctx} {A B a b n : Tm}
+    (TB : CanTypeData Γ B) (ha : TB.CanSemTm a) (hb : TB.CanSemTm b)
+    (hn : (CanTypeData.idn TB ha hb).CanSemTm n)
+    (TA : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    TA.Expansive -> (CanTypeData.idTarget TB ha hb hn TA).Expansive := by
+  intro hTA Δ hΓ
+  let IB := TB.interp hΓ
+  let hΓB : CanSemCtx (B :: Γ) (DCandCtx.extend IB) :=
+    CanSemCtx.consInterp hΓ IB (TB.weakens hΓ)
+  let IP := TypeInterp.idProof IB (ha hΓ)
+  let hΓP : CanSemCtx
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+      (DCandCtx.extend IP) :=
+    CanSemCtx.consInterp hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+  change (TypeInterp.idTarget IB (ha hΓ) (hb hΓ) (hn hΓ)
+    (TA.interp hΓP)).Expansive
+  exact TypeInterp.idTarget_expansive IB (ha hΓ) (hb hΓ) (hn hΓ)
+    (TA.interp hΓP) (hTA hΓP)
+
+noncomputable def kpi {Γ : Ctx} {A B : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive) : CanTypeData Γ (.pi A B) where
+  interp hΓ :=
+    let IA := TA.interp hΓ
+    let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+      CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+    TypeInterp.kpi IA (TB.interp hΓA) (CanSemCtx.weakens hΓ) (hTB hΓA)
+  weakens hΓ := by
+    let IA := TA.interp hΓ
+    let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+      CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+    change (TypeInterp.kpi IA (TB.interp hΓA)
+      (CanSemCtx.weakens hΓ) (hTB hΓA)).Weakens
+    exact TypeInterp.kpi_weakens IA (TB.interp hΓA)
+      (CanSemCtx.weakens hΓ) (hTB hΓA)
+
+noncomputable def ksig {Γ : Ctx} {A B : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B) :
+    CanTypeData Γ (.sig A B) where
+  interp hΓ :=
+    let IA := TA.interp hΓ
+    let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+      CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+    TypeInterp.ksig IA (TB.interp hΓA) (CanSemCtx.weakens hΓ)
+  weakens hΓ := by
+    let IA := TA.interp hΓ
+    let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+      CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+    change (TypeInterp.ksig IA (TB.interp hΓA) (CanSemCtx.weakens hΓ)).Weakens
+    exact TypeInterp.ksig_weakens IA (TB.interp hΓA) (CanSemCtx.weakens hΓ)
+
+noncomputable def subst1 {Γ : Ctx} {A B n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hn : TA.CanSemTm n) : CanTypeData Γ B.[n/] where
+  interp hΓ :=
+    let IA := TA.interp hΓ
+    let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+      CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+    TypeInterp.subst1 IA (TB.interp hΓA) (hn hΓ)
+  weakens hΓ := by
+    let IA := TA.interp hΓ
+    let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+      CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+    change (TypeInterp.subst1 IA (TB.interp hΓA) (hn hΓ)).Weakens
+    exact TypeInterp.subst1_weakens IA (TB.interp hΓA)
+      (TB.weakens hΓA)
+
+lemma kpi_equiv_same {Γ : Ctx} {A B : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB hTB' : TB.Expansive) :
+    CanTypeData.Equiv
+      (CanTypeData.kpi TA TB hTB)
+      (CanTypeData.kpi TA TB hTB') := by
+  intro Δ hΓ σ hσ t
+  simp [CanTypeData.kpi, TypeInterp.kpi, TypeInterp.kpiCandTotal, hσ,
+    TypeInterp.kpiCand]
+
+lemma kpi_equiv_of_codomain {Γ : Ctx} {A B : Tm}
+    (TA : CanTypeData Γ A)
+    (TB TB' : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive) (hTB' : TB'.Expansive) :
+    CanTypeData.Equiv TB TB' ->
+    CanTypeData.Equiv
+      (CanTypeData.kpi TA TB hTB)
+      (CanTypeData.kpi TA TB' hTB') := by
+  intro hB Δ hΓ σ hσ f
+  let IA := TA.interp hΓ
+  let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+  constructor
+  · intro hf
+    simp [CanTypeData.kpi, TypeInterp.kpi, TypeInterp.kpiCandTotal, hσ,
+      TypeInterp.kpiCand] at hf ⊢
+    constructor
+    · exact hf.1
+    · intro i n hn
+      have hσi : Δ.valid (shiftSubst σ i) :=
+        DCandCtx.weakens_iter (CanSemCtx.weakens hΓ) hσ i
+      have hvalid : (DCandCtx.extend IA).valid (n .: shiftSubst σ i) :=
+        DCandCtx.extend_cons hσi hn
+      exact (hB hΓA (n .: shiftSubst σ i) hvalid (.app f.[shift i] n)).1
+        (hf.2 i n hn)
+  · intro hf
+    simp [CanTypeData.kpi, TypeInterp.kpi, TypeInterp.kpiCandTotal, hσ,
+      TypeInterp.kpiCand] at hf ⊢
+    constructor
+    · exact hf.1
+    · intro i n hn
+      have hσi : Δ.valid (shiftSubst σ i) :=
+        DCandCtx.weakens_iter (CanSemCtx.weakens hΓ) hσ i
+      have hvalid : (DCandCtx.extend IA).valid (n .: shiftSubst σ i) :=
+        DCandCtx.extend_cons hσi hn
+      exact (hB hΓA (n .: shiftSubst σ i) hvalid (.app f.[shift i] n)).2
+        (hf.2 i n hn)
+
+lemma ksig_equiv_of_codomain {Γ : Ctx} {A B : Tm}
+    (TA : CanTypeData Γ A)
+    (TB TB' : CanTypeData (A :: Γ) B) :
+    CanTypeData.Equiv TB TB' ->
+    CanTypeData.Equiv
+      (CanTypeData.ksig TA TB)
+      (CanTypeData.ksig TA TB') := by
+  intro hB Δ hΓ σ hσ p
+  let IA := TA.interp hΓ
+  let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+  constructor
+  · intro hp
+    simp [CanTypeData.ksig, TypeInterp.ksig, TypeInterp.ksigCandTotal, hσ,
+      TypeInterp.ksigCand] at hp ⊢
+    constructor
+    · exact hp.1
+    · intro i a b rd
+      have hσi : Δ.valid (shiftSubst σ i) :=
+        DCandCtx.weakens_iter (CanSemCtx.weakens hΓ) hσ i
+      rcases hp.2 i a b rd with ⟨ha, hb⟩
+      have hvalid : (DCandCtx.extend IA).valid (a .: shiftSubst σ i) :=
+        DCandCtx.extend_cons hσi ha
+      exact ⟨ha, (hB hΓA (a .: shiftSubst σ i) hvalid b).1 hb⟩
+  · intro hp
+    simp [CanTypeData.ksig, TypeInterp.ksig, TypeInterp.ksigCandTotal, hσ,
+      TypeInterp.ksigCand] at hp ⊢
+    constructor
+    · exact hp.1
+    · intro i a b rd
+      have hσi : Δ.valid (shiftSubst σ i) :=
+        DCandCtx.weakens_iter (CanSemCtx.weakens hΓ) hσ i
+      rcases hp.2 i a b rd with ⟨ha, hb⟩
+      have hvalid : (DCandCtx.extend IA).valid (a .: shiftSubst σ i) :=
+        DCandCtx.extend_cons hσi ha
+      exact ⟨ha, (hB hΓA (a .: shiftSubst σ i) hvalid b).2 hb⟩
+
+lemma subst1_equiv_same {Γ : Ctx} {A B n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hn hn' : TA.CanSemTm n) :
+    CanTypeData.Equiv
+      (CanTypeData.subst1 TA TB hn)
+      (CanTypeData.subst1 TA TB hn') := by
+  intro Δ hΓ σ hσ t
+  simp [CanTypeData.subst1, TypeInterp.subst1]
+
+lemma subst1_equiv_of_family {Γ : Ctx} {A B n : Tm}
+    (TA : CanTypeData Γ A)
+    (TB TB' : CanTypeData (A :: Γ) B)
+    (hn : TA.CanSemTm n) :
+    CanTypeData.Equiv TB TB' ->
+    CanTypeData.Equiv
+      (CanTypeData.subst1 TA TB hn)
+      (CanTypeData.subst1 TA TB' hn) := by
+  intro hB Δ hΓ σ hσ t
+  let IA := TA.interp hΓ
+  let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+  have hvalid : (DCandCtx.extend IA).valid (n.[σ] .: σ) :=
+    DCandCtx.extend_cons hσ (hn hΓ σ hσ)
+  simpa [CanTypeData.subst1, TypeInterp.subst1] using
+    hB hΓA (n.[σ] .: σ) hvalid t
+
+lemma subst1_expansive {Γ : Ctx} {A B n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hn : TA.CanSemTm n) :
+    TB.Expansive -> (CanTypeData.subst1 TA TB hn).Expansive := by
+  intro hTB Δ hΓ
+  let IA := TA.interp hΓ
+  let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+  change (TypeInterp.subst1 IA (TB.interp hΓA) (hn hΓ)).Expansive
+  exact TypeInterp.subst1_expansive IA (TB.interp hΓA)
+    (hn := hn hΓ) (hTB hΓA)
+
+lemma lamKPi {Γ : Ctx} {A B m : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive) :
+    TB.CanSemTm m ->
+    (CanTypeData.kpi TA TB hTB).CanSemTm (.lam A m) := by
+  intro hm Δ hΓ
+  let IA := TA.interp hΓ
+  let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+  let IB := TB.interp hΓA
+  change (TypeInterp.kpi IA IB (CanSemCtx.weakens hΓ) (hTB hΓA)).SemTm (.lam A m)
+  apply TypeInterp.semLamKPiInterp IA IB (CanSemCtx.weakens hΓ) (hTB hΓA)
+  · intro σ hσ
+    exact IA.type_sn σ hσ
+  · intro σ hσ
+    have hσup : (DCandCtx.extend IA).valid (up σ) :=
+      DCandCtx.extend_up_valid (I := IA) (CanSemCtx.weakens hΓ) hσ
+    exact (IB.cand (up σ)).sn (hm hΓA (up σ) hσup)
+  · intro σ hσ a ha
+    exact hm hΓA (a .: σ) (DCandCtx.extend_cons hσ ha)
+
+lemma appKPi {Γ : Ctx} {A B m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (hm : (CanTypeData.kpi TA TB hTB).CanSemTm m)
+    (hn : TA.CanSemTm n) :
+    (CanTypeData.subst1 TA TB hn).CanSemTm (.app m n) := by
+  intro Δ hΓ
+  let IA := TA.interp hΓ
+  let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+  let IB := TB.interp hΓA
+  let hnI : IA.SemTm n := hn hΓ
+  change (TypeInterp.subst1 IA IB hnI).SemTm (.app m n)
+  exact TypeInterp.semAppKPiSubst1 IA IB (CanSemCtx.weakens hΓ)
+    (hTB hΓA) (hm hΓ) hnI
+
+lemma tupKSig {Γ : Ctx} {A B m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hm : TA.CanSemTm m)
+    (hn : (CanTypeData.subst1 TA TB hm).CanSemTm n) :
+    (CanTypeData.ksig TA TB).CanSemTm (.tup m n) := by
+  intro Δ hΓ
+  let IA := TA.interp hΓ
+  let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+  let IB := TB.interp hΓA
+  change (TypeInterp.ksig IA IB (CanSemCtx.weakens hΓ)).SemTm (.tup m n)
+  apply TypeInterp.semTupKSigmaInterp IA IB (CanSemCtx.weakens hΓ)
+  · exact hm hΓ
+  · intro σ hσ
+    exact hn hΓ σ hσ
+
+lemma iteBool {Γ : Ctx} {A m n1 n2 : Tm}
+    (TB : CanTypeData (.bool :: Γ) A)
+    (hTB : TB.Expansive)
+    (hm : (CanTypeData.bool Γ).CanSemTm m)
+    (hn1 : (CanTypeData.subst1 (CanTypeData.bool Γ) TB CanTypeData.tt).CanSemTm n1)
+    (hn2 : (CanTypeData.subst1 (CanTypeData.bool Γ) TB CanTypeData.ff).CanSemTm n2) :
+    (CanTypeData.subst1 (CanTypeData.bool Γ) TB hm).CanSemTm
+      (.ite A m n1 n2) := by
+  intro Δ hΓ
+  let hΓB : CanSemCtx (.bool :: Γ) (DCandCtx.extend (TypeInterp.bool Δ)) :=
+    CanSemCtx.consInterp hΓ (TypeInterp.bool Δ) (TypeInterp.bool_weakens Δ)
+  let IB := TB.interp hΓB
+  change (TypeInterp.subst1 (TypeInterp.bool Δ) IB (hm hΓ)).SemTm
+    (.ite A m n1 n2)
+  exact TypeInterp.semIteBoolSubst1 IB (CanSemCtx.weakens hΓ) (hTB hΓB)
+    (hm hΓ) (hn1 hΓ) (hn2 hΓ)
+
+lemma exfBot {Γ : Ctx} {A m : Tm}
+    (TB : CanTypeData (.bot :: Γ) A)
+    (hTB : TB.Expansive)
+    (hm : (CanTypeData.bot Γ).CanSemTm m) :
+    (CanTypeData.subst1 (CanTypeData.bot Γ) TB hm).CanSemTm
+      (.exf A m) := by
+  intro Δ hΓ
+  let hΓB : CanSemCtx (.bot :: Γ) (DCandCtx.extend (TypeInterp.bot Δ)) :=
+    CanSemCtx.consInterp hΓ (TypeInterp.bot Δ) (TypeInterp.bot_weakens Δ)
+  let IB := TB.interp hΓB
+  change (TypeInterp.subst1 (TypeInterp.bot Δ) IB (hm hΓ)).SemTm (.exf A m)
+  exact TypeInterp.semExfBotSubst1 IB (CanSemCtx.weakens hΓ) (hTB hΓB) (hm hΓ)
+
+lemma rw_sn {Γ : Ctx} {A B m n a b : Tm}
+    (TB : CanTypeData Γ B)
+    (ha : TB.CanSemTm a) (hb : TB.CanSemTm b)
+    (hn : (CanTypeData.idn TB ha hb).CanSemTm n)
+    (TA : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A)
+    (hm : ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ),
+      let IB := TB.interp hΓ
+      let hΓB : CanSemCtx (B :: Γ) (DCandCtx.extend IB) :=
+        CanSemCtx.consInterp hΓ IB (TB.weakens hΓ)
+      let IP := TypeInterp.idProof IB (ha hΓ)
+      let hΓP : CanSemCtx
+          (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+          (DCandCtx.extend IP) :=
+        CanSemCtx.consInterp hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+      let IA := TA.interp hΓP
+      (TypeInterp.idBranch IB (ha hΓ) IA).SemTm m) :
+    CanSemTyped Γ (.rw A m n) A.[n,b/] := by
+  intro Δ hΓ
+  let IB := TB.interp hΓ
+  let hΓB : CanSemCtx (B :: Γ) (DCandCtx.extend IB) :=
+    CanSemCtx.consInterp hΓ IB (TB.weakens hΓ)
+  let IP := TypeInterp.idProof IB (ha hΓ)
+  let hΓP : CanSemCtx
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+      (DCandCtx.extend IP) :=
+    CanSemCtx.consInterp hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+  let IA := TA.interp hΓP
+  refine ⟨TypeInterp.const Δ A.[n,b/] Candidate.snCandidate
+      (fun σ hσ => (TypeInterp.idTarget IB (ha hΓ) (hb hΓ) (hn hΓ) IA).type_sn σ hσ),
+    TypeInterp.const_weakens Candidate.snCandidate_weakens, ?_⟩
+  exact TypeInterp.semRwTargetSN IB (CanSemCtx.weakens hΓ) (TB.weakens hΓ)
+    (ha hΓ) (hb hΓ) (hn hΓ) IA (hm hΓ)
+
+lemma rw_sn_branch {Γ : Ctx} {A B m n a b : Tm}
+    (TB : CanTypeData Γ B)
+    (ha : TB.CanSemTm a) (hb : TB.CanSemTm b)
+    (hn : (CanTypeData.idn TB ha hb).CanSemTm n)
+    (TA : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    (CanTypeData.idBranch TB ha TA).CanSemTm m ->
+    CanSemTyped Γ (.rw A m n) A.[n,b/] := by
+  intro hm
+  apply CanTypeData.rw_sn TB ha hb hn TA
+  intro Δ hΓ
+  exact hm hΓ
+
+end CanTypeData
+
+structure CanTermData (Γ : Ctx) (m A : Tm) where
+  typeData : CanTypeData Γ A
+  canSemTm : typeData.CanSemTm m
+
+structure CanTypeJudgment (Γ : Ctx) (A : Tm) (i : Nat) where
+  typeData : CanTypeData Γ A
+  inUniv : (CanTypeData.univ Γ i).CanSemTm A
+
+namespace CanTermData
+
+lemma toCanSemTyped {Γ : Ctx} {m A : Tm} (J : CanTermData Γ m A) :
+    CanSemTyped Γ m A := by
+  intro Δ hΓ
+  exact ⟨J.typeData.interp hΓ, J.typeData.weakens hΓ, J.canSemTm hΓ⟩
+
+def ofTypeData {Γ : Ctx} {m A : Tm}
+    (TA : CanTypeData Γ A) (hm : TA.CanSemTm m) :
+    CanTermData Γ m A where
+  typeData := TA
+  canSemTm := hm
+
+def retagCanEquiv {Γ : Ctx} {A B m : Tm}
+    (J : CanTermData Γ m A) (TB : CanTypeData Γ B)
+    (hEq : CanTypeData.Equiv J.typeData TB) :
+    CanTermData Γ m B where
+  typeData := TB
+  canSemTm := CanTypeData.Equiv.semTm hEq J.canSemTm
+
+def convType {Γ : Ctx} {A B m : Tm} (J : CanTermData Γ m A)
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : CanSemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ]) :
+    CanTermData Γ m B where
+  typeData := J.typeData.convType hB
+  canSemTm := J.typeData.convType_semTm hB J.canSemTm
+
+def retagWeak {Γ : Ctx} {A B m : Tm}
+    (J : CanTermData Γ m A) (TB : CanTypeData Γ B) :
+    CanTermData Γ m B :=
+  J.convType (fun hΓ σ hσ => (TB.interp hΓ).type_sn σ hσ)
+
+lemma retagWeak_equiv_source {Γ : Ctx} {A B m : Tm}
+    (J : CanTermData Γ m A) (TB : CanTypeData Γ B) :
+    CanTypeData.Equiv (J.retagWeak TB).typeData J.typeData :=
+  CanTypeData.convType_equiv_left J.typeData
+    (fun hΓ σ hσ => (TB.interp hΓ).type_sn σ hσ)
+
+lemma source_equiv_retagWeak {Γ : Ctx} {A B m : Tm}
+    (J : CanTermData Γ m A) (TB : CanTypeData Γ B) :
+    CanTypeData.Equiv J.typeData (J.retagWeak TB).typeData :=
+  CanTypeData.convType_equiv_right J.typeData
+    (fun hΓ σ hσ => (TB.interp hΓ).type_sn σ hσ)
+
+noncomputable def retagTypeJudgment {Γ : Ctx} {A B m : Tm} {i : Nat}
+    (J : CanTermData Γ m A) (TB : CanTypeJudgment Γ B i) :
+    CanTermData Γ m B :=
+  J.retagWeak TB.typeData
+
+lemma retagTypeJudgment_equiv_source {Γ : Ctx} {A B m : Tm} {i : Nat}
+    (J : CanTermData Γ m A) (TB : CanTypeJudgment Γ B i) :
+    CanTypeData.Equiv (J.retagTypeJudgment TB).typeData J.typeData :=
+  J.retagWeak_equiv_source TB.typeData
+
+lemma retagTypeJudgment_equiv_trans {Γ : Ctx} {A B C m : Tm} {i : Nat}
+    (J : CanTermData Γ m A) (TB : CanTypeJudgment Γ B i)
+    (TC : CanTypeData Γ C) :
+    CanTypeData.Equiv J.typeData TC ->
+    CanTypeData.Equiv (J.retagTypeJudgment TB).typeData TC :=
+  fun hEq => CanTypeData.Equiv.trans (J.retagTypeJudgment_equiv_source TB) hEq
+
+noncomputable def rfl {Γ : Ctx} {A m : Tm}
+    (J : CanTermData Γ m A) :
+    CanTermData Γ (.rfl m) (.idn A m m) where
+  typeData := CanTypeData.idn J.typeData J.canSemTm J.canSemTm
+  canSemTm := by
+    intro Δ hΓ
+    exact TypeInterp.semRfl (J.canSemTm hΓ)
+
+noncomputable def lam {Γ : Ctx} {A B m : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : CanTermData (A :: Γ) m B)
+    (hmEq : CanTypeData.Equiv Jm.typeData TB) :
+    CanTermData Γ (.lam A m) (.pi A B) where
+  typeData := CanTypeData.kpi TA TB hTB
+  canSemTm := CanTypeData.lamKPi TA TB hTB
+    (CanTypeData.Equiv.semTm hmEq Jm.canSemTm)
+
+noncomputable def app {Γ : Ctx} {A B m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : CanTermData Γ m (.pi A B)) (Jn : CanTermData Γ n A)
+    (hmEq : CanTypeData.Equiv Jm.typeData (CanTypeData.kpi TA TB hTB))
+    (hnEq : CanTypeData.Equiv Jn.typeData TA) :
+    CanTermData Γ (.app m n) B.[n/] := by
+  let hn : TA.CanSemTm n := CanTypeData.Equiv.semTm hnEq Jn.canSemTm
+  exact
+    { typeData := CanTypeData.subst1 TA TB hn
+      canSemTm := CanTypeData.appKPi TA TB hTB
+        (CanTypeData.Equiv.semTm hmEq Jm.canSemTm) hn }
+
+noncomputable def appRetagByEquiv {Γ : Ctx} {P A B m n : Tm} {iP : Nat}
+    (TP : CanTypeJudgment Γ (.pi A B) iP)
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : CanTermData Γ m P) (Jn : CanTermData Γ n A)
+    (hmEq : CanTypeData.Equiv Jm.typeData (CanTypeData.kpi TA TB hTB))
+    (hnEq : CanTypeData.Equiv Jn.typeData TA) :
+    CanTermData Γ (.app m n) B.[n/] :=
+  CanTermData.app TA TB hTB (Jm.retagTypeJudgment TP) Jn
+    (Jm.retagTypeJudgment_equiv_trans TP (CanTypeData.kpi TA TB hTB) hmEq)
+    hnEq
+
+noncomputable def tup {Γ : Ctx} {A B m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (Jm : CanTermData Γ m A) (Jn : CanTermData Γ n B.[m/])
+    (hmEq : CanTypeData.Equiv Jm.typeData TA)
+    (hnEq : CanTypeData.Equiv Jn.typeData
+      (CanTypeData.subst1 TA TB
+        (CanTypeData.Equiv.semTm hmEq Jm.canSemTm))) :
+    CanTermData Γ (.tup m n) (.sig A B) where
+  typeData := CanTypeData.ksig TA TB
+  canSemTm := CanTypeData.tupKSig TA TB
+    (CanTypeData.Equiv.semTm hmEq Jm.canSemTm)
+    (CanTypeData.Equiv.semTm hnEq Jn.canSemTm)
+
+noncomputable def ite {Γ : Ctx} {A m n1 n2 : Tm}
+    (TB : CanTypeData (.bool :: Γ) A)
+    (hTB : TB.Expansive)
+    (Jm : CanTermData Γ m .bool)
+    (Jn1 : CanTermData Γ n1 A.[.tt/])
+    (Jn2 : CanTermData Γ n2 A.[.ff/])
+    (hmEq : CanTypeData.Equiv Jm.typeData (CanTypeData.bool Γ))
+    (hn1Eq : CanTypeData.Equiv Jn1.typeData
+      (CanTypeData.subst1 (CanTypeData.bool Γ) TB CanTypeData.tt))
+    (hn2Eq : CanTypeData.Equiv Jn2.typeData
+      (CanTypeData.subst1 (CanTypeData.bool Γ) TB CanTypeData.ff)) :
+    CanTermData Γ (.ite A m n1 n2) A.[m/] := by
+  let hm : (CanTypeData.bool Γ).CanSemTm m :=
+    CanTypeData.Equiv.semTm hmEq Jm.canSemTm
+  exact
+    { typeData := CanTypeData.subst1 (CanTypeData.bool Γ) TB hm
+      canSemTm := CanTypeData.iteBool TB hTB hm
+        (CanTypeData.Equiv.semTm hn1Eq Jn1.canSemTm)
+        (CanTypeData.Equiv.semTm hn2Eq Jn2.canSemTm) }
+
+noncomputable def exf {Γ : Ctx} {A m : Tm}
+    (TB : CanTypeData (.bot :: Γ) A)
+    (hTB : TB.Expansive)
+    (Jm : CanTermData Γ m .bot)
+    (hmEq : CanTypeData.Equiv Jm.typeData (CanTypeData.bot Γ)) :
+    CanTermData Γ (.exf A m) A.[m/] := by
+  let hm : (CanTypeData.bot Γ).CanSemTm m :=
+    CanTypeData.Equiv.semTm hmEq Jm.canSemTm
+  exact
+    { typeData := CanTypeData.subst1 (CanTypeData.bot Γ) TB hm
+      canSemTm := CanTypeData.exfBot TB hTB hm }
+
+end CanTermData
+
+structure CanTermDataAt (Γ : Ctx) (m A : Tm) (TA : CanTypeData Γ A) where
+  termData : CanTermData Γ m A
+  equiv : CanTypeData.Equiv termData.typeData TA
+
+namespace CanTermDataAt
+
+def ofTermData {Γ : Ctx} {m A : Tm}
+    (TA : CanTypeData Γ A) (J : CanTermData Γ m A)
+    (hEq : CanTypeData.Equiv J.typeData TA) :
+    CanTermDataAt Γ m A TA where
+  termData := J
+  equiv := hEq
+
+def ofTypeData {Γ : Ctx} {m A : Tm}
+    (TA : CanTypeData Γ A) (hm : TA.CanSemTm m) :
+    CanTermDataAt Γ m A TA :=
+  CanTermDataAt.ofTermData TA (CanTermData.ofTypeData TA hm)
+    (CanTypeData.Equiv.refl TA)
+
+def toTermData {Γ : Ctx} {m A : Tm} {TA : CanTypeData Γ A}
+    (J : CanTermDataAt Γ m A TA) : CanTermData Γ m A :=
+  J.termData
+
+lemma canSemTm {Γ : Ctx} {m A : Tm} {TA : CanTypeData Γ A}
+    (J : CanTermDataAt Γ m A TA) : TA.CanSemTm m :=
+  CanTypeData.Equiv.semTm J.equiv J.termData.canSemTm
+
+def retag {Γ : Ctx} {m A : Tm} {TA TB : CanTypeData Γ A}
+    (J : CanTermDataAt Γ m A TA)
+    (hEq : CanTypeData.Equiv TA TB) :
+    CanTermDataAt Γ m A TB :=
+  CanTermDataAt.ofTermData TB J.termData
+    (CanTypeData.Equiv.trans J.equiv hEq)
+
+noncomputable def varZero {Γ : Ctx} {A : Tm} :
+    CanTermDataAt (A :: Γ) (.var 0) A.[shift 1]
+      (CanTypeData.varZero Γ A) :=
+  CanTermDataAt.ofTypeData (CanTypeData.varZero Γ A)
+    (CanTypeData.varZero_semTm Γ A)
+
+noncomputable def varSucc {Γ : Ctx} {A B : Tm} {x : Var}
+    {TA : CanTypeData Γ A}
+    (J : CanTermDataAt Γ (.var x) A TA) :
+    CanTermDataAt (B :: Γ) (.var (x + 1)) A.[shift 1]
+      (CanTypeData.weaken (B := B) TA) :=
+  CanTermDataAt.ofTypeData (CanTypeData.weaken (B := B) TA)
+    (CanTypeData.weaken_var TA J.canSemTm)
+
+noncomputable def rfl {Γ : Ctx} {A m : Tm}
+    (TA : CanTypeData Γ A)
+    (Jm : CanTermDataAt Γ m A TA) :
+    CanTermDataAt Γ (.rfl m) (.idn A m m)
+      (CanTypeData.idn TA Jm.canSemTm Jm.canSemTm) :=
+  let Jm' := Jm.termData.retagCanEquiv TA Jm.equiv
+  CanTermDataAt.ofTermData
+    (CanTypeData.idn TA Jm.canSemTm Jm.canSemTm)
+    (CanTermData.rfl Jm')
+    (CanTypeData.Equiv.refl (CanTypeData.idn TA Jm.canSemTm Jm.canSemTm))
+
+noncomputable def lam {Γ : Ctx} {A B m : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : CanTermDataAt (A :: Γ) m B TB) :
+    CanTermDataAt Γ (.lam A m) (.pi A B) (CanTypeData.kpi TA TB hTB) :=
+  CanTermDataAt.ofTermData (CanTypeData.kpi TA TB hTB)
+    (CanTermData.lam TA TB hTB Jm.termData Jm.equiv)
+    (CanTypeData.Equiv.refl (CanTypeData.kpi TA TB hTB))
+
+noncomputable def app {Γ : Ctx} {A B m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : CanTermDataAt Γ m (.pi A B) (CanTypeData.kpi TA TB hTB))
+    (Jn : CanTermDataAt Γ n A TA) :
+    CanTermDataAt Γ (.app m n) B.[n/]
+      (CanTypeData.subst1 TA TB Jn.canSemTm) :=
+  CanTermDataAt.ofTermData
+    (CanTypeData.subst1 TA TB Jn.canSemTm)
+    (CanTermData.app TA TB hTB Jm.termData Jn.termData Jm.equiv Jn.equiv)
+    (CanTypeData.Equiv.refl (CanTypeData.subst1 TA TB Jn.canSemTm))
+
+noncomputable def tup {Γ : Ctx} {A B m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (Jm : CanTermDataAt Γ m A TA)
+    (Jn : CanTermDataAt Γ n B.[m/] (CanTypeData.subst1 TA TB Jm.canSemTm)) :
+    CanTermDataAt Γ (.tup m n) (.sig A B) (CanTypeData.ksig TA TB) :=
+  CanTermDataAt.ofTermData (CanTypeData.ksig TA TB)
+    (CanTermData.tup TA TB Jm.termData Jn.termData Jm.equiv Jn.equiv)
+    (CanTypeData.Equiv.refl (CanTypeData.ksig TA TB))
+
+noncomputable def ite {Γ : Ctx} {A m n1 n2 : Tm}
+    (TB : CanTypeData (.bool :: Γ) A)
+    (hTB : TB.Expansive)
+    (Jm : CanTermDataAt Γ m .bool (CanTypeData.bool Γ))
+    (Jn1 : CanTermDataAt Γ n1 A.[.tt/]
+      (CanTypeData.subst1 (CanTypeData.bool Γ) TB CanTypeData.tt))
+    (Jn2 : CanTermDataAt Γ n2 A.[.ff/]
+      (CanTypeData.subst1 (CanTypeData.bool Γ) TB CanTypeData.ff)) :
+    CanTermDataAt Γ (.ite A m n1 n2) A.[m/]
+      (CanTypeData.subst1 (CanTypeData.bool Γ) TB Jm.canSemTm) :=
+  CanTermDataAt.ofTermData
+    (CanTypeData.subst1 (CanTypeData.bool Γ) TB Jm.canSemTm)
+    (CanTermData.ite TB hTB Jm.termData Jn1.termData Jn2.termData
+      Jm.equiv Jn1.equiv Jn2.equiv)
+    (CanTypeData.Equiv.refl
+      (CanTypeData.subst1 (CanTypeData.bool Γ) TB Jm.canSemTm))
+
+noncomputable def exf {Γ : Ctx} {A m : Tm}
+    (TB : CanTypeData (.bot :: Γ) A)
+    (hTB : TB.Expansive)
+    (Jm : CanTermDataAt Γ m .bot (CanTypeData.bot Γ)) :
+    CanTermDataAt Γ (.exf A m) A.[m/]
+      (CanTypeData.subst1 (CanTypeData.bot Γ) TB Jm.canSemTm) :=
+  CanTermDataAt.ofTermData
+    (CanTypeData.subst1 (CanTypeData.bot Γ) TB Jm.canSemTm)
+    (CanTermData.exf TB hTB Jm.termData Jm.equiv)
+    (CanTypeData.Equiv.refl
+      (CanTypeData.subst1 (CanTypeData.bot Γ) TB Jm.canSemTm))
+
+end CanTermDataAt
+
+namespace CanTermData
+
+noncomputable def rwSNBranch {Γ : Ctx} {A B m n a b : Tm} {i : Nat}
+    (TB : CanTypeData Γ B)
+    (Ja : CanTermDataAt Γ a B TB)
+    (Jb : CanTermDataAt Γ b B TB)
+    (Jn : CanTermDataAt Γ n (.idn B a b)
+      (CanTypeData.idn TB Ja.canSemTm Jb.canSemTm))
+    (TA : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A)
+    (Jm : CanTermDataAt Γ m A.[.rfl a,a/]
+      (CanTypeData.idBranch TB Ja.canSemTm TA)) :
+    CanTermData Γ (.rw A m n) A.[n,b/] := by
+  let hRw : CanSemTyped Γ (.rw A m n) A.[n,b/] :=
+    CanTypeData.rw_sn_branch TB Ja.canSemTm Jb.canSemTm Jn.canSemTm TA
+      Jm.canSemTm
+  let TTargetExact : CanTypeData Γ A.[n,b/] :=
+    CanTypeData.idTarget TB Ja.canSemTm Jb.canSemTm Jn.canSemTm TA
+  let hTargetType : CanSemTyped Γ A.[n,b/] (.ty i) := by
+    intro Δ hΓ
+    exact ⟨(CanTypeData.univ Γ i).interp hΓ,
+      (CanTypeData.univ Γ i).weakens hΓ,
+      CanTypeData.type TTargetExact i hΓ⟩
+  exact CanTermData.ofTypeData (CanTypeData.ofCanSemTypedType hTargetType)
+    (by
+      intro Δ hΓ σ hσ
+      exact CanSemTyped.sn_subst hRw hΓ σ hσ)
+
+noncomputable def prjSNBranch {Γ : Ctx} {A B C m n : Tm} {iC : Nat}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (TC : CanTypeData (.sig A B :: Γ) C)
+    (Jm : CanTermDataAt Γ m (.sig A B) (CanTypeData.ksig TA TB))
+    (Jn : CanTermData (B :: A :: Γ) n
+      C.[.tup (.var 1) (.var 0) .: shift 2]) :
+    CanTermData Γ (.prj C m n) C.[m/] := by
+  let TS : CanTypeData Γ (.sig A B) := CanTypeData.ksig TA TB
+  let TTarget : CanTypeData Γ C.[m/] := CanTypeData.subst1 TS TC Jm.canSemTm
+  let hTargetType : CanSemTyped Γ C.[m/] (.ty iC) := by
+    intro Δ hΓ
+    exact ⟨(CanTypeData.univ Γ iC).interp hΓ,
+      (CanTypeData.univ Γ iC).weakens hΓ,
+      CanTypeData.type TTarget iC hΓ⟩
+  refine CanTermData.ofTypeData (CanTypeData.ofCanSemTypedType hTargetType) ?_
+  intro Δ hΓ σ hσ
+  let IA := TA.interp hΓ
+  let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+  let IB := TB.interp hΓA
+  let K := TypeInterp.ksig IA IB (CanSemCtx.weakens hΓ)
+  let hΓS : CanSemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+    CanSemCtx.consInterp hΓ K
+      (TypeInterp.ksig_weakens IA IB (CanSemCtx.weakens hΓ))
+  let hΓBA : CanSemCtx (B :: A :: Γ) (DCandCtx.extend IB) :=
+    CanSemCtx.consInterp hΓA IB (TB.weakens hΓA)
+  have hσS : (DCandCtx.extend K).valid (up σ) :=
+    DCandCtx.extend_up_valid (I := K) (CanSemCtx.weakens hΓ) hσ
+  have hσA : (DCandCtx.extend IA).valid (up σ) :=
+    DCandCtx.extend_up_valid (I := IA) (CanSemCtx.weakens hΓ) hσ
+  have hσBA_up : (DCandCtx.extend IB).valid (up (up σ)) :=
+    DCandCtx.extend_up_valid (I := IB) (CanSemCtx.weakens hΓA) hσA
+  have snC : SN Step C.[up σ] := (TC.interp hΓS).type_sn (up σ) hσS
+  have hmK : (K.cand σ).mem m.[σ] := Jm.canSemTm hΓ σ hσ
+  have snm : SN Step m.[σ] := (K.cand σ).sn hmK
+  have snn : SN Step n.[upn 2 σ] := by
+    have hsn := CanSemTyped.sn_subst Jn.toCanSemTyped hΓBA
+      (up (up σ)) hσBA_up
+    simpa using hsn
+  change SN Step (.prj C.[up σ] m.[σ] n.[upn 2 σ])
+  apply sn_prj snC snm snn
+  intro m1 m2 n' rdM rdN
+  have hmK' : (TypeInterp.ksigCand IA IB σ).mem m.[σ] := by
+    change (TypeInterp.ksigCandTotal IA IB σ).mem m.[σ] at hmK
+    rwa [TypeInterp.ksigCandTotal_valid IA IB hσ] at hmK
+  have hcomp :
+      (IA.cand σ).mem m1 ∧ (IB.cand (m1 .: σ)).mem m2 := by
+    have h := hmK'.2 0 m1 m2 ?_
+    · simpa [shiftSubst_zero, SubstLemmas.shift0, Tm.subst_id] using h
+    · simpa [SubstLemmas.shift0, Tm.subst_id] using rdM
+  have hσBA : (DCandCtx.extend IB).valid (m2 .: m1 .: σ) :=
+    DCandCtx.extend_cons (DCandCtx.extend_cons hσ hcomp.1) hcomp.2
+  have snBranch : SN Step n.[m2 .: m1 .: σ] :=
+    CanSemTyped.sn_subst Jn.toCanSemTyped hΓBA
+      (m2 .: m1 .: σ) hσBA
+  have rdNsubst : n.[upn 2 σ].[m2,m1/] ~>* n'.[m2,m1/] :=
+    Red.subst (m2 .: m1 .: ids) rdN
+  have hsubst : n.[upn 2 σ].[m2,m1/] = n.[m2 .: m1 .: σ] := by
+    asimp
+  have rdNtarget : n.[m2 .: m1 .: σ] ~>* n'.[m2,m1/] := by
+    simpa [hsubst] using rdNsubst
+  exact sn_red snBranch rdNtarget
+
+end CanTermData
+
+namespace CanTypeJudgment
+
+def toTermData {Γ : Ctx} {A : Tm} {i : Nat}
+    (J : CanTypeJudgment Γ A i) : CanTermData Γ A (.ty i) where
+  typeData := CanTypeData.univ Γ i
+  canSemTm := J.inUniv
+
+def ofTypeData {Γ : Ctx} {A : Tm} {i : Nat}
+    (TA : CanTypeData Γ A) : CanTypeJudgment Γ A i where
+  typeData := TA
+  inUniv := CanTypeData.type TA i
+
+def ofSemTypeData {Γ : Ctx} {A : Tm} {i : Nat}
+    (TA : SemTypeData Γ A) : CanTypeJudgment Γ A i :=
+  CanTypeJudgment.ofTypeData (CanTypeData.ofSemTypeData TA)
+
+noncomputable def ofCanSemTypedType {Γ : Ctx} {A : Tm} {i : Nat}
+    (hA : CanSemTyped Γ A (.ty i)) : CanTypeJudgment Γ A i :=
+  CanTypeJudgment.ofTypeData (CanTypeData.ofCanSemTypedType hA)
+
+noncomputable def ofTermDataWeak {Γ : Ctx} {A : Tm} {i : Nat}
+    (J : CanTermData Γ A (.ty i)) : CanTypeJudgment Γ A i :=
+  CanTypeJudgment.ofCanSemTypedType J.toCanSemTyped
+
+def ty (Γ : Ctx) (i : Nat) : CanTypeJudgment Γ (.ty i) (i + 1) :=
+  CanTypeJudgment.ofTypeData (CanTypeData.univ Γ i)
+
+def bool (Γ : Ctx) : CanTypeJudgment Γ .bool 0 :=
+  CanTypeJudgment.ofTypeData (CanTypeData.bool Γ)
+
+def bot (Γ : Ctx) : CanTypeJudgment Γ .bot 0 :=
+  CanTypeJudgment.ofTypeData (CanTypeData.bot Γ)
+
+noncomputable def pi {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : CanTypeJudgment Γ A iA)
+    (TB : CanTypeJudgment (A :: Γ) B iB)
+    (hTB : TB.typeData.Expansive) :
+    CanTypeJudgment Γ (.pi A B) (max iA iB) :=
+  CanTypeJudgment.ofTypeData (CanTypeData.kpi TA.typeData TB.typeData hTB)
+
+noncomputable def sig {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : CanTypeJudgment Γ A iA)
+    (TB : CanTypeJudgment (A :: Γ) B iB) :
+    CanTypeJudgment Γ (.sig A B) (max iA iB) :=
+  CanTypeJudgment.ofTypeData (CanTypeData.ksig TA.typeData TB.typeData)
+
+noncomputable def idn {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (TA : CanTypeJudgment Γ A i)
+    (hm : TA.typeData.CanSemTm m) (hn : TA.typeData.CanSemTm n) :
+    CanTypeJudgment Γ (.idn A m n) i :=
+  CanTypeJudgment.ofTypeData (CanTypeData.idn TA.typeData hm hn)
+
+noncomputable def idnByEquiv {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (TA : CanTypeJudgment Γ A i)
+    (Jm : CanTermDataAt Γ m A TA.typeData)
+    (Jn : CanTermDataAt Γ n A TA.typeData) :
+    CanTypeJudgment Γ (.idn A m n) i :=
+  CanTypeJudgment.idn TA Jm.canSemTm Jn.canSemTm
+
+end CanTypeJudgment
+
+inductive FundSemCtxCore : ∀ (Γ : Ctx) (Δ : DCandCtx), CanSemCtx Γ Δ -> Type where
+  | nil : FundSemCtxCore [] DCandCtx.empty CanSemCtx.nil
+  | cons {Γ : Ctx} {Δ : DCandCtx} {A : Tm} {hΓ : CanSemCtx Γ Δ} :
+    FundSemCtxCore Γ Δ hΓ ->
+    (TA : CanTypeData Γ A) ->
+    FundSemCtxCore (A :: Γ) (DCandCtx.extend (TA.interp hΓ))
+      (CanSemCtx.consInterp hΓ (TA.interp hΓ) (TA.weakens hΓ))
+
+structure FundSemCtx (Γ : Ctx) (Δ : DCandCtx) where
+  canCtx : CanSemCtx Γ Δ
+  canonical : FundSemCtxCore Γ Δ canCtx
+
+namespace FundSemCtx
+
+def nil : FundSemCtx [] DCandCtx.empty where
+  canCtx := CanSemCtx.nil
+  canonical := FundSemCtxCore.nil
+
+def cons {Γ : Ctx} {Δ : DCandCtx} {A : Tm}
+    (hΓ : FundSemCtx Γ Δ) (TA : CanTypeData Γ A) :
+    FundSemCtx (A :: Γ) (DCandCtx.extend (TA.interp hΓ.canCtx)) where
+  canCtx := CanSemCtx.consInterp hΓ.canCtx (TA.interp hΓ.canCtx)
+    (TA.weakens hΓ.canCtx)
+  canonical := FundSemCtxCore.cons hΓ.canonical TA
+
+lemma weakens {Γ : Ctx} {Δ : DCandCtx} :
+    FundSemCtx Γ Δ -> Δ.Weakens := by
+  intro hΓ
+  exact CanSemCtx.weakens hΓ.canCtx
+
+lemma ids_valid {Γ : Ctx} {Δ : DCandCtx} :
+    FundSemCtx Γ Δ -> Δ.valid ids := by
+  intro hΓ
+  exact CanSemCtx.ids_valid hΓ.canCtx
+
+lemma var {Γ : Ctx} {Δ : DCandCtx} {x : Var} {A : Tm} :
+    FundSemCtx Γ Δ ->
+    Has Γ x A ->
+    ∃ I : TypeInterp Δ A, I.Weakens ∧ I.SemTm (.var x) := by
+  intro hΓ hs
+  exact CanSemCtx.var hΓ.canCtx hs
+
+end FundSemCtx
+
+structure FundTermData (Γ : Ctx) (m A : Tm) where
+  typeData : CanTypeData Γ A
+  fundSemTm : ∀ {Δ : DCandCtx} (hΓ : FundSemCtx Γ Δ),
+    (typeData.interp hΓ.canCtx).SemTm m
+
+namespace FundTermData
+
+lemma sn_subst {Γ : Ctx} {m A : Tm} {Δ : DCandCtx}
+    (J : FundTermData Γ m A) (hΓ : FundSemCtx Γ Δ) :
+    ∀ σ, Δ.valid σ -> SN Step m.[σ] := by
+  intro σ hσ
+  exact (J.typeData.interp hΓ.canCtx).semTm_sn (J.fundSemTm hΓ) σ hσ
+
+lemma sn {Γ : Ctx} {m A : Tm} {Δ : DCandCtx}
+    (J : FundTermData Γ m A) :
+    FundSemCtx Γ Δ -> SN Step m := by
+  intro hΓ
+  have h := FundTermData.sn_subst J hΓ ids (FundSemCtx.ids_valid hΓ)
+  simpa [Tm.subst_id] using h
+
+def ofCanTermData {Γ : Ctx} {m A : Tm}
+    (J : CanTermData Γ m A) : FundTermData Γ m A where
+  typeData := J.typeData
+  fundSemTm hΓ := J.canSemTm hΓ.canCtx
+
+end FundTermData
+
+abbrev FundFund (Γ : Ctx) (m A : Tm) : Prop :=
+  Nonempty (FundTermData Γ m A)
+
+namespace FundFund
+
+noncomputable def choose {Γ : Ctx} {m A : Tm}
+    (J : FundFund Γ m A) : FundTermData Γ m A :=
+  Classical.choice J
+
+lemma ofTermData {Γ : Ctx} {m A : Tm}
+    (J : FundTermData Γ m A) : FundFund Γ m A :=
+  ⟨J⟩
+
+end FundFund
+
+namespace Wf
+
+lemma canSemCtx_of_type_data
+    (fund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> SemTypeData Γ A) :
+    ∀ {Γ : Ctx}, Γ ⊢ -> Nonempty (Σ Δ : DCandCtx, CanSemCtx Γ Δ)
+  | [], Wf.nil => ⟨⟨DCandCtx.empty, CanSemCtx.nil⟩⟩
+  | A :: Γ, Wf.cons tyA wf =>
+    by
+      rcases canSemCtx_of_type_data fund wf with ⟨⟨Δ, hΓ⟩⟩
+      let TA := fund tyA
+      exact ⟨⟨DCandCtx.extend (TA.interp hΓ.semCtx), CanSemCtx.cons hΓ TA⟩⟩
+
+lemma canSemCtx_of_can_type_data
+    (fund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A) :
+    ∀ {Γ : Ctx}, Γ ⊢ -> Nonempty (Σ Δ : DCandCtx, CanSemCtx Γ Δ)
+  | [], Wf.nil => ⟨⟨DCandCtx.empty, CanSemCtx.nil⟩⟩
+  | A :: Γ, Wf.cons tyA wf =>
+    by
+      rcases canSemCtx_of_can_type_data fund wf with ⟨⟨Δ, hΓ⟩⟩
+      let TA := fund tyA
+      exact ⟨⟨DCandCtx.extend (TA.interp hΓ), CanSemCtx.consInterp hΓ
+        (TA.interp hΓ) (TA.weakens hΓ)⟩⟩
+
+lemma fundSemCtx_of_can_type_data
+    (fund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A) :
+    ∀ {Γ : Ctx}, Γ ⊢ -> Nonempty (Σ Δ : DCandCtx, FundSemCtx Γ Δ)
+  | [], Wf.nil => ⟨⟨DCandCtx.empty, FundSemCtx.nil⟩⟩
+  | A :: Γ, Wf.cons tyA wf =>
+    by
+      rcases fundSemCtx_of_can_type_data fund wf with ⟨⟨Δ, hΓ⟩⟩
+      let TA := fund tyA
+      exact ⟨⟨DCandCtx.extend (TA.interp hΓ.canCtx), FundSemCtx.cons hΓ TA⟩⟩
+
+end Wf
+
+structure SemTermData (Γ : Ctx) (m A : Tm) where
+  typeData : SemTypeData Γ A
+  semTm : typeData.SemTm m
+
+namespace SemTermData
+
+lemma toSemTyped {Γ : Ctx} {m A : Tm} (J : SemTermData Γ m A) :
+    SemTyped Γ m A :=
+  J.typeData.toSemTyped J.semTm
+
+lemma sn {Γ : Ctx} {m A : Tm} {Δ : DCandCtx}
+    (J : SemTermData Γ m A) :
+    SemCtx Γ Δ -> SN Step m :=
+  fun hΓ => SemTyped.sn hΓ J.toSemTyped
+
+def ofTypeData {Γ : Ctx} {m A : Tm}
+    (TA : SemTypeData Γ A) (hm : TA.SemTm m) : SemTermData Γ m A where
+  typeData := TA
+  semTm := hm
+
+def convType {Γ : Ctx} {A B m : Tm} (J : SemTermData Γ m A)
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : SemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ]) : SemTermData Γ m B where
+  typeData := J.typeData.convType hB
+  semTm := J.typeData.convType_semTm hB J.semTm
+
+def retag {Γ : Ctx} {A B m : Tm}
+    (J : SemTermData Γ m A) (TB : SemTypeData Γ B) :
+    SemTermData Γ m B :=
+  J.convType (fun hΓ σ hσ => (TB.interp hΓ).type_sn σ hσ)
+
+lemma retag_equiv_source {Γ : Ctx} {A B m : Tm}
+    (J : SemTermData Γ m A) (TB : SemTypeData Γ B) :
+    SemTypeData.Equiv (J.retag TB).typeData J.typeData :=
+  SemTypeData.convType_equiv_left J.typeData
+    (fun hΓ σ hσ => (TB.interp hΓ).type_sn σ hσ)
+
+lemma source_equiv_retag {Γ : Ctx} {A B m : Tm}
+    (J : SemTermData Γ m A) (TB : SemTypeData Γ B) :
+    SemTypeData.Equiv J.typeData (J.retag TB).typeData :=
+  SemTypeData.convType_equiv_right J.typeData
+    (fun hΓ σ hσ => (TB.interp hΓ).type_sn σ hσ)
+
+def retagEquiv {Γ : Ctx} {A B m : Tm}
+    (J : SemTermData Γ m A) (TB : SemTypeData Γ B)
+    (hEq : SemTypeData.Equiv J.typeData TB) :
+    SemTermData Γ m B where
+  typeData := TB
+  semTm := SemTypeData.Equiv.semTm hEq J.semTm
+
+end SemTermData
+
+structure SemTypeJudgment (Γ : Ctx) (A : Tm) (i : Nat) where
+  typeData : SemTypeData Γ A
+  inUniv : (SemTypeData.univ Γ i).SemTm A
+
+abbrev SemFund (Γ : Ctx) (m A : Tm) : Prop :=
+  Nonempty (SemTermData Γ m A)
+
+abbrev SemTypeFund (Γ : Ctx) (A : Tm) (i : Nat) : Prop :=
+  Nonempty (SemTypeJudgment Γ A i)
+
+abbrev SemFundAt (Γ : Ctx) (m A : Tm) (TA : SemTypeData Γ A) : Prop :=
+  Nonempty {J : SemTermData Γ m A // SemTypeData.Equiv J.typeData TA}
+
+namespace SemFundAt
+
+noncomputable def choose {Γ : Ctx} {m A : Tm} {TA : SemTypeData Γ A}
+    (J : SemFundAt Γ m A TA) :
+    {J : SemTermData Γ m A // SemTypeData.Equiv J.typeData TA} :=
+  Classical.choice J
+
+lemma ofTermData {Γ : Ctx} {m A : Tm} {TA : SemTypeData Γ A}
+    (J : SemTermData Γ m A)
+    (hEq : SemTypeData.Equiv J.typeData TA) :
+    SemFundAt Γ m A TA :=
+  ⟨⟨J, hEq⟩⟩
+
+lemma ofTypeData {Γ : Ctx} {m A : Tm}
+    (TA : SemTypeData Γ A) (hm : TA.SemTm m) :
+    SemFundAt Γ m A TA :=
+  SemFundAt.ofTermData (SemTermData.ofTypeData TA hm)
+    (SemTypeData.Equiv.refl TA)
+
+lemma toSemFund {Γ : Ctx} {m A : Tm} {TA : SemTypeData Γ A} :
+    SemFundAt Γ m A TA -> SemFund Γ m A := by
+  intro J
+  exact ⟨(SemFundAt.choose J).val⟩
+
+lemma semTm {Γ : Ctx} {m A : Tm} {TA : SemTypeData Γ A}
+    (J : SemFundAt Γ m A TA) :
+    TA.SemTm m :=
+  SemTypeData.Equiv.semTm (SemFundAt.choose J).property
+    (SemFundAt.choose J).val.semTm
+
+end SemFundAt
+
+namespace SemTermData
+
+noncomputable def retagTypeFund {Γ : Ctx} {A B m : Tm} {i : Nat}
+    (J : SemTermData Γ m A) (TB : SemTypeFund Γ B i) :
+    SemTermData Γ m B :=
+  J.retag (Classical.choice TB).typeData
+
+lemma retagTypeFund_equiv_source {Γ : Ctx} {A B m : Tm} {i : Nat}
+    (J : SemTermData Γ m A) (TB : SemTypeFund Γ B i) :
+    SemTypeData.Equiv (J.retagTypeFund TB).typeData J.typeData :=
+  J.retag_equiv_source (Classical.choice TB).typeData
+
+lemma retagTypeFund_equiv_trans {Γ : Ctx} {A B C m : Tm} {i : Nat}
+    (J : SemTermData Γ m A) (TB : SemTypeFund Γ B i)
+    (TC : SemTypeData Γ C)
+    (hEq : SemTypeData.Equiv J.typeData TC) :
+    SemTypeData.Equiv (J.retagTypeFund TB).typeData TC :=
+  SemTypeData.Equiv.trans (J.retagTypeFund_equiv_source TB) hEq
+
+end SemTermData
+
+namespace SemTypeJudgment
+
+def toTermData {Γ : Ctx} {A : Tm} {i : Nat}
+    (J : SemTypeJudgment Γ A i) : SemTermData Γ A (.ty i) where
+  typeData := SemTypeData.univ Γ i
+  semTm := J.inUniv
+
+def ty (Γ : Ctx) (i : Nat) : SemTypeJudgment Γ (.ty i) (i + 1) where
+  typeData := SemTypeData.univ Γ i
+  inUniv := SemTypeData.ty i
+
+def bool (Γ : Ctx) : SemTypeJudgment Γ .bool 0 where
+  typeData := SemTypeData.bool Γ
+  inUniv := SemTypeData.bool_type
+
+def bot (Γ : Ctx) : SemTypeJudgment Γ .bot 0 where
+  typeData := SemTypeData.bot Γ
+  inUniv := SemTypeData.bot_type
+
+noncomputable def pi {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : SemTypeJudgment Γ A iA)
+    (TB : SemTypeJudgment (A :: Γ) B iB)
+    (hTB : TB.typeData.Expansive) :
+    SemTypeJudgment Γ (.pi A B) (max iA iB) where
+  typeData := SemTypeData.kpi TA.typeData TB.typeData hTB
+  inUniv := SemTypeData.pi_type TA.typeData TB.typeData hTB (max iA iB)
+
+noncomputable def sig {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : SemTypeJudgment Γ A iA)
+    (TB : SemTypeJudgment (A :: Γ) B iB) :
+    SemTypeJudgment Γ (.sig A B) (max iA iB) where
+  typeData := SemTypeData.ksig TA.typeData TB.typeData
+  inUniv := SemTypeData.sig_type TA.typeData TB.typeData (max iA iB)
+
+noncomputable def idn {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (TA : SemTypeJudgment Γ A i)
+    (hm : TA.typeData.SemTm m) (hn : TA.typeData.SemTm n) :
+    SemTypeJudgment Γ (.idn A m n) i where
+  typeData := SemTypeData.idn TA.typeData hm hn
+  inUniv := SemTypeData.idn_type TA.typeData hm hn i
+
+noncomputable def idnByEquiv {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (TA : SemTypeJudgment Γ A i)
+    (Jm : SemTermData Γ m A) (Jn : SemTermData Γ n A)
+    (hmEq : SemTypeData.Equiv Jm.typeData TA.typeData)
+    (hnEq : SemTypeData.Equiv Jn.typeData TA.typeData) :
+    SemTypeJudgment Γ (.idn A m n) i :=
+  SemTypeJudgment.idn TA
+    (SemTypeData.Equiv.semTm hmEq Jm.semTm)
+    (SemTypeData.Equiv.semTm hnEq Jn.semTm)
+
+noncomputable def ofSemTypedType {Γ : Ctx} {A : Tm} {i : Nat}
+    (hA : SemTyped Γ A (.ty i)) : SemTypeJudgment Γ A i where
+  typeData := SemTypeData.ofSemTypedType hA
+  inUniv := SemTypeData.type (SemTypeData.ofSemTypedType hA) i
+
+def termDataByEquiv {Γ : Ctx} {A B m : Tm} {i : Nat}
+    (TB : SemTypeJudgment Γ B i) (J : SemTermData Γ m A)
+    (hEq : SemTypeData.Equiv J.typeData TB.typeData) :
+    SemTermData Γ m B :=
+  J.retagEquiv TB.typeData hEq
+
+noncomputable def ofTermDataWeak {Γ : Ctx} {A : Tm} {i : Nat}
+    (J : SemTermData Γ A (.ty i)) : SemTypeJudgment Γ A i :=
+  SemTypeJudgment.ofSemTypedType J.toSemTyped
+
+end SemTypeJudgment
+
+namespace SemTermData
+
+def srt {Γ : Ctx} (i : Nat) : SemTermData Γ (.ty i) (.ty (i + 1)) :=
+  (SemTypeJudgment.ty Γ i).toTermData
+
+noncomputable def var {Γ : Ctx} {x : Var} {A : Tm}
+    (hs : Has Γ x A) : SemTermData Γ (.var x) A :=
+  SemTermData.ofTypeData (SemTypeData.lookup hs) (SemTypeData.var hs)
+
+def bool {Γ : Ctx} : SemTermData Γ .bool (.ty 0) :=
+  (SemTypeJudgment.bool Γ).toTermData
+
+def bot {Γ : Ctx} : SemTermData Γ .bot (.ty 0) :=
+  (SemTypeJudgment.bot Γ).toTermData
+
+def tt {Γ : Ctx} : SemTermData Γ .tt .bool :=
+  SemTermData.ofTypeData (SemTypeData.bool Γ) SemTypeData.tt
+
+def ff {Γ : Ctx} : SemTermData Γ .ff .bool :=
+  SemTermData.ofTypeData (SemTypeData.bool Γ) SemTypeData.ff
+
+noncomputable def piType {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : SemTypeJudgment Γ A iA)
+    (TB : SemTypeJudgment (A :: Γ) B iB)
+    (hTB : TB.typeData.Expansive) :
+    SemTermData Γ (.pi A B) (.ty (max iA iB)) :=
+  (SemTypeJudgment.pi TA TB hTB).toTermData
+
+noncomputable def sigType {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : SemTypeJudgment Γ A iA)
+    (TB : SemTypeJudgment (A :: Γ) B iB) :
+    SemTermData Γ (.sig A B) (.ty (max iA iB)) :=
+  (SemTypeJudgment.sig TA TB).toTermData
+
+noncomputable def idnType {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (TA : SemTypeJudgment Γ A i)
+    (hm : TA.typeData.SemTm m) (hn : TA.typeData.SemTm n) :
+    SemTermData Γ (.idn A m n) (.ty i) :=
+  (SemTypeJudgment.idn TA hm hn).toTermData
+
+noncomputable def rfl {Γ : Ctx} {A m : Tm}
+    (J : SemTermData Γ m A) :
+    SemTermData Γ (.rfl m) (.idn A m m) :=
+  SemTermData.ofTypeData
+    (SemTypeData.idn J.typeData J.semTm J.semTm)
+    (SemTypeData.rfl J.typeData J.semTm)
+
+noncomputable def rflByEquiv {Γ : Ctx} {A m : Tm}
+    (TA : SemTypeData Γ A) (J : SemTermData Γ m A)
+    (hEq : SemTypeData.Equiv J.typeData TA) :
+    SemTermData Γ (.rfl m) (.idn A m m) :=
+  let hm : TA.SemTm m := SemTypeData.Equiv.semTm hEq J.semTm
+  SemTermData.ofTypeData
+    (SemTypeData.idn TA hm hm)
+    (SemTypeData.rfl TA hm)
+
+noncomputable def lam {Γ : Ctx} {A B m : Tm} {iA : Nat}
+    (TA : SemTypeJudgment Γ A iA)
+    (TB : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (hm : TB.SemTm m) :
+    SemTermData Γ (.lam A m) (.pi A B) :=
+  SemTermData.ofTypeData
+    (SemTypeData.kpi TA.typeData TB hTB)
+    (SemTypeData.lam TA.typeData TB hTB hm)
+
+noncomputable def lamByEquiv {Γ : Ctx} {A B m : Tm} {iA : Nat}
+    (TA : SemTypeJudgment Γ A iA)
+    (TB : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : SemTermData (A :: Γ) m B)
+    (hmEq : SemTypeData.Equiv Jm.typeData TB) :
+    SemTermData Γ (.lam A m) (.pi A B) :=
+  SemTermData.lam TA TB hTB
+    (SemTypeData.Equiv.semTm hmEq Jm.semTm)
+
+noncomputable def app {Γ : Ctx} {A B m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (hm : (SemTypeData.kpi TA TB hTB).SemTm m)
+    (hn : TA.SemTm n) :
+    SemTermData Γ (.app m n) B.[n/] :=
+  SemTermData.ofTypeData
+    (SemTypeData.subst1 TA TB hn)
+    (SemTypeData.app TA TB hTB hm hn)
+
+noncomputable def appByEquiv {Γ : Ctx} {A B m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : SemTermData Γ m (.pi A B)) (Jn : SemTermData Γ n A)
+    (hmEq : SemTypeData.Equiv Jm.typeData (SemTypeData.kpi TA TB hTB))
+    (hnEq : SemTypeData.Equiv Jn.typeData TA) :
+    SemTermData Γ (.app m n) B.[n/] :=
+  SemTermData.app TA TB hTB
+    (SemTypeData.Equiv.semTm hmEq Jm.semTm)
+    (SemTypeData.Equiv.semTm hnEq Jn.semTm)
+
+noncomputable def appRetagByEquiv {Γ : Ctx} {P A B m n : Tm} {iP : Nat}
+    (TP : SemTypeFund Γ (.pi A B) iP)
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : SemTermData Γ m P) (Jn : SemTermData Γ n A)
+    (hmEq : SemTypeData.Equiv Jm.typeData (SemTypeData.kpi TA TB hTB))
+    (hnEq : SemTypeData.Equiv Jn.typeData TA) :
+    SemTermData Γ (.app m n) B.[n/] :=
+  SemTermData.appByEquiv TA TB hTB (Jm.retagTypeFund TP) Jn
+    (Jm.retagTypeFund_equiv_trans TP (SemTypeData.kpi TA TB hTB) hmEq)
+    hnEq
+
+noncomputable def tup {Γ : Ctx} {A B m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hm : TA.SemTm m)
+    (hn : (SemTypeData.subst1 TA TB hm).SemTm n) :
+    SemTermData Γ (.tup m n) (.sig A B) :=
+  SemTermData.ofTypeData
+    (SemTypeData.ksig TA TB)
+    (SemTypeData.tup TA TB hm hn)
+
+noncomputable def tupByEquiv {Γ : Ctx} {A B m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (Jm : SemTermData Γ m A) (Jn : SemTermData Γ n B.[m/])
+    (hmEq : SemTypeData.Equiv Jm.typeData TA)
+    (hnEq : SemTypeData.Equiv Jn.typeData
+      (SemTypeData.subst1 TA TB (SemTypeData.Equiv.semTm hmEq Jm.semTm))) :
+    SemTermData Γ (.tup m n) (.sig A B) :=
+  SemTermData.tup TA TB
+    (SemTypeData.Equiv.semTm hmEq Jm.semTm)
+    (SemTypeData.Equiv.semTm hnEq Jn.semTm)
+
+noncomputable def prjBranch {Γ : Ctx} {A B C m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (TC : SemTypeData (.sig A B :: Γ) C)
+    (hTC : TC.Expansive)
+    (hm : (SemTypeData.ksig TA TB).SemTm m)
+    (hn : ∀ {Δ : DCandCtx} (hΓ : SemCtx Γ Δ),
+      let IA := TA.interp hΓ
+      let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+        SemCtx.cons hΓ IA (TA.weakens hΓ)
+      let IB := TB.interp hΓA
+      let K := TypeInterp.ksig IA IB (SemCtx.weakens hΓ)
+      let hΓS : SemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        SemCtx.cons hΓ K (TypeInterp.ksig_weakens IA IB (SemCtx.weakens hΓ))
+      (TypeInterp.sigmaBranch IA IB (SemCtx.weakens hΓ) (TA.weakens hΓ)
+        (TB.weakens hΓA) (TC.interp hΓS)).SemTm n) :
+    SemTermData Γ (.prj C m n) C.[m/] :=
+  SemTermData.ofTypeData
+    (SemTypeData.subst1 (SemTypeData.ksig TA TB) TC hm)
+    (SemTypeData.prj_branch TA TB TC hTC hm hn)
+
+noncomputable def prjSNBranch {Γ : Ctx} {A B C m n : Tm} {iC : Nat}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (TC : SemTypeData (.sig A B :: Γ) C)
+    (hm : (SemTypeData.ksig TA TB).SemTm m)
+    (Jn : SemFund (B :: A :: Γ) n
+      C.[.tup (.var 1) (.var 0) .: shift 2]) :
+    SemTermData Γ (.prj C m n) C.[m/] := by
+  let TS := SemTypeData.ksig TA TB
+  let TTarget : SemTypeData Γ C.[m/] := SemTypeData.subst1 TS TC hm
+  let hTargetType : SemTyped Γ C.[m/] (.ty iC) :=
+    (SemTypeData.univ Γ iC).toSemTyped (SemTypeData.type TTarget iC)
+  refine SemTermData.ofTypeData (SemTypeData.ofSemTypedType hTargetType) ?_
+  intro Δ hΓ σ hσ
+  let IA := TA.interp hΓ
+  let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ IA (TA.weakens hΓ)
+  let IB := TB.interp hΓA
+  let K := TypeInterp.ksig IA IB (SemCtx.weakens hΓ)
+  let hΓS : SemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+    SemCtx.cons hΓ K (TypeInterp.ksig_weakens IA IB (SemCtx.weakens hΓ))
+  let hΓBA : SemCtx (B :: A :: Γ) (DCandCtx.extend IB) :=
+    SemCtx.cons hΓA IB (TB.weakens hΓA)
+  have hσS : (DCandCtx.extend K).valid (up σ) :=
+    DCandCtx.extend_up_valid (I := K) (SemCtx.weakens hΓ) hσ
+  have hσA : (DCandCtx.extend IA).valid (up σ) :=
+    DCandCtx.extend_up_valid (I := IA) (SemCtx.weakens hΓ) hσ
+  have hσBA_up : (DCandCtx.extend IB).valid (up (up σ)) :=
+    DCandCtx.extend_up_valid (I := IB) (SemCtx.weakens hΓA) hσA
+  have snC : SN Step C.[up σ] := (TC.interp hΓS).type_sn (up σ) hσS
+  have hmK : (K.cand σ).mem m.[σ] := hm hΓ σ hσ
+  have snm : SN Step m.[σ] := (K.cand σ).sn hmK
+  have snn : SN Step n.[upn 2 σ] := by
+    have hsn := SemTyped.sn_subst (Classical.choice Jn).toSemTyped hΓBA
+      (up (up σ)) hσBA_up
+    simpa using hsn
+  change SN Step (.prj C.[up σ] m.[σ] n.[upn 2 σ])
+  apply sn_prj snC snm snn
+  intro m1 m2 n' rdM rdN
+  have hmK' : (TypeInterp.ksigCand IA IB σ).mem m.[σ] := by
+    change (TypeInterp.ksigCandTotal IA IB σ).mem m.[σ] at hmK
+    rwa [TypeInterp.ksigCandTotal_valid IA IB hσ] at hmK
+  have hcomp :
+      (IA.cand σ).mem m1 ∧ (IB.cand (m1 .: σ)).mem m2 := by
+    have h := hmK'.2 0 m1 m2 ?_
+    · simpa [shiftSubst_zero, SubstLemmas.shift0, Tm.subst_id] using h
+    · simpa [SubstLemmas.shift0, Tm.subst_id] using rdM
+  have hσBA : (DCandCtx.extend IB).valid (m2 .: m1 .: σ) :=
+    DCandCtx.extend_cons (DCandCtx.extend_cons hσ hcomp.1) hcomp.2
+  have snBranch : SN Step n.[m2 .: m1 .: σ] :=
+    SemTyped.sn_subst (Classical.choice Jn).toSemTyped hΓBA
+      (m2 .: m1 .: σ) hσBA
+  have rdNsubst : n.[upn 2 σ].[m2,m1/] ~>* n'.[m2,m1/] :=
+    Red.subst (m2 .: m1 .: ids) rdN
+  have hsubst : n.[upn 2 σ].[m2,m1/] = n.[m2 .: m1 .: σ] := by
+    asimp
+  have rdNtarget : n.[m2 .: m1 .: σ] ~>* n'.[m2,m1/] := by
+    simpa [hsubst] using rdNsubst
+  exact sn_red snBranch rdNtarget
+
+noncomputable def prjBranchByEquiv {Γ : Ctx} {A B C m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (TC : SemTypeData (.sig A B :: Γ) C)
+    (hTC : TC.Expansive)
+    (Jm : SemTermData Γ m (.sig A B))
+    (hmEq : SemTypeData.Equiv Jm.typeData (SemTypeData.ksig TA TB))
+    (hn : ∀ {Δ : DCandCtx} (hΓ : SemCtx Γ Δ),
+      let IA := TA.interp hΓ
+      let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+        SemCtx.cons hΓ IA (TA.weakens hΓ)
+      let IB := TB.interp hΓA
+      let K := TypeInterp.ksig IA IB (SemCtx.weakens hΓ)
+      let hΓS : SemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        SemCtx.cons hΓ K (TypeInterp.ksig_weakens IA IB (SemCtx.weakens hΓ))
+      (TypeInterp.sigmaBranch IA IB (SemCtx.weakens hΓ) (TA.weakens hΓ)
+        (TB.weakens hΓA) (TC.interp hΓS)).SemTm n) :
+    SemTermData Γ (.prj C m n) C.[m/] :=
+  SemTermData.prjBranch TA TB TC hTC
+    (SemTypeData.Equiv.semTm hmEq Jm.semTm) hn
+
+noncomputable def prjSNBranchRetagByEquiv {Γ : Ctx} {P A B C m n : Tm}
+    {iP iC : Nat}
+    (TP : SemTypeFund Γ (.sig A B) iP)
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (TC : SemTypeData (.sig A B :: Γ) C)
+    (Jm : SemTermData Γ m P)
+    (Jn : SemFund (B :: A :: Γ) n
+      C.[.tup (.var 1) (.var 0) .: shift 2])
+    (hmEq : SemTypeData.Equiv Jm.typeData (SemTypeData.ksig TA TB)) :
+    SemTermData Γ (.prj C m n) C.[m/] :=
+  SemTermData.prjSNBranch (iC := iC) TA TB TC
+    (SemTypeData.Equiv.semTm
+      (Jm.retagTypeFund_equiv_trans TP (SemTypeData.ksig TA TB) hmEq)
+      (Jm.retagTypeFund TP).semTm)
+    Jn
+
+noncomputable def ite {Γ : Ctx} {A m n1 n2 : Tm}
+    (TB : SemTypeData (.bool :: Γ) A)
+    (hTB : TB.Expansive)
+    (hm : (SemTypeData.bool Γ).SemTm m)
+    (hn1 : (SemTypeData.subst1 (SemTypeData.bool Γ) TB SemTypeData.tt).SemTm n1)
+    (hn2 : (SemTypeData.subst1 (SemTypeData.bool Γ) TB SemTypeData.ff).SemTm n2) :
+    SemTermData Γ (.ite A m n1 n2) A.[m/] :=
+  SemTermData.ofTypeData
+    (SemTypeData.subst1 (SemTypeData.bool Γ) TB hm)
+    (SemTypeData.ite TB hTB hm hn1 hn2)
+
+noncomputable def iteByEquiv {Γ : Ctx} {A m n1 n2 : Tm}
+    (TB : SemTypeData (.bool :: Γ) A)
+    (hTB : TB.Expansive)
+    (Jm : SemTermData Γ m .bool)
+    (Jn1 : SemTermData Γ n1 A.[.tt/])
+    (Jn2 : SemTermData Γ n2 A.[.ff/])
+    (hmEq : SemTypeData.Equiv Jm.typeData (SemTypeData.bool Γ))
+    (hn1Eq : SemTypeData.Equiv Jn1.typeData
+      (SemTypeData.subst1 (SemTypeData.bool Γ) TB SemTypeData.tt))
+    (hn2Eq : SemTypeData.Equiv Jn2.typeData
+      (SemTypeData.subst1 (SemTypeData.bool Γ) TB SemTypeData.ff)) :
+    SemTermData Γ (.ite A m n1 n2) A.[m/] :=
+  SemTermData.ite TB hTB
+    (SemTypeData.Equiv.semTm hmEq Jm.semTm)
+    (SemTypeData.Equiv.semTm hn1Eq Jn1.semTm)
+    (SemTypeData.Equiv.semTm hn2Eq Jn2.semTm)
+
+noncomputable def iteSN {Γ : Ctx} {A m n1 n2 : Tm} {i : Nat}
+    (TB : SemTypeData (.bool :: Γ) A)
+    (Jm : SemTermData Γ m .bool)
+    (Jn1 : SemFund Γ n1 A.[.tt/])
+    (Jn2 : SemFund Γ n2 A.[.ff/])
+    (hmEq : SemTypeData.Equiv Jm.typeData (SemTypeData.bool Γ)) :
+    SemTermData Γ (.ite A m n1 n2) A.[m/] := by
+  let hm : (SemTypeData.bool Γ).SemTm m :=
+    SemTypeData.Equiv.semTm hmEq Jm.semTm
+  let TTarget : SemTypeData Γ A.[m/] :=
+    SemTypeData.subst1 (SemTypeData.bool Γ) TB hm
+  let hTargetType : SemTyped Γ A.[m/] (.ty i) :=
+    (SemTypeData.univ Γ i).toSemTyped (SemTypeData.type TTarget i)
+  refine SemTermData.ofTypeData (SemTypeData.ofSemTypedType hTargetType) ?_
+  intro Δ hΓ σ hσ
+  let hΓB : SemCtx (.bool :: Γ) (DCandCtx.extend (TypeInterp.bool Δ)) :=
+    SemCtx.cons hΓ (TypeInterp.bool Δ) (TypeInterp.bool_weakens Δ)
+  have hσB : (DCandCtx.extend (TypeInterp.bool Δ)).valid (up σ) :=
+    DCandCtx.extend_up_valid (I := TypeInterp.bool Δ) (SemCtx.weakens hΓ) hσ
+  have snA : SN Step A.[up σ] := (TB.interp hΓB).type_sn (up σ) hσB
+  have snm : SN Step m.[σ] :=
+    SemTyped.sn_subst Jm.toSemTyped hΓ σ hσ
+  have sn1 : SN Step n1.[σ] :=
+    SemTyped.sn_subst (Classical.choice Jn1).toSemTyped hΓ σ hσ
+  have sn2 : SN Step n2.[σ] :=
+    SemTyped.sn_subst (Classical.choice Jn2).toSemTyped hΓ σ hσ
+  change SN Step (.ite A.[up σ] m.[σ] n1.[σ] n2.[σ])
+  exact sn_ite snA snm sn1 sn2
+
+noncomputable def iteSNRetagByEquiv {Γ : Ctx} {P A m n1 n2 : Tm}
+    {iP i : Nat}
+    (TP : SemTypeFund Γ .bool iP)
+    (TB : SemTypeData (.bool :: Γ) A)
+    (Jm : SemTermData Γ m P)
+    (Jn1 : SemFund Γ n1 A.[.tt/])
+    (Jn2 : SemFund Γ n2 A.[.ff/])
+    (hmEq : SemTypeData.Equiv Jm.typeData (SemTypeData.bool Γ)) :
+    SemTermData Γ (.ite A m n1 n2) A.[m/] :=
+  SemTermData.iteSN (i := i) TB (Jm.retagTypeFund TP) Jn1 Jn2
+    (Jm.retagTypeFund_equiv_trans TP (SemTypeData.bool Γ) hmEq)
+
+noncomputable def exf {Γ : Ctx} {A m : Tm}
+    (TB : SemTypeData (.bot :: Γ) A)
+    (hTB : TB.Expansive)
+    (hm : (SemTypeData.bot Γ).SemTm m) :
+    SemTermData Γ (.exf A m) A.[m/] :=
+  SemTermData.ofTypeData
+    (SemTypeData.subst1 (SemTypeData.bot Γ) TB hm)
+    (SemTypeData.exf TB hTB hm)
+
+noncomputable def exfByEquiv {Γ : Ctx} {A m : Tm}
+    (TB : SemTypeData (.bot :: Γ) A)
+    (hTB : TB.Expansive)
+    (Jm : SemTermData Γ m .bot)
+    (hmEq : SemTypeData.Equiv Jm.typeData (SemTypeData.bot Γ)) :
+    SemTermData Γ (.exf A m) A.[m/] :=
+  SemTermData.exf TB hTB (SemTypeData.Equiv.semTm hmEq Jm.semTm)
+
+noncomputable def exfSN {Γ : Ctx} {A m : Tm} {i : Nat}
+    (TB : SemTypeData (.bot :: Γ) A)
+    (Jm : SemTermData Γ m .bot)
+    (hmEq : SemTypeData.Equiv Jm.typeData (SemTypeData.bot Γ)) :
+    SemTermData Γ (.exf A m) A.[m/] := by
+  let hm : (SemTypeData.bot Γ).SemTm m :=
+    SemTypeData.Equiv.semTm hmEq Jm.semTm
+  let TTarget : SemTypeData Γ A.[m/] :=
+    SemTypeData.subst1 (SemTypeData.bot Γ) TB hm
+  let hTargetType : SemTyped Γ A.[m/] (.ty i) :=
+    (SemTypeData.univ Γ i).toSemTyped (SemTypeData.type TTarget i)
+  refine SemTermData.ofTypeData (SemTypeData.ofSemTypedType hTargetType) ?_
+  intro Δ hΓ σ hσ
+  let hΓB : SemCtx (.bot :: Γ) (DCandCtx.extend (TypeInterp.bot Δ)) :=
+    SemCtx.cons hΓ (TypeInterp.bot Δ) (TypeInterp.bot_weakens Δ)
+  have hσB : (DCandCtx.extend (TypeInterp.bot Δ)).valid (up σ) :=
+    DCandCtx.extend_up_valid (I := TypeInterp.bot Δ) (SemCtx.weakens hΓ) hσ
+  have snA : SN Step A.[up σ] := (TB.interp hΓB).type_sn (up σ) hσB
+  have snm : SN Step m.[σ] :=
+    SemTyped.sn_subst Jm.toSemTyped hΓ σ hσ
+  change SN Step (.exf A.[up σ] m.[σ])
+  exact sn_exf snA snm
+
+noncomputable def exfSNRetagByEquiv {Γ : Ctx} {P A m : Tm}
+    {iP i : Nat}
+    (TP : SemTypeFund Γ .bot iP)
+    (TB : SemTypeData (.bot :: Γ) A)
+    (Jm : SemTermData Γ m P)
+    (hmEq : SemTypeData.Equiv Jm.typeData (SemTypeData.bot Γ)) :
+    SemTermData Γ (.exf A m) A.[m/] :=
+  SemTermData.exfSN (i := i) TB (Jm.retagTypeFund TP)
+    (Jm.retagTypeFund_equiv_trans TP (SemTypeData.bot Γ) hmEq)
+
+noncomputable def rwSNBranch {Γ : Ctx} {A B m n a b : Tm} {i : Nat}
+    (TB : SemTypeData Γ B)
+    (ha : TB.SemTm a) (hb : TB.SemTm b)
+    (hn : (SemTypeData.idn TB ha hb).SemTm n)
+    (TA : SemTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A)
+    (hm : (SemTypeData.idBranch TB ha TA).SemTm m) :
+    SemTermData Γ (.rw A m n) A.[n,b/] := by
+  let TTarget : SemTypeData Γ A.[n,b/] :=
+    SemTypeData.idTarget TB ha hb hn TA
+  let hTargetType : SemTyped Γ A.[n,b/] (.ty i) :=
+    (SemTypeData.univ Γ i).toSemTyped (SemTypeData.type TTarget i)
+  let hRw : SemTyped Γ (.rw A m n) A.[n,b/] :=
+    SemTypeData.rw_sn_branch TB ha hb hn TA hm
+  refine SemTermData.ofTypeData (SemTypeData.ofSemTypedType hTargetType) ?_
+  intro Δ hΓ σ hσ
+  exact SemTyped.sn_subst hRw hΓ σ hσ
+
+end SemTermData
+
+namespace CanTermData
+
+def ofSemTermData {Γ : Ctx} {m A : Tm}
+    (J : SemTermData Γ m A) : CanTermData Γ m A where
+  typeData := CanTypeData.ofSemTypeData J.typeData
+  canSemTm := fun hΓ => J.semTm hΓ.semCtx
+
+def srt {Γ : Ctx} (i : Nat) : CanTermData Γ (.ty i) (.ty (i + 1)) :=
+  (CanTypeJudgment.ty Γ i).toTermData
+
+def bool {Γ : Ctx} : CanTermData Γ .bool (.ty 0) :=
+  (CanTypeJudgment.bool Γ).toTermData
+
+def bot {Γ : Ctx} : CanTermData Γ .bot (.ty 0) :=
+  (CanTypeJudgment.bot Γ).toTermData
+
+def tt {Γ : Ctx} : CanTermData Γ .tt .bool :=
+  CanTermData.ofSemTermData SemTermData.tt
+
+def ff {Γ : Ctx} : CanTermData Γ .ff .bool :=
+  CanTermData.ofSemTermData SemTermData.ff
+
+noncomputable def piType {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : CanTypeJudgment Γ A iA)
+    (TB : CanTypeJudgment (A :: Γ) B iB)
+    (hTB : TB.typeData.Expansive) :
+    CanTermData Γ (.pi A B) (.ty (max iA iB)) :=
+  (CanTypeJudgment.pi TA TB hTB).toTermData
+
+noncomputable def sigType {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : CanTypeJudgment Γ A iA)
+    (TB : CanTypeJudgment (A :: Γ) B iB) :
+    CanTermData Γ (.sig A B) (.ty (max iA iB)) :=
+  (CanTypeJudgment.sig TA TB).toTermData
+
+noncomputable def idnType {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (TA : CanTypeJudgment Γ A i)
+    (Jm : CanTermDataAt Γ m A TA.typeData)
+    (Jn : CanTermDataAt Γ n A TA.typeData) :
+    CanTermData Γ (.idn A m n) (.ty i) :=
+  (CanTypeJudgment.idnByEquiv TA Jm Jn).toTermData
+
+end CanTermData
+
+namespace CanTermDataAt
+
+def srt {Γ : Ctx} (i : Nat) :
+    CanTermDataAt Γ (.ty i) (.ty (i + 1)) (CanTypeData.univ Γ (i + 1)) :=
+  CanTermDataAt.ofTermData (CanTypeData.univ Γ (i + 1))
+    (CanTermData.srt i) (CanTypeData.Equiv.refl (CanTypeData.univ Γ (i + 1)))
+
+def bool {Γ : Ctx} :
+    CanTermDataAt Γ .bool (.ty 0) (CanTypeData.univ Γ 0) :=
+  CanTermDataAt.ofTermData (CanTypeData.univ Γ 0)
+    CanTermData.bool (CanTypeData.Equiv.refl (CanTypeData.univ Γ 0))
+
+def bot {Γ : Ctx} :
+    CanTermDataAt Γ .bot (.ty 0) (CanTypeData.univ Γ 0) :=
+  CanTermDataAt.ofTermData (CanTypeData.univ Γ 0)
+    CanTermData.bot (CanTypeData.Equiv.refl (CanTypeData.univ Γ 0))
+
+def tt {Γ : Ctx} :
+    CanTermDataAt Γ .tt .bool (CanTypeData.bool Γ) :=
+  CanTermDataAt.ofTermData (CanTypeData.bool Γ)
+    CanTermData.tt (CanTypeData.Equiv.refl (CanTypeData.bool Γ))
+
+def ff {Γ : Ctx} :
+    CanTermDataAt Γ .ff .bool (CanTypeData.bool Γ) :=
+  CanTermDataAt.ofTermData (CanTypeData.bool Γ)
+    CanTermData.ff (CanTypeData.Equiv.refl (CanTypeData.bool Γ))
+
+noncomputable def piType {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : CanTypeJudgment Γ A iA)
+    (TB : CanTypeJudgment (A :: Γ) B iB)
+    (hTB : TB.typeData.Expansive) :
+    CanTermDataAt Γ (.pi A B) (.ty (max iA iB))
+      (CanTypeData.univ Γ (max iA iB)) :=
+  CanTermDataAt.ofTermData (CanTypeData.univ Γ (max iA iB))
+    (CanTermData.piType TA TB hTB)
+    (CanTypeData.Equiv.refl (CanTypeData.univ Γ (max iA iB)))
+
+noncomputable def sigType {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : CanTypeJudgment Γ A iA)
+    (TB : CanTypeJudgment (A :: Γ) B iB) :
+    CanTermDataAt Γ (.sig A B) (.ty (max iA iB))
+      (CanTypeData.univ Γ (max iA iB)) :=
+  CanTermDataAt.ofTermData (CanTypeData.univ Γ (max iA iB))
+    (CanTermData.sigType TA TB)
+    (CanTypeData.Equiv.refl (CanTypeData.univ Γ (max iA iB)))
+
+noncomputable def idnType {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (TA : CanTypeJudgment Γ A i)
+    (Jm : CanTermDataAt Γ m A TA.typeData)
+    (Jn : CanTermDataAt Γ n A TA.typeData) :
+    CanTermDataAt Γ (.idn A m n) (.ty i) (CanTypeData.univ Γ i) :=
+  CanTermDataAt.ofTermData (CanTypeData.univ Γ i)
+    (CanTermData.idnType TA Jm Jn)
+    (CanTypeData.Equiv.refl (CanTypeData.univ Γ i))
+
+noncomputable def var {Γ : Ctx} {x : Var} {A : Tm} (hs : Has Γ x A) :
+    CanTermDataAt Γ (.var x) A
+      (CanTypeData.lookup hs) :=
+  CanTermDataAt.ofTypeData (CanTypeData.lookup hs)
+    (CanTypeData.lookup_var hs)
+
+end CanTermDataAt
+
+abbrev CanFund (Γ : Ctx) (m A : Tm) : Prop :=
+  Nonempty (CanTermData Γ m A)
+
+abbrev CanTypeFund (Γ : Ctx) (A : Tm) (i : Nat) : Prop :=
+  Nonempty (CanTypeJudgment Γ A i)
+
+abbrev CanFundAt (Γ : Ctx) (m A : Tm) (TA : CanTypeData Γ A) : Prop :=
+  Nonempty (CanTermDataAt Γ m A TA)
+
+namespace CanFund
+
+noncomputable def choose {Γ : Ctx} {m A : Tm}
+    (J : CanFund Γ m A) : CanTermData Γ m A :=
+  Classical.choice J
+
+lemma ofTermData {Γ : Ctx} {m A : Tm}
+    (J : CanTermData Γ m A) : CanFund Γ m A :=
+  ⟨J⟩
+
+lemma toCanSemTyped {Γ : Ctx} {m A : Tm} :
+    CanFund Γ m A -> CanSemTyped Γ m A := by
+  intro J
+  exact (CanFund.choose J).toCanSemTyped
+
+lemma srt {Γ : Ctx} (i : Nat) :
+    CanFund Γ (.ty i) (.ty (i + 1)) :=
+  CanFund.ofTermData (CanTermData.srt i)
+
+lemma var {Γ : Ctx} {x : Var} {A : Tm}
+    (hs : Has Γ x A) : CanFund Γ (.var x) A :=
+  CanFund.ofTermData (CanTermDataAt.var hs).termData
+
+lemma bool {Γ : Ctx} : CanFund Γ .bool (.ty 0) :=
+  CanFund.ofTermData CanTermData.bool
+
+lemma bot {Γ : Ctx} : CanFund Γ .bot (.ty 0) :=
+  CanFund.ofTermData CanTermData.bot
+
+lemma tt {Γ : Ctx} : CanFund Γ .tt .bool :=
+  CanFund.ofTermData CanTermData.tt
+
+lemma ff {Γ : Ctx} : CanFund Γ .ff .bool :=
+  CanFund.ofTermData CanTermData.ff
+
+lemma convWeak {Γ : Ctx} {A B m : Tm} {i : Nat} :
+    A === B ->
+    CanFund Γ m A ->
+    CanTypeFund Γ B i ->
+    CanFund Γ m B := by
+  intro _eq J TB
+  exact CanFund.ofTermData
+    ((CanFund.choose J).retagWeak (Classical.choice TB).typeData)
+
+lemma toTypeFundWeak {Γ : Ctx} {A : Tm} {i : Nat} :
+    CanFund Γ A (.ty i) -> CanTypeFund Γ A i := by
+  intro J
+  exact ⟨CanTypeJudgment.ofTermDataWeak (CanFund.choose J)⟩
+
+end CanFund
+
+namespace FundFund
+
+lemma ofCanFund {Γ : Ctx} {m A : Tm}
+    (J : CanFund Γ m A) : FundFund Γ m A :=
+  FundFund.ofTermData
+    (FundTermData.ofCanTermData (CanFund.choose J))
+
+end FundFund
+
+namespace CanTypeFund
+
+noncomputable def choose {Γ : Ctx} {A : Tm} {i : Nat}
+    (J : CanTypeFund Γ A i) : CanTypeJudgment Γ A i :=
+  Classical.choice J
+
+lemma ofTypeJudgment {Γ : Ctx} {A : Tm} {i : Nat}
+    (J : CanTypeJudgment Γ A i) : CanTypeFund Γ A i :=
+  ⟨J⟩
+
+lemma toCanFund {Γ : Ctx} {A : Tm} {i : Nat} :
+    CanTypeFund Γ A i -> CanFund Γ A (.ty i) := by
+  intro J
+  exact CanFund.ofTermData (CanTypeFund.choose J).toTermData
+
+lemma ty (Γ : Ctx) (i : Nat) :
+    CanTypeFund Γ (.ty i) (i + 1) :=
+  CanTypeFund.ofTypeJudgment (CanTypeJudgment.ty Γ i)
+
+lemma bool (Γ : Ctx) :
+    CanTypeFund Γ .bool 0 :=
+  CanTypeFund.ofTypeJudgment (CanTypeJudgment.bool Γ)
+
+lemma bot (Γ : Ctx) :
+    CanTypeFund Γ .bot 0 :=
+  CanTypeFund.ofTypeJudgment (CanTypeJudgment.bot Γ)
+
+lemma pi {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : CanTypeFund Γ A iA)
+    (TB : CanTypeFund (A :: Γ) B iB)
+    (hTB : (CanTypeFund.choose TB).typeData.Expansive) :
+    CanTypeFund Γ (.pi A B) (max iA iB) :=
+  CanTypeFund.ofTypeJudgment
+    (CanTypeJudgment.pi (CanTypeFund.choose TA) (CanTypeFund.choose TB) hTB)
+
+lemma sig {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : CanTypeFund Γ A iA)
+    (TB : CanTypeFund (A :: Γ) B iB) :
+    CanTypeFund Γ (.sig A B) (max iA iB) :=
+  CanTypeFund.ofTypeJudgment
+    (CanTypeJudgment.sig (CanTypeFund.choose TA) (CanTypeFund.choose TB))
+
+lemma idnByEquiv {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (TA : CanTypeFund Γ A i)
+    (Jm : CanTermDataAt Γ m A (CanTypeFund.choose TA).typeData)
+    (Jn : CanTermDataAt Γ n A (CanTypeFund.choose TA).typeData) :
+    CanTypeFund Γ (.idn A m n) i :=
+  CanTypeFund.ofTypeJudgment
+    (CanTypeJudgment.idnByEquiv (CanTypeFund.choose TA) Jm Jn)
+
+lemma convWeak {Γ : Ctx} {A B : Tm} {i j : Nat} :
+    A === B ->
+    CanTypeFund Γ A i ->
+    CanFund Γ B (.ty j) ->
+    CanTypeFund Γ B j := by
+  intro _eq _JA JB
+  exact CanFund.toTypeFundWeak JB
+
+end CanTypeFund
+
+namespace CanFundAt
+
+noncomputable def choose {Γ : Ctx} {m A : Tm} {TA : CanTypeData Γ A}
+    (J : CanFundAt Γ m A TA) : CanTermDataAt Γ m A TA :=
+  Classical.choice J
+
+lemma ofTermDataAt {Γ : Ctx} {m A : Tm} {TA : CanTypeData Γ A}
+    (J : CanTermDataAt Γ m A TA) : CanFundAt Γ m A TA :=
+  ⟨J⟩
+
+lemma toCanFund {Γ : Ctx} {m A : Tm} {TA : CanTypeData Γ A} :
+    CanFundAt Γ m A TA -> CanFund Γ m A := by
+  intro J
+  exact CanFund.ofTermData (CanFundAt.choose J).termData
+
+lemma retag {Γ : Ctx} {m A : Tm} {TA TB : CanTypeData Γ A}
+    (J : CanFundAt Γ m A TA)
+    (hEq : CanTypeData.Equiv TA TB) :
+    CanFundAt Γ m A TB :=
+  CanFundAt.ofTermDataAt ((CanFundAt.choose J).retag hEq)
+
+lemma srt {Γ : Ctx} (i : Nat) :
+    CanFundAt Γ (.ty i) (.ty (i + 1)) (CanTypeData.univ Γ (i + 1)) :=
+  CanFundAt.ofTermDataAt (CanTermDataAt.srt i)
+
+lemma var {Γ : Ctx} {x : Var} {A : Tm}
+    (hs : Has Γ x A) :
+    CanFundAt Γ (.var x) A
+      (CanTypeData.lookup hs) :=
+  CanFundAt.ofTermDataAt (CanTermDataAt.var hs)
+
+lemma varZero {Γ : Ctx} {A : Tm} :
+    CanFundAt (A :: Γ) (.var 0) A.[shift 1]
+      (CanTypeData.varZero Γ A) :=
+  CanFundAt.ofTermDataAt CanTermDataAt.varZero
+
+lemma varSucc {Γ : Ctx} {A B : Tm} {x : Var}
+    {TA : CanTypeData Γ A}
+    (J : CanFundAt Γ (.var x) A TA) :
+    CanFundAt (B :: Γ) (.var (x + 1)) A.[shift 1]
+      (CanTypeData.weaken (B := B) TA) :=
+  CanFundAt.ofTermDataAt (CanTermDataAt.varSucc (CanFundAt.choose J))
+
+lemma bool {Γ : Ctx} :
+    CanFundAt Γ .bool (.ty 0) (CanTypeData.univ Γ 0) :=
+  CanFundAt.ofTermDataAt CanTermDataAt.bool
+
+lemma bot {Γ : Ctx} :
+    CanFundAt Γ .bot (.ty 0) (CanTypeData.univ Γ 0) :=
+  CanFundAt.ofTermDataAt CanTermDataAt.bot
+
+lemma tt {Γ : Ctx} :
+    CanFundAt Γ .tt .bool (CanTypeData.bool Γ) :=
+  CanFundAt.ofTermDataAt CanTermDataAt.tt
+
+lemma ff {Γ : Ctx} :
+    CanFundAt Γ .ff .bool (CanTypeData.bool Γ) :=
+  CanFundAt.ofTermDataAt CanTermDataAt.ff
+
+lemma piType {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : CanTypeJudgment Γ A iA)
+    (TB : CanTypeJudgment (A :: Γ) B iB)
+    (hTB : TB.typeData.Expansive) :
+    CanFundAt Γ (.pi A B) (.ty (max iA iB))
+      (CanTypeData.univ Γ (max iA iB)) :=
+  CanFundAt.ofTermDataAt (CanTermDataAt.piType TA TB hTB)
+
+lemma sigType {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : CanTypeJudgment Γ A iA)
+    (TB : CanTypeJudgment (A :: Γ) B iB) :
+    CanFundAt Γ (.sig A B) (.ty (max iA iB))
+      (CanTypeData.univ Γ (max iA iB)) :=
+  CanFundAt.ofTermDataAt (CanTermDataAt.sigType TA TB)
+
+lemma idnType {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (TA : CanTypeJudgment Γ A i)
+    (Jm : CanFundAt Γ m A TA.typeData)
+    (Jn : CanFundAt Γ n A TA.typeData) :
+    CanFundAt Γ (.idn A m n) (.ty i) (CanTypeData.univ Γ i) :=
+  CanFundAt.ofTermDataAt
+    (CanTermDataAt.idnType TA (CanFundAt.choose Jm) (CanFundAt.choose Jn))
+
+lemma rfl {Γ : Ctx} {A m : Tm}
+    (TA : CanTypeData Γ A)
+    (Jm : CanFundAt Γ m A TA) :
+    CanFundAt Γ (.rfl m) (.idn A m m)
+      (CanTypeData.idn TA (CanFundAt.choose Jm).canSemTm
+        (CanFundAt.choose Jm).canSemTm) :=
+  CanFundAt.ofTermDataAt (CanTermDataAt.rfl TA (CanFundAt.choose Jm))
+
+lemma lam {Γ : Ctx} {A B m : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : CanFundAt (A :: Γ) m B TB) :
+    CanFundAt Γ (.lam A m) (.pi A B) (CanTypeData.kpi TA TB hTB) :=
+  CanFundAt.ofTermDataAt (CanTermDataAt.lam TA TB hTB (CanFundAt.choose Jm))
+
+lemma app {Γ : Ctx} {A B m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : CanFundAt Γ m (.pi A B) (CanTypeData.kpi TA TB hTB))
+    (Jn : CanFundAt Γ n A TA) :
+    CanFundAt Γ (.app m n) B.[n/]
+      (CanTypeData.subst1 TA TB (CanFundAt.choose Jn).canSemTm) :=
+  CanFundAt.ofTermDataAt
+    (CanTermDataAt.app TA TB hTB (CanFundAt.choose Jm) (CanFundAt.choose Jn))
+
+lemma tup {Γ : Ctx} {A B m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (Jm : CanFundAt Γ m A TA)
+    (Jn : CanFundAt Γ n B.[m/]
+      (CanTypeData.subst1 TA TB (CanFundAt.choose Jm).canSemTm)) :
+    CanFundAt Γ (.tup m n) (.sig A B) (CanTypeData.ksig TA TB) :=
+  CanFundAt.ofTermDataAt
+    (CanTermDataAt.tup TA TB (CanFundAt.choose Jm) (CanFundAt.choose Jn))
+
+lemma ite {Γ : Ctx} {A m n1 n2 : Tm}
+    (TB : CanTypeData (.bool :: Γ) A)
+    (hTB : TB.Expansive)
+    (Jm : CanFundAt Γ m .bool (CanTypeData.bool Γ))
+    (Jn1 : CanFundAt Γ n1 A.[.tt/]
+      (CanTypeData.subst1 (CanTypeData.bool Γ) TB CanTypeData.tt))
+    (Jn2 : CanFundAt Γ n2 A.[.ff/]
+      (CanTypeData.subst1 (CanTypeData.bool Γ) TB CanTypeData.ff)) :
+    CanFundAt Γ (.ite A m n1 n2) A.[m/]
+      (CanTypeData.subst1 (CanTypeData.bool Γ) TB
+        (CanFundAt.choose Jm).canSemTm) :=
+  CanFundAt.ofTermDataAt
+    (CanTermDataAt.ite TB hTB (CanFundAt.choose Jm)
+      (CanFundAt.choose Jn1) (CanFundAt.choose Jn2))
+
+lemma exf {Γ : Ctx} {A m : Tm}
+    (TB : CanTypeData (.bot :: Γ) A)
+    (hTB : TB.Expansive)
+    (Jm : CanFundAt Γ m .bot (CanTypeData.bot Γ)) :
+    CanFundAt Γ (.exf A m) A.[m/]
+      (CanTypeData.subst1 (CanTypeData.bot Γ) TB
+        (CanFundAt.choose Jm).canSemTm) :=
+  CanFundAt.ofTermDataAt
+    (CanTermDataAt.exf TB hTB (CanFundAt.choose Jm))
+
+end CanFundAt
+
+namespace CanFund
+
+lemma rfl {Γ : Ctx} {A m : Tm} :
+    CanFund Γ m A -> CanFund Γ (.rfl m) (.idn A m m) := by
+  intro J
+  exact CanFund.ofTermData (CanTermData.rfl (CanFund.choose J))
+
+lemma rflByEquiv {Γ : Ctx} {A m : Tm}
+    (TA : CanTypeData Γ A)
+    (J : CanFund Γ m A)
+    (hEq : CanTypeData.Equiv (CanFund.choose J).typeData TA) :
+    CanFund Γ (.rfl m) (.idn A m m) :=
+  CanFund.ofTermData
+    (CanTermData.rfl ((CanFund.choose J).retagCanEquiv TA hEq))
+
+lemma lamAt {Γ : Ctx} {A B m : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : CanFundAt (A :: Γ) m B TB) :
+    CanFund Γ (.lam A m) (.pi A B) :=
+  CanFundAt.toCanFund (CanFundAt.lam TA TB hTB Jm)
+
+lemma lamByEquiv {Γ : Ctx} {A B m : Tm} {iA : Nat}
+    (TA : CanTypeFund Γ A iA)
+    (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : CanFund (A :: Γ) m B)
+    (hmEq : CanTypeData.Equiv (CanFund.choose Jm).typeData TB) :
+    CanFund Γ (.lam A m) (.pi A B) :=
+  CanFund.ofTermData
+    (CanTermData.lam (CanTypeFund.choose TA).typeData TB hTB
+      (CanFund.choose Jm) hmEq)
+
+lemma appAt {Γ : Ctx} {A B m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : CanFundAt Γ m (.pi A B) (CanTypeData.kpi TA TB hTB))
+    (Jn : CanFundAt Γ n A TA) :
+    CanFund Γ (.app m n) B.[n/] :=
+  CanFundAt.toCanFund (CanFundAt.app TA TB hTB Jm Jn)
+
+lemma appRetagByEquiv {Γ : Ctx} {P A B m n : Tm} {iP : Nat}
+    (TP : CanTypeFund Γ (.pi A B) iP)
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : CanFund Γ m P) (Jn : CanFund Γ n A)
+    (hmEq : CanTypeData.Equiv (CanFund.choose Jm).typeData
+      (CanTypeData.kpi TA TB hTB))
+    (hnEq : CanTypeData.Equiv (CanFund.choose Jn).typeData TA) :
+    CanFund Γ (.app m n) B.[n/] :=
+  CanFund.ofTermData
+    (CanTermData.appRetagByEquiv (CanTypeFund.choose TP) TA TB hTB
+      (CanFund.choose Jm) (CanFund.choose Jn) hmEq hnEq)
+
+lemma tupAt {Γ : Ctx} {A B m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (Jm : CanFundAt Γ m A TA)
+    (Jn : CanFundAt Γ n B.[m/]
+      (CanTypeData.subst1 TA TB (CanFundAt.choose Jm).canSemTm)) :
+    CanFund Γ (.tup m n) (.sig A B) :=
+  CanFundAt.toCanFund (CanFundAt.tup TA TB Jm Jn)
+
+lemma tupByEquiv {Γ : Ctx} {A B m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (Jm : CanFund Γ m A) (Jn : CanFund Γ n B.[m/])
+    (hmEq : CanTypeData.Equiv (CanFund.choose Jm).typeData TA)
+    (hnEq : CanTypeData.Equiv (CanFund.choose Jn).typeData
+      (CanTypeData.subst1 TA TB
+        (CanTypeData.Equiv.semTm hmEq (CanFund.choose Jm).canSemTm))) :
+    CanFund Γ (.tup m n) (.sig A B) :=
+  CanFund.ofTermData
+    (CanTermData.tup TA TB (CanFund.choose Jm) (CanFund.choose Jn)
+      hmEq hnEq)
+
+lemma iteAt {Γ : Ctx} {A m n1 n2 : Tm}
+    (TB : CanTypeData (.bool :: Γ) A)
+    (hTB : TB.Expansive)
+    (Jm : CanFundAt Γ m .bool (CanTypeData.bool Γ))
+    (Jn1 : CanFundAt Γ n1 A.[.tt/]
+      (CanTypeData.subst1 (CanTypeData.bool Γ) TB CanTypeData.tt))
+    (Jn2 : CanFundAt Γ n2 A.[.ff/]
+      (CanTypeData.subst1 (CanTypeData.bool Γ) TB CanTypeData.ff)) :
+    CanFund Γ (.ite A m n1 n2) A.[m/] :=
+  CanFundAt.toCanFund (CanFundAt.ite TB hTB Jm Jn1 Jn2)
+
+lemma exfAt {Γ : Ctx} {A m : Tm}
+    (TB : CanTypeData (.bot :: Γ) A)
+    (hTB : TB.Expansive)
+    (Jm : CanFundAt Γ m .bot (CanTypeData.bot Γ)) :
+    CanFund Γ (.exf A m) A.[m/] :=
+  CanFundAt.toCanFund (CanFundAt.exf TB hTB Jm)
+
+lemma prjSNBranchAt {Γ : Ctx} {A B C m n : Tm} {iC : Nat}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (TC : CanTypeData (.sig A B :: Γ) C)
+    (Jm : CanFundAt Γ m (.sig A B) (CanTypeData.ksig TA TB))
+    (Jn : CanFund (B :: A :: Γ) n
+      C.[.tup (.var 1) (.var 0) .: shift 2]) :
+    CanFund Γ (.prj C m n) C.[m/] :=
+  CanFund.ofTermData
+    (CanTermData.prjSNBranch (iC := iC) TA TB TC
+      (CanFundAt.choose Jm) (CanFund.choose Jn))
+
+lemma rwSNBranchAt {Γ : Ctx} {A B m n a b : Tm} {i : Nat}
+    (TB : CanTypeData Γ B)
+    (Ja : CanFundAt Γ a B TB)
+    (Jb : CanFundAt Γ b B TB)
+    (Jn : CanFundAt Γ n (.idn B a b)
+      (CanTypeData.idn TB (CanFundAt.choose Ja).canSemTm
+        (CanFundAt.choose Jb).canSemTm))
+    (TA : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A)
+    (Jm : CanFundAt Γ m A.[.rfl a,a/]
+      (CanTypeData.idBranch TB (CanFundAt.choose Ja).canSemTm TA)) :
+    CanFund Γ (.rw A m n) A.[n,b/] :=
+  CanFund.ofTermData
+    (CanTermData.rwSNBranch (i := i) TB
+      (CanFundAt.choose Ja) (CanFundAt.choose Jb) (CanFundAt.choose Jn) TA
+      (CanFundAt.choose Jm))
+
+end CanFund
+
+namespace SemFund
+
+noncomputable def choose {Γ : Ctx} {m A : Tm}
+    (J : SemFund Γ m A) : SemTermData Γ m A :=
+  Classical.choice J
+
+lemma ofTermData {Γ : Ctx} {m A : Tm}
+    (J : SemTermData Γ m A) : SemFund Γ m A :=
+  ⟨J⟩
+
+lemma toSemTyped {Γ : Ctx} {m A : Tm} :
+    SemFund Γ m A -> SemTyped Γ m A := by
+  intro J
+  exact (SemFund.choose J).toSemTyped
+
+lemma srt {Γ : Ctx} (i : Nat) :
+    SemFund Γ (.ty i) (.ty (i + 1)) :=
+  SemFund.ofTermData (SemTermData.srt i)
+
+lemma var {Γ : Ctx} {x : Var} {A : Tm}
+    (hs : Has Γ x A) : SemFund Γ (.var x) A :=
+  SemFund.ofTermData (SemTermData.var hs)
+
+lemma bool {Γ : Ctx} : SemFund Γ .bool (.ty 0) :=
+  SemFund.ofTermData SemTermData.bool
+
+lemma bot {Γ : Ctx} : SemFund Γ .bot (.ty 0) :=
+  SemFund.ofTermData SemTermData.bot
+
+lemma tt {Γ : Ctx} : SemFund Γ .tt .bool :=
+  SemFund.ofTermData SemTermData.tt
+
+lemma ff {Γ : Ctx} : SemFund Γ .ff .bool :=
+  SemFund.ofTermData SemTermData.ff
+
+lemma rfl {Γ : Ctx} {A m : Tm} :
+    SemFund Γ m A -> SemFund Γ (.rfl m) (.idn A m m) := by
+  intro J
+  exact SemFund.ofTermData (SemTermData.rfl (SemFund.choose J))
+
+lemma rflByEquiv {Γ : Ctx} {A m : Tm}
+    (TA : SemTypeData Γ A) (J : SemFund Γ m A)
+    (hEq : SemTypeData.Equiv (SemFund.choose J).typeData TA) :
+    SemFund Γ (.rfl m) (.idn A m m) :=
+  SemFund.ofTermData (SemTermData.rflByEquiv TA (SemFund.choose J) hEq)
+
+lemma appByEquiv {Γ : Ctx} {A B m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : SemFund Γ m (.pi A B)) (Jn : SemFund Γ n A)
+    (hmEq : SemTypeData.Equiv (SemFund.choose Jm).typeData
+      (SemTypeData.kpi TA TB hTB))
+    (hnEq : SemTypeData.Equiv (SemFund.choose Jn).typeData TA) :
+    SemFund Γ (.app m n) B.[n/] :=
+  SemFund.ofTermData
+    (SemTermData.appByEquiv TA TB hTB (SemFund.choose Jm)
+      (SemFund.choose Jn) hmEq hnEq)
+
+lemma appRetagByEquiv {Γ : Ctx} {P A B m n : Tm} {iP : Nat}
+    (TP : SemTypeFund Γ (.pi A B) iP)
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : SemFund Γ m P) (Jn : SemFund Γ n A)
+    (hmEq : SemTypeData.Equiv (SemFund.choose Jm).typeData
+      (SemTypeData.kpi TA TB hTB))
+    (hnEq : SemTypeData.Equiv (SemFund.choose Jn).typeData TA) :
+    SemFund Γ (.app m n) B.[n/] :=
+  SemFund.ofTermData
+    (SemTermData.appRetagByEquiv TP TA TB hTB (SemFund.choose Jm)
+      (SemFund.choose Jn) hmEq hnEq)
+
+lemma lamByEquiv {Γ : Ctx} {A B m : Tm} {iA : Nat}
+    (TA : SemTypeFund Γ A iA)
+    (TB : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : SemFund (A :: Γ) m B)
+    (hmEq : SemTypeData.Equiv (SemFund.choose Jm).typeData TB) :
+    SemFund Γ (.lam A m) (.pi A B) :=
+  SemFund.ofTermData
+    (SemTermData.lamByEquiv (Classical.choice TA) TB hTB
+      (SemFund.choose Jm) hmEq)
+
+lemma tupByEquiv {Γ : Ctx} {A B m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (Jm : SemFund Γ m A) (Jn : SemFund Γ n B.[m/])
+    (hmEq : SemTypeData.Equiv (SemFund.choose Jm).typeData TA)
+    (hnEq : SemTypeData.Equiv (SemFund.choose Jn).typeData
+      (SemTypeData.subst1 TA TB
+        (SemTypeData.Equiv.semTm hmEq (SemFund.choose Jm).semTm))) :
+    SemFund Γ (.tup m n) (.sig A B) :=
+  SemFund.ofTermData
+    (SemTermData.tupByEquiv TA TB (SemFund.choose Jm)
+      (SemFund.choose Jn) hmEq hnEq)
+
+lemma prjBranchByEquiv {Γ : Ctx} {A B C m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (TC : SemTypeData (.sig A B :: Γ) C)
+    (hTC : TC.Expansive)
+    (Jm : SemFund Γ m (.sig A B))
+    (hmEq : SemTypeData.Equiv (SemFund.choose Jm).typeData
+      (SemTypeData.ksig TA TB))
+    (hn : ∀ {Δ : DCandCtx} (hΓ : SemCtx Γ Δ),
+      let IA := TA.interp hΓ
+      let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+        SemCtx.cons hΓ IA (TA.weakens hΓ)
+      let IB := TB.interp hΓA
+      let K := TypeInterp.ksig IA IB (SemCtx.weakens hΓ)
+      let hΓS : SemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        SemCtx.cons hΓ K (TypeInterp.ksig_weakens IA IB (SemCtx.weakens hΓ))
+      (TypeInterp.sigmaBranch IA IB (SemCtx.weakens hΓ) (TA.weakens hΓ)
+        (TB.weakens hΓA) (TC.interp hΓS)).SemTm n) :
+    SemFund Γ (.prj C m n) C.[m/] :=
+  SemFund.ofTermData
+    (SemTermData.prjBranchByEquiv TA TB TC hTC (SemFund.choose Jm)
+      hmEq hn)
+
+lemma prjSNBranchByEquiv {Γ : Ctx} {A B C m n : Tm} {iC : Nat}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (TC : SemTypeData (.sig A B :: Γ) C)
+    (Jm : SemFund Γ m (.sig A B))
+    (Jn : SemFund (B :: A :: Γ) n
+      C.[.tup (.var 1) (.var 0) .: shift 2])
+    (hmEq : SemTypeData.Equiv (SemFund.choose Jm).typeData
+      (SemTypeData.ksig TA TB)) :
+    SemFund Γ (.prj C m n) C.[m/] :=
+  SemFund.ofTermData
+    (SemTermData.prjSNBranch (iC := iC) TA TB TC
+      (SemTypeData.Equiv.semTm hmEq (SemFund.choose Jm).semTm) Jn)
+
+lemma prjSNBranchRetagByEquiv {Γ : Ctx} {P A B C m n : Tm}
+    {iP iC : Nat}
+    (TP : SemTypeFund Γ (.sig A B) iP)
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (TC : SemTypeData (.sig A B :: Γ) C)
+    (Jm : SemFund Γ m P)
+    (Jn : SemFund (B :: A :: Γ) n
+      C.[.tup (.var 1) (.var 0) .: shift 2])
+    (hmEq : SemTypeData.Equiv (SemFund.choose Jm).typeData
+      (SemTypeData.ksig TA TB)) :
+    SemFund Γ (.prj C m n) C.[m/] :=
+  SemFund.ofTermData
+    (SemTermData.prjSNBranchRetagByEquiv (iC := iC) TP TA TB TC
+      (SemFund.choose Jm) Jn hmEq)
+
+lemma iteByEquiv {Γ : Ctx} {A m n1 n2 : Tm}
+    (TB : SemTypeData (.bool :: Γ) A)
+    (hTB : TB.Expansive)
+    (Jm : SemFund Γ m .bool)
+    (Jn1 : SemFund Γ n1 A.[.tt/])
+    (Jn2 : SemFund Γ n2 A.[.ff/])
+    (hmEq : SemTypeData.Equiv (SemFund.choose Jm).typeData
+      (SemTypeData.bool Γ))
+    (hn1Eq : SemTypeData.Equiv (SemFund.choose Jn1).typeData
+      (SemTypeData.subst1 (SemTypeData.bool Γ) TB SemTypeData.tt))
+    (hn2Eq : SemTypeData.Equiv (SemFund.choose Jn2).typeData
+      (SemTypeData.subst1 (SemTypeData.bool Γ) TB SemTypeData.ff)) :
+      SemFund Γ (.ite A m n1 n2) A.[m/] :=
+    SemFund.ofTermData
+      (SemTermData.iteByEquiv TB hTB (SemFund.choose Jm)
+        (SemFund.choose Jn1) (SemFund.choose Jn2) hmEq hn1Eq hn2Eq)
+
+  lemma iteSNByEquiv {Γ : Ctx} {A m n1 n2 : Tm} {i : Nat}
+      (TB : SemTypeData (.bool :: Γ) A)
+      (Jm : SemFund Γ m .bool)
+      (Jn1 : SemFund Γ n1 A.[.tt/])
+      (Jn2 : SemFund Γ n2 A.[.ff/])
+      (hmEq : SemTypeData.Equiv (SemFund.choose Jm).typeData
+        (SemTypeData.bool Γ)) :
+      SemFund Γ (.ite A m n1 n2) A.[m/] :=
+  SemFund.ofTermData
+    (SemTermData.iteSN (i := i) TB (SemFund.choose Jm) Jn1 Jn2 hmEq)
+
+lemma iteSNRetagByEquiv {Γ : Ctx} {P A m n1 n2 : Tm}
+    {iP i : Nat}
+    (TP : SemTypeFund Γ .bool iP)
+    (TB : SemTypeData (.bool :: Γ) A)
+    (Jm : SemFund Γ m P)
+    (Jn1 : SemFund Γ n1 A.[.tt/])
+    (Jn2 : SemFund Γ n2 A.[.ff/])
+    (hmEq : SemTypeData.Equiv (SemFund.choose Jm).typeData
+      (SemTypeData.bool Γ)) :
+    SemFund Γ (.ite A m n1 n2) A.[m/] :=
+  SemFund.ofTermData
+    (SemTermData.iteSNRetagByEquiv (i := i) TP TB (SemFund.choose Jm)
+      Jn1 Jn2 hmEq)
+
+lemma exfByEquiv {Γ : Ctx} {A m : Tm}
+    (TB : SemTypeData (.bot :: Γ) A)
+    (hTB : TB.Expansive)
+    (Jm : SemFund Γ m .bot)
+    (hmEq : SemTypeData.Equiv (SemFund.choose Jm).typeData
+      (SemTypeData.bot Γ)) :
+      SemFund Γ (.exf A m) A.[m/] :=
+    SemFund.ofTermData
+      (SemTermData.exfByEquiv TB hTB (SemFund.choose Jm) hmEq)
+
+  lemma exfSNByEquiv {Γ : Ctx} {A m : Tm} {i : Nat}
+      (TB : SemTypeData (.bot :: Γ) A)
+      (Jm : SemFund Γ m .bot)
+      (hmEq : SemTypeData.Equiv (SemFund.choose Jm).typeData
+        (SemTypeData.bot Γ)) :
+      SemFund Γ (.exf A m) A.[m/] :=
+  SemFund.ofTermData
+    (SemTermData.exfSN (i := i) TB (SemFund.choose Jm) hmEq)
+
+lemma exfSNRetagByEquiv {Γ : Ctx} {P A m : Tm}
+    {iP i : Nat}
+    (TP : SemTypeFund Γ .bot iP)
+    (TB : SemTypeData (.bot :: Γ) A)
+    (Jm : SemFund Γ m P)
+    (hmEq : SemTypeData.Equiv (SemFund.choose Jm).typeData
+      (SemTypeData.bot Γ)) :
+    SemFund Γ (.exf A m) A.[m/] :=
+  SemFund.ofTermData
+    (SemTermData.exfSNRetagByEquiv (i := i) TP TB (SemFund.choose Jm) hmEq)
+
+lemma convWeak {Γ : Ctx} {A B m : Tm} {i : Nat} :
+    A === B ->
+    SemFund Γ m A ->
+    SemTypeFund Γ B i ->
+    SemFund Γ m B := by
+  intro _eq J TB
+  exact SemFund.ofTermData ((SemFund.choose J).retag (Classical.choice TB).typeData)
+
+lemma convByEquiv {Γ : Ctx} {A B m : Tm} {i : Nat} :
+    A === B ->
+    (J : SemFund Γ m A) ->
+    (TB : SemTypeFund Γ B i) ->
+    SemTypeData.Equiv (SemFund.choose J).typeData
+      (Classical.choice TB).typeData ->
+    SemFund Γ m B := by
+  intro _eq J TB hEq
+  exact SemFund.ofTermData
+    ((SemFund.choose J).retagEquiv (Classical.choice TB).typeData hEq)
+
+lemma toTypeFundWeak {Γ : Ctx} {A : Tm} {i : Nat} :
+    SemFund Γ A (.ty i) -> SemTypeFund Γ A i := by
+  intro J
+  exact ⟨SemTypeJudgment.ofTermDataWeak (SemFund.choose J)⟩
+
+end SemFund
+
+namespace SemTypeFund
+
+noncomputable def choose {Γ : Ctx} {A : Tm} {i : Nat}
+    (J : SemTypeFund Γ A i) : SemTypeJudgment Γ A i :=
+  Classical.choice J
+
+lemma ofTypeJudgment {Γ : Ctx} {A : Tm} {i : Nat}
+    (J : SemTypeJudgment Γ A i) : SemTypeFund Γ A i :=
+  ⟨J⟩
+
+lemma toSemFund {Γ : Ctx} {A : Tm} {i : Nat} :
+    SemTypeFund Γ A i -> SemFund Γ A (.ty i) := by
+  intro J
+  exact SemFund.ofTermData (SemTypeFund.choose J).toTermData
+
+lemma ty (Γ : Ctx) (i : Nat) :
+    SemTypeFund Γ (.ty i) (i + 1) :=
+  SemTypeFund.ofTypeJudgment (SemTypeJudgment.ty Γ i)
+
+lemma bool (Γ : Ctx) :
+    SemTypeFund Γ .bool 0 :=
+  SemTypeFund.ofTypeJudgment (SemTypeJudgment.bool Γ)
+
+lemma bot (Γ : Ctx) :
+    SemTypeFund Γ .bot 0 :=
+  SemTypeFund.ofTypeJudgment (SemTypeJudgment.bot Γ)
+
+lemma pi {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : SemTypeFund Γ A iA)
+    (TB : SemTypeFund (A :: Γ) B iB)
+    (hTB : (SemTypeFund.choose TB).typeData.Expansive) :
+    SemTypeFund Γ (.pi A B) (max iA iB) :=
+  SemTypeFund.ofTypeJudgment
+    (SemTypeJudgment.pi (SemTypeFund.choose TA) (SemTypeFund.choose TB) hTB)
+
+lemma sig {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : SemTypeFund Γ A iA)
+    (TB : SemTypeFund (A :: Γ) B iB) :
+    SemTypeFund Γ (.sig A B) (max iA iB) :=
+  SemTypeFund.ofTypeJudgment
+    (SemTypeJudgment.sig (SemTypeFund.choose TA) (SemTypeFund.choose TB))
+
+lemma idnByEquiv {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (TA : SemTypeFund Γ A i)
+    (Jm : SemFund Γ m A) (Jn : SemFund Γ n A)
+    (hmEq : SemTypeData.Equiv (SemFund.choose Jm).typeData
+      (SemTypeFund.choose TA).typeData)
+    (hnEq : SemTypeData.Equiv (SemFund.choose Jn).typeData
+      (SemTypeFund.choose TA).typeData) :
+    SemTypeFund Γ (.idn A m n) i :=
+  SemTypeFund.ofTypeJudgment
+    (SemTypeJudgment.idnByEquiv (SemTypeFund.choose TA)
+      (SemFund.choose Jm) (SemFund.choose Jn) hmEq hnEq)
+
+lemma convWeak {Γ : Ctx} {A B : Tm} {i j : Nat} :
+    A === B ->
+    SemTypeFund Γ A i ->
+    SemFund Γ B (.ty j) ->
+    SemTypeFund Γ B j := by
+  intro _eq _JA JB
+  exact SemFund.toTypeFundWeak JB
+
+end SemTypeFund
+
+namespace SemFundAt
+
+lemma srt {Γ : Ctx} (i : Nat) :
+    SemFundAt Γ (.ty i) (.ty (i + 1)) (SemTypeData.univ Γ (i + 1)) :=
+  SemFundAt.ofTermData (SemTermData.srt i)
+    (SemTypeData.Equiv.refl (SemTypeData.univ Γ (i + 1)))
+
+lemma var {Γ : Ctx} {x : Var} {A : Tm}
+    (hs : Has Γ x A) :
+    SemFundAt Γ (.var x) A (SemTypeData.lookup hs) :=
+  SemFundAt.ofTermData (SemTermData.var hs)
+    (SemTypeData.Equiv.refl (SemTypeData.lookup hs))
+
+lemma bool {Γ : Ctx} :
+    SemFundAt Γ .bool (.ty 0) (SemTypeData.univ Γ 0) :=
+  SemFundAt.ofTermData SemTermData.bool
+    (SemTypeData.Equiv.refl (SemTypeData.univ Γ 0))
+
+lemma bot {Γ : Ctx} :
+    SemFundAt Γ .bot (.ty 0) (SemTypeData.univ Γ 0) :=
+  SemFundAt.ofTermData SemTermData.bot
+    (SemTypeData.Equiv.refl (SemTypeData.univ Γ 0))
+
+lemma piType {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : SemTypeJudgment Γ A iA)
+    (TB : SemTypeJudgment (A :: Γ) B iB)
+    (hTB : TB.typeData.Expansive) :
+    SemFundAt Γ (.pi A B) (.ty (max iA iB))
+      (SemTypeData.univ Γ (max iA iB)) :=
+  SemFundAt.ofTermData (SemTermData.piType TA TB hTB)
+    (SemTypeData.Equiv.refl (SemTypeData.univ Γ (max iA iB)))
+
+lemma sigType {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (TA : SemTypeJudgment Γ A iA)
+    (TB : SemTypeJudgment (A :: Γ) B iB) :
+    SemFundAt Γ (.sig A B) (.ty (max iA iB))
+      (SemTypeData.univ Γ (max iA iB)) :=
+  SemFundAt.ofTermData (SemTermData.sigType TA TB)
+    (SemTypeData.Equiv.refl (SemTypeData.univ Γ (max iA iB)))
+
+lemma idnType {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (TA : SemTypeJudgment Γ A i)
+    (Jm : SemFundAt Γ m A TA.typeData)
+    (Jn : SemFundAt Γ n A TA.typeData) :
+    SemFundAt Γ (.idn A m n) (.ty i) (SemTypeData.univ Γ i) := by
+  exact SemFundAt.ofTermData
+    (SemTermData.idnType TA (SemFundAt.semTm Jm) (SemFundAt.semTm Jn))
+    (SemTypeData.Equiv.refl (SemTypeData.univ Γ i))
+
+lemma tt {Γ : Ctx} :
+    SemFundAt Γ .tt .bool (SemTypeData.bool Γ) :=
+  SemFundAt.ofTermData SemTermData.tt
+    (SemTypeData.Equiv.refl (SemTypeData.bool Γ))
+
+lemma ff {Γ : Ctx} :
+    SemFundAt Γ .ff .bool (SemTypeData.bool Γ) :=
+  SemFundAt.ofTermData SemTermData.ff
+    (SemTypeData.Equiv.refl (SemTypeData.bool Γ))
+
+lemma rfl {Γ : Ctx} {A m : Tm}
+    (TA : SemTypeData Γ A)
+    (Jm : SemFundAt Γ m A TA) :
+    SemFundAt Γ (.rfl m) (.idn A m m)
+      (SemTypeData.idn TA (SemFundAt.semTm Jm) (SemFundAt.semTm Jm)) := by
+  let Jm' := SemFundAt.choose Jm
+  let hm : TA.SemTm m := SemTypeData.Equiv.semTm Jm'.property Jm'.val.semTm
+  change SemFundAt Γ (.rfl m) (.idn A m m) (SemTypeData.idn TA hm hm)
+  exact SemFundAt.ofTermData
+    (SemTermData.rflByEquiv TA Jm'.val Jm'.property)
+    (SemTypeData.Equiv.refl (SemTypeData.idn TA hm hm))
+
+lemma lam {Γ : Ctx} {A B m : Tm} {iA : Nat}
+    (TA : SemTypeJudgment Γ A iA)
+    (TB : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : SemFundAt (A :: Γ) m B TB) :
+    SemFundAt Γ (.lam A m) (.pi A B) (SemTypeData.kpi TA.typeData TB hTB) := by
+  let Jm' := SemFundAt.choose Jm
+  exact SemFundAt.ofTermData
+    (SemTermData.lamByEquiv TA TB hTB Jm'.val Jm'.property)
+    (SemTypeData.Equiv.refl (SemTypeData.kpi TA.typeData TB hTB))
+
+lemma app {Γ : Ctx} {A B m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : SemFundAt Γ m (.pi A B) (SemTypeData.kpi TA TB hTB))
+    (Jn : SemFundAt Γ n A TA) :
+    SemFundAt Γ (.app m n) B.[n/]
+      (SemTypeData.subst1 TA TB (SemFundAt.semTm Jn)) := by
+  let Jm' := SemFundAt.choose Jm
+  let Jn' := SemFundAt.choose Jn
+  let hn : TA.SemTm n := SemTypeData.Equiv.semTm Jn'.property Jn'.val.semTm
+  change SemFundAt Γ (.app m n) B.[n/] (SemTypeData.subst1 TA TB hn)
+  exact SemFundAt.ofTermData
+    (SemTermData.appByEquiv TA TB hTB Jm'.val Jn'.val Jm'.property Jn'.property)
+    (SemTypeData.Equiv.refl (SemTypeData.subst1 TA TB hn))
+
+lemma tup {Γ : Ctx} {A B m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (Jm : SemFundAt Γ m A TA)
+    (Jn : SemFundAt Γ n B.[m/]
+      (SemTypeData.subst1 TA TB (SemFundAt.semTm Jm))) :
+    SemFundAt Γ (.tup m n) (.sig A B) (SemTypeData.ksig TA TB) := by
+  let Jm' := SemFundAt.choose Jm
+  let Jn' := SemFundAt.choose Jn
+  let hm : TA.SemTm m := SemTypeData.Equiv.semTm Jm'.property Jm'.val.semTm
+  change SemFundAt Γ (.tup m n) (.sig A B) (SemTypeData.ksig TA TB)
+  exact SemFundAt.ofTermData
+    (SemTermData.tupByEquiv TA TB Jm'.val Jn'.val Jm'.property Jn'.property)
+    (SemTypeData.Equiv.refl (SemTypeData.ksig TA TB))
+
+lemma ite {Γ : Ctx} {A m n1 n2 : Tm}
+    (TB : SemTypeData (.bool :: Γ) A)
+    (hTB : TB.Expansive)
+    (Jm : SemFundAt Γ m .bool (SemTypeData.bool Γ))
+    (Jn1 : SemFundAt Γ n1 A.[.tt/]
+      (SemTypeData.subst1 (SemTypeData.bool Γ) TB SemTypeData.tt))
+    (Jn2 : SemFundAt Γ n2 A.[.ff/]
+      (SemTypeData.subst1 (SemTypeData.bool Γ) TB SemTypeData.ff)) :
+    SemFundAt Γ (.ite A m n1 n2) A.[m/]
+      (SemTypeData.subst1 (SemTypeData.bool Γ) TB (SemFundAt.semTm Jm)) := by
+  let Jm' := SemFundAt.choose Jm
+  let Jn1' := SemFundAt.choose Jn1
+  let Jn2' := SemFundAt.choose Jn2
+  let hm : (SemTypeData.bool Γ).SemTm m :=
+    SemTypeData.Equiv.semTm Jm'.property Jm'.val.semTm
+  change SemFundAt Γ (.ite A m n1 n2) A.[m/]
+    (SemTypeData.subst1 (SemTypeData.bool Γ) TB hm)
+  exact SemFundAt.ofTermData
+    (SemTermData.iteByEquiv TB hTB Jm'.val Jn1'.val Jn2'.val
+      Jm'.property Jn1'.property Jn2'.property)
+    (SemTypeData.Equiv.refl (SemTypeData.subst1 (SemTypeData.bool Γ) TB hm))
+
+lemma exf {Γ : Ctx} {A m : Tm}
+    (TB : SemTypeData (.bot :: Γ) A)
+    (hTB : TB.Expansive)
+    (Jm : SemFundAt Γ m .bot (SemTypeData.bot Γ)) :
+    SemFundAt Γ (.exf A m) A.[m/]
+      (SemTypeData.subst1 (SemTypeData.bot Γ) TB (SemFundAt.semTm Jm)) := by
+  let Jm' := SemFundAt.choose Jm
+  let hm : (SemTypeData.bot Γ).SemTm m :=
+    SemTypeData.Equiv.semTm Jm'.property Jm'.val.semTm
+  change SemFundAt Γ (.exf A m) A.[m/]
+    (SemTypeData.subst1 (SemTypeData.bot Γ) TB hm)
+  exact SemFundAt.ofTermData
+    (SemTermData.exfByEquiv TB hTB Jm'.val Jm'.property)
+    (SemTypeData.Equiv.refl (SemTypeData.subst1 (SemTypeData.bot Γ) TB hm))
+
+end SemFundAt
+
 namespace Wf
 
 lemma semCtx_of_semantic
@@ -4750,6 +8339,67 @@ theorem Typed.normalize_of_semantic
   intro ty
   rcases ty.toWf.semCtx_of_semantic fund with ⟨Δ, hΓ⟩
   exact SemTyped.sn hΓ (fund ty)
+
+theorem Typed.normalize_of_can_semantic
+    {Γ : Ctx} {m A : Tm}
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> SemTypeData Γ A)
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanSemTyped Γ m A) :
+    Γ ⊢ m : A -> SN Step m := by
+  intro ty
+  rcases ty.toWf.canSemCtx_of_type_data typeFund with ⟨Δ, hΓ⟩
+  exact CanSemTyped.sn hΓ (fund ty)
+
+theorem Typed.normalize_of_can_term_data
+    {Γ : Ctx} {m A : Tm}
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeJudgment Γ A i)
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanTermData Γ m A) :
+    Γ ⊢ m : A -> SN Step m := by
+  intro ty
+  rcases ty.toWf.canSemCtx_of_can_type_data
+      (fun ty => (typeFund ty).typeData) with ⟨Δ, hΓ⟩
+  exact CanSemTyped.sn hΓ (fund ty).toCanSemTyped
+
+theorem Typed.normalize_of_can_term_data_nonempty
+    {Γ : Ctx} {m A : Tm}
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeFund Γ A i)
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanFund Γ m A) :
+    Γ ⊢ m : A -> SN Step m := by
+  classical
+  exact Typed.normalize_of_can_term_data
+    (fun ty => CanTypeFund.choose (typeFund ty))
+    (fun ty => CanFund.choose (fund ty))
+
+theorem Typed.normalize_of_fund_term_data
+    {Γ : Ctx} {m A : Tm}
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A)
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> FundTermData Γ m A) :
+    Γ ⊢ m : A -> SN Step m := by
+  intro ty
+  rcases ty.toWf.fundSemCtx_of_can_type_data typeFund with ⟨Δ, hΓ⟩
+  exact FundTermData.sn (fund ty) hΓ
+
+theorem Typed.normalize_of_fund_term_data_nonempty
+    {Γ : Ctx} {m A : Tm}
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeFund Γ A i)
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> FundFund Γ m A) :
+    Γ ⊢ m : A -> SN Step m := by
+  classical
+  exact Typed.normalize_of_fund_term_data
+    (fun ty => (CanTypeFund.choose (typeFund ty)).typeData)
+    (fun ty => FundFund.choose (fund ty))
+
+theorem Typed.normalize_of_term_data
+    {Γ : Ctx} {m A : Tm}
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> SemTermData Γ m A) :
+    Γ ⊢ m : A -> SN Step m :=
+  Typed.normalize_of_semantic (fun ty => (fund ty).toSemTyped)
+
+theorem Typed.normalize_of_term_data_nonempty
+    {Γ : Ctx} {m A : Tm}
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> SemFund Γ m A) :
+    Γ ⊢ m : A -> SN Step m := by
+  classical
+  exact Typed.normalize_of_term_data (fun ty => Classical.choice (fund ty))
 
 def SemTm (Δ : CandCtx) (m : Tm) (C : Candidate) : Prop :=
   ∀ σ, CandSubst Δ σ -> C.mem m.[σ]
