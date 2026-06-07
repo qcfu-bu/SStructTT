@@ -8485,12 +8485,27 @@ lemma piTypeExp {Γ : Ctx} {A B : Tm} {iA iB : Nat}
       (CanTypeData.univ Γ (max iA iB)) :=
   CanTypeFundExp.toCanFundAt (CanTypeFundExp.pi TA TB)
 
+lemma piTypeExpJudgment {Γ : Ctx} {A B : Tm} {i iA iB : Nat}
+    (TA : CanTypeFundExp Γ A iA)
+    (TB : CanTypeFundExp (A :: Γ) B iB) :
+    CanFundAt Γ (.pi A B) (.ty i) (CanTypeData.univ Γ i) :=
+  CanFundAt.piTypeAt (i := i)
+    (CanTypeFundExp.judgment TA) (CanTypeFundExp.judgment TB)
+    (CanTypeFundExp.expansive TB)
+
 lemma sigTypeExp {Γ : Ctx} {A B : Tm} {iA iB : Nat}
     (TA : CanTypeFundExp Γ A iA)
     (TB : CanTypeFundExp (A :: Γ) B iB) :
     CanFundAt Γ (.sig A B) (.ty (max iA iB))
       (CanTypeData.univ Γ (max iA iB)) :=
   CanTypeFundExp.toCanFundAt (CanTypeFundExp.sig TA TB)
+
+lemma sigTypeExpJudgment {Γ : Ctx} {A B : Tm} {i iA iB : Nat}
+    (TA : CanTypeFundExp Γ A iA)
+    (TB : CanTypeFundExp (A :: Γ) B iB) :
+    CanFundAt Γ (.sig A B) (.ty i) (CanTypeData.univ Γ i) :=
+  CanFundAt.sigTypeAt (i := i)
+    (CanTypeFundExp.judgment TA) (CanTypeFundExp.judgment TB)
 
 lemma idnTypeExp {Γ : Ctx} {A m n : Tm} {i : Nat}
     (TA : CanTypeFundExp Γ A i)
@@ -8499,6 +8514,13 @@ lemma idnTypeExp {Γ : Ctx} {A m n : Tm} {i : Nat}
     CanFundAt Γ (.idn A m n) (.ty i) (CanTypeData.univ Γ i) :=
   CanTypeFundExp.toCanFundAt
     (CanTypeFundExp.idnByEquiv TA (CanFundAt.choose Jm) (CanFundAt.choose Jn))
+
+lemma idnTypeExpJudgment {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (TA : CanTypeFundExp Γ A i)
+    (Jm : CanFundAt Γ m A (CanTypeFundExp.typeData TA))
+    (Jn : CanFundAt Γ n A (CanTypeFundExp.typeData TA)) :
+    CanFundAt Γ (.idn A m n) (.ty i) (CanTypeData.univ Γ i) :=
+  CanFundAt.idnType (CanTypeFundExp.judgment TA) Jm Jn
 
 lemma rfl {Γ : Ctx} {A m : Tm}
     (TA : CanTypeData Γ A)
@@ -9207,6 +9229,65 @@ lemma rwSNBranchExpAt {Γ : Ctx} {A B m n a b : Tm} {i iB : Nat}
 
 end CanFund
 
+noncomputable def Typed.canTypeJudgment_of_can_fund
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanFund Γ m A)
+    {Γ : Ctx} {A : Tm} {i : Nat} (ty : Γ ⊢ A : .ty i) :
+    CanTypeJudgment Γ A i :=
+  match A with
+  | .ty j =>
+      CanTypeJudgment.ofTypeData (CanTypeData.univ Γ j)
+  | .pi A B => by
+      let hInv := Typed.pi_inv (A := A) (B := B) (T := .ty i) ty
+      let iB := Classical.choose hInv
+      let hInv' := Classical.choose_spec hInv
+      let _iTy := Classical.choose hInv'
+      let tyB : A :: Γ ⊢ B : .ty iB := (Classical.choose_spec hInv').1
+      let hCtx := tyB.ctx_inv
+      let iA := Classical.choose hCtx
+      let tyA : Γ ⊢ A : .ty iA := (Classical.choose_spec hCtx).2
+      exact CanTypeFundExp.piJudgmentAt (i := i)
+        (CanTypeFundExp.ofCanFund (fund tyA))
+        (CanTypeFundExp.ofCanFund (fund tyB))
+  | .sig A B => by
+      let hInv := Typed.sig_inv (A := A) (B := B) (T := .ty i) ty
+      let iB := Classical.choose hInv
+      let hInv' := Classical.choose_spec hInv
+      let _iTy := Classical.choose hInv'
+      let tyB : A :: Γ ⊢ B : .ty iB := (Classical.choose_spec hInv').1
+      let hCtx := tyB.ctx_inv
+      let iA := Classical.choose hCtx
+      let tyA : Γ ⊢ A : .ty iA := (Classical.choose_spec hCtx).2
+      exact CanTypeFundExp.sigJudgmentAt (i := i)
+        (CanTypeFundExp.ofCanFund (fund tyA))
+        (CanTypeFundExp.ofCanFund (fund tyB))
+  | .bool =>
+      CanTypeJudgment.ofTypeData (CanTypeData.bool Γ)
+  | .bot =>
+      CanTypeJudgment.ofTypeData (CanTypeData.bot Γ)
+  | .idn A m n => by
+      let hInv := Typed.idn_inv (A := A) (m := m) (n := n) (T := .ty i) ty
+      let _iTy := Classical.choose hInv
+      let hSpec := Classical.choose_spec hInv
+      let tym : Γ ⊢ m : A := hSpec.1
+      let tyn : Γ ⊢ n : A := hSpec.2.1
+      let hTyA := tym.validity
+      let iA := Classical.choose hTyA
+      let tyA : Γ ⊢ A : .ty iA := Classical.choose_spec hTyA
+      let hA : CanSemTyped Γ A (.ty iA) := CanFund.toCanSemTyped (fund tyA)
+      let TA : CanTypeData Γ A := CanTypeData.ofCanSemTypedType hA
+      have hm : TA.CanSemTm m := by
+        intro Δ hΓ σ hσ
+        change SN Step m.[σ]
+        exact CanSemTyped.sn_subst (CanFund.toCanSemTyped (fund tym)) hΓ σ hσ
+      have hn : TA.CanSemTm n := by
+        intro Δ hΓ σ hσ
+        change SN Step n.[σ]
+        exact CanSemTyped.sn_subst (CanFund.toCanSemTyped (fund tyn)) hΓ σ hσ
+      exact CanTypeJudgment.ofTypeData
+        (CanTypeData.idn TA hm hn)
+  | _ =>
+      CanTypeJudgment.ofTermDataWeak (CanFund.choose (fund ty))
+
 namespace SemFund
 
 noncomputable def choose {Γ : Ctx} {m A : Tm}
@@ -9776,6 +9857,27 @@ theorem Typed.normalize_of_can_fund_at_validity
   exact CanSemTyped.sn hΓ
     (CanFund.toCanSemTyped
       (CanFundAt.toCanFund (fund ty tyA)))
+
+theorem Typed.normalize_of_can_fund_exp_at_validity
+    {Γ : Ctx} {m A : Tm}
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeFundExp Γ A i)
+    (fund : ∀ {Γ m A i} (_ty : Γ ⊢ m : A) (tyA : Γ ⊢ A : .ty i),
+      CanFundAt Γ m A (CanTypeFundExp.typeData (typeFund tyA))) :
+    Γ ⊢ m : A -> SN Step m :=
+  Typed.normalize_of_can_fund_at_validity
+    (fun tyA => CanTypeFundExp.judgment (typeFund tyA))
+    fund
+
+theorem Typed.normalize_of_can_fund_at_with_can_fund_type
+    {Γ : Ctx} {m A : Tm}
+    (fundWeak : ∀ {Γ m A}, Γ ⊢ m : A -> CanFund Γ m A)
+    (fundAt : ∀ {Γ m A i} (_ty : Γ ⊢ m : A) (tyA : Γ ⊢ A : .ty i),
+      CanFundAt Γ m A
+        (Typed.canTypeJudgment_of_can_fund fundWeak tyA).typeData) :
+    Γ ⊢ m : A -> SN Step m :=
+  Typed.normalize_of_can_fund_at_validity
+    (fun tyA => Typed.canTypeJudgment_of_can_fund fundWeak tyA)
+    fundAt
 
 theorem Typed.normalize_of_can_exp_term_data_nonempty
     {Γ : Ctx} {m A : Tm}
