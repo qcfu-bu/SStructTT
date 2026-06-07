@@ -6491,6 +6491,41 @@ lemma exfBot {Γ : Ctx} {A m : Tm}
   change (TypeInterp.subst1 (TypeInterp.bot Δ) IB (hm hΓ)).SemTm (.exf A m)
   exact TypeInterp.semExfBotSubst1 IB (CanSemCtx.weakens hΓ) (hTB hΓB) (hm hΓ)
 
+lemma rw_target {Γ : Ctx} {A B m n a b : Tm}
+    (TB : CanTypeData Γ B)
+    (ha : TB.CanSemTm a) (hb : TB.CanSemTm b)
+    (hn : (CanTypeData.idn TB ha hb).CanSemTm n)
+    (TA : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A)
+    (hTA : TA.Expansive)
+    (hrfl : ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ),
+      let IB := TB.interp hΓ
+      let hΓB : CanSemCtx (B :: Γ) (DCandCtx.extend IB) :=
+        CanSemCtx.consInterp hΓ IB (TB.weakens hΓ)
+      let IP := TypeInterp.idProof IB (ha hΓ)
+      let hΓP : CanSemCtx
+          (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+          (DCandCtx.extend IP) :=
+        CanSemCtx.consInterp hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+      let IA := TA.interp hΓP
+      ∀ σ, Δ.valid σ -> ∀ c,
+        (IA.cand (.rfl c .: b.[σ] .: σ)).mem m.[σ]) :
+    (CanTypeData.idTarget TB ha hb hn TA).CanSemTm (.rw A m n) := by
+  intro Δ hΓ
+  let IB := TB.interp hΓ
+  let hΓB : CanSemCtx (B :: Γ) (DCandCtx.extend IB) :=
+    CanSemCtx.consInterp hΓ IB (TB.weakens hΓ)
+  let IP := TypeInterp.idProof IB (ha hΓ)
+  let hΓP : CanSemCtx
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+      (DCandCtx.extend IP) :=
+    CanSemCtx.consInterp hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+  let IA := TA.interp hΓP
+  change (TypeInterp.idTarget IB (ha hΓ) (hb hΓ) (hn hΓ) IA).SemTm
+    (.rw A m n)
+  exact TypeInterp.semRwTarget IB (CanSemCtx.weakens hΓ) (TB.weakens hΓ)
+    (ha hΓ) (hb hΓ) (hn hΓ) IA (hTA hΓP) (hrfl hΓ)
+
 lemma rw_sn {Γ : Ctx} {A B m n a b : Tm}
     (TB : CanTypeData Γ B)
     (ha : TB.CanSemTm a) (hb : TB.CanSemTm b)
@@ -6858,6 +6893,35 @@ noncomputable def prjBranchExact {Γ : Ctx} {A B C m n : Tm}
       change (TypeInterp.sigmaBranch IA IB (CanSemCtx.weakens hΓ)
         (TA.weakens hΓ) (TB.weakens hΓA) (TC.interp hΓS)).SemTm n
       exact Jn.canSemTm hΓBA)
+
+noncomputable def rwTarget {Γ : Ctx} {A B m n a b : Tm}
+    (TB : CanTypeData Γ B)
+    (Ja : CanTermDataAt Γ a B TB)
+    (Jb : CanTermDataAt Γ b B TB)
+    (Jn : CanTermDataAt Γ n (.idn B a b)
+      (CanTypeData.idn TB Ja.canSemTm Jb.canSemTm))
+    (TA : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A)
+    (hTA : TA.Expansive)
+    (hrfl : ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ),
+      let IB := TB.interp hΓ
+      let hΓB : CanSemCtx (B :: Γ) (DCandCtx.extend IB) :=
+        CanSemCtx.consInterp hΓ IB (TB.weakens hΓ)
+      let IP := TypeInterp.idProof IB (Ja.canSemTm hΓ)
+      let hΓP : CanSemCtx
+          (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+          (DCandCtx.extend IP) :=
+        CanSemCtx.consInterp hΓB IP
+          (TypeInterp.idProof_weakens IB (Ja.canSemTm hΓ))
+      let IA := TA.interp hΓP
+      ∀ σ, Δ.valid σ -> ∀ c,
+        (IA.cand (.rfl c .: b.[σ] .: σ)).mem m.[σ]) :
+    CanTermDataAt Γ (.rw A m n) A.[n,b/]
+      (CanTypeData.idTarget TB Ja.canSemTm Jb.canSemTm Jn.canSemTm TA) :=
+  CanTermDataAt.ofTypeData
+    (CanTypeData.idTarget TB Ja.canSemTm Jb.canSemTm Jn.canSemTm TA)
+    (CanTypeData.rw_target TB Ja.canSemTm Jb.canSemTm Jn.canSemTm TA
+      hTA hrfl)
 
 noncomputable def ite {Γ : Ctx} {A m n1 n2 : Tm}
     (TB : CanTypeData (.bool :: Γ) A)
@@ -8531,6 +8595,36 @@ lemma prjBranchExact {Γ : Ctx} {A B C m n : Tm}
   CanFundAt.ofTermDataAt
     (CanTermDataAt.prjBranchExact TA TB TC hTC
       (CanFundAt.choose Jm) (CanFundAt.choose Jn))
+
+lemma rwTarget {Γ : Ctx} {A B m n a b : Tm}
+    (TB : CanTypeData Γ B)
+    (Ja : CanFundAt Γ a B TB)
+    (Jb : CanFundAt Γ b B TB)
+    (Jn : CanFundAt Γ n (.idn B a b)
+      (CanTypeData.idn TB (CanFundAt.choose Ja).canSemTm
+        (CanFundAt.choose Jb).canSemTm))
+    (TA : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A)
+    (hTA : TA.Expansive)
+    (hrfl : ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ),
+      let IB := TB.interp hΓ
+      let hΓB : CanSemCtx (B :: Γ) (DCandCtx.extend IB) :=
+        CanSemCtx.consInterp hΓ IB (TB.weakens hΓ)
+      let IP := TypeInterp.idProof IB ((CanFundAt.choose Ja).canSemTm hΓ)
+      let hΓP : CanSemCtx
+          (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+          (DCandCtx.extend IP) :=
+        CanSemCtx.consInterp hΓB IP
+          (TypeInterp.idProof_weakens IB ((CanFundAt.choose Ja).canSemTm hΓ))
+      let IA := TA.interp hΓP
+      ∀ σ, Δ.valid σ -> ∀ c,
+        (IA.cand (.rfl c .: b.[σ] .: σ)).mem m.[σ]) :
+    CanFundAt Γ (.rw A m n) A.[n,b/]
+      (CanTypeData.idTarget TB (CanFundAt.choose Ja).canSemTm
+        (CanFundAt.choose Jb).canSemTm (CanFundAt.choose Jn).canSemTm TA) :=
+  CanFundAt.ofTermDataAt
+    (CanTermDataAt.rwTarget TB (CanFundAt.choose Ja) (CanFundAt.choose Jb)
+      (CanFundAt.choose Jn) TA hTA hrfl)
 
 lemma ite {Γ : Ctx} {A m n1 n2 : Tm}
     (TB : CanTypeData (.bool :: Γ) A)
