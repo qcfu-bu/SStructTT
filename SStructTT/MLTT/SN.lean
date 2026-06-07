@@ -8507,6 +8507,14 @@ lemma lamExp {Γ : Ctx} {A B m : Tm} {i iA iB : Nat}
   CanFundAt.lam (CanTypeFundExp.typeData TA) (CanTypeFundExp.typeData TB)
     (CanTypeFundExp.expansive TB) Jm
 
+lemma lamByEquiv {Γ : Ctx} {A B m : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive) {TB' : CanTypeData (A :: Γ) B}
+    (Jm : CanFundAt (A :: Γ) m B TB')
+    (hmEq : CanTypeData.Equiv TB' TB) :
+    CanFundAt Γ (.lam A m) (.pi A B) (CanTypeData.kpi TA TB hTB) :=
+  CanFundAt.lam TA TB hTB (CanFundAt.retag Jm hmEq)
+
 lemma app {Γ : Ctx} {A B m n : Tm}
     (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
     (hTB : TB.Expansive)
@@ -8516,6 +8524,20 @@ lemma app {Γ : Ctx} {A B m n : Tm}
       (CanTypeData.subst1 TA TB (CanFundAt.choose Jn).canSemTm) :=
   CanFundAt.ofTermDataAt
     (CanTermDataAt.app TA TB hTB (CanFundAt.choose Jm) (CanFundAt.choose Jn))
+
+lemma appByEquiv {Γ : Ctx} {A B m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    {TP : CanTypeData Γ (.pi A B)} {TN : CanTypeData Γ A}
+    (Jm : CanFundAt Γ m (.pi A B) TP)
+    (Jn : CanFundAt Γ n A TN)
+    (hmEq : CanTypeData.Equiv TP (CanTypeData.kpi TA TB hTB))
+    (hnEq : CanTypeData.Equiv TN TA) :
+    CanFundAt Γ (.app m n) B.[n/]
+      (CanTypeData.subst1 TA TB
+        (CanFundAt.choose (CanFundAt.retag Jn hnEq)).canSemTm) :=
+  CanFundAt.app TA TB hTB
+    (CanFundAt.retag Jm hmEq) (CanFundAt.retag Jn hnEq)
 
 lemma appRetagTarget {Γ : Ctx} {A B m n : Tm}
     (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
@@ -8571,6 +8593,18 @@ lemma tup {Γ : Ctx} {A B m n : Tm}
     CanFundAt Γ (.tup m n) (.sig A B) (CanTypeData.ksig TA TB) :=
   CanFundAt.ofTermDataAt
     (CanTermDataAt.tup TA TB (CanFundAt.choose Jm) (CanFundAt.choose Jn))
+
+lemma tupByEquiv {Γ : Ctx} {A B m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    {TM : CanTypeData Γ A} {TN : CanTypeData Γ B.[m/]}
+    (Jm : CanFundAt Γ m A TM) (Jn : CanFundAt Γ n B.[m/] TN)
+    (hmEq : CanTypeData.Equiv TM TA)
+    (hnEq : CanTypeData.Equiv TN
+      (CanTypeData.subst1 TA TB
+        (CanFundAt.choose (CanFundAt.retag Jm hmEq)).canSemTm)) :
+    CanFundAt Γ (.tup m n) (.sig A B) (CanTypeData.ksig TA TB) :=
+  CanFundAt.tup TA TB
+    (CanFundAt.retag Jm hmEq) (CanFundAt.retag Jn hnEq)
 
 lemma tupExp {Γ : Ctx} {A B m n : Tm} {i iA iB : Nat}
     (TA : CanTypeFundExp Γ A iA)
@@ -8694,6 +8728,25 @@ lemma ite {Γ : Ctx} {A m n1 n2 : Tm}
     (CanTermDataAt.ite TB hTB (CanFundAt.choose Jm)
       (CanFundAt.choose Jn1) (CanFundAt.choose Jn2))
 
+lemma iteByEquiv {Γ : Ctx} {A m n1 n2 : Tm}
+    (TB : CanTypeData (.bool :: Γ) A)
+    (hTB : TB.Expansive)
+    {TM : CanTypeData Γ .bool}
+    {TN1 : CanTypeData Γ A.[.tt/]} {TN2 : CanTypeData Γ A.[.ff/]}
+    (Jm : CanFundAt Γ m .bool TM)
+    (Jn1 : CanFundAt Γ n1 A.[.tt/] TN1)
+    (Jn2 : CanFundAt Γ n2 A.[.ff/] TN2)
+    (hmEq : CanTypeData.Equiv TM (CanTypeData.bool Γ))
+    (hn1Eq : CanTypeData.Equiv TN1
+      (CanTypeData.subst1 (CanTypeData.bool Γ) TB CanTypeData.tt))
+    (hn2Eq : CanTypeData.Equiv TN2
+      (CanTypeData.subst1 (CanTypeData.bool Γ) TB CanTypeData.ff)) :
+    CanFundAt Γ (.ite A m n1 n2) A.[m/]
+      (CanTypeData.subst1 (CanTypeData.bool Γ) TB
+        (CanFundAt.choose (CanFundAt.retag Jm hmEq)).canSemTm) :=
+  CanFundAt.ite TB hTB (CanFundAt.retag Jm hmEq)
+    (CanFundAt.retag Jn1 hn1Eq) (CanFundAt.retag Jn2 hn2Eq)
+
 lemma iteExpJudgment {Γ : Ctx} {A m n1 n2 : Tm} {i : Nat}
     (TA : CanTypeFundExp (.bool :: Γ) A i)
     (Jm : CanFundAt Γ m .bool (CanTypeData.bool Γ))
@@ -8718,6 +8771,17 @@ lemma exf {Γ : Ctx} {A m : Tm}
         (CanFundAt.choose Jm).canSemTm) :=
   CanFundAt.ofTermDataAt
     (CanTermDataAt.exf TB hTB (CanFundAt.choose Jm))
+
+lemma exfByEquiv {Γ : Ctx} {A m : Tm}
+    (TB : CanTypeData (.bot :: Γ) A)
+    (hTB : TB.Expansive)
+    {TM : CanTypeData Γ .bot}
+    (Jm : CanFundAt Γ m .bot TM)
+    (hmEq : CanTypeData.Equiv TM (CanTypeData.bot Γ)) :
+    CanFundAt Γ (.exf A m) A.[m/]
+      (CanTypeData.subst1 (CanTypeData.bot Γ) TB
+        (CanFundAt.choose (CanFundAt.retag Jm hmEq)).canSemTm) :=
+  CanFundAt.exf TB hTB (CanFundAt.retag Jm hmEq)
 
 lemma exfExpJudgment {Γ : Ctx} {A m : Tm} {i : Nat}
     (TA : CanTypeFundExp (.bot :: Γ) A i)
