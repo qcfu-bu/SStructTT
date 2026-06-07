@@ -9229,6 +9229,65 @@ lemma rwSNBranchExpAt {Γ : Ctx} {A B m n a b : Tm} {i iB : Nat}
 
 end CanFund
 
+namespace Typed
+
+noncomputable def piCodomainLevel {Γ : Ctx} {A B T : Tm}
+    (ty : Γ ⊢ .pi A B : T) : Nat :=
+  Classical.choose (Typed.pi_inv ty)
+
+lemma piCodomainTyped {Γ : Ctx} {A B T : Tm}
+    (ty : Γ ⊢ .pi A B : T) :
+    A :: Γ ⊢ B : .ty (Typed.piCodomainLevel ty) :=
+  (Classical.choose_spec (Classical.choose_spec (Typed.pi_inv ty))).1
+
+noncomputable def piDomainLevel {Γ : Ctx} {A B T : Tm}
+    (ty : Γ ⊢ .pi A B : T) : Nat :=
+  Classical.choose (Typed.piCodomainTyped ty).ctx_inv
+
+lemma piDomainTyped {Γ : Ctx} {A B T : Tm}
+    (ty : Γ ⊢ .pi A B : T) :
+    Γ ⊢ A : .ty (Typed.piDomainLevel ty) :=
+  (Classical.choose_spec (Typed.piCodomainTyped ty).ctx_inv).2
+
+noncomputable def sigCodomainLevel {Γ : Ctx} {A B T : Tm}
+    (ty : Γ ⊢ .sig A B : T) : Nat :=
+  Classical.choose (Typed.sig_inv ty)
+
+lemma sigCodomainTyped {Γ : Ctx} {A B T : Tm}
+    (ty : Γ ⊢ .sig A B : T) :
+    A :: Γ ⊢ B : .ty (Typed.sigCodomainLevel ty) :=
+  (Classical.choose_spec (Classical.choose_spec (Typed.sig_inv ty))).1
+
+noncomputable def sigDomainLevel {Γ : Ctx} {A B T : Tm}
+    (ty : Γ ⊢ .sig A B : T) : Nat :=
+  Classical.choose (Typed.sigCodomainTyped ty).ctx_inv
+
+lemma sigDomainTyped {Γ : Ctx} {A B T : Tm}
+    (ty : Γ ⊢ .sig A B : T) :
+    Γ ⊢ A : .ty (Typed.sigDomainLevel ty) :=
+  (Classical.choose_spec (Typed.sigCodomainTyped ty).ctx_inv).2
+
+lemma idnLeftTyped {Γ : Ctx} {A T m n : Tm}
+    (ty : Γ ⊢ .idn A m n : T) :
+    Γ ⊢ m : A :=
+  (Classical.choose_spec (Typed.idn_inv ty)).1
+
+lemma idnRightTyped {Γ : Ctx} {A T m n : Tm}
+    (ty : Γ ⊢ .idn A m n : T) :
+    Γ ⊢ n : A :=
+  (Classical.choose_spec (Typed.idn_inv ty)).2.1
+
+noncomputable def idnDomainLevel {Γ : Ctx} {A T m n : Tm}
+    (ty : Γ ⊢ .idn A m n : T) : Nat :=
+  Classical.choose (Typed.idnLeftTyped ty).validity
+
+lemma idnDomainTyped {Γ : Ctx} {A T m n : Tm}
+    (ty : Γ ⊢ .idn A m n : T) :
+    Γ ⊢ A : .ty (Typed.idnDomainLevel ty) :=
+  Classical.choose_spec (Typed.idnLeftTyped ty).validity
+
+end Typed
+
 noncomputable def Typed.canTypeJudgment_of_can_fund
     (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanFund Γ m A)
     {Γ : Ctx} {A : Tm} {i : Nat} (ty : Γ ⊢ A : .ty i) :
@@ -9237,42 +9296,22 @@ noncomputable def Typed.canTypeJudgment_of_can_fund
   | .ty j =>
       CanTypeJudgment.ofTypeData (CanTypeData.univ Γ j)
   | .pi A B => by
-      let hInv := Typed.pi_inv (A := A) (B := B) (T := .ty i) ty
-      let iB := Classical.choose hInv
-      let hInv' := Classical.choose_spec hInv
-      let _iTy := Classical.choose hInv'
-      let tyB : A :: Γ ⊢ B : .ty iB := (Classical.choose_spec hInv').1
-      let hCtx := tyB.ctx_inv
-      let iA := Classical.choose hCtx
-      let tyA : Γ ⊢ A : .ty iA := (Classical.choose_spec hCtx).2
       exact CanTypeFundExp.piJudgmentAt (i := i)
-        (CanTypeFundExp.ofCanFund (fund tyA))
-        (CanTypeFundExp.ofCanFund (fund tyB))
+        (CanTypeFundExp.ofCanFund (fund (Typed.piDomainTyped ty)))
+        (CanTypeFundExp.ofCanFund (fund (Typed.piCodomainTyped ty)))
   | .sig A B => by
-      let hInv := Typed.sig_inv (A := A) (B := B) (T := .ty i) ty
-      let iB := Classical.choose hInv
-      let hInv' := Classical.choose_spec hInv
-      let _iTy := Classical.choose hInv'
-      let tyB : A :: Γ ⊢ B : .ty iB := (Classical.choose_spec hInv').1
-      let hCtx := tyB.ctx_inv
-      let iA := Classical.choose hCtx
-      let tyA : Γ ⊢ A : .ty iA := (Classical.choose_spec hCtx).2
       exact CanTypeFundExp.sigJudgmentAt (i := i)
-        (CanTypeFundExp.ofCanFund (fund tyA))
-        (CanTypeFundExp.ofCanFund (fund tyB))
+        (CanTypeFundExp.ofCanFund (fund (Typed.sigDomainTyped ty)))
+        (CanTypeFundExp.ofCanFund (fund (Typed.sigCodomainTyped ty)))
   | .bool =>
       CanTypeJudgment.ofTypeData (CanTypeData.bool Γ)
   | .bot =>
       CanTypeJudgment.ofTypeData (CanTypeData.bot Γ)
   | .idn A m n => by
-      let hInv := Typed.idn_inv (A := A) (m := m) (n := n) (T := .ty i) ty
-      let _iTy := Classical.choose hInv
-      let hSpec := Classical.choose_spec hInv
-      let tym : Γ ⊢ m : A := hSpec.1
-      let tyn : Γ ⊢ n : A := hSpec.2.1
-      let hTyA := tym.validity
-      let iA := Classical.choose hTyA
-      let tyA : Γ ⊢ A : .ty iA := Classical.choose_spec hTyA
+      let tym : Γ ⊢ m : A := Typed.idnLeftTyped ty
+      let tyn : Γ ⊢ n : A := Typed.idnRightTyped ty
+      let iA := Typed.idnDomainLevel ty
+      let tyA : Γ ⊢ A : .ty iA := Typed.idnDomainTyped ty
       let hA : CanSemTyped Γ A (.ty iA) := CanFund.toCanSemTyped (fund tyA)
       let TA : CanTypeData Γ A := CanTypeData.ofCanSemTypedType hA
       have hm : TA.CanSemTm m := by
