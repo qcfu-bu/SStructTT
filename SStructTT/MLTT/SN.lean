@@ -4345,6 +4345,17 @@ lemma convType_equiv_left {Γ : Ctx} {A B : Tm}
     SemTypeData.Equiv (TA.convType hB) TA :=
   SemTypeData.Equiv.sym (SemTypeData.convType_equiv_right TA hB)
 
+lemma convType_equiv_of_equiv {Γ : Ctx} {A B C D : Tm}
+    {TA : SemTypeData Γ A} {TB : SemTypeData Γ B}
+    (hEq : SemTypeData.Equiv TA TB)
+    (hC : ∀ {Δ : DCandCtx} (_hΓ : SemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step C.[σ])
+    (hD : ∀ {Δ : DCandCtx} (_hΓ : SemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step D.[σ]) :
+    SemTypeData.Equiv (TA.convType hC) (TB.convType hD) := by
+  intro Δ hΓ σ hσ t
+  exact hEq hΓ σ hσ t
+
 noncomputable def lookup {Γ : Ctx} {x : Var} {A : Tm}
     (hs : Has Γ x A) : SemTypeData Γ A where
   interp hΓ := Classical.choose (SemCtx.var hΓ hs)
@@ -5589,6 +5600,17 @@ lemma convType_equiv_left {Γ : Ctx} {A B : Tm}
     CanTypeData.Equiv (TA.convType hB) TA :=
   CanTypeData.Equiv.sym (CanTypeData.convType_equiv_right TA hB)
 
+lemma convType_equiv_of_equiv {Γ : Ctx} {A B C D : Tm}
+    {TA : CanTypeData Γ A} {TB : CanTypeData Γ B}
+    (hEq : CanTypeData.Equiv TA TB)
+    (hC : ∀ {Δ : DCandCtx} (_hΓ : CanSemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step C.[σ])
+    (hD : ∀ {Δ : DCandCtx} (_hΓ : CanSemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step D.[σ]) :
+    CanTypeData.Equiv (TA.convType hC) (TB.convType hD) := by
+  intro Δ hΓ σ hσ t
+  exact hEq hΓ σ hσ t
+
 def ofSemTypeData {Γ : Ctx} {A : Tm} (TA : SemTypeData Γ A) :
     CanTypeData Γ A where
   interp hΓ := TA.interp hΓ.semCtx
@@ -6533,6 +6555,15 @@ def retag {Γ : Ctx} {m A : Tm} {TA TB : CanTypeData Γ A}
   CanTermDataAt.ofTermData TB J.termData
     (CanTypeData.Equiv.trans J.equiv hEq)
 
+def convType {Γ : Ctx} {A B m : Tm} {TA : CanTypeData Γ A}
+    (J : CanTermDataAt Γ m A TA)
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : CanSemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ]) :
+    CanTermDataAt Γ m B (TA.convType hB) :=
+  CanTermDataAt.ofTermData (TA.convType hB)
+    (J.termData.convType hB)
+    (CanTypeData.convType_equiv_of_equiv J.equiv hB hB)
+
 noncomputable def weaken {Γ : Ctx} {m A B : Tm} {TA : CanTypeData Γ A}
     (J : CanTermDataAt Γ m A TA) :
     CanTermDataAt (B :: Γ) m.[shift 1] A.[shift 1]
@@ -7014,6 +7045,35 @@ lemma semTm {Γ : Ctx} {m A : Tm} {TA : SemTypeData Γ A}
     TA.SemTm m :=
   SemTypeData.Equiv.semTm (SemFundAt.choose J).property
     (SemFundAt.choose J).val.semTm
+
+lemma retag {Γ : Ctx} {m A : Tm} {TA TB : SemTypeData Γ A}
+    (J : SemFundAt Γ m A TA)
+    (hEq : SemTypeData.Equiv TA TB) :
+    SemFundAt Γ m A TB :=
+  SemFundAt.ofTermData (SemFundAt.choose J).val
+    (SemTypeData.Equiv.trans (SemFundAt.choose J).property hEq)
+
+lemma convType {Γ : Ctx} {A B m : Tm} {TA : SemTypeData Γ A}
+    (J : SemFundAt Γ m A TA)
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : SemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ]) :
+    SemFundAt Γ m B (TA.convType hB) :=
+  SemFundAt.ofTermData ((SemFundAt.choose J).val.convType hB)
+    (SemTypeData.convType_equiv_of_equiv
+      (SemFundAt.choose J).property hB hB)
+
+lemma convExactTarget {Γ : Ctx} {A B m : Tm}
+    (TB : SemTypeData Γ B)
+    (hA : ∀ {Δ : DCandCtx} (_hΓ : SemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step A.[σ])
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : SemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ])
+    (J : SemFundAt Γ m A (TB.convType hA)) :
+    SemFundAt Γ m B TB :=
+  SemFundAt.retag (SemFundAt.convType J hB)
+    (SemTypeData.Equiv.trans
+      (SemTypeData.convType_equiv_left (TB.convType hA) hB)
+      (SemTypeData.convType_equiv_left TB hA))
 
 end SemFundAt
 
@@ -7901,6 +7961,26 @@ lemma retag {Γ : Ctx} {m A : Tm} {TA TB : CanTypeData Γ A}
     (hEq : CanTypeData.Equiv TA TB) :
     CanFundAt Γ m A TB :=
   CanFundAt.ofTermDataAt ((CanFundAt.choose J).retag hEq)
+
+lemma convType {Γ : Ctx} {A B m : Tm} {TA : CanTypeData Γ A}
+    (J : CanFundAt Γ m A TA)
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : CanSemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ]) :
+    CanFundAt Γ m B (TA.convType hB) :=
+  CanFundAt.ofTermDataAt ((CanFundAt.choose J).convType hB)
+
+lemma convExactTarget {Γ : Ctx} {A B m : Tm}
+    (TB : CanTypeData Γ B)
+    (hA : ∀ {Δ : DCandCtx} (_hΓ : CanSemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step A.[σ])
+    (hB : ∀ {Δ : DCandCtx} (_hΓ : CanSemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step B.[σ])
+    (J : CanFundAt Γ m A (TB.convType hA)) :
+    CanFundAt Γ m B TB :=
+  CanFundAt.retag (CanFundAt.convType J hB)
+    (CanTypeData.Equiv.trans
+      (CanTypeData.convType_equiv_left (TB.convType hA) hB)
+      (CanTypeData.convType_equiv_left TB hA))
 
 lemma srt {Γ : Ctx} (i : Nat) :
     CanFundAt Γ (.ty i) (.ty (i + 1)) (CanTypeData.univ Γ (i + 1)) :=
@@ -8897,6 +8977,30 @@ theorem Typed.normalize_of_semantic
   rcases ty.toWf.semCtx_of_semantic fund with ⟨Δ, hΓ⟩
   exact SemTyped.sn hΓ (fund ty)
 
+theorem Typed.normalize_of_sem_fund_at
+    {Γ : Ctx} {m A : Tm}
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> SemTypeJudgment Γ A i)
+    (fund : ∀ {Γ m A i} (_ty : Γ ⊢ m : A),
+      (TA : SemTypeJudgment Γ A i) -> SemFundAt Γ m A TA.typeData) :
+    Γ ⊢ m : A -> SN Step m := by
+  apply Typed.normalize_of_semantic
+  intro Γ m A ty
+  rcases ty.validity with ⟨i, tyA⟩
+  exact SemFund.toSemTyped
+    (SemFundAt.toSemFund (fund ty (typeFund tyA)))
+
+theorem Typed.normalize_of_sem_fund_at_validity
+    {Γ : Ctx} {m A : Tm}
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> SemTypeJudgment Γ A i)
+    (fund : ∀ {Γ m A i} (_ty : Γ ⊢ m : A) (tyA : Γ ⊢ A : .ty i),
+      SemFundAt Γ m A (typeFund tyA).typeData) :
+    Γ ⊢ m : A -> SN Step m := by
+  apply Typed.normalize_of_semantic
+  intro Γ m A ty
+  rcases ty.validity with ⟨i, tyA⟩
+  exact SemFund.toSemTyped
+    (SemFundAt.toSemFund (fund ty tyA))
+
 theorem Typed.normalize_of_can_semantic
     {Γ : Ctx} {m A : Tm}
     (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> SemTypeData Γ A)
@@ -8925,6 +9029,34 @@ theorem Typed.normalize_of_can_term_data_nonempty
   exact Typed.normalize_of_can_term_data
     (fun ty => CanTypeFund.choose (typeFund ty))
     (fun ty => CanFund.choose (fund ty))
+
+theorem Typed.normalize_of_can_fund_at
+    {Γ : Ctx} {m A : Tm}
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeJudgment Γ A i)
+    (fund : ∀ {Γ m A i} (_ty : Γ ⊢ m : A),
+      (TA : CanTypeJudgment Γ A i) -> CanFundAt Γ m A TA.typeData) :
+    Γ ⊢ m : A -> SN Step m := by
+  intro ty
+  rcases ty.toWf.canSemCtx_of_can_type_data
+      (fun tyA => (typeFund tyA).typeData) with ⟨⟨Δ, hΓ⟩⟩
+  rcases ty.validity with ⟨i, tyA⟩
+  exact CanSemTyped.sn hΓ
+    (CanFund.toCanSemTyped
+      (CanFundAt.toCanFund (fund ty (typeFund tyA))))
+
+theorem Typed.normalize_of_can_fund_at_validity
+    {Γ : Ctx} {m A : Tm}
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeJudgment Γ A i)
+    (fund : ∀ {Γ m A i} (_ty : Γ ⊢ m : A) (tyA : Γ ⊢ A : .ty i),
+      CanFundAt Γ m A (typeFund tyA).typeData) :
+    Γ ⊢ m : A -> SN Step m := by
+  intro ty
+  rcases ty.toWf.canSemCtx_of_can_type_data
+      (fun tyA => (typeFund tyA).typeData) with ⟨⟨Δ, hΓ⟩⟩
+  rcases ty.validity with ⟨i, tyA⟩
+  exact CanSemTyped.sn hΓ
+    (CanFund.toCanSemTyped
+      (CanFundAt.toCanFund (fund ty tyA)))
 
 theorem Typed.normalize_of_can_exp_term_data_nonempty
     {Γ : Ctx} {m A : Tm}
