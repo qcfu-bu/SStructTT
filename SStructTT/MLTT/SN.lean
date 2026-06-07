@@ -6052,6 +6052,18 @@ noncomputable def ksig {Γ : Ctx} {A B : Tm}
     change (TypeInterp.ksig IA (TB.interp hΓA) (CanSemCtx.weakens hΓ)).Weakens
     exact TypeInterp.ksig_weakens IA (TB.interp hΓA) (CanSemCtx.weakens hΓ)
 
+lemma pi_type {Γ : Ctx} {A B : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive) (i : Nat) :
+    (CanTypeData.univ Γ i).CanSemTm (.pi A B) :=
+  CanTypeData.type (CanTypeData.kpi TA TB hTB) i
+
+lemma sig_type {Γ : Ctx} {A B : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (i : Nat) :
+    (CanTypeData.univ Γ i).CanSemTm (.sig A B) :=
+  CanTypeData.type (CanTypeData.ksig TA TB) i
+
 noncomputable def subst1 {Γ : Ctx} {A B n : Tm}
     (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
     (hn : TA.CanSemTm n) : CanTypeData Γ B.[n/] where
@@ -6753,10 +6765,23 @@ noncomputable def pi {Γ : Ctx} {A B : Tm} {iA iB : Nat}
     CanTypeJudgment Γ (.pi A B) (max iA iB) :=
   CanTypeJudgment.ofTypeData (CanTypeData.kpi TA.typeData TB.typeData hTB)
 
+noncomputable def piAt {Γ : Ctx} {A B : Tm} {i iA iB : Nat}
+    (TA : CanTypeJudgment Γ A iA)
+    (TB : CanTypeJudgment (A :: Γ) B iB)
+    (hTB : TB.typeData.Expansive) :
+    CanTypeJudgment Γ (.pi A B) i :=
+  CanTypeJudgment.ofTypeData (CanTypeData.kpi TA.typeData TB.typeData hTB)
+
 noncomputable def sig {Γ : Ctx} {A B : Tm} {iA iB : Nat}
     (TA : CanTypeJudgment Γ A iA)
     (TB : CanTypeJudgment (A :: Γ) B iB) :
     CanTypeJudgment Γ (.sig A B) (max iA iB) :=
+  CanTypeJudgment.ofTypeData (CanTypeData.ksig TA.typeData TB.typeData)
+
+noncomputable def sigAt {Γ : Ctx} {A B : Tm} {i iA iB : Nat}
+    (TA : CanTypeJudgment Γ A iA)
+    (TB : CanTypeJudgment (A :: Γ) B iB) :
+    CanTypeJudgment Γ (.sig A B) i :=
   CanTypeJudgment.ofTypeData (CanTypeData.ksig TA.typeData TB.typeData)
 
 noncomputable def idn {Γ : Ctx} {A m n : Tm} {i : Nat}
@@ -7689,12 +7714,29 @@ lemma pi {Γ : Ctx} {A B : Tm} {iA iB : Nat}
   CanTypeFund.ofTypeJudgment
     (CanTypeJudgment.pi (CanTypeFund.choose TA) (CanTypeFund.choose TB) hTB)
 
+lemma piAt {Γ : Ctx} {A B : Tm} {i iA iB : Nat}
+    (TA : CanTypeFund Γ A iA)
+    (TB : CanTypeFund (A :: Γ) B iB)
+    (hTB : (CanTypeFund.choose TB).typeData.Expansive) :
+    CanTypeFund Γ (.pi A B) i :=
+  CanTypeFund.ofTypeJudgment
+    (CanTypeJudgment.piAt (i := i)
+      (CanTypeFund.choose TA) (CanTypeFund.choose TB) hTB)
+
 lemma sig {Γ : Ctx} {A B : Tm} {iA iB : Nat}
     (TA : CanTypeFund Γ A iA)
     (TB : CanTypeFund (A :: Γ) B iB) :
     CanTypeFund Γ (.sig A B) (max iA iB) :=
   CanTypeFund.ofTypeJudgment
     (CanTypeJudgment.sig (CanTypeFund.choose TA) (CanTypeFund.choose TB))
+
+lemma sigAt {Γ : Ctx} {A B : Tm} {i iA iB : Nat}
+    (TA : CanTypeFund Γ A iA)
+    (TB : CanTypeFund (A :: Γ) B iB) :
+    CanTypeFund Γ (.sig A B) i :=
+  CanTypeFund.ofTypeJudgment
+    (CanTypeJudgment.sigAt (i := i)
+      (CanTypeFund.choose TA) (CanTypeFund.choose TB))
 
 lemma idnByEquiv {Γ : Ctx} {A m n : Tm} {i : Nat}
     (TA : CanTypeFund Γ A i)
@@ -7835,6 +7877,13 @@ noncomputable def choose {Γ : Ctx} {m A : Tm} {TA : CanTypeData Γ A}
 lemma ofTermDataAt {Γ : Ctx} {m A : Tm} {TA : CanTypeData Γ A}
     (J : CanTermDataAt Γ m A TA) : CanFundAt Γ m A TA :=
   ⟨J⟩
+
+lemma ofCanFundEquiv {Γ : Ctx} {m A : Tm} {TA : CanTypeData Γ A}
+    (J : CanFund Γ m A)
+    (hEq : CanTypeData.Equiv (CanFund.choose J).typeData TA) :
+    CanFundAt Γ m A TA :=
+  CanFundAt.ofTermDataAt
+    (CanTermDataAt.ofTermData TA (CanFund.choose J) hEq)
 
 lemma weaken {Γ : Ctx} {m A B : Tm} {TA : CanTypeData Γ A}
     (J : CanFundAt Γ m A TA) :
@@ -8139,6 +8188,52 @@ lemma exfSN {Γ : Ctx} {A m : Tm} {i : Nat}
     exact sn_exf snA
       (CanSemTyped.sn_subst (CanFund.toCanSemTyped Jm) hΓ σ hσ)
 
+lemma rwSN {Γ : Ctx} {A B m n a b : Tm} {i : Nat}
+    (JA : CanFund
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A (.ty i))
+    (Jm : CanFund Γ m A.[.rfl a,a/])
+    (Jn : CanFund Γ n (.idn B a b)) :
+    CanFund Γ (.rw A m n) A.[n,b/] := by
+  let hIdTySN : ∀ {Δ : DCandCtx} (_hΓ : CanSemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step (.idn B a b).[σ] := by
+    intro Δ hΓ σ hσ
+    exact (CanFund.choose Jn).typeData.interp hΓ |>.type_sn σ hσ
+  let TB : CanTypeData Γ B :=
+    { interp := fun hΓ =>
+        TypeInterp.const _ B Candidate.snCandidate
+          (fun σ hσ => by
+            exact sn_idn_type (hIdTySN hΓ σ hσ))
+      weakens := fun _hΓ =>
+        TypeInterp.const_weakens Candidate.snCandidate_weakens }
+  let TA : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A :=
+    CanTypeData.ofCanSemTypedType (CanFund.toCanSemTyped JA)
+  let JaData : CanTermDataAt Γ a B TB :=
+    CanTermDataAt.ofTypeData TB (by
+      intro Δ hΓ σ hσ
+      change SN Step a.[σ]
+      exact sn_idn_left (hIdTySN hΓ σ hσ))
+  let JbData : CanTermDataAt Γ b B TB :=
+    CanTermDataAt.ofTypeData TB (by
+      intro Δ hΓ σ hσ
+      change SN Step b.[σ]
+      exact sn_idn_right (hIdTySN hΓ σ hσ))
+  let JnData : CanTermDataAt Γ n (.idn B a b)
+      (CanTypeData.idn TB JaData.canSemTm JbData.canSemTm) :=
+    CanTermDataAt.ofTypeData
+      (CanTypeData.idn TB JaData.canSemTm JbData.canSemTm) (by
+        intro Δ hΓ σ hσ
+        change SN Step n.[σ]
+        exact CanSemTyped.sn_subst (CanFund.toCanSemTyped Jn) hΓ σ hσ)
+  let JmData : CanTermDataAt Γ m A.[.rfl a,a/]
+      (CanTypeData.idBranch TB JaData.canSemTm TA) :=
+    CanTermDataAt.ofTypeData (CanTypeData.idBranch TB JaData.canSemTm TA) (by
+      intro Δ hΓ σ hσ
+      change SN Step m.[σ]
+      exact CanSemTyped.sn_subst (CanFund.toCanSemTyped Jm) hΓ σ hσ)
+  exact CanFund.ofTermData
+    (CanTermData.rwSNBranch (i := i) TB JaData JbData JnData TA JmData)
+
 lemma rfl {Γ : Ctx} {A m : Tm} :
     CanFund Γ m A -> CanFund Γ (.rfl m) (.idn A m m) := by
   intro J
@@ -8196,6 +8291,18 @@ lemma appExp {Γ : Ctx} {A B m n : Tm} {iA iB : Nat}
     CanFund Γ (.app m n) B.[n/] :=
   CanFund.appAt (CanTypeFundExp.typeData TA) (CanTypeFundExp.typeData TB)
     (CanTypeFundExp.expansive TB) Jm Jn
+
+lemma appByEquiv {Γ : Ctx} {A B m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (Jm : CanFund Γ m (.pi A B)) (Jn : CanFund Γ n A)
+    (hmEq : CanTypeData.Equiv (CanFund.choose Jm).typeData
+      (CanTypeData.kpi TA TB hTB))
+    (hnEq : CanTypeData.Equiv (CanFund.choose Jn).typeData TA) :
+    CanFund Γ (.app m n) B.[n/] :=
+  CanFund.ofTermData
+    (CanTermData.app TA TB hTB (CanFund.choose Jm) (CanFund.choose Jn)
+      hmEq hnEq)
 
 lemma appRetagByEquiv {Γ : Ctx} {P A B m n : Tm} {iP : Nat}
     (TP : CanTypeFund Γ (.pi A B) iP)
@@ -8277,6 +8384,21 @@ lemma prjSNBranchAt {Γ : Ctx} {A B C m n : Tm} {iC : Nat}
   CanFund.ofTermData
     (CanTermData.prjSNBranch (iC := iC) TA TB TC
       (CanFundAt.choose Jm) (CanFund.choose Jn))
+
+lemma prjSNBranchByEquiv {Γ : Ctx} {A B C m n : Tm} {iC : Nat}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (TC : CanTypeData (.sig A B :: Γ) C)
+    (Jm : CanFund Γ m (.sig A B))
+    (Jn : CanFund (B :: A :: Γ) n
+      C.[.tup (.var 1) (.var 0) .: shift 2])
+    (hmEq : CanTypeData.Equiv (CanFund.choose Jm).typeData
+      (CanTypeData.ksig TA TB)) :
+    CanFund Γ (.prj C m n) C.[m/] :=
+  CanFund.ofTermData
+    (CanTermData.prjSNBranch (iC := iC) TA TB TC
+      (CanTermDataAt.ofTermData (CanTypeData.ksig TA TB)
+        (CanFund.choose Jm) hmEq)
+      (CanFund.choose Jn))
 
 lemma rwSNBranchAt {Γ : Ctx} {A B m n a b : Tm} {i : Nat}
     (TB : CanTypeData Γ B)
