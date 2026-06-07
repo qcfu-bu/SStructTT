@@ -8361,6 +8361,18 @@ lemma ofCanFundEquiv {Γ : Ctx} {m A : Tm} {TA : CanTypeData Γ A}
   CanFundAt.ofTermDataAt
     (CanTermDataAt.ofTermData TA (CanFund.choose J) hEq)
 
+lemma ofCanFundWeakTarget {Γ : Ctx} {m A : Tm} {i : Nat}
+    (Jm : CanFund Γ m A) (JA : CanFund Γ A (.ty i)) :
+    CanFundAt Γ m A
+      (CanTypeJudgment.ofTermDataWeak (CanFund.choose JA)).typeData :=
+  CanFundAt.ofTermDataAt
+    (CanTermDataAt.ofTypeData
+      (CanTypeJudgment.ofTermDataWeak (CanFund.choose JA)).typeData
+      (by
+        intro Δ hΓ σ hσ
+        change SN Step m.[σ]
+        exact CanSemTyped.sn_subst (CanFund.toCanSemTyped Jm) hΓ σ hσ))
+
 lemma weaken {Γ : Ctx} {m A B : Tm} {TA : CanTypeData Γ A}
     (J : CanFundAt Γ m A TA) :
     CanFundAt (B :: Γ) m.[shift 1] A.[shift 1]
