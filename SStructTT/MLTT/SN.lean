@@ -7066,6 +7066,21 @@ noncomputable def idnByEquiv {Γ : Ctx} {A m n : Tm} {i : Nat}
     CanTypeJudgment Γ (.idn A m n) i :=
   CanTypeJudgment.idn TA Jm.canSemTm Jn.canSemTm
 
+noncomputable def idBranch {Γ : Ctx} {A B a : Tm} {i : Nat}
+    (TB : CanTypeData Γ B) (ha : TB.CanSemTm a)
+    (TA : CanTypeJudgment
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A i) :
+    CanTypeJudgment Γ A.[.rfl a,a/] i :=
+  CanTypeJudgment.ofTypeData (CanTypeData.idBranch TB ha TA.typeData)
+
+noncomputable def idTarget {Γ : Ctx} {A B a b n : Tm} {i : Nat}
+    (TB : CanTypeData Γ B) (ha : TB.CanSemTm a) (hb : TB.CanSemTm b)
+    (hn : (CanTypeData.idn TB ha hb).CanSemTm n)
+    (TA : CanTypeJudgment
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A i) :
+    CanTypeJudgment Γ A.[n,b/] i :=
+  CanTypeJudgment.ofTypeData (CanTypeData.idTarget TB ha hb hn TA.typeData)
+
 end CanTypeJudgment
 
 inductive FundSemCtxCore : ∀ (Γ : Ctx) (Δ : DCandCtx), CanSemCtx Γ Δ -> Type where
@@ -8191,6 +8206,29 @@ noncomputable def idnJudgment {Γ : Ctx} {A m n : Tm} {i : Nat}
     CanTypeJudgment Γ (.idn A m n) i :=
   CanTypeJudgment.idnByEquiv
     (CanTypeFundExp.judgment TA) Jm Jn
+
+noncomputable def idBranchJudgment {Γ : Ctx} {A B a : Tm} {i iB : Nat}
+    (TB : CanTypeFundExp Γ B iB)
+    (Ja : CanFundAt Γ a B (CanTypeFundExp.typeData TB))
+    (TA : CanTypeFundExp
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A i) :
+    CanTypeJudgment Γ A.[.rfl a,a/] i :=
+  CanTypeJudgment.idBranch (CanTypeFundExp.typeData TB)
+    (Classical.choice Ja).canSemTm (CanTypeFundExp.judgment TA)
+
+noncomputable def idTargetJudgment {Γ : Ctx} {A B a b n : Tm} {i iB : Nat}
+    (TB : CanTypeFundExp Γ B iB)
+    (Ja : CanFundAt Γ a B (CanTypeFundExp.typeData TB))
+    (Jb : CanFundAt Γ b B (CanTypeFundExp.typeData TB))
+    (Jn : CanFundAt Γ n (.idn B a b)
+      (CanTypeFundExp.idnJudgment TB
+        (Classical.choice Ja) (Classical.choice Jb)).typeData)
+    (TA : CanTypeFundExp
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A i) :
+    CanTypeJudgment Γ A.[n,b/] i :=
+  CanTypeJudgment.idTarget (CanTypeFundExp.typeData TB)
+    (Classical.choice Ja).canSemTm (Classical.choice Jb).canSemTm
+    (Classical.choice Jn).canSemTm (CanTypeFundExp.judgment TA)
 
 lemma convWeak {Γ : Ctx} {A B : Tm} {i j : Nat} :
     A === B ->
