@@ -7198,6 +7198,130 @@ lemma var {Γ : Ctx} {Δ : DCandCtx} {x : Var} {A : Tm} :
 
 end FundSemCtx
 
+inductive TypeFundCtxCore : Ctx -> Type where
+  | nil : TypeFundCtxCore []
+  | cons {Γ : Ctx} {A : Tm} {i : Nat}
+      (tyA : Γ ⊢ A : .ty i)
+      (hCore : TypeFundCtxCore Γ) :
+    TypeFundCtxCore (A :: Γ)
+
+namespace TypeFundCtxCore
+
+noncomputable def interpCanCtx
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A)
+    {Γ : Ctx} :
+    TypeFundCtxCore Γ -> Σ Δ : DCandCtx, CanSemCtx Γ Δ
+  | .nil => ⟨DCandCtx.empty, CanSemCtx.nil⟩
+  | .cons tyA hCore =>
+      let tail := interpCanCtx typeFund hCore
+      let I := (typeFund tyA).interp tail.2
+      ⟨DCandCtx.extend I,
+        CanSemCtx.consInterp tail.2 I ((typeFund tyA).weakens tail.2)⟩
+
+noncomputable def interp
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A)
+    {Γ : Ctx}
+    (hCore : TypeFundCtxCore Γ) : DCandCtx :=
+  (TypeFundCtxCore.interpCanCtx typeFund hCore).1
+
+noncomputable def canCtx
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A)
+    {Γ : Ctx}
+    (hCore : TypeFundCtxCore Γ) :
+    CanSemCtx Γ (TypeFundCtxCore.interp typeFund hCore) :=
+  (TypeFundCtxCore.interpCanCtx typeFund hCore).2
+
+lemma exists_of_wf :
+    ∀ {Γ : Ctx}, Γ ⊢ -> Nonempty (TypeFundCtxCore Γ)
+  | [], Wf.nil => ⟨TypeFundCtxCore.nil⟩
+  | A :: Γ, Wf.cons tyA wf => by
+      rcases TypeFundCtxCore.exists_of_wf wf with ⟨hCore⟩
+      exact ⟨TypeFundCtxCore.cons tyA hCore⟩
+
+inductive Lookup
+    {typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A}
+    : ∀ {Γ : Ctx} {x : Var} {A : Tm},
+      TypeFundCtxCore Γ -> Has Γ x A -> CanTypeData Γ A -> Prop where
+  | zero {Γ : Ctx} {A : Tm} {i : Nat}
+      (tyA : Γ ⊢ A : .ty i) (hTail : TypeFundCtxCore Γ) :
+    Lookup (TypeFundCtxCore.cons tyA hTail) (Has.zero Γ A)
+      (CanTypeData.weaken (B := A) (typeFund tyA))
+  | succ {Γ : Ctx} {A B : Tm} {x : Var} {hs : Has Γ x A}
+      {hTail : TypeFundCtxCore Γ} {TA : CanTypeData Γ A}
+      {i : Nat} (tyB : Γ ⊢ B : .ty i) :
+    Lookup hTail hs TA ->
+    Lookup (TypeFundCtxCore.cons tyB hTail) (Has.succ Γ A B x hs)
+      (CanTypeData.weaken (B := B) TA)
+
+namespace Lookup
+
+lemma semTm
+    {typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A}
+    {Γ : Ctx} {x : Var} {A : Tm}
+    {hCore : TypeFundCtxCore Γ} {hs : Has Γ x A}
+    {TA : CanTypeData Γ A} :
+    TypeFundCtxCore.Lookup (typeFund := typeFund) hCore hs TA ->
+    (TA.interp (TypeFundCtxCore.canCtx typeFund hCore)).SemTm (.var x) := by
+  intro h
+  induction h with
+  | zero tyA hTail =>
+    change (TypeInterp.weakenCtx ((typeFund tyA).interp _)
+      ((typeFund tyA).interp _)).SemTm (.var 0)
+    exact TypeInterp.semVarZero ((typeFund tyA).interp _)
+  | succ tyB _ ih =>
+    change (TypeInterp.weakenCtx _ ((typeFund tyB).interp _)).SemTm (.var (_ + 1))
+    exact TypeInterp.semVarSucc _ _ ih
+
+end Lookup
+
+lemma exists_lookup
+    {typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A}
+    {Γ : Ctx} {x : Var} {A : Tm}
+    (hCore : TypeFundCtxCore Γ) (hs : Has Γ x A) :
+    ∃ TA : CanTypeData Γ A,
+      TypeFundCtxCore.Lookup (typeFund := typeFund) hCore hs TA := by
+  induction hs with
+  | zero Γ A =>
+    cases hCore with
+    | cons tyA hTail =>
+      exact ⟨CanTypeData.weaken (B := A) (typeFund tyA),
+        TypeFundCtxCore.Lookup.zero tyA hTail⟩
+  | succ Γ A B x hs ih =>
+    cases hCore with
+    | cons tyB hTail =>
+      rcases ih hTail with ⟨TA, hTA⟩
+      exact ⟨CanTypeData.weaken (B := B) TA,
+        TypeFundCtxCore.Lookup.succ tyB hTA⟩
+
+noncomputable def lookupTypeData
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A)
+    {Γ : Ctx} {x : Var} {A : Tm}
+    (hCore : TypeFundCtxCore Γ)
+    (hs : Has Γ x A) : CanTypeData Γ A :=
+  Classical.choose
+    (TypeFundCtxCore.exists_lookup (typeFund := typeFund) hCore hs)
+
+lemma lookup_spec
+    {typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A}
+    {Γ : Ctx} {x : Var} {A : Tm}
+    (hCore : TypeFundCtxCore Γ) (hs : Has Γ x A) :
+    TypeFundCtxCore.Lookup (typeFund := typeFund) hCore hs
+      (TypeFundCtxCore.lookupTypeData typeFund hCore hs) :=
+  Classical.choose_spec
+    (TypeFundCtxCore.exists_lookup (typeFund := typeFund) hCore hs)
+
+lemma lookup_var
+    {typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A}
+    {Γ : Ctx} {x : Var} {A : Tm}
+    (hCore : TypeFundCtxCore Γ)
+    (hs : Has Γ x A) :
+    ((TypeFundCtxCore.lookupTypeData typeFund hCore hs).interp
+      (TypeFundCtxCore.canCtx typeFund hCore)).SemTm (.var x) :=
+  TypeFundCtxCore.Lookup.semTm
+    (TypeFundCtxCore.lookup_spec (typeFund := typeFund) hCore hs)
+
+end TypeFundCtxCore
+
 structure FundTermData (Γ : Ctx) (m A : Tm) where
   typeData : CanTypeData Γ A
   fundSemTm : ∀ {Δ : DCandCtx} (hΓ : FundSemCtx Γ Δ),
@@ -9988,6 +10112,23 @@ theorem Typed.normalize_of_can_fund_at_with_can_fund_type
   Typed.normalize_of_can_fund_at_validity
     (fun tyA => Typed.canTypeJudgment_of_can_fund fundWeak tyA)
     fundAt
+
+theorem Typed.normalize_of_type_fund_ctx
+    {Γ : Ctx} {m A : Tm}
+    (typeFund : ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A)
+    (fund : ∀ {Γ m A i} (_ty : Γ ⊢ m : A) (tyA : Γ ⊢ A : .ty i),
+      ∀ hCore : TypeFundCtxCore Γ,
+        ((typeFund tyA).interp
+          (TypeFundCtxCore.canCtx typeFund hCore)).SemTm m) :
+    Γ ⊢ m : A -> SN Step m := by
+  intro ty
+  rcases ty.validity with ⟨i, tyA⟩
+  rcases TypeFundCtxCore.exists_of_wf ty.toWf with ⟨hCore⟩
+  let hΓ := TypeFundCtxCore.canCtx typeFund hCore
+  have hm := fund ty tyA hCore
+  have hsn := ((typeFund tyA).interp hΓ).semTm_sn hm ids
+    (CanSemCtx.ids_valid hΓ)
+  simpa [Tm.subst_id] using hsn
 
 theorem Typed.normalize_of_can_exp_term_data_nonempty
     {Γ : Ctx} {m A : Tm}
