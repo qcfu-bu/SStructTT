@@ -9286,6 +9286,27 @@ lemma idnDomainTyped {Γ : Ctx} {A T m n : Tm}
     Γ ⊢ A : .ty (Typed.idnDomainLevel ty) :=
   Classical.choose_spec (Typed.idnLeftTyped ty).validity
 
+noncomputable def idnTypeDataOfCanFund
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanFund Γ m A)
+    {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (ty : Γ ⊢ .idn A m n : .ty i) :
+    CanTypeData Γ (.idn A m n) := by
+  let tym : Γ ⊢ m : A := Typed.idnLeftTyped ty
+  let tyn : Γ ⊢ n : A := Typed.idnRightTyped ty
+  let iA := Typed.idnDomainLevel ty
+  let tyA : Γ ⊢ A : .ty iA := Typed.idnDomainTyped ty
+  let hA : CanSemTyped Γ A (.ty iA) := CanFund.toCanSemTyped (fund tyA)
+  let TA : CanTypeData Γ A := CanTypeData.ofCanSemTypedType hA
+  have hm : TA.CanSemTm m := by
+    intro Δ hΓ σ hσ
+    change SN Step m.[σ]
+    exact CanSemTyped.sn_subst (CanFund.toCanSemTyped (fund tym)) hΓ σ hσ
+  have hn : TA.CanSemTm n := by
+    intro Δ hΓ σ hσ
+    change SN Step n.[σ]
+    exact CanSemTyped.sn_subst (CanFund.toCanSemTyped (fund tyn)) hΓ σ hσ
+  exact CanTypeData.idn TA hm hn
+
 end Typed
 
 noncomputable def Typed.canTypeJudgment_of_can_fund
@@ -9307,23 +9328,9 @@ noncomputable def Typed.canTypeJudgment_of_can_fund
       CanTypeJudgment.ofTypeData (CanTypeData.bool Γ)
   | .bot =>
       CanTypeJudgment.ofTypeData (CanTypeData.bot Γ)
-  | .idn A m n => by
-      let tym : Γ ⊢ m : A := Typed.idnLeftTyped ty
-      let tyn : Γ ⊢ n : A := Typed.idnRightTyped ty
-      let iA := Typed.idnDomainLevel ty
-      let tyA : Γ ⊢ A : .ty iA := Typed.idnDomainTyped ty
-      let hA : CanSemTyped Γ A (.ty iA) := CanFund.toCanSemTyped (fund tyA)
-      let TA : CanTypeData Γ A := CanTypeData.ofCanSemTypedType hA
-      have hm : TA.CanSemTm m := by
-        intro Δ hΓ σ hσ
-        change SN Step m.[σ]
-        exact CanSemTyped.sn_subst (CanFund.toCanSemTyped (fund tym)) hΓ σ hσ
-      have hn : TA.CanSemTm n := by
-        intro Δ hΓ σ hσ
-        change SN Step n.[σ]
-        exact CanSemTyped.sn_subst (CanFund.toCanSemTyped (fund tyn)) hΓ σ hσ
-      exact CanTypeJudgment.ofTypeData
-        (CanTypeData.idn TA hm hn)
+  | .idn A m n =>
+      CanTypeJudgment.ofTypeData
+        (Typed.idnTypeDataOfCanFund fund ty)
   | _ =>
       CanTypeJudgment.ofTermDataWeak (CanFund.choose (fund ty))
 
@@ -9366,6 +9373,15 @@ lemma canTypeJudgment_of_can_fund_bot
     {Γ : Ctx} {i : Nat} (ty : Γ ⊢ .bot : .ty i) :
     Typed.canTypeJudgment_of_can_fund fund ty =
       CanTypeJudgment.ofTypeData (CanTypeData.bot Γ) :=
+  by rfl
+
+lemma canTypeJudgment_of_can_fund_idn
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanFund Γ m A)
+    {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (ty : Γ ⊢ .idn A m n : .ty i) :
+    Typed.canTypeJudgment_of_can_fund fund ty =
+      CanTypeJudgment.ofTypeData
+        (Typed.idnTypeDataOfCanFund fund ty) :=
   by rfl
 
 end Typed
