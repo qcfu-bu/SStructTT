@@ -8553,6 +8553,16 @@ lemma appExpRetagTarget {Γ : Ctx} {A B m n : Tm} {i iA iB : Nat}
     CanFundAt Γ (.app m n) B.[n/] TC :=
   CanFundAt.retag (CanFundAt.appExp TA TB Jm Jn) hTarget
 
+lemma appExpJudgment {Γ : Ctx} {A B m n : Tm} {i iA iB : Nat}
+    (TA : CanTypeFundExp Γ A iA)
+    (TB : CanTypeFundExp (A :: Γ) B iB)
+    (Jm : CanFundAt Γ m (.pi A B)
+      (CanTypeFundExp.piJudgmentAt (i := i) TA TB).typeData)
+    (Jn : CanFundAt Γ n A (CanTypeFundExp.typeData TA)) :
+    CanFundAt Γ (.app m n) B.[n/]
+      (CanTypeFundExp.subst1Judgment TA TB Jn).typeData :=
+  CanFundAt.appExp TA TB Jm Jn
+
 lemma tup {Γ : Ctx} {A B m n : Tm}
     (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
     (Jm : CanFundAt Γ m A TA)
@@ -8573,6 +8583,16 @@ lemma tupExp {Γ : Ctx} {A B m n : Tm} {i iA iB : Nat}
       (CanTypeFundExp.sigJudgmentAt (i := i) TA TB).typeData :=
   CanFundAt.tup (CanTypeFundExp.typeData TA)
     (CanTypeFundExp.typeData TB) Jm Jn
+
+lemma tupExpJudgment {Γ : Ctx} {A B m n : Tm} {i iA iB : Nat}
+    (TA : CanTypeFundExp Γ A iA)
+    (TB : CanTypeFundExp (A :: Γ) B iB)
+    (Jm : CanFundAt Γ m A (CanTypeFundExp.typeData TA))
+    (Jn : CanFundAt Γ n B.[m/]
+      (CanTypeFundExp.subst1Judgment TA TB Jm).typeData) :
+    CanFundAt Γ (.tup m n) (.sig A B)
+      (CanTypeFundExp.sigJudgmentAt (i := i) TA TB).typeData :=
+  CanFundAt.tupExp TA TB Jm Jn
 
 lemma prjBranch {Γ : Ctx} {A B C m n : Tm}
     (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
@@ -8610,6 +8630,24 @@ lemma prjBranchExact {Γ : Ctx} {A B C m n : Tm}
   CanFundAt.ofTermDataAt
     (CanTermDataAt.prjBranchExact TA TB TC hTC
       (CanFundAt.choose Jm) (CanFundAt.choose Jn))
+
+lemma prjBranchExactJudgment {Γ : Ctx} {A B C m n : Tm}
+    {i iA iB : Nat}
+    (TA : CanTypeFundExp Γ A iA)
+    (TB : CanTypeFundExp (A :: Γ) B iB)
+    (TC : CanTypeFundExp (.sig A B :: Γ) C i)
+    (Jm : CanFundAt Γ m (.sig A B)
+      (CanTypeFundExp.sigJudgmentAt (i := i) TA TB).typeData)
+    (Jn : CanFundAt (B :: A :: Γ) n
+      C.[.tup (.var 1) (.var 0) .: shift 2]
+      (CanTypeFundExp.sigmaBranchJudgment TC).typeData) :
+    CanFundAt Γ (.prj C m n) C.[m/]
+      (CanTypeJudgment.subst1
+        (CanTypeFundExp.sigJudgmentAt (i := i) TA TB).typeData
+        (CanTypeFundExp.judgment TC) (CanFundAt.choose Jm)).typeData :=
+  CanFundAt.prjBranchExact (CanTypeFundExp.typeData TA)
+    (CanTypeFundExp.typeData TB) (CanTypeFundExp.typeData TC)
+    (CanTypeFundExp.expansive TC) Jm Jn
 
 lemma rwTarget {Γ : Ctx} {A B m n a b : Tm}
     (TB : CanTypeData Γ B)
@@ -8656,6 +8694,21 @@ lemma ite {Γ : Ctx} {A m n1 n2 : Tm}
     (CanTermDataAt.ite TB hTB (CanFundAt.choose Jm)
       (CanFundAt.choose Jn1) (CanFundAt.choose Jn2))
 
+lemma iteExpJudgment {Γ : Ctx} {A m n1 n2 : Tm} {i : Nat}
+    (TA : CanTypeFundExp (.bool :: Γ) A i)
+    (Jm : CanFundAt Γ m .bool (CanTypeData.bool Γ))
+    (Jn1 : CanFundAt Γ n1 A.[.tt/]
+      (CanTypeJudgment.subst1 (CanTypeData.bool Γ)
+        (CanTypeFundExp.judgment TA) CanTermDataAt.tt).typeData)
+    (Jn2 : CanFundAt Γ n2 A.[.ff/]
+      (CanTypeJudgment.subst1 (CanTypeData.bool Γ)
+        (CanTypeFundExp.judgment TA) CanTermDataAt.ff).typeData) :
+    CanFundAt Γ (.ite A m n1 n2) A.[m/]
+      (CanTypeJudgment.subst1 (CanTypeData.bool Γ)
+        (CanTypeFundExp.judgment TA) (CanFundAt.choose Jm)).typeData :=
+  CanFundAt.ite (CanTypeFundExp.typeData TA)
+    (CanTypeFundExp.expansive TA) Jm Jn1 Jn2
+
 lemma exf {Γ : Ctx} {A m : Tm}
     (TB : CanTypeData (.bot :: Γ) A)
     (hTB : TB.Expansive)
@@ -8665,6 +8718,15 @@ lemma exf {Γ : Ctx} {A m : Tm}
         (CanFundAt.choose Jm).canSemTm) :=
   CanFundAt.ofTermDataAt
     (CanTermDataAt.exf TB hTB (CanFundAt.choose Jm))
+
+lemma exfExpJudgment {Γ : Ctx} {A m : Tm} {i : Nat}
+    (TA : CanTypeFundExp (.bot :: Γ) A i)
+    (Jm : CanFundAt Γ m .bot (CanTypeData.bot Γ)) :
+    CanFundAt Γ (.exf A m) A.[m/]
+      (CanTypeJudgment.subst1 (CanTypeData.bot Γ)
+        (CanTypeFundExp.judgment TA) (CanFundAt.choose Jm)).typeData :=
+  CanFundAt.exf (CanTypeFundExp.typeData TA)
+    (CanTypeFundExp.expansive TA) Jm
 
 end CanFundAt
 
@@ -9038,6 +9100,21 @@ lemma rwSNBranchAt {Γ : Ctx} {A B m n a b : Tm} {i : Nat}
     (CanTermData.rwSNBranch (i := i) TB
       (CanFundAt.choose Ja) (CanFundAt.choose Jb) (CanFundAt.choose Jn) TA
       (CanFundAt.choose Jm))
+
+lemma rwSNBranchExpAt {Γ : Ctx} {A B m n a b : Tm} {i iB : Nat}
+    (TB : CanTypeFundExp Γ B iB)
+    (Ja : CanFundAt Γ a B (CanTypeFundExp.typeData TB))
+    (Jb : CanFundAt Γ b B (CanTypeFundExp.typeData TB))
+    (Jn : CanFundAt Γ n (.idn B a b)
+      (CanTypeFundExp.idnJudgment TB
+        (CanFundAt.choose Ja) (CanFundAt.choose Jb)).typeData)
+    (TA : CanTypeFundExp
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A i)
+    (Jm : CanFundAt Γ m A.[.rfl a,a/]
+      (CanTypeFundExp.idBranchJudgment TB Ja TA).typeData) :
+    CanFund Γ (.rw A m n) A.[n,b/] :=
+  CanFund.rwSNBranchAt (i := i) (CanTypeFundExp.typeData TB) Ja Jb Jn
+    (CanTypeFundExp.typeData TA) Jm
 
 end CanFund
 
