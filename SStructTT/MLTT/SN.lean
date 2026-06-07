@@ -631,6 +631,240 @@ lemma sn_rw {A m n : Tm} :
         | rw_elim A m n =>
           exact SN.intro ihm
 
+/-- Weak-head reduction: the key (β / projection / boolean / rewrite) redexes,
+plus head-congruence along the spine of an elimination. Each `WhStep` is a
+`Step`. This is the relation under which reducibility candidates are required to
+be *saturated* (closed under weak-head expansion of elimination redexes). -/
+inductive WhStep : Tm -> Tm -> Prop where
+  | beta A m n :
+    WhStep (.app (.lam A m) n) m.[n/]
+  | prj_elim A m1 m2 n :
+    WhStep (.prj A (.tup m1 m2) n) n.[m2,m1/]
+  | ite_tt A n1 n2 :
+    WhStep (.ite A .tt n1 n2) n1
+  | ite_ff A n1 n2 :
+    WhStep (.ite A .ff n1 n2) n2
+  | rw_elim A m n :
+    WhStep (.rw A m (.rfl n)) m
+  | app_M {m m'} n :
+    WhStep m m' -> WhStep (.app m n) (.app m' n)
+  | prj_M A {m m'} n :
+    WhStep m m' -> WhStep (.prj A m n) (.prj A m' n)
+  | ite_M A {m m'} n1 n2 :
+    WhStep m m' -> WhStep (.ite A m n1 n2) (.ite A m' n1 n2)
+  | rw_N A m {n n'} :
+    WhStep n n' -> WhStep (.rw A m n) (.rw A m n')
+
+lemma WhStep.toStep {m n : Tm} : WhStep m n -> m ~> n := by
+  intro h
+  induction h with
+  | beta A m n => exact Step.beta A m n
+  | prj_elim A m1 m2 n => exact Step.prj_elim A m1 m2 n
+  | ite_tt A n1 n2 => exact Step.ite_tt A n1 n2
+  | ite_ff A n1 n2 => exact Step.ite_ff A n1 n2
+  | rw_elim A m n => exact Step.rw_elim A m n
+  | app_M n _ ih => exact Step.app_M n ih
+  | prj_M A n _ ih => exact Step.prj_M A n ih
+  | ite_M A n1 n2 _ ih => exact Step.ite_M A n1 n2 ih
+  | rw_N A m _ ih => exact Step.rw_N A m ih
+
+/-- Weak-head reduction is closed under substitution. -/
+lemma WhStep.subst {m n : Tm} (σ : Var -> Tm) : WhStep m n -> WhStep m.[σ] n.[σ] := by
+  intro h
+  induction h generalizing σ with
+  | beta A m n =>
+    rw [show (m.[n/]).[σ] = m.[up σ].[n.[σ]/] by asimp]
+    exact WhStep.beta A.[σ] m.[up σ] n.[σ]
+  | prj_elim A m1 m2 n =>
+    rw [show (n.[m2,m1/]).[σ] = n.[upn 2 σ].[m2.[σ],m1.[σ]/] by asimp]
+    exact WhStep.prj_elim A.[up σ] m1.[σ] m2.[σ] n.[upn 2 σ]
+  | ite_tt A n1 n2 => asimp; exact WhStep.ite_tt _ _ _
+  | ite_ff A n1 n2 => asimp; exact WhStep.ite_ff _ _ _
+  | rw_elim A m n => asimp; exact WhStep.rw_elim _ _ _
+  | app_M n _ ih => asimp; exact WhStep.app_M _ (ih σ)
+  | prj_M A n _ ih => asimp; exact WhStep.prj_M _ _ (ih σ)
+  | ite_M A n1 n2 _ ih => asimp; exact WhStep.ite_M _ _ _ (ih σ)
+  | rw_N A m _ ih => asimp; exact WhStep.rw_N _ _ (ih σ)
+
+/-- Weak-head reduction commutes with arbitrary reduction. If `t` weak-head
+reduces to `t'` and also steps to `t''`, then either the step *was* the
+weak-head step (`t'' = t'`) or `t''` itself weak-head reduces to some `s` that
+`t'` reduces to. This deterministic-head commutation is what lets strong
+normalization be transported backwards across weak-head expansion. -/
+lemma WhStep.commute {t t' t'' : Tm} :
+    WhStep t t' -> t ~> t'' -> t'' = t' ∨ ∃ s, t' ~>* s ∧ WhStep t'' s := by
+  intro wh
+  induction wh generalizing t'' with
+  | beta A m n =>
+    intro st
+    cases st with
+    | app_M _ stf =>
+      cases stf with
+      | lam_A _ stA =>
+        exact Or.inr ⟨m.[n/], Star.R, WhStep.beta _ m n⟩
+      | lam_M _ stm =>
+        refine Or.inr ⟨_, Star.one (Step.subst (n .: ids) stm), WhStep.beta A _ n⟩
+    | app_N _ stn =>
+      refine Or.inr ⟨_, ?_, WhStep.beta A m _⟩
+      apply Red.compat
+      intro x; cases x with
+      | zero => asimp; exact Star.one stn
+      | succ x => exact Star.R
+    | beta => exact Or.inl rfl
+  | prj_elim A m1 m2 n =>
+    intro st
+    cases st with
+    | prj_A _ _ stA =>
+      exact Or.inr ⟨n.[m2,m1/], Star.R, WhStep.prj_elim _ m1 m2 n⟩
+    | prj_M _ _ stp =>
+      cases stp with
+      | tup_M _ stm1 =>
+        refine Or.inr ⟨_, ?_, WhStep.prj_elim A _ m2 n⟩
+        apply Red.compat
+        intro x; cases x with
+        | zero => exact Star.R
+        | succ x => cases x with
+          | zero => asimp; exact Star.one stm1
+          | succ x => exact Star.R
+      | tup_N _ stm2 =>
+        refine Or.inr ⟨_, ?_, WhStep.prj_elim A m1 _ n⟩
+        apply Red.compat
+        intro x; cases x with
+        | zero => asimp; exact Star.one stm2
+        | succ x => exact Star.R
+    | prj_N _ _ stn =>
+      refine Or.inr ⟨_, Star.one (Step.subst (m2 .: m1 .: ids) stn), WhStep.prj_elim A m1 m2 _⟩
+    | prj_elim => exact Or.inl rfl
+  | ite_tt A n1 n2 =>
+    intro st
+    cases st with
+    | ite_A _ _ _ stA => exact Or.inr ⟨n1, Star.R, WhStep.ite_tt _ n1 n2⟩
+    | ite_M _ _ _ stm => cases stm
+    | ite_N1 _ _ _ st1 => exact Or.inr ⟨_, Star.one st1, WhStep.ite_tt A _ n2⟩
+    | ite_N2 _ _ _ st2 => exact Or.inr ⟨n1, Star.R, WhStep.ite_tt A n1 _⟩
+    | ite_tt => exact Or.inl rfl
+  | ite_ff A n1 n2 =>
+    intro st
+    cases st with
+    | ite_A _ _ _ stA => exact Or.inr ⟨n2, Star.R, WhStep.ite_ff _ n1 n2⟩
+    | ite_M _ _ _ stm => cases stm
+    | ite_N1 _ _ _ st1 => exact Or.inr ⟨n2, Star.R, WhStep.ite_ff A _ n2⟩
+    | ite_N2 _ _ _ st2 => exact Or.inr ⟨_, Star.one st2, WhStep.ite_ff A n1 _⟩
+    | ite_ff => exact Or.inl rfl
+  | rw_elim A m n =>
+    intro st
+    cases st with
+    | rw_A _ _ stA => exact Or.inr ⟨m, Star.R, WhStep.rw_elim _ m n⟩
+    | rw_M _ _ stm => exact Or.inr ⟨_, Star.one stm, WhStep.rw_elim A _ n⟩
+    | rw_N _ _ stn =>
+      cases stn with
+      | rfl_M stn' => exact Or.inr ⟨m, Star.R, WhStep.rw_elim A m _⟩
+    | rw_elim => exact Or.inl rfl
+  | app_M n whp ih =>
+    intro st
+    cases st with
+    | app_M _ stp =>
+      cases ih stp with
+      | inl h => subst h; exact Or.inl rfl
+      | inr h =>
+        rcases h with ⟨s0, rd0, wh0⟩
+        exact Or.inr ⟨.app s0 n, Red.app rd0 Star.R, WhStep.app_M n wh0⟩
+    | app_N _ stn =>
+      exact Or.inr ⟨_, Star.one (Step.app_N _ stn), WhStep.app_M _ whp⟩
+    | beta => cases whp
+  | prj_M A n whp ih =>
+    intro st
+    cases st with
+    | prj_A _ _ stA =>
+      exact Or.inr ⟨_, Star.one (Step.prj_A _ _ stA), WhStep.prj_M _ n whp⟩
+    | prj_M _ _ stp =>
+      cases ih stp with
+      | inl h => subst h; exact Or.inl rfl
+      | inr h =>
+        rcases h with ⟨s0, rd0, wh0⟩
+        exact Or.inr ⟨.prj A s0 n, Red.prj Star.R rd0 Star.R, WhStep.prj_M A n wh0⟩
+    | prj_N _ _ stn =>
+      exact Or.inr ⟨_, Star.one (Step.prj_N _ _ stn), WhStep.prj_M A _ whp⟩
+    | prj_elim => cases whp
+  | ite_M A n1 n2 whp ih =>
+    intro st
+    cases st with
+    | ite_A _ _ _ stA =>
+      exact Or.inr ⟨_, Star.one (Step.ite_A _ _ _ stA), WhStep.ite_M _ n1 n2 whp⟩
+    | ite_M _ _ _ stp =>
+      cases ih stp with
+      | inl h => subst h; exact Or.inl rfl
+      | inr h =>
+        rcases h with ⟨s0, rd0, wh0⟩
+        exact Or.inr ⟨.ite A s0 n1 n2, Red.ite Star.R rd0 Star.R Star.R, WhStep.ite_M A n1 n2 wh0⟩
+    | ite_N1 _ _ _ st1 =>
+      exact Or.inr ⟨_, Star.one (Step.ite_N1 _ _ _ st1), WhStep.ite_M A _ n2 whp⟩
+    | ite_N2 _ _ _ st2 =>
+      exact Or.inr ⟨_, Star.one (Step.ite_N2 _ _ _ st2), WhStep.ite_M A n1 _ whp⟩
+    | ite_tt => cases whp
+    | ite_ff => cases whp
+  | rw_N A m whp ih =>
+    intro st
+    cases st with
+    | rw_A _ _ stA =>
+      exact Or.inr ⟨_, Star.one (Step.rw_A _ _ stA), WhStep.rw_N _ m whp⟩
+    | rw_M _ _ stm =>
+      exact Or.inr ⟨_, Star.one (Step.rw_M _ _ stm), WhStep.rw_N A _ whp⟩
+    | rw_N _ _ stn =>
+      cases ih stn with
+      | inl h => subst h; exact Or.inl rfl
+      | inr h =>
+        rcases h with ⟨s0, rd0, wh0⟩
+        exact Or.inr ⟨.rw A m s0, Red.rw Star.R Star.R rd0, WhStep.rw_N A m wh0⟩
+    | rw_elim => cases whp
+
+/-- A weak-head step factors to the front of any reduction to a `tup` value:
+since `t` is elimination-headed (it has a weak-head redex) while `tup a b` is a
+constructor, reaching the `tup` must contract the head redex. Proved by
+induction on strong normalization using `WhStep.commute`. -/
+lemma WhStep.red_tup {a b : Tm} {t : Tm} (snt : SN Step t) :
+    ∀ {t'}, WhStep t t' -> t ~>* .tup a b -> t' ~>* .tup a b := by
+  induction snt with
+  | intro hstep iht =>
+    intro t' wh rd
+    cases rd.ES_split with
+    | inl e => subst e; cases wh
+    | inr h =>
+      rcases h with ⟨w, st, rd'⟩
+      cases wh.commute st with
+      | inl e => subst e; exact rd'
+      | inr h2 =>
+        rcases h2 with ⟨s, rds, whs⟩
+        exact Star.trans rds (iht st whs rd')
+
+/-- Strong normalization is preserved by weak-head expansion at an application:
+if `app t' u` is SN, `t` weak-head reduces to `t'`, and `t`, `u` are SN, then
+`app t u` is SN. Nested strong-normalization induction on `t`, `u`; the `app_M`
+reduct is relabelled through `WhStep.commute`, and `t` is never a `lam` (it has a
+weak-head redex), so no β-reduct escapes. -/
+lemma sn_app_wh {t : Tm} (snt : SN Step t) :
+    ∀ {u}, SN Step u -> ∀ {t'}, WhStep t t' -> SN Step (.app t' u) -> SN Step (.app t u) := by
+  induction snt with
+  | intro hstept iht =>
+    intro u snu
+    induction snu with
+    | intro hstepu ihu =>
+      intro t' wh snapp
+      constructor
+      intro x st
+      cases st with
+      | app_M _ stt =>
+        rename_i t''
+        cases wh.commute stt with
+        | inl e => subst e; exact snapp
+        | inr h =>
+          rcases h with ⟨s, rds, whs⟩
+          exact iht stt (SN.intro hstepu) whs (sn_red snapp (Red.app rds Star.R))
+      | app_N _ stu =>
+        rename_i u'
+        exact ihu stu wh (sn_step snapp (Step.app_N _ stu))
+      | beta => cases wh
+
 structure Candidate where
   mem : Tm -> Prop
   sn : ∀ {m}, mem m -> SN Step m
@@ -702,6 +936,37 @@ lemma conv_of_expansive {C : Candidate} (hC : Expansive C) {m n : Tm} :
   intro hsn eq hn
   have ⟨z, rmz, rnz⟩ := Step.cr eq
   exact expansive_red_backward hC hsn rmz (C.closed_red hn rnz)
+
+/-- A candidate is *saturated* when it is closed under weak-head expansion of
+elimination redexes: any strongly-normalizing term that weak-head reduces into
+the candidate is itself in the candidate. This is the weakening of `Expansive`
+needed for function/pair codomains, which are *not* `Expansive` in the
+all-reducts sense (a normal `lam` vacuously has all reducts in the candidate yet
+need not be a member). -/
+def Saturated (C : Candidate) : Prop :=
+  ∀ {m n}, WhStep m n -> SN Step m -> C.mem n -> C.mem m
+
+/-- An `Expansive` candidate is `Saturated`: weak-head steps are steps. -/
+lemma Saturated.of_expansive {C : Candidate} (hC : Expansive C) :
+    Saturated C := by
+  intro m n wh snm hn
+  exact expansive_red_backward hC snm (Star.one wh.toStep) hn
+
+/-- Drop-in companion of `expansive_of_steps`: to place a weak-head redex `m`
+into a saturated candidate it suffices that every one-step reduct of `m` is in
+the candidate (which also supplies strong normalization of `m`). -/
+lemma saturated_of_steps {C : Candidate} (hC : Saturated C) {m m' : Tm} :
+    WhStep m m' -> (∀ {x}, m ~> x -> C.mem x) -> C.mem m := by
+  intro wh hred
+  have snm : SN Step m := by
+    constructor
+    intro x st
+    exact C.sn (hred st)
+  exact hC wh snm (hred wh.toStep)
+
+lemma snCandidate_saturated : Saturated Candidate.snCandidate := by
+  intro m n wh snm _
+  exact snm
 
 lemma var (C : Candidate) x : C.mem (.var x) := by
   apply C.neutral
@@ -909,6 +1174,17 @@ namespace CandidateFamily
 def Expansive {A : Candidate} (B : CandidateFamily A) : Prop :=
   ∀ {a}, A.mem a -> Candidate.Expansive (B.fiber a)
 
+/-- The fiberwise weak-head saturation of a candidate family — the codomain
+property needed for lam-introduction into a Π candidate (weaker than `Expansive`
+so that function/pair fibers qualify). -/
+def Saturated {A : Candidate} (B : CandidateFamily A) : Prop :=
+  ∀ {a}, A.mem a -> Candidate.Saturated (B.fiber a)
+
+lemma Saturated.of_expansive {A : Candidate} {B : CandidateFamily A} :
+    B.Expansive -> B.Saturated := by
+  intro hB _a ha
+  exact Candidate.Saturated.of_expansive (hB ha)
+
 lemma stable_red {A : Candidate} (B : CandidateFamily A) {a a' m : Tm} :
     A.mem a -> a ~>* a' -> (B.fiber a').mem m -> (B.fiber a).mem m := by
   intro ha rd hm
@@ -1054,6 +1330,62 @@ lemma Candidate.pi_lam_body {A : Candidate} {B : CandidateFamily A} {T m : Tm} :
         exact (B.fiber n).closed_step (hβ n hn) (Step.subst (n .: ids) stM)
       . exact hβ
 
+/-- `pi_lam_step` with the codomain only required `Saturated` (not `Expansive`):
+the head-expanded term `app (lam T m) n` is a β-redex, so weak-head saturation of
+the fiber suffices. -/
+lemma Candidate.pi_lam_step_sat {A : Candidate} {B : CandidateFamily A} {T m : Tm} :
+    SN Step T ->
+    SN Step m ->
+    B.Saturated ->
+    (∀ T', T ~> T' -> (Candidate.pi A B).mem (.lam T' m)) ->
+    (∀ m', m ~> m' -> (Candidate.pi A B).mem (.lam T m')) ->
+    (∀ n, (hn : A.mem n) -> (B.fiber n).mem m.[n/]) ->
+    (Candidate.pi A B).mem (.lam T m) := by
+  intro snT snm hB hT hm hβ
+  apply Candidate.pi_intro snT snm
+  intro n hn
+  have snn := A.sn hn
+  revert hn
+  induction snn
+  case intro n ihN ihN' =>
+    intro hn
+    apply Candidate.saturated_of_steps (hB hn) (WhStep.beta T m n)
+    intro x st
+    cases st with
+    | app_M n stM =>
+      cases stM with
+      | lam_A m stT =>
+        exact (hT _ stT).2 n hn
+      | lam_M T stM =>
+        exact (hm _ stM).2 n hn
+    | app_N m stN =>
+      exact B.stable_step hn stN (ihN' stN (A.closed_step hn stN))
+    | beta T m n =>
+      exact hβ n hn
+
+/-- `pi_lam_body` with the codomain only required `Saturated`. -/
+lemma Candidate.pi_lam_body_sat {A : Candidate} {B : CandidateFamily A} {T m : Tm} :
+    SN Step T ->
+    SN Step m ->
+    B.Saturated ->
+    (∀ n, (hn : A.mem n) -> (B.fiber n).mem m.[n/]) ->
+    (Candidate.pi A B).mem (.lam T m) := by
+  intro snT
+  induction snT generalizing m
+  case intro T ihT ihT' =>
+    intro snm
+    induction snm
+    case intro m ihM ihM' =>
+      intro hB hβ
+      apply Candidate.pi_lam_step_sat (SN.intro ihT) (SN.intro ihM) hB
+      . intro T' stT
+        exact ihT' stT (SN.intro ihM) hB hβ
+      . intro m' stM
+        apply ihM' stM hB
+        intro n hn
+        exact (B.fiber n).closed_step (hβ n hn) (Step.subst (n .: ids) stM)
+      . exact hβ
+
 lemma Candidate.pi_app {A : Candidate} {B : CandidateFamily A} {m n : Tm} :
     (Candidate.pi A B).mem m ->
     A.mem n ->
@@ -1095,6 +1427,16 @@ lemma Candidate.pi_beta_sn {A : Candidate} {B : CandidateFamily A} {m n n' T bod
     . apply Red.app <;> assumption
     . apply Step.beta
   exact (B.fiber n).sn ((B.fiber n).closed_red hApp rdApp)
+
+lemma Candidate.pi_saturated {A : Candidate} {B : CandidateFamily A}
+    (hB : ∀ u, A.mem u -> Saturated (B.fiber u)) :
+    Saturated (Candidate.pi A B) := by
+  intro t t' wh snt ht'
+  refine ⟨snt, ?_⟩
+  intro u hu
+  have snapp : SN Step (.app t' u) := (B.fiber u).sn (ht'.2 u hu)
+  exact (hB u hu) (WhStep.app_M u wh)
+    (sn_app_wh snt (A.sn hu) wh snapp) (ht'.2 u hu)
 
 def Candidate.sigma (A : Candidate) (B : CandidateFamily A) : Candidate where
   mem p := SN Step p ∧ ∀ a b, p ~>* .tup a b -> A.mem a ∧ (B.fiber a).mem b
@@ -1199,11 +1541,28 @@ lemma Candidate.sigma_prj_dep {A : Candidate} {B : CandidateFamily A}
     have ⟨ha, hb⟩ := Candidate.sigma_components hp Star.R
     exact hβ a b ha hb
 
+lemma Candidate.sigma_saturated {A : Candidate} {B : CandidateFamily A} :
+    Saturated (Candidate.sigma A B) := by
+  intro t t' wh snt ht'
+  refine ⟨snt, ?_⟩
+  intro a b rd
+  exact ht'.2 a b (WhStep.red_tup snt wh rd)
+
 def Candidate.bool : Candidate := Candidate.snCandidate
 
 def Candidate.bot : Candidate := Candidate.snCandidate
 
 def Candidate.idn (_ : Candidate) (_ _ : Tm) : Candidate := Candidate.snCandidate
+
+lemma Candidate.bool_saturated : Candidate.Saturated Candidate.bool :=
+  Candidate.snCandidate_saturated
+
+lemma Candidate.bot_saturated : Candidate.Saturated Candidate.bot :=
+  Candidate.snCandidate_saturated
+
+lemma Candidate.idn_saturated {A : Candidate} {a b : Tm} :
+    Candidate.Saturated (Candidate.idn A a b) :=
+  Candidate.snCandidate_saturated
 
 structure TypeCodeInterp (i : Nat) (A : Tm) where
   cand : Candidate
@@ -1262,6 +1621,11 @@ lemma Candidate.idn_weakens {A : Candidate} {a b : Tm} :
 lemma Candidate.univ_expansive {i : Nat} :
     Candidate.Expansive (Candidate.univ i) := by
   intro m hsn _
+  exact ⟨TypeCodeInterp.ofSN i m hsn, trivial⟩
+
+lemma Candidate.univ_saturated {i : Nat} :
+    Candidate.Saturated (Candidate.univ i) := by
+  intro m n _ hsn _
   exact ⟨TypeCodeInterp.ofSN i m hsn, trivial⟩
 
 lemma Candidate.univ_weakens {i : Nat} :
@@ -1965,6 +2329,15 @@ def Weakens {Δ : DCandCtx} {A : Tm} (I : TypeInterp Δ A) : Prop :=
 
 def Expansive {Δ : DCandCtx} {A : Tm} (I : TypeInterp Δ A) : Prop :=
   ∀ σ, (hσ : Δ.valid σ) -> Candidate.Expansive (I.cand σ)
+
+/-- Weak-head saturation of a type interpretation at every valid substitution —
+the codomain property needed to interpret λ at a (possibly higher-order) Π type. -/
+def Saturated {Δ : DCandCtx} {A : Tm} (I : TypeInterp Δ A) : Prop :=
+  ∀ σ, (hσ : Δ.valid σ) -> Candidate.Saturated (I.cand σ)
+
+lemma Saturated.of_expansive {Δ : DCandCtx} {A : Tm} {I : TypeInterp Δ A} :
+    I.Expansive -> I.Saturated :=
+  fun hI σ hσ => Candidate.Saturated.of_expansive (hI σ hσ)
 
 lemma weakens_iter {Δ : DCandCtx} {A : Tm} (I : TypeInterp Δ A)
     (hΔ : Δ.Weakens) (hI : I.Weakens) {σ : Var -> Tm} {m : Tm} :
@@ -2672,6 +3045,14 @@ lemma family_expansive {Δ : DCandCtx} {A B : Tm}
   intro a ha
   exact hIB (a .: σ) (DCandCtx.extend_cons hσ ha)
 
+lemma family_saturated {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Saturated (IB.cand σ))
+    {σ : Var -> Tm} (hσ : Δ.valid σ) :
+    (TypeInterp.family IA IB σ hσ).Saturated := by
+  intro a ha
+  exact hIB (a .: σ) (DCandCtx.extend_cons hσ ha)
+
 def subst1 {Δ : DCandCtx} {A B n : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
     (hn : IA.SemTm n) : TypeInterp Δ B.[n/] where
@@ -2756,7 +3137,7 @@ lemma subst1_expansive {Δ : DCandCtx} {A B n : Tm}
 def kpiCand {Δ : DCandCtx} {A B : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
     (hΔ : Δ.Weakens)
-    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ))
+    (_hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Saturated (IB.cand σ))
     (σ : Var -> Tm) (hσ : Δ.valid σ) : Candidate where
   mem f :=
     SN Step f ∧
@@ -2788,8 +3169,8 @@ def kpiCand {Δ : DCandCtx} {A B : Tm}
           induction sna with
           | intro stepA ihA =>
             rename_i a0
-            apply Candidate.expansive_of_steps
-              (hIB (a0 .: σi) (DCandCtx.extend_cons hσi ha))
+            apply (IB.cand (a0 .: σi)).neutral (Neutral.app _ _ neug)
+              (sn_app_neutral neug (SN.intro stepG) (SN.intro stepA))
             intro x st
             cases st with
             | app_M a stG =>
@@ -2812,10 +3193,32 @@ def kpiCand {Δ : DCandCtx} {A B : Tm}
               exact (Neutral.not_lam neug).elim
       exact app_mem (sn_shiftn i hsn) ((IA.cand σi).sn hn) (neu.shift i) hn
 
+/-- The Π reducibility candidate is weak-head saturated, given a saturated
+codomain. This is what lets a function type serve as the codomain of an outer Π
+(higher-order functions). -/
+lemma kpiCand_saturated {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens)
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Saturated (IB.cand σ))
+    (σ : Var -> Tm) (hσ : Δ.valid σ) :
+    Candidate.Saturated (TypeInterp.kpiCand IA IB hΔ hIB σ hσ) := by
+  intro f f' wh snf hf'
+  refine ⟨snf, ?_⟩
+  intro i n hn
+  let σi := shiftSubst σ i
+  have hσi : Δ.valid σi := DCandCtx.weakens_iter hΔ hσ i
+  have whi : WhStep f.[shift i] f'.[shift i] := WhStep.subst (shift i) wh
+  have hf'app := hf'.2 i n hn
+  have snapp : SN Step (.app f.[shift i] n) :=
+    sn_app_wh (sn_shiftn i snf) ((IA.cand σi).sn hn) whi
+      ((IB.cand (n .: σi)).sn hf'app)
+  exact hIB (n .: σi) (DCandCtx.extend_cons hσi hn)
+    (WhStep.app_M n whi) snapp hf'app
+
 noncomputable def kpiCandTotal {Δ : DCandCtx} {A B : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
     (hΔ : Δ.Weakens)
-    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ))
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Saturated (IB.cand σ))
     (σ : Var -> Tm) : Candidate := by
   classical
   exact if hσ : Δ.valid σ then TypeInterp.kpiCand IA IB hΔ hIB σ hσ
@@ -2824,7 +3227,7 @@ noncomputable def kpiCandTotal {Δ : DCandCtx} {A B : Tm}
 lemma kpiCandTotal_valid {Δ : DCandCtx} {A B : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
     (hΔ : Δ.Weakens)
-    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ))
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Saturated (IB.cand σ))
     {σ : Var -> Tm} (hσ : Δ.valid σ) :
     TypeInterp.kpiCandTotal IA IB hΔ hIB σ =
       TypeInterp.kpiCand IA IB hΔ hIB σ hσ := by
@@ -2834,7 +3237,7 @@ lemma kpiCandTotal_valid {Δ : DCandCtx} {A B : Tm}
 noncomputable def kpi {Δ : DCandCtx} {A B : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
     (hΔ : Δ.Weakens)
-    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ)) :
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Saturated (IB.cand σ)) :
     TypeInterp Δ (.pi A B) where
   cand := TypeInterp.kpiCandTotal IA IB hΔ hIB
   type_sn := by
@@ -2901,7 +3304,7 @@ noncomputable def kpi {Δ : DCandCtx} {A B : Tm}
 lemma kpi_weakens {Δ : DCandCtx} {A B : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
     (hΔ : Δ.Weakens)
-    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ)) :
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Saturated (IB.cand σ)) :
     (TypeInterp.kpi IA IB hΔ hIB).Weakens := by
   intro σ f hσ hf
   have hσ1 : Δ.valid (shiftSubst σ 1) := hΔ hσ
@@ -2918,6 +3321,16 @@ lemma kpi_weakens {Δ : DCandCtx} {A B : Tm}
     rw [hsubst] at hn
     have happ := hf.2 (1 + i) n hn
     simpa [hsubst, subst_shift_shift] using happ
+
+lemma kpi_saturated {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens)
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Saturated (IB.cand σ)) :
+    (TypeInterp.kpi IA IB hΔ hIB).Saturated := by
+  intro σ hσ
+  change Candidate.Saturated (TypeInterp.kpiCandTotal IA IB hΔ hIB σ)
+  rw [TypeInterp.kpiCandTotal_valid IA IB hΔ hIB hσ]
+  exact TypeInterp.kpiCand_saturated IA IB hΔ hIB σ hσ
 
 def piCand {Δ : DCandCtx} {A B : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
@@ -2950,6 +3363,15 @@ def ksigCand {Δ : DCandCtx} {A B : Tm}
     . exact hsn
     . intro i a b rd
       exact (Neutral.not_red_tup (neu.shift i) rd).elim
+
+lemma ksigCand_saturated {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (σ : Var -> Tm) :
+    Candidate.Saturated (TypeInterp.ksigCand IA IB σ) := by
+  intro p p' wh snp hp'
+  refine ⟨snp, ?_⟩
+  intro i a b rd
+  exact hp'.2 i a b (WhStep.red_tup (sn_shiftn i snp) (WhStep.subst (shift i) wh) rd)
 
 noncomputable def ksigCandTotal {Δ : DCandCtx} {A B : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
@@ -3054,6 +3476,15 @@ lemma ksig_weakens {Δ : DCandCtx} {A B : Tm}
       simpa [subst_shift_shift] using rd
     rw [hsubst]
     exact hp.2 (1 + i) a b rd'
+
+lemma ksig_saturated {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens) :
+    (TypeInterp.ksig IA IB hΔ).Saturated := by
+  intro σ hσ
+  change Candidate.Saturated (TypeInterp.ksigCandTotal IA IB σ)
+  rw [TypeInterp.ksigCandTotal_valid IA IB hσ]
+  exact TypeInterp.ksigCand_saturated IA IB σ
 
 lemma ksig_pair_valid {Δ : DCandCtx} {A B : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
@@ -3509,14 +3940,14 @@ lemma semLamPi {Δ : DCandCtx} {A B T m : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B) :
     (∀ σ, Δ.valid σ -> SN Step T.[σ]) ->
     (∀ σ, Δ.valid σ -> SN Step m.[up σ]) ->
-    (∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ)) ->
+    (∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Saturated (IB.cand σ)) ->
     TypeInterp.SemBody IA IB m ->
     ∀ σ, (hσ : Δ.valid σ) ->
       (TypeInterp.piCand IA IB σ hσ).mem (.lam T m).[σ] := by
   intro hT hm hIB hbody σ hσ
   asimp
-  apply Candidate.pi_lam_body (hT σ hσ) (hm σ hσ)
-  . exact TypeInterp.family_expansive IA IB hIB hσ
+  apply Candidate.pi_lam_body_sat (hT σ hσ) (hm σ hσ)
+  . exact TypeInterp.family_saturated IA IB hIB hσ
   . intro n hn
     rw[show m.[up σ].[n/] = m.[n .: σ] by asimp]
     exact hbody σ hσ n hn
@@ -3526,7 +3957,7 @@ lemma semLamPiInterp {Δ : DCandCtx} {A B T m : Tm}
     (hΔ : Δ.Weakens) :
     (∀ σ, Δ.valid σ -> SN Step T.[σ]) ->
     (∀ σ, Δ.valid σ -> SN Step m.[up σ]) ->
-    (∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ)) ->
+    (∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Saturated (IB.cand σ)) ->
     TypeInterp.SemBody IA IB m ->
     (TypeInterp.pi IA IB hΔ).SemTm (.lam T m) := by
   intro hT hm hIB hbody σ hσ
@@ -3537,7 +3968,7 @@ lemma semLamPiInterp {Δ : DCandCtx} {A B T m : Tm}
 lemma semLamKPiInterp {Δ : DCandCtx} {A B T m : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
     (hΔ : Δ.Weakens)
-    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ)) :
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Saturated (IB.cand σ)) :
     (∀ σ, Δ.valid σ -> SN Step T.[σ]) ->
     (∀ σ, Δ.valid σ -> SN Step m.[up σ]) ->
     TypeInterp.SemBody IA IB m ->
@@ -3585,7 +4016,7 @@ lemma semAppPiInterp {Δ : DCandCtx} {A B m n : Tm}
 lemma semAppKPiInterp {Δ : DCandCtx} {A B m n : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
     (hΔ : Δ.Weakens)
-    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ)) :
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Saturated (IB.cand σ)) :
     (TypeInterp.kpi IA IB hΔ hIB).SemTm m ->
     IA.SemTm n ->
     ∀ σ, (hσ : Δ.valid σ) ->
@@ -3604,7 +4035,7 @@ lemma semAppKPiInterp {Δ : DCandCtx} {A B m n : Tm}
 lemma semAppKPiSubst1 {Δ : DCandCtx} {A B m n : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
     (hΔ : Δ.Weakens)
-    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ))
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Saturated (IB.cand σ))
     (hm : (TypeInterp.kpi IA IB hΔ hIB).SemTm m)
     (hn : IA.SemTm n) :
     (TypeInterp.subst1 IA IB hn).SemTm (.app m n) := by
@@ -4179,9 +4610,9 @@ lemma lam {Γ : Ctx} {A B m : Tm} {iA : Nat} :
         exact IBody.type_sn σ hσ)
   have hIBexp :
       ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) ->
-        Candidate.Expansive (IB.cand σ) := by
+        Candidate.Saturated (IB.cand σ) := by
     intro σ hσ
-    exact Candidate.snCandidate_expansive
+    exact Candidate.snCandidate_saturated
   refine ⟨TypeInterp.kpi IA IB hΔ hIBexp,
     TypeInterp.kpi_weakens IA IB hΔ hIBexp, ?_⟩
   apply TypeInterp.semLamKPiInterp IA IB hΔ hIBexp
@@ -4655,15 +5086,15 @@ noncomputable def kpi {Γ : Ctx} {A B : Tm}
     let IA := TA.interp hΓ
     let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
       SemCtx.cons hΓ IA (TA.weakens hΓ)
-    TypeInterp.kpi IA (TB.interp hΓA) (SemCtx.weakens hΓ) (hTB hΓA)
+    TypeInterp.kpi IA (TB.interp hΓA) (SemCtx.weakens hΓ) (TypeInterp.Saturated.of_expansive (hTB hΓA))
   weakens {Δ} hΓ := by
     let IA := TA.interp hΓ
     let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
       SemCtx.cons hΓ IA (TA.weakens hΓ)
     change (TypeInterp.kpi IA (TB.interp hΓA)
-      (SemCtx.weakens hΓ) (hTB hΓA)).Weakens
+      (SemCtx.weakens hΓ) (TypeInterp.Saturated.of_expansive (hTB hΓA))).Weakens
     exact TypeInterp.kpi_weakens IA (TB.interp hΓA)
-      (SemCtx.weakens hΓ) (hTB hΓA)
+      (SemCtx.weakens hΓ) (TypeInterp.Saturated.of_expansive (hTB hΓA))
 
 lemma kpi_equiv_same {Γ : Ctx} {A B : Tm}
     (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
@@ -4895,8 +5326,8 @@ lemma lam {Γ : Ctx} {A B m : Tm}
   let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
     SemCtx.cons hΓ IA (TA.weakens hΓ)
   let IB := TB.interp hΓA
-  change (TypeInterp.kpi IA IB (SemCtx.weakens hΓ) (hTB hΓA)).SemTm (.lam A m)
-  apply TypeInterp.semLamKPiInterp IA IB (SemCtx.weakens hΓ) (hTB hΓA)
+  change (TypeInterp.kpi IA IB (SemCtx.weakens hΓ) (TypeInterp.Saturated.of_expansive (hTB hΓA))).SemTm (.lam A m)
+  apply TypeInterp.semLamKPiInterp IA IB (SemCtx.weakens hΓ) (TypeInterp.Saturated.of_expansive (hTB hΓA))
   · intro σ hσ
     exact IA.type_sn σ hσ
   · intro σ hσ
@@ -4918,7 +5349,7 @@ lemma app {Γ : Ctx} {A B m n : Tm}
   let IB := TB.interp hΓA
   change (TypeInterp.subst1 IA IB (hn hΓ)).SemTm (.app m n)
   exact TypeInterp.semAppKPiSubst1 IA IB (SemCtx.weakens hΓ)
-    (hTB hΓA) (hm hΓ) (hn hΓ)
+    (TypeInterp.Saturated.of_expansive (hTB hΓA)) (hm hΓ) (hn hΓ)
 
 lemma tup {Γ : Ctx} {A B m n : Tm}
     (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B) :
@@ -5326,9 +5757,9 @@ lemma lam {Γ : Ctx} {A B m : Tm} {iA : Nat} :
         exact IBody.type_sn σ hσ)
   have hIBexp :
       ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) ->
-        Candidate.Expansive (IB.cand σ) := by
+        Candidate.Saturated (IB.cand σ) := by
     intro σ hσ
-    exact Candidate.snCandidate_expansive
+    exact Candidate.snCandidate_saturated
   refine ⟨TypeInterp.kpi IA IB hΔ hIBexp,
     TypeInterp.kpi_weakens IA IB hΔ hIBexp, ?_⟩
   apply TypeInterp.semLamKPiInterp IA IB hΔ hIBexp
@@ -5480,7 +5911,7 @@ lemma canAppKPi {Γ : Ctx} {A B m n : Tm}
     TypeInterp.subst1_weakens IA IB (TB.weakens hΓA), ?_⟩
   change (TypeInterp.subst1 IA IB hnI).SemTm (.app m n)
   exact TypeInterp.semAppKPiSubst1 IA IB (SemCtx.weakens hΓ.semCtx)
-    (hTB hΓA) (hm hΓ) hnI
+    (TypeInterp.Saturated.of_expansive (hTB hΓA)) (hm hΓ) hnI
 
 lemma canLamKPi {Γ : Ctx} {A B m : Tm}
     (TA : SemTypeData Γ A)
@@ -5493,9 +5924,9 @@ lemma canLamKPi {Γ : Ctx} {A B m : Tm}
   let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
     CanSemCtx.cons hΓ TA
   let IB := TB.interp hΓA.semCtx
-  change (TypeInterp.kpi IA IB (SemCtx.weakens hΓ.semCtx) (hTB hΓA.semCtx)).SemTm
+  change (TypeInterp.kpi IA IB (SemCtx.weakens hΓ.semCtx) (TypeInterp.Saturated.of_expansive (hTB hΓA.semCtx))).SemTm
     (.lam A m)
-  apply TypeInterp.semLamKPiInterp IA IB (SemCtx.weakens hΓ.semCtx) (hTB hΓA.semCtx)
+  apply TypeInterp.semLamKPiInterp IA IB (SemCtx.weakens hΓ.semCtx) (TypeInterp.Saturated.of_expansive (hTB hΓA.semCtx))
   · intro σ hσ
     exact IA.type_sn σ hσ
   · intro σ hσ
@@ -5536,6 +5967,13 @@ namespace CanTypeData
 
 def Expansive {Γ : Ctx} {A : Tm} (TA : CanTypeData Γ A) : Prop :=
   ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ), (TA.interp hΓ).Expansive
+
+def Saturated {Γ : Ctx} {A : Tm} (TA : CanTypeData Γ A) : Prop :=
+  ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ), (TA.interp hΓ).Saturated
+
+lemma Saturated.of_expansive {Γ : Ctx} {A : Tm} {TA : CanTypeData Γ A} :
+    TA.Expansive -> TA.Saturated :=
+  fun hTA {_Δ} hΓ => TypeInterp.Saturated.of_expansive (hTA hΓ)
 
 def CanSemTm {Γ : Ctx} {A : Tm} (TA : CanTypeData Γ A) (m : Tm) : Prop :=
   ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ), (TA.interp hΓ).SemTm m
@@ -6072,6 +6510,26 @@ noncomputable def kpi {Γ : Ctx} {A B : Tm}
     let IA := TA.interp hΓ
     let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
       CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+    TypeInterp.kpi IA (TB.interp hΓA) (CanSemCtx.weakens hΓ) (TypeInterp.Saturated.of_expansive (hTB hΓA))
+  weakens hΓ := by
+    let IA := TA.interp hΓ
+    let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+      CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+    change (TypeInterp.kpi IA (TB.interp hΓA)
+      (CanSemCtx.weakens hΓ) (TypeInterp.Saturated.of_expansive (hTB hΓA))).Weakens
+    exact TypeInterp.kpi_weakens IA (TB.interp hΓA)
+      (CanSemCtx.weakens hΓ) (TypeInterp.Saturated.of_expansive (hTB hΓA))
+
+/-- Π type interpretation requiring only a *saturated* codomain — admits
+function/pair codomains (higher-order). This is the Π case of the proper
+recursive `typeFund`. -/
+noncomputable def kpiSat {Γ : Ctx} {A B : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Saturated) : CanTypeData Γ (.pi A B) where
+  interp hΓ :=
+    let IA := TA.interp hΓ
+    let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+      CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
     TypeInterp.kpi IA (TB.interp hΓA) (CanSemCtx.weakens hΓ) (hTB hΓA)
   weakens hΓ := by
     let IA := TA.interp hΓ
@@ -6081,6 +6539,19 @@ noncomputable def kpi {Γ : Ctx} {A B : Tm}
       (CanSemCtx.weakens hΓ) (hTB hΓA)).Weakens
     exact TypeInterp.kpi_weakens IA (TB.interp hΓA)
       (CanSemCtx.weakens hΓ) (hTB hΓA)
+
+lemma kpiSat_saturated {Γ : Ctx} {A B : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Saturated) :
+    (CanTypeData.kpiSat TA TB hTB).Saturated := by
+  intro Δ hΓ
+  let IA := TA.interp hΓ
+  let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+  change (TypeInterp.kpi IA (TB.interp hΓA)
+    (CanSemCtx.weakens hΓ) (hTB hΓA)).Saturated
+  exact TypeInterp.kpi_saturated IA (TB.interp hΓA)
+    (CanSemCtx.weakens hΓ) (hTB hΓA)
 
 noncomputable def ksig {Γ : Ctx} {A B : Tm}
     (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B) :
@@ -6096,6 +6567,16 @@ noncomputable def ksig {Γ : Ctx} {A B : Tm}
       CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
     change (TypeInterp.ksig IA (TB.interp hΓA) (CanSemCtx.weakens hΓ)).Weakens
     exact TypeInterp.ksig_weakens IA (TB.interp hΓA) (CanSemCtx.weakens hΓ)
+
+lemma ksig_saturated {Γ : Ctx} {A B : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B) :
+    (CanTypeData.ksig TA TB).Saturated := by
+  intro Δ hΓ
+  let IA := TA.interp hΓ
+  let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+  change (TypeInterp.ksig IA (TB.interp hΓA) (CanSemCtx.weakens hΓ)).Saturated
+  exact TypeInterp.ksig_saturated IA (TB.interp hΓA) (CanSemCtx.weakens hΓ)
 
 lemma pi_type {Γ : Ctx} {A B : Tm}
     (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
@@ -6385,8 +6866,8 @@ lemma lamKPi {Γ : Ctx} {A B m : Tm}
   let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
     CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
   let IB := TB.interp hΓA
-  change (TypeInterp.kpi IA IB (CanSemCtx.weakens hΓ) (hTB hΓA)).SemTm (.lam A m)
-  apply TypeInterp.semLamKPiInterp IA IB (CanSemCtx.weakens hΓ) (hTB hΓA)
+  change (TypeInterp.kpi IA IB (CanSemCtx.weakens hΓ) (TypeInterp.Saturated.of_expansive (hTB hΓA))).SemTm (.lam A m)
+  apply TypeInterp.semLamKPiInterp IA IB (CanSemCtx.weakens hΓ) (TypeInterp.Saturated.of_expansive (hTB hΓA))
   · intro σ hσ
     exact IA.type_sn σ hσ
   · intro σ hσ
@@ -6410,7 +6891,7 @@ lemma appKPi {Γ : Ctx} {A B m n : Tm}
   let hnI : IA.SemTm n := hn hΓ
   change (TypeInterp.subst1 IA IB hnI).SemTm (.app m n)
   exact TypeInterp.semAppKPiSubst1 IA IB (CanSemCtx.weakens hΓ)
-    (hTB hΓA) (hm hΓ) hnI
+    (TypeInterp.Saturated.of_expansive (hTB hΓA)) (hm hΓ) hnI
 
 lemma tupKSig {Γ : Ctx} {A B m n : Tm}
     (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
@@ -9168,6 +9649,44 @@ lemma lamSN {Γ : Ctx} {A B m : Tm} {iA : Nat}
       (CanSemTyped.sn_subst (CanFund.toCanSemTyped JA) hΓ σ hσ)
       (CanSemTyped.sn_subst (CanFund.toCanSemTyped Jm) hΓA (up σ) hσA)
 
+lemma piSN {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (JA : CanFund Γ A (.ty iA))
+    (JB : CanFund (A :: Γ) B (.ty iB)) :
+    CanFund Γ (.pi A B) (.ty (max iA iB)) := by
+  let TA := CanTypeFundExp.typeData (CanTypeFundExp.ofCanFund JA)
+  apply CanFund.ofSubstSN
+  · intro Δ hΓ σ hσ
+    exact sn_ty
+  · intro Δ hΓ σ hσ
+    let IA := TA.interp hΓ
+    let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+      CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+    have hσA : (DCandCtx.extend IA).valid (up σ) :=
+      DCandCtx.extend_up_valid (I := IA) (CanSemCtx.weakens hΓ) hσ
+    change SN Step (.pi A.[σ] B.[up σ])
+    exact sn_pi
+      (CanSemTyped.sn_subst (CanFund.toCanSemTyped JA) hΓ σ hσ)
+      (CanSemTyped.sn_subst (CanFund.toCanSemTyped JB) hΓA (up σ) hσA)
+
+lemma sigSN {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (JA : CanFund Γ A (.ty iA))
+    (JB : CanFund (A :: Γ) B (.ty iB)) :
+    CanFund Γ (.sig A B) (.ty (max iA iB)) := by
+  let TA := CanTypeFundExp.typeData (CanTypeFundExp.ofCanFund JA)
+  apply CanFund.ofSubstSN
+  · intro Δ hΓ σ hσ
+    exact sn_ty
+  · intro Δ hΓ σ hσ
+    let IA := TA.interp hΓ
+    let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+      CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+    have hσA : (DCandCtx.extend IA).valid (up σ) :=
+      DCandCtx.extend_up_valid (I := IA) (CanSemCtx.weakens hΓ) hσ
+    change SN Step (.sig A.[σ] B.[up σ])
+    exact sn_sig
+      (CanSemTyped.sn_subst (CanFund.toCanSemTyped JA) hΓ σ hσ)
+      (CanSemTyped.sn_subst (CanFund.toCanSemTyped JB) hΓA (up σ) hσA)
+
 lemma tupSN {Γ : Ctx} {A B m n : Tm} {i : Nat}
     (JS : CanFund Γ (.sig A B) (.ty i))
     (Jm : CanFund Γ m A)
@@ -9581,6 +10100,56 @@ noncomputable def idnTypeDataOfCanFund
     change SN Step n.[σ]
     exact CanSemTyped.sn_subst (CanFund.toCanSemTyped (fund tyn)) hΓ σ hσ
   exact CanTypeData.idn TA hm hn
+
+lemma idnTypeDataOfCanFund_saturated
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanFund Γ m A)
+    {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (ty : Γ ⊢ .idn A m n : .ty i) :
+    (Typed.idnTypeDataOfCanFund fund ty).Saturated := by
+  intro Δ hΓ σ hσ
+  exact Candidate.snCandidate_saturated
+
+/-- Proper recursive type interpretation: unlike `canTypeJudgment_of_can_fund`
+(which uses `snCandidate` codomains and so fails on higher-order types), the
+`pi`/`sig` cases here use the *structured* `kpiSat`/`ksig` interpretations whose
+codomains recurse — so a function-returning type interprets correctly. The
+result is bundled with its weak-head saturation proof (needed for it to serve as
+the codomain of an outer `pi`). Recursion is on the type `A`. -/
+noncomputable def properTypeData
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanFund Γ m A)
+    {Γ : Ctx} {A : Tm} {i : Nat} (ty : Γ ⊢ A : .ty i) :
+    { TD : CanTypeData Γ A // TD.Saturated } :=
+  match A with
+  | .pi A' B' =>
+      let dom := CanTypeData.ofCanSemTypedType
+        (CanFund.toCanSemTyped (fund (Typed.piDomainTyped ty)))
+      let cod := properTypeData fund (Typed.piCodomainTyped ty)
+      ⟨CanTypeData.kpiSat dom cod.1 cod.2,
+        CanTypeData.kpiSat_saturated dom cod.1 cod.2⟩
+  | .sig A' B' =>
+      let dom := CanTypeData.ofCanSemTypedType
+        (CanFund.toCanSemTyped (fund (Typed.sigDomainTyped ty)))
+      let cod := properTypeData fund (Typed.sigCodomainTyped ty)
+      ⟨CanTypeData.ksig dom cod.1, CanTypeData.ksig_saturated dom cod.1⟩
+  | .ty j =>
+      ⟨CanTypeData.univ Γ j,
+        CanTypeData.Saturated.of_expansive (CanTypeData.univ_expansive Γ j)⟩
+  | .bool =>
+      ⟨CanTypeData.bool Γ,
+        CanTypeData.Saturated.of_expansive (CanTypeData.bool_expansive Γ)⟩
+  | .bot =>
+      ⟨CanTypeData.bot Γ,
+        CanTypeData.Saturated.of_expansive (CanTypeData.bot_expansive Γ)⟩
+  | .idn A' a b =>
+      ⟨Typed.idnTypeDataOfCanFund fund ty,
+        Typed.idnTypeDataOfCanFund_saturated fund ty⟩
+  | _ =>
+      ⟨CanTypeData.ofCanSemTypedType (i := i) (CanFund.toCanSemTyped (fund ty)),
+        CanTypeData.Saturated.of_expansive
+          (CanTypeData.ofCanSemTypedType_expansive (i := i)
+            (CanFund.toCanSemTyped (fund ty)))⟩
+termination_by sizeOf A
+decreasing_by all_goals simp_wf
 
 end Typed
 
@@ -10331,6 +10900,437 @@ theorem Typed.normalize_of_term_data_nonempty
     Γ ⊢ m : A -> SN Step m := by
   classical
   exact Typed.normalize_of_term_data (fun ty => Classical.choice (fund ty))
+
+namespace Luo
+
+abbrev TypeFund :=
+  ∀ {Γ A i}, Γ ⊢ A : .ty i -> CanTypeData Γ A
+
+abbrev TermFund (typeFund : TypeFund) : Prop :=
+  ∀ {Γ m A} (ty : Γ ⊢ m : A),
+    TypeFundCtxCore.AtSemTm
+      (fun {Γ A i} (tyA : Γ ⊢ A : .ty i) => typeFund tyA)
+      (typeFund (Typed.validityTyped ty)) m
+
+theorem normalize
+    (typeFund : TypeFund)
+    (termFund : TermFund typeFund)
+    {Γ : Ctx} {m A : Tm} :
+    Γ ⊢ m : A -> SN Step m :=
+  Typed.normalize_of_type_fund_ctx_validity
+    (fun tyA => typeFund tyA)
+    termFund
+
+end Luo
+
+namespace Luo
+
+abbrev EquivAtFund (typeFund : TypeFund)
+    {Γ : Ctx} {A B : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData Γ B) : Prop :=
+  ∀ hCore : TypeFundCtxCore Γ,
+    TypeFundCtxCore.EquivAt typeFund hCore TA TB
+
+abbrev ProofIrrel (typeFund : TypeFund) : Prop :=
+  ∀ {Γ : Ctx} {A : Tm} {i : Nat}
+    (tyA tyA' : Γ ⊢ A : .ty i),
+    EquivAtFund typeFund (typeFund tyA) (typeFund tyA')
+
+structure TypeData
+    (typeFund : TypeFund)
+    {Γ : Ctx} {A : Tm} {i : Nat}
+    (tyA : Γ ⊢ A : .ty i) where
+  typeData : CanTypeData Γ A
+  equiv : EquivAtFund typeFund typeData (typeFund tyA)
+
+structure TermData
+    (typeFund : TypeFund)
+    {Γ : Ctx} {m A : Tm}
+    (ty : Γ ⊢ m : A) where
+  typeData : CanTypeData Γ A
+  canSemTm : typeData.CanSemTm m
+  equiv : EquivAtFund typeFund typeData (typeFund (Typed.validityTyped ty))
+
+namespace TermData
+
+def ofCanTermData
+    {typeFund : TypeFund}
+    {Γ : Ctx} {m A : Tm} {ty : Γ ⊢ m : A}
+    (J : CanTermData Γ m A)
+    (hEq : EquivAtFund typeFund J.typeData (typeFund (Typed.validityTyped ty))) :
+    TermData typeFund ty where
+  typeData := J.typeData
+  canSemTm := J.canSemTm
+  equiv := hEq
+
+def ofCanTermDataAt
+    {typeFund : TypeFund}
+    {Γ : Ctx} {m A : Tm} {ty : Γ ⊢ m : A}
+    {TA : CanTypeData Γ A}
+    (J : CanTermDataAt Γ m A TA)
+    (hEq : EquivAtFund typeFund TA (typeFund (Typed.validityTyped ty))) :
+    TermData typeFund ty where
+  typeData := TA
+  canSemTm := J.canSemTm
+  equiv := hEq
+
+lemma atSemTm
+    {typeFund : TypeFund}
+    {Γ : Ctx} {m A : Tm} {ty : Γ ⊢ m : A}
+    (J : TermData typeFund ty) :
+    TypeFundCtxCore.AtSemTm typeFund (typeFund (Typed.validityTyped ty)) m :=
+  TypeFundCtxCore.AtSemTm.retag J.equiv
+    (TypeFundCtxCore.AtSemTm.of_can_sem_tm J.canSemTm)
+
+end TermData
+
+def termFundOfTermData
+    {typeFund : TypeFund}
+    (termData : ∀ {Γ m A} (ty : Γ ⊢ m : A), TermData typeFund ty) :
+    TermFund typeFund :=
+  fun ty => (termData ty).atSemTm
+
+theorem normalize_of_term_data
+    (typeFund : TypeFund)
+    (termData : ∀ {Γ m A} (ty : Γ ⊢ m : A), TermData typeFund ty)
+    {Γ : Ctx} {m A : Tm} :
+    Γ ⊢ m : A -> SN Step m :=
+  Luo.normalize typeFund (termFundOfTermData termData)
+
+structure Fundamental where
+  typeFund : TypeFund
+  proofIrrel : ProofIrrel typeFund
+  termData : ∀ {Γ m A} (ty : Γ ⊢ m : A), TermData typeFund ty
+
+namespace Fundamental
+
+theorem normalize
+    (F : Fundamental)
+    {Γ : Ctx} {m A : Tm} :
+    Γ ⊢ m : A -> SN Step m :=
+  Luo.normalize_of_term_data F.typeFund F.termData
+
+end Fundamental
+
+lemma atSemTm_of_canSemTm
+    (typeFund : TypeFund)
+    {Γ : Ctx} {A m : Tm} {TA : CanTypeData Γ A} :
+    TA.CanSemTm m ->
+    TypeFundCtxCore.AtSemTm typeFund TA m :=
+  TypeFundCtxCore.AtSemTm.of_can_sem_tm
+
+lemma atSemTm_retag
+    (typeFund : TypeFund)
+    {Γ : Ctx} {A B m : Tm}
+    {TA : CanTypeData Γ A} {TB : CanTypeData Γ B} :
+    EquivAtFund typeFund TA TB ->
+    TypeFundCtxCore.AtSemTm typeFund TA m ->
+    TypeFundCtxCore.AtSemTm typeFund TB m :=
+  TypeFundCtxCore.AtSemTm.retag
+
+lemma term_srt
+    (typeFund : TypeFund)
+    {Γ : Ctx} {i : Nat} (wf : Γ ⊢)
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.univ Γ (i + 1))
+      (typeFund (Typed.validityTyped (Typed.srt (Γ := Γ) i wf)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.srt (Γ := Γ) i wf))) (.ty i) :=
+  Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund (CanTypeData.ty (Γ := Γ) i))
+
+lemma term_var
+    (typeFund : TypeFund)
+    {Γ : Ctx} {x : Var} {A : Tm}
+    (wf : Γ ⊢) (hs : Has Γ x A)
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.lookup hs)
+      (typeFund (Typed.validityTyped (Typed.var wf hs)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.var wf hs))) (.var x) :=
+  Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund (CanTypeData.lookup_var hs))
+
+lemma term_bool
+    (typeFund : TypeFund)
+    {Γ : Ctx} (wf : Γ ⊢)
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.univ Γ 0)
+      (typeFund (Typed.validityTyped (Typed.bool (Γ := Γ) wf)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.bool (Γ := Γ) wf))) .bool :=
+  Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund (CanTypeData.bool_type (Γ := Γ)))
+
+lemma term_bot
+    (typeFund : TypeFund)
+    {Γ : Ctx} (wf : Γ ⊢)
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.univ Γ 0)
+      (typeFund (Typed.validityTyped (Typed.bot (Γ := Γ) wf)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.bot (Γ := Γ) wf))) .bot :=
+  Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund (CanTypeData.bot_type (Γ := Γ)))
+
+lemma term_tt
+    (typeFund : TypeFund)
+    {Γ : Ctx} (wf : Γ ⊢)
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.bool Γ)
+      (typeFund (Typed.validityTyped (Typed.tt (Γ := Γ) wf)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.tt (Γ := Γ) wf))) .tt :=
+  Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund (CanTypeData.tt (Γ := Γ)))
+
+lemma term_ff
+    (typeFund : TypeFund)
+    {Γ : Ctx} (wf : Γ ⊢)
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.bool Γ)
+      (typeFund (Typed.validityTyped (Typed.ff (Γ := Γ) wf)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.ff (Γ := Γ) wf))) .ff :=
+  Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund (CanTypeData.ff (Γ := Γ)))
+
+lemma term_pi_type
+    (typeFund : TypeFund)
+    {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (tyA : Γ ⊢ A : .ty iA)
+    (tyB : A :: Γ ⊢ B : .ty iB)
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.univ Γ (max iA iB))
+      (typeFund (Typed.validityTyped (Typed.pi tyA tyB)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.pi tyA tyB))) (.pi A B) :=
+  Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund
+      (CanTypeData.pi_type TA TB hTB (max iA iB)))
+
+lemma term_sig_type
+    (typeFund : TypeFund)
+    {Γ : Ctx} {A B : Tm} {iA iB : Nat}
+    (tyA : Γ ⊢ A : .ty iA)
+    (tyB : A :: Γ ⊢ B : .ty iB)
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.univ Γ (max iA iB))
+      (typeFund (Typed.validityTyped (Typed.sig tyA tyB)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.sig tyA tyB))) (.sig A B) :=
+  Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund
+      (CanTypeData.sig_type TA TB (max iA iB)))
+
+lemma term_idn_type
+    (typeFund : TypeFund)
+    {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (tyA : Γ ⊢ A : .ty i)
+    (tym : Γ ⊢ m : A) (tyn : Γ ⊢ n : A)
+    (TA : CanTypeData Γ A)
+    (hm : TA.CanSemTm m) (hn : TA.CanSemTm n)
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.univ Γ i)
+      (typeFund (Typed.validityTyped (Typed.idn tyA tym tyn)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.idn tyA tym tyn))) (.idn A m n) :=
+  Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund
+      (CanTypeData.idn_type TA hm hn i))
+
+lemma term_rfl
+    (typeFund : TypeFund)
+    {Γ : Ctx} {A m : Tm}
+    (tym : Γ ⊢ m : A)
+    (TA : CanTypeData Γ A)
+    (hm : TA.CanSemTm m)
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.idn TA hm hm)
+      (typeFund (Typed.validityTyped (Typed.rfl tym)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.rfl tym))) (.rfl m) :=
+  Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund
+      (by
+        intro Δ hΓ
+        exact TypeInterp.semRfl (hm hΓ)))
+
+lemma term_lam
+    (typeFund : TypeFund)
+    {Γ : Ctx} {A B m : Tm} {iA : Nat}
+    (tyA : Γ ⊢ A : .ty iA)
+    (tym : A :: Γ ⊢ m : B)
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (hm : TB.CanSemTm m)
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.kpi TA TB hTB)
+      (typeFund (Typed.validityTyped (Typed.lam tyA tym)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.lam tyA tym))) (.lam A m) :=
+  Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund
+      (CanTypeData.lamKPi TA TB hTB hm))
+
+lemma term_app
+    (typeFund : TypeFund)
+    {Γ : Ctx} {A B m n : Tm}
+    (tym : Γ ⊢ m : .pi A B)
+    (tyn : Γ ⊢ n : A)
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hTB : TB.Expansive)
+    (hm : (CanTypeData.kpi TA TB hTB).CanSemTm m)
+    (hn : TA.CanSemTm n)
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.subst1 TA TB hn)
+      (typeFund (Typed.validityTyped (Typed.app tym tyn)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.app tym tyn))) (.app m n) :=
+  Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund
+      (CanTypeData.appKPi TA TB hTB hm hn))
+
+lemma term_tup
+    (typeFund : TypeFund)
+    {Γ : Ctx} {A B m n : Tm} {i : Nat}
+    (tyS : Γ ⊢ .sig A B : .ty i)
+    (tym : Γ ⊢ m : A)
+    (tyn : Γ ⊢ n : B.[m/])
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (hm : TA.CanSemTm m)
+    (hn : (CanTypeData.subst1 TA TB hm).CanSemTm n)
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.ksig TA TB)
+      (typeFund (Typed.validityTyped (Typed.tup tyS tym tyn)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.tup tyS tym tyn))) (.tup m n) :=
+  Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund
+      (CanTypeData.tupKSig TA TB hm hn))
+
+lemma term_prj_exact
+    (typeFund : TypeFund)
+    {Γ : Ctx} {A B C m n : Tm} {iC : Nat}
+    (tyC : .sig A B :: Γ ⊢ C : .ty iC)
+    (tym : Γ ⊢ m : .sig A B)
+    (tyn : B :: A :: Γ ⊢ n : C.[.tup (.var 1) (.var 0) .: shift 2])
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (TC : CanTypeData (.sig A B :: Γ) C)
+    (hTC : TC.Expansive)
+    (hm : (CanTypeData.ksig TA TB).CanSemTm m)
+    (Jn : CanTermDataAt (B :: A :: Γ) n
+      C.[.tup (.var 1) (.var 0) .: shift 2]
+      (CanTypeData.sigmaBranch TC))
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.subst1 (CanTypeData.ksig TA TB) TC hm)
+      (typeFund (Typed.validityTyped (Typed.prj tyC tym tyn)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.prj tyC tym tyn))) (.prj C m n) := by
+  let Jm : CanTermDataAt Γ m (.sig A B) (CanTypeData.ksig TA TB) :=
+    CanTermDataAt.ofTypeData (CanTypeData.ksig TA TB) hm
+  exact Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund
+      (by
+        change (CanTypeData.subst1 (CanTypeData.ksig TA TB) TC Jm.canSemTm).CanSemTm
+          (.prj C m n)
+        exact (CanTermDataAt.prjBranchExact TA TB TC hTC Jm Jn).canSemTm))
+
+lemma term_ite
+    (typeFund : TypeFund)
+    {Γ : Ctx} {A m n1 n2 : Tm} {i : Nat}
+    (tyA : .bool :: Γ ⊢ A : .ty i)
+    (tym : Γ ⊢ m : .bool)
+    (tyn1 : Γ ⊢ n1 : A.[.tt/])
+    (tyn2 : Γ ⊢ n2 : A.[.ff/])
+    (TB : CanTypeData (.bool :: Γ) A)
+    (hTB : TB.Expansive)
+    (hm : (CanTypeData.bool Γ).CanSemTm m)
+    (hn1 : (CanTypeData.subst1 (CanTypeData.bool Γ) TB CanTypeData.tt).CanSemTm n1)
+    (hn2 : (CanTypeData.subst1 (CanTypeData.bool Γ) TB CanTypeData.ff).CanSemTm n2)
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.subst1 (CanTypeData.bool Γ) TB hm)
+      (typeFund (Typed.validityTyped (Typed.ite tyA tym tyn1 tyn2)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.ite tyA tym tyn1 tyn2)))
+      (.ite A m n1 n2) :=
+  Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund
+      (CanTypeData.iteBool TB hTB hm hn1 hn2))
+
+lemma term_exf
+    (typeFund : TypeFund)
+    {Γ : Ctx} {A m : Tm} {i : Nat}
+    (tyA : .bot :: Γ ⊢ A : .ty i)
+    (tym : Γ ⊢ m : .bot)
+    (TB : CanTypeData (.bot :: Γ) A)
+    (hTB : TB.Expansive)
+    (hm : (CanTypeData.bot Γ).CanSemTm m)
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.subst1 (CanTypeData.bot Γ) TB hm)
+      (typeFund (Typed.validityTyped (Typed.exf tyA tym)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.exf tyA tym))) (.exf A m) :=
+  Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund
+      (CanTypeData.exfBot TB hTB hm))
+
+lemma term_rw_target
+    (typeFund : TypeFund)
+    {Γ : Ctx} {A B m n a b : Tm} {i : Nat}
+    (tyA : .idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ ⊢ A : .ty i)
+    (tym : Γ ⊢ m : A.[.rfl a,a/])
+    (tyn : Γ ⊢ n : .idn B a b)
+    (TB : CanTypeData Γ B)
+    (Ja : CanTermDataAt Γ a B TB)
+    (Jb : CanTermDataAt Γ b B TB)
+    (Jn : CanTermDataAt Γ n (.idn B a b)
+      (CanTypeData.idn TB Ja.canSemTm Jb.canSemTm))
+    (TA : CanTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A)
+    (hTA : TA.Expansive)
+    (hrfl : ∀ {Δ : DCandCtx} (hΓ : CanSemCtx Γ Δ),
+      let IB := TB.interp hΓ
+      let hΓB : CanSemCtx (B :: Γ) (DCandCtx.extend IB) :=
+        CanSemCtx.consInterp hΓ IB (TB.weakens hΓ)
+      let IP := TypeInterp.idProof IB (Ja.canSemTm hΓ)
+      let hΓP : CanSemCtx
+          (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+          (DCandCtx.extend IP) :=
+        CanSemCtx.consInterp hΓB IP
+          (TypeInterp.idProof_weakens IB (Ja.canSemTm hΓ))
+      let IA := TA.interp hΓP
+      ∀ σ, Δ.valid σ -> ∀ c,
+        (IA.cand (.rfl c .: b.[σ] .: σ)).mem m.[σ])
+    (hEq : EquivAtFund typeFund
+      (CanTypeData.idTarget TB Ja.canSemTm Jb.canSemTm Jn.canSemTm TA)
+      (typeFund (Typed.validityTyped (Typed.rw tyA tym tyn)))) :
+    TypeFundCtxCore.AtSemTm typeFund
+      (typeFund (Typed.validityTyped (Typed.rw tyA tym tyn))) (.rw A m n) :=
+  Luo.atSemTm_retag typeFund hEq
+    (Luo.atSemTm_of_canSemTm typeFund
+      (CanTermDataAt.rwTarget TB Ja Jb Jn TA hTA hrfl).canSemTm)
+
+noncomputable def typeFundOfCanFund
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanFund Γ m A) :
+    TypeFund :=
+  fun tyA => (Typed.canTypeJudgment_of_can_fund fund tyA).typeData
+
+abbrev TermFundOfCanFund
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanFund Γ m A) : Prop :=
+  TermFund (typeFundOfCanFund fund)
+
+theorem normalize_of_can_fund
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> CanFund Γ m A)
+    (termFund : TermFundOfCanFund fund)
+    {Γ : Ctx} {m A : Tm} :
+    Γ ⊢ m : A -> SN Step m :=
+  Luo.normalize (typeFundOfCanFund fund) termFund
+
+end Luo
 
 def SemTm (Δ : CandCtx) (m : Tm) (C : Candidate) : Prop :=
   ∀ σ, CandSubst Δ σ -> C.mem m.[σ]
