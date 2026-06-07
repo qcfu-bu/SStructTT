@@ -298,6 +298,24 @@ lemma sn_pi {A B : Tm} :
       | pi_B A stB =>
         exact ihB' stB
 
+lemma sn_pi_left {A B : Tm} :
+    SN Step (.pi A B) -> SN Step A := by
+  intro h
+  exact SN.preimage (e := Step) (x := A) (f := fun X => Tm.pi X B)
+    (by
+      intro X Y st
+      exact Step.pi_A B st)
+    h
+
+lemma sn_pi_right {A B : Tm} :
+    SN Step (.pi A B) -> SN Step B := by
+  intro h
+  exact SN.preimage (e := Step) (x := B) (f := fun Y => Tm.pi A Y)
+    (by
+      intro X Y st
+      exact Step.pi_B A st)
+    h
+
 lemma sn_lam {A m : Tm} :
     SN Step A -> SN Step m -> SN Step (.lam A m) := by
   intro snA
@@ -329,6 +347,24 @@ lemma sn_sig {A B : Tm} :
         exact ihA' stA (SN.intro ihB)
       | sig_B A stB =>
         exact ihB' stB
+
+lemma sn_sig_left {A B : Tm} :
+    SN Step (.sig A B) -> SN Step A := by
+  intro h
+  exact SN.preimage (e := Step) (x := A) (f := fun X => Tm.sig X B)
+    (by
+      intro X Y st
+      exact Step.sig_A B st)
+    h
+
+lemma sn_sig_right {A B : Tm} :
+    SN Step (.sig A B) -> SN Step B := by
+  intro h
+  exact SN.preimage (e := Step) (x := B) (f := fun Y => Tm.sig A Y)
+    (by
+      intro X Y st
+      exact Step.sig_B A st)
+    h
 
 lemma sn_tup {m n : Tm} :
     SN Step m -> SN Step n -> SN Step (.tup m n) := by
@@ -1870,6 +1906,9 @@ def Weakens {Δ : DCandCtx} {A : Tm} (I : TypeInterp Δ A) : Prop :=
   ∀ {σ m}, Δ.valid σ -> (I.cand σ).mem m ->
     (I.cand (fun x => (σ x).[shift 1])).mem m.[shift 1]
 
+def Expansive {Δ : DCandCtx} {A : Tm} (I : TypeInterp Δ A) : Prop :=
+  ∀ σ, (hσ : Δ.valid σ) -> Candidate.Expansive (I.cand σ)
+
 lemma weakens_iter {Δ : DCandCtx} {A : Tm} (I : TypeInterp Δ A)
     (hΔ : Δ.Weakens) (hI : I.Weakens) {σ : Var -> Tm} {m : Tm} :
     Δ.valid σ -> (I.cand σ).mem m ->
@@ -1965,22 +2004,45 @@ lemma const_weakens {Δ : DCandCtx} {A : Tm} {C : Candidate}
   intro hC σ m hσ hm
   exact hC hm
 
+lemma const_expansive {Δ : DCandCtx} {A : Tm} {C : Candidate}
+    {hA : ∀ σ, Δ.valid σ -> SN Step A.[σ]} :
+    Candidate.Expansive C -> (TypeInterp.const Δ A C hA).Expansive := by
+  intro hC σ hσ
+  exact hC
+
 lemma univ_weakens (Δ : DCandCtx) (i : Nat) :
     (TypeInterp.univ Δ i).Weakens :=
   TypeInterp.const_weakens Candidate.univ_weakens
+
+lemma univ_expansive (Δ : DCandCtx) (i : Nat) :
+    (TypeInterp.univ Δ i).Expansive :=
+  TypeInterp.const_expansive Candidate.univ_expansive
 
 lemma bool_weakens (Δ : DCandCtx) :
     (TypeInterp.bool Δ).Weakens :=
   TypeInterp.const_weakens Candidate.bool_weakens
 
+lemma bool_expansive (Δ : DCandCtx) :
+    (TypeInterp.bool Δ).Expansive :=
+  TypeInterp.const_expansive Candidate.bool_expansive
+
 lemma bot_weakens (Δ : DCandCtx) :
     (TypeInterp.bot Δ).Weakens :=
   TypeInterp.const_weakens Candidate.bot_weakens
+
+lemma bot_expansive (Δ : DCandCtx) :
+    (TypeInterp.bot Δ).Expansive :=
+  TypeInterp.const_expansive Candidate.bot_expansive
 
 lemma idn_weakens {Δ : DCandCtx} {A m n : Tm} {I : TypeInterp Δ A}
     {hm : I.SemTm m} {hn : I.SemTm n} :
     (TypeInterp.idn I hm hn).Weakens :=
   TypeInterp.const_weakens Candidate.idn_weakens
+
+lemma idn_expansive {Δ : DCandCtx} {A m n : Tm} {I : TypeInterp Δ A}
+    {hm : I.SemTm m} {hn : I.SemTm n} :
+    (TypeInterp.idn I hm hn).Expansive :=
+  TypeInterp.const_expansive Candidate.idn_expansive
 
 lemma semTt {Δ : DCandCtx} : (TypeInterp.bool Δ).SemTm .tt := by
   intro σ hσ
@@ -1991,6 +2053,24 @@ lemma semFf {Δ : DCandCtx} : (TypeInterp.bool Δ).SemTm .ff := by
   intro σ hσ
   asimp
   exact sn_ff
+
+lemma semTy {Δ : DCandCtx} (i j : Nat) :
+    (TypeInterp.univ Δ j).SemTm (.ty i) := by
+  intro σ hσ
+  asimp
+  exact Candidate.ty
+
+lemma semBoolType {Δ : DCandCtx} (i : Nat) :
+    (TypeInterp.univ Δ i).SemTm .bool := by
+  intro σ hσ
+  asimp
+  exact Candidate.bool_type
+
+lemma semBotType {Δ : DCandCtx} (i : Nat) :
+    (TypeInterp.univ Δ i).SemTm .bot := by
+  intro σ hσ
+  asimp
+  exact Candidate.bot_type
 
 lemma semRfl {Δ : DCandCtx} {A m : Tm} {I : TypeInterp Δ A}
     (hm : I.SemTm m) :
@@ -2129,6 +2209,345 @@ lemma semVarSucc {Δ : DCandCtx} {A B : Tm}
   asimp
   exact hx (fun y => σ (y + 1)) hσ.1
 
+lemma semTm_weakenCtx {Δ : DCandCtx} {A B m : Tm}
+    (I : TypeInterp Δ A) (J : TypeInterp Δ B) :
+    I.SemTm m -> (TypeInterp.weakenCtx I J).SemTm m.[shift 1] := by
+  intro hm σ hσ
+  asimp
+  exact hm (fun y => σ (y + 1)) hσ.1
+
+def idProof {Δ : DCandCtx} {B a : Tm}
+    (IB : TypeInterp Δ B) (ha : IB.SemTm a) :
+    TypeInterp (DCandCtx.extend IB) (.idn B.[shift 1] a.[shift 1] (.var 0)) :=
+  TypeInterp.idn (TypeInterp.weakenCtx IB IB)
+    (TypeInterp.semTm_weakenCtx IB IB ha)
+    (TypeInterp.semVarZero IB)
+
+lemma idProof_weakens {Δ : DCandCtx} {B a : Tm}
+    (IB : TypeInterp Δ B) (ha : IB.SemTm a) :
+    (TypeInterp.idProof IB ha).Weakens :=
+  TypeInterp.idn_weakens
+
+lemma idProof_expansive {Δ : DCandCtx} {B a : Tm}
+    (IB : TypeInterp Δ B) (ha : IB.SemTm a) :
+    (TypeInterp.idProof IB ha).Expansive :=
+  TypeInterp.idn_expansive
+
+def idBranchSubst (a : Tm) (σ : Var -> Tm) : Var -> Tm :=
+  .rfl a.[σ] .: a.[σ] .: σ
+
+lemma idBranchSubst_valid {Δ : DCandCtx} {B a : Tm}
+    (IB : TypeInterp Δ B) (ha : IB.SemTm a)
+    {σ : Var -> Tm} :
+    Δ.valid σ ->
+    (DCandCtx.extend (TypeInterp.idProof IB ha)).valid
+      (TypeInterp.idBranchSubst a σ) := by
+  intro hσ
+  have haσ : (IB.cand σ).mem a.[σ] := ha σ hσ
+  constructor
+  · exact DCandCtx.extend_cons hσ haσ
+  · change ((TypeInterp.idProof IB ha).cand (a.[σ] .: σ)).mem (.rfl a.[σ])
+    exact sn_rfl ((IB.cand σ).sn haσ)
+
+lemma idBranchSubst_red {a : Tm} {σ τ : Var -> Tm} :
+    SRed σ τ ->
+    SRed (TypeInterp.idBranchSubst a σ) (TypeInterp.idBranchSubst a τ) := by
+  intro hred x
+  cases x with
+  | zero =>
+    asimp [TypeInterp.idBranchSubst]
+    exact Red.rfl (Red.compat hred)
+  | succ x =>
+    cases x with
+    | zero =>
+      asimp [TypeInterp.idBranchSubst]
+      exact Red.compat hred
+    | succ x =>
+      asimp [TypeInterp.idBranchSubst]
+      exact hred x
+
+lemma idBranchSubst_conv {a : Tm} {σ τ : Var -> Tm} :
+    SConv σ τ ->
+    SConv (TypeInterp.idBranchSubst a σ) (TypeInterp.idBranchSubst a τ) := by
+  intro hconv x
+  cases x with
+  | zero =>
+    asimp [TypeInterp.idBranchSubst]
+    exact Conv.rfl (Conv.compat a hconv)
+  | succ x =>
+    cases x with
+    | zero =>
+      asimp [TypeInterp.idBranchSubst]
+      exact Conv.compat a hconv
+    | succ x =>
+      asimp [TypeInterp.idBranchSubst]
+      exact hconv x
+
+def idBranch {Δ : DCandCtx} {A B a : Tm}
+    (IB : TypeInterp Δ B) (ha : IB.SemTm a)
+    (IA : TypeInterp (DCandCtx.extend (TypeInterp.idProof IB ha)) A) :
+    TypeInterp Δ A.[.rfl a,a/] where
+  cand σ := IA.cand (TypeInterp.idBranchSubst a σ)
+  type_sn := by
+    intro σ hσ
+    have hvalid := TypeInterp.idBranchSubst_valid IB ha hσ
+    have h := IA.type_sn (TypeInterp.idBranchSubst a σ) hvalid
+    rw [Tm.subst_comp]
+    have hsubst : (.rfl a .: a .: ids) !> σ =
+        TypeInterp.idBranchSubst a σ := by
+      funext x
+      cases x with
+      | zero =>
+        asimp [TypeInterp.idBranchSubst]
+      | succ x =>
+        cases x with
+        | zero =>
+          asimp [TypeInterp.idBranchSubst]
+        | succ x =>
+          asimp [TypeInterp.idBranchSubst]
+    rw [hsubst]
+    exact h
+  stable_red := by
+    intro σ τ m hσ hred hm
+    exact IA.stable_red
+      (TypeInterp.idBranchSubst_valid IB ha hσ)
+      (TypeInterp.idBranchSubst_red hred) hm
+  stable_red_fwd := by
+    intro σ τ m hσ hred hm
+    exact IA.stable_red_fwd
+      (TypeInterp.idBranchSubst_valid IB ha hσ)
+      (TypeInterp.idBranchSubst_red hred) hm
+  stable_conv := by
+    intro σ τ m hσ hτ hconv hm
+    exact IA.stable_conv
+      (TypeInterp.idBranchSubst_valid IB ha hσ)
+      (TypeInterp.idBranchSubst_valid IB ha hτ)
+      (TypeInterp.idBranchSubst_conv hconv) hm
+
+lemma idBranch_weakens {Δ : DCandCtx} {A B a : Tm}
+    (IB : TypeInterp Δ B) (ha : IB.SemTm a)
+    (IA : TypeInterp (DCandCtx.extend (TypeInterp.idProof IB ha)) A) :
+    IA.Weakens -> (TypeInterp.idBranch IB ha IA).Weakens := by
+  intro hIA σ m hσ hm
+  have hvalid := TypeInterp.idBranchSubst_valid IB ha hσ
+  have h := hIA hvalid hm
+  have hsubst :
+      (fun x => (TypeInterp.idBranchSubst a σ x).[shift 1]) =
+        TypeInterp.idBranchSubst a (fun x => (σ x).[shift 1]) := by
+    funext x
+    cases x with
+    | zero =>
+      asimp [TypeInterp.idBranchSubst]
+      apply congrArg (fun ρ : Var -> Tm => a.[ρ])
+      funext y
+      rfl
+    | succ x =>
+      cases x with
+      | zero =>
+        asimp [TypeInterp.idBranchSubst]
+        apply congrArg (fun ρ : Var -> Tm => a.[ρ])
+        funext y
+        rfl
+      | succ x =>
+        asimp [TypeInterp.idBranchSubst]
+  change (IA.cand
+    (TypeInterp.idBranchSubst a (fun x => (σ x).[shift 1]))).mem m.[shift 1]
+  simpa [hsubst] using h
+
+lemma idBranch_expansive {Δ : DCandCtx} {A B a : Tm}
+    (IB : TypeInterp Δ B) (ha : IB.SemTm a)
+    (IA : TypeInterp (DCandCtx.extend (TypeInterp.idProof IB ha)) A) :
+    IA.Expansive -> (TypeInterp.idBranch IB ha IA).Expansive := by
+  intro hIA σ hσ
+  exact hIA (TypeInterp.idBranchSubst a σ)
+    (TypeInterp.idBranchSubst_valid IB ha hσ)
+
+def idTargetSubst (b n : Tm) (σ : Var -> Tm) : Var -> Tm :=
+  n.[σ] .: b.[σ] .: σ
+
+lemma idTargetSubst_valid {Δ : DCandCtx} {B a b n : Tm}
+    (IB : TypeInterp Δ B) (ha : IB.SemTm a) (hb : IB.SemTm b)
+    (hn : (TypeInterp.idn IB ha hb).SemTm n)
+    {σ : Var -> Tm} :
+    Δ.valid σ ->
+    (DCandCtx.extend (TypeInterp.idProof IB ha)).valid
+      (TypeInterp.idTargetSubst b n σ) := by
+  intro hσ
+  have hbσ : (IB.cand σ).mem b.[σ] := hb σ hσ
+  constructor
+  · exact DCandCtx.extend_cons hσ hbσ
+  · change ((TypeInterp.idProof IB ha).cand (b.[σ] .: σ)).mem n.[σ]
+    exact hn σ hσ
+
+lemma idTargetSubst_red {b n : Tm} {σ τ : Var -> Tm} :
+    SRed σ τ ->
+    SRed (TypeInterp.idTargetSubst b n σ) (TypeInterp.idTargetSubst b n τ) := by
+  intro hred x
+  cases x with
+  | zero =>
+    asimp [TypeInterp.idTargetSubst]
+    exact Red.compat hred
+  | succ x =>
+    cases x with
+    | zero =>
+      asimp [TypeInterp.idTargetSubst]
+      exact Red.compat hred
+    | succ x =>
+      asimp [TypeInterp.idTargetSubst]
+      exact hred x
+
+lemma idTargetSubst_conv {b n : Tm} {σ τ : Var -> Tm} :
+    SConv σ τ ->
+    SConv (TypeInterp.idTargetSubst b n σ) (TypeInterp.idTargetSubst b n τ) := by
+  intro hconv x
+  cases x with
+  | zero =>
+    asimp [TypeInterp.idTargetSubst]
+    exact Conv.compat n hconv
+  | succ x =>
+    cases x with
+    | zero =>
+      asimp [TypeInterp.idTargetSubst]
+      exact Conv.compat b hconv
+    | succ x =>
+      asimp [TypeInterp.idTargetSubst]
+      exact hconv x
+
+def idTarget {Δ : DCandCtx} {A B a b n : Tm}
+    (IB : TypeInterp Δ B) (ha : IB.SemTm a) (hb : IB.SemTm b)
+    (hn : (TypeInterp.idn IB ha hb).SemTm n)
+    (IA : TypeInterp (DCandCtx.extend (TypeInterp.idProof IB ha)) A) :
+    TypeInterp Δ A.[n,b/] where
+  cand σ := IA.cand (TypeInterp.idTargetSubst b n σ)
+  type_sn := by
+    intro σ hσ
+    have hvalid := TypeInterp.idTargetSubst_valid IB ha hb hn hσ
+    have h := IA.type_sn (TypeInterp.idTargetSubst b n σ) hvalid
+    rw [Tm.subst_comp]
+    have hsubst : (n .: b .: ids) !> σ =
+        TypeInterp.idTargetSubst b n σ := by
+      funext x
+      cases x with
+      | zero =>
+        asimp [TypeInterp.idTargetSubst]
+      | succ x =>
+        cases x with
+        | zero =>
+          asimp [TypeInterp.idTargetSubst]
+        | succ x =>
+          asimp [TypeInterp.idTargetSubst]
+    rw [hsubst]
+    exact h
+  stable_red := by
+    intro σ τ m hσ hred hm
+    exact IA.stable_red
+      (TypeInterp.idTargetSubst_valid IB ha hb hn hσ)
+      (TypeInterp.idTargetSubst_red hred) hm
+  stable_red_fwd := by
+    intro σ τ m hσ hred hm
+    exact IA.stable_red_fwd
+      (TypeInterp.idTargetSubst_valid IB ha hb hn hσ)
+      (TypeInterp.idTargetSubst_red hred) hm
+  stable_conv := by
+    intro σ τ m hσ hτ hconv hm
+    exact IA.stable_conv
+      (TypeInterp.idTargetSubst_valid IB ha hb hn hσ)
+      (TypeInterp.idTargetSubst_valid IB ha hb hn hτ)
+      (TypeInterp.idTargetSubst_conv hconv) hm
+
+lemma idTarget_weakens {Δ : DCandCtx} {A B a b n : Tm}
+    (IB : TypeInterp Δ B) (ha : IB.SemTm a) (hb : IB.SemTm b)
+    (hn : (TypeInterp.idn IB ha hb).SemTm n)
+    (IA : TypeInterp (DCandCtx.extend (TypeInterp.idProof IB ha)) A) :
+    IA.Weakens -> (TypeInterp.idTarget IB ha hb hn IA).Weakens := by
+  intro hIA σ m hσ hm
+  have hvalid := TypeInterp.idTargetSubst_valid IB ha hb hn hσ
+  have h := hIA hvalid hm
+  have hsubst :
+      (fun x => (TypeInterp.idTargetSubst b n σ x).[shift 1]) =
+        TypeInterp.idTargetSubst b n (fun x => (σ x).[shift 1]) := by
+    funext x
+    cases x with
+    | zero =>
+      asimp [TypeInterp.idTargetSubst]
+      apply congrArg (fun ρ : Var -> Tm => n.[ρ])
+      funext y
+      rfl
+    | succ x =>
+      cases x with
+      | zero =>
+        asimp [TypeInterp.idTargetSubst]
+        apply congrArg (fun ρ : Var -> Tm => b.[ρ])
+        funext y
+        rfl
+      | succ x =>
+        asimp [TypeInterp.idTargetSubst]
+  change (IA.cand
+    (TypeInterp.idTargetSubst b n (fun x => (σ x).[shift 1]))).mem m.[shift 1]
+  simpa [hsubst] using h
+
+lemma idTarget_expansive {Δ : DCandCtx} {A B a b n : Tm}
+    (IB : TypeInterp Δ B) (ha : IB.SemTm a) (hb : IB.SemTm b)
+    (hn : (TypeInterp.idn IB ha hb).SemTm n)
+    (IA : TypeInterp (DCandCtx.extend (TypeInterp.idProof IB ha)) A) :
+    IA.Expansive -> (TypeInterp.idTarget IB ha hb hn IA).Expansive := by
+  intro hIA σ hσ
+  exact hIA (TypeInterp.idTargetSubst b n σ)
+    (TypeInterp.idTargetSubst_valid IB ha hb hn hσ)
+
+def rwFamily {Δ : DCandCtx} {A B a : Tm}
+    (IB : TypeInterp Δ B) (ha : IB.SemTm a)
+    (IA : TypeInterp (DCandCtx.extend (TypeInterp.idProof IB ha)) A)
+    (σ : Var -> Tm) (hσ : Δ.valid σ)
+    (b0 : Tm) (hb0 : (IB.cand σ).mem b0) :
+    CandidateFamily (Candidate.idn (IB.cand σ) a.[σ] b0) where
+  fiber p := IA.cand (p .: b0 .: σ)
+  stable_step := by
+    intro p p' m hp st hm
+    have htail : (DCandCtx.extend IB).valid (b0 .: σ) :=
+      DCandCtx.extend_cons hσ hb0
+    have hvalid : (DCandCtx.extend (TypeInterp.idProof IB ha)).valid (p .: b0 .: σ) := by
+      exact ⟨htail, hp⟩
+    have hred : SRed (p .: b0 .: σ) (p' .: b0 .: σ) := by
+      intro x
+      cases x with
+      | zero =>
+        asimp
+        exact Star.one st
+      | succ x =>
+        asimp
+        exact Star.R
+    exact IA.stable_red hvalid hred hm
+  stable_step_fwd := by
+    intro p p' m hp st hm
+    have htail : (DCandCtx.extend IB).valid (b0 .: σ) :=
+      DCandCtx.extend_cons hσ hb0
+    have hvalid : (DCandCtx.extend (TypeInterp.idProof IB ha)).valid (p .: b0 .: σ) := by
+      exact ⟨htail, hp⟩
+    have hred : SRed (p .: b0 .: σ) (p' .: b0 .: σ) := by
+      intro x
+      cases x with
+      | zero =>
+        asimp
+        exact Star.one st
+      | succ x =>
+        asimp
+        exact Star.R
+    exact IA.stable_red_fwd hvalid hred hm
+
+lemma rwFamily_expansive {Δ : DCandCtx} {A B a : Tm}
+    (IB : TypeInterp Δ B) (ha : IB.SemTm a)
+    (IA : TypeInterp (DCandCtx.extend (TypeInterp.idProof IB ha)) A)
+    (hIA : IA.Expansive)
+    {σ : Var -> Tm} (hσ : Δ.valid σ)
+    {b0 : Tm} (hb0 : (IB.cand σ).mem b0) :
+    (TypeInterp.rwFamily IB ha IA σ hσ b0 hb0).Expansive := by
+  intro p hp
+  have htail : (DCandCtx.extend IB).valid (b0 .: σ) :=
+    DCandCtx.extend_cons hσ hb0
+  change Candidate.Expansive (IA.cand (p .: b0 .: σ))
+  exact hIA (p .: b0 .: σ) ⟨htail, hp⟩
+
 def family {Δ : DCandCtx} {A B : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
     (σ : Var -> Tm) (hσ : Δ.valid σ) : CandidateFamily (IA.cand σ) where
@@ -2169,6 +2588,87 @@ lemma family_expansive {Δ : DCandCtx} {A B : Tm}
     (TypeInterp.family IA IB σ hσ).Expansive := by
   intro a ha
   exact hIB (a .: σ) (DCandCtx.extend_cons hσ ha)
+
+def subst1 {Δ : DCandCtx} {A B n : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hn : IA.SemTm n) : TypeInterp Δ B.[n/] where
+  cand σ := IB.cand (n.[σ] .: σ)
+  type_sn := by
+    intro σ hσ
+    asimp
+    exact IB.type_sn (n.[σ] .: σ) (DCandCtx.extend_cons hσ (hn σ hσ))
+  stable_red := by
+    intro σ τ m hσ hred hm
+    have hnσ : (IA.cand σ).mem n.[σ] := hn σ hσ
+    have hredn : n.[σ] ~>* n.[τ] := Red.compat hred
+    have hredext : SRed (n.[σ] .: σ) (n.[τ] .: τ) := by
+      intro x
+      cases x with
+      | zero =>
+        asimp
+        exact hredn
+      | succ x =>
+        asimp
+        exact hred x
+    exact IB.stable_red (DCandCtx.extend_cons hσ hnσ) hredext hm
+  stable_red_fwd := by
+    intro σ τ m hσ hred hm
+    have hnσ : (IA.cand σ).mem n.[σ] := hn σ hσ
+    have hredn : n.[σ] ~>* n.[τ] := Red.compat hred
+    have hredext : SRed (n.[σ] .: σ) (n.[τ] .: τ) := by
+      intro x
+      cases x with
+      | zero =>
+        asimp
+        exact hredn
+      | succ x =>
+        asimp
+        exact hred x
+    exact IB.stable_red_fwd (DCandCtx.extend_cons hσ hnσ) hredext hm
+  stable_conv := by
+    intro σ τ m hσ hτ hconv hm
+    have hnσ : (IA.cand σ).mem n.[σ] := hn σ hσ
+    have hnτ : (IA.cand τ).mem n.[τ] := hn τ hτ
+    have hconvn : n.[σ] === n.[τ] := Conv.compat n hconv
+    have hconvext : SConv (n.[σ] .: σ) (n.[τ] .: τ) := by
+      intro x
+      cases x with
+      | zero =>
+        asimp
+        exact hconvn
+      | succ x =>
+        asimp
+        exact hconv x
+    exact IB.stable_conv (DCandCtx.extend_cons hσ hnσ)
+      (DCandCtx.extend_cons hτ hnτ) hconvext hm
+
+lemma subst1_weakens {Δ : DCandCtx} {A B n : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    {hn : IA.SemTm n} :
+    IB.Weakens -> (TypeInterp.subst1 IA IB hn).Weakens := by
+  intro hIB σ m hσ hm
+  have hnσ : (IA.cand σ).mem n.[σ] := hn σ hσ
+  have h := hIB (DCandCtx.extend_cons hσ hnσ) hm
+  have hsubst :
+      (fun x => ((n.[σ] .: σ) x).[shift 1]) =
+        (n.[fun x => (σ x).[shift 1]] .: fun x => (σ x).[shift 1]) := by
+    funext x
+    cases x with
+    | zero =>
+      asimp
+      apply congrArg (fun ρ : Var -> Tm => n.[ρ])
+      funext y
+      rfl
+    | succ x =>
+      asimp
+  simpa [TypeInterp.subst1, hsubst] using h
+
+lemma subst1_expansive {Δ : DCandCtx} {A B n : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    {hn : IA.SemTm n} :
+    IB.Expansive -> (TypeInterp.subst1 IA IB hn).Expansive := by
+  intro hIB σ hσ
+  exact hIB (n.[σ] .: σ) (DCandCtx.extend_cons hσ (hn σ hσ))
 
 def kpiCand {Δ : DCandCtx} {A B : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
@@ -2471,6 +2971,219 @@ lemma ksig_weakens {Δ : DCandCtx} {A B : Tm}
       simpa [subst_shift_shift] using rd
     rw [hsubst]
     exact hp.2 (1 + i) a b rd'
+
+lemma ksig_pair_valid {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens) (hIA : IA.Weakens) (hIB : IB.Weakens)
+    {σ : Var -> Tm} :
+    (DCandCtx.extend IB).valid σ ->
+    ((TypeInterp.ksig IA IB hΔ).cand (fun x => σ (x + 2))).mem
+      (.tup (σ 1) (σ 0)) := by
+  intro hσ
+  let tail : Var -> Tm := fun x => σ (x + 2)
+  have htail : Δ.valid tail := hσ.1.1
+  have ha : (IA.cand tail).mem (σ 1) := hσ.1.2
+  have htail1 : (fun x => σ (x + 1)) = (σ 1 .: tail) := by
+    funext x
+    cases x with
+    | zero =>
+      rfl
+    | succ x =>
+      change σ (x + 1 + 1) = σ (x + 2)
+      rw [show x + 1 + 1 = x + 2 by omega]
+  have hb : (IB.cand (σ 1 .: tail)).mem (σ 0) := by
+    simpa [htail1] using hσ.2
+  change (TypeInterp.ksigCandTotal IA IB tail).mem (.tup (σ 1) (σ 0))
+  rw [TypeInterp.ksigCandTotal_valid IA IB htail]
+  dsimp [TypeInterp.ksigCand]
+  constructor
+  · exact sn_tup ((IA.cand tail).sn ha) ((IB.cand (σ 1 .: tail)).sn hb)
+  · intro i a b rd
+    have htail_i : Δ.valid (shiftSubst tail i) :=
+      DCandCtx.weakens_iter hΔ htail i
+    have ha_i : (IA.cand (shiftSubst tail i)).mem (σ 1).[shift i] :=
+      TypeInterp.weakens_iter IA hΔ hIA htail ha i
+    have htail_cons : (DCandCtx.extend IA).valid (σ 1 .: tail) :=
+      DCandCtx.extend_cons htail ha
+    have hb_i :
+        (IB.cand ((σ 1).[shift i] .: shiftSubst tail i)).mem (σ 0).[shift i] := by
+      have h := TypeInterp.weakens_iter IB
+        (DCandCtx.extend_weakens hΔ hIA) hIB htail_cons hb i
+      have hsubst :
+          shiftSubst (σ 1 .: tail) i =
+            ((σ 1).[shift i] .: shiftSubst tail i) := by
+        funext x
+        cases x with
+        | zero =>
+          asimp [shiftSubst]
+        | succ x =>
+          asimp [shiftSubst, tail]
+      simpa [hsubst] using h
+    have rd_tup : .tup (σ 1).[shift i] (σ 0).[shift i] ~>* .tup a b := by
+      simpa using rd
+    rcases Red.tup_inv rd_tup with ⟨a0, b0, rda, rdb, e⟩
+    cases e
+    have ha' : (IA.cand (shiftSubst tail i)).mem a :=
+      (IA.cand (shiftSubst tail i)).closed_red ha_i rda
+    have hb_closed :
+        (IB.cand ((σ 1).[shift i] .: shiftSubst tail i)).mem b :=
+      (IB.cand ((σ 1).[shift i] .: shiftSubst tail i)).closed_red hb_i rdb
+    have hred : SRed ((σ 1).[shift i] .: shiftSubst tail i) (a .: shiftSubst tail i) := by
+      intro x
+      cases x with
+      | zero =>
+        asimp
+        exact rda
+      | succ x =>
+        asimp
+        exact Star.R
+    exact ⟨ha', IB.stable_red_fwd (DCandCtx.extend_cons htail_i ha_i) hred hb_closed⟩
+
+def sigmaBranchSubst (σ : Var -> Tm) : Var -> Tm :=
+  .tup (σ 1) (σ 0) .: fun x => σ (x + 2)
+
+lemma sigmaBranchSubst_valid {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens) (hIA : IA.Weakens) (hIB : IB.Weakens)
+    {σ : Var -> Tm} :
+    (DCandCtx.extend IB).valid σ ->
+    (DCandCtx.extend (TypeInterp.ksig IA IB hΔ)).valid
+      (TypeInterp.sigmaBranchSubst σ) := by
+  intro hσ
+  constructor
+  · exact hσ.1.1
+  · change ((TypeInterp.ksig IA IB hΔ).cand (fun x => σ (x + 2))).mem
+      (.tup (σ 1) (σ 0))
+    exact TypeInterp.ksig_pair_valid IA IB hΔ hIA hIB hσ
+
+lemma sigmaBranchSubst_red {σ τ : Var -> Tm} :
+    SRed σ τ ->
+    SRed (TypeInterp.sigmaBranchSubst σ) (TypeInterp.sigmaBranchSubst τ) := by
+  intro hred x
+  cases x with
+  | zero =>
+    asimp [TypeInterp.sigmaBranchSubst]
+    exact Red.tup (hred 1) (hred 0)
+  | succ x =>
+    asimp [TypeInterp.sigmaBranchSubst]
+    exact hred (x + 2)
+
+lemma sigmaBranchSubst_conv {σ τ : Var -> Tm} :
+    SConv σ τ ->
+    SConv (TypeInterp.sigmaBranchSubst σ) (TypeInterp.sigmaBranchSubst τ) := by
+  intro hconv x
+  cases x with
+  | zero =>
+    asimp [TypeInterp.sigmaBranchSubst]
+    exact Conv.tup (hconv 1) (hconv 0)
+  | succ x =>
+    asimp [TypeInterp.sigmaBranchSubst]
+    exact hconv (x + 2)
+
+def sigmaBranch {Δ : DCandCtx} {A B C : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens) (hIA : IA.Weakens) (hIB : IB.Weakens)
+    (IC : TypeInterp (DCandCtx.extend (TypeInterp.ksig IA IB hΔ)) C) :
+    TypeInterp (DCandCtx.extend IB)
+      C.[.tup (.var 1) (.var 0) .: shift 2] where
+  cand σ := IC.cand (TypeInterp.sigmaBranchSubst σ)
+  type_sn := by
+    intro σ hσ
+    have hvalid :=
+      TypeInterp.sigmaBranchSubst_valid IA IB hΔ hIA hIB hσ
+    have h := IC.type_sn (TypeInterp.sigmaBranchSubst σ) hvalid
+    rw [Tm.subst_comp]
+    have hsubst : (.tup (.var 1) (.var 0) .: shift 2) !> σ =
+        TypeInterp.sigmaBranchSubst σ := by
+      funext x
+      cases x with
+      | zero =>
+        asimp [TypeInterp.sigmaBranchSubst]
+      | succ x =>
+        asimp [TypeInterp.sigmaBranchSubst]
+    rw [hsubst]
+    exact h
+  stable_red := by
+    intro σ τ m hσ hred hm
+    exact IC.stable_red
+      (TypeInterp.sigmaBranchSubst_valid IA IB hΔ hIA hIB hσ)
+      (TypeInterp.sigmaBranchSubst_red hred) hm
+  stable_red_fwd := by
+    intro σ τ m hσ hred hm
+    exact IC.stable_red_fwd
+      (TypeInterp.sigmaBranchSubst_valid IA IB hΔ hIA hIB hσ)
+      (TypeInterp.sigmaBranchSubst_red hred) hm
+  stable_conv := by
+    intro σ τ m hσ hτ hconv hm
+    exact IC.stable_conv
+      (TypeInterp.sigmaBranchSubst_valid IA IB hΔ hIA hIB hσ)
+      (TypeInterp.sigmaBranchSubst_valid IA IB hΔ hIA hIB hτ)
+      (TypeInterp.sigmaBranchSubst_conv hconv) hm
+
+lemma sigmaBranch_weakens {Δ : DCandCtx} {A B C : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens) (hIA : IA.Weakens) (hIB : IB.Weakens)
+    (IC : TypeInterp (DCandCtx.extend (TypeInterp.ksig IA IB hΔ)) C) :
+    IC.Weakens ->
+    (TypeInterp.sigmaBranch IA IB hΔ hIA hIB IC).Weakens := by
+  intro hIC σ m hσ hm
+  have hvalid :=
+    TypeInterp.sigmaBranchSubst_valid IA IB hΔ hIA hIB hσ
+  have h := hIC hvalid hm
+  have hsubst :
+      (fun x => (TypeInterp.sigmaBranchSubst σ x).[shift 1]) =
+        TypeInterp.sigmaBranchSubst (fun x => (σ x).[shift 1]) := by
+    funext x
+    cases x with
+    | zero =>
+      asimp [TypeInterp.sigmaBranchSubst]
+    | succ x =>
+      asimp [TypeInterp.sigmaBranchSubst]
+  change (IC.cand
+    (TypeInterp.sigmaBranchSubst (fun x => (σ x).[shift 1]))).mem m.[shift 1]
+  simpa [hsubst] using h
+
+lemma sigmaBranch_sem_pair {Δ : DCandCtx} {A B C n : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens) (hIA : IA.Weakens) (hIB : IB.Weakens)
+    (IC : TypeInterp (DCandCtx.extend (TypeInterp.ksig IA IB hΔ)) C) :
+    (TypeInterp.sigmaBranch IA IB hΔ hIA hIB IC).SemTm n ->
+    ∀ σ, (hσ : Δ.valid σ) -> ∀ a, (ha : (IA.cand σ).mem a) ->
+      ∀ b, (hb : (IB.cand (a .: σ)).mem b) ->
+        (IC.cand (.tup a b .: σ)).mem n.[b .: a .: σ] := by
+  intro hn σ hσ a ha b hb
+  have hσab : (DCandCtx.extend IB).valid (b .: a .: σ) :=
+    DCandCtx.extend_cons (DCandCtx.extend_cons hσ ha) hb
+  have h := hn (b .: a .: σ) hσab
+  change (IC.cand (TypeInterp.sigmaBranchSubst (b .: a .: σ))).mem
+    n.[b .: a .: σ] at h
+  simpa [TypeInterp.sigmaBranchSubst] using h
+
+lemma extend_upn2_valid {Δ : DCandCtx} {A B : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens) (hIA : IA.Weakens)
+    {σ : Var -> Tm} :
+    Δ.valid σ -> (DCandCtx.extend IB).valid (upn 2 σ) := by
+  intro hσ
+  have hσA : (DCandCtx.extend IA).valid (up σ) :=
+    DCandCtx.extend_up_valid (I := IA) hΔ hσ
+  have hσAB : (DCandCtx.extend IB).valid (up (up σ)) :=
+    DCandCtx.extend_up_valid (I := IB) (DCandCtx.extend_weakens hΔ hIA) hσA
+  have hup : up (up σ) = upn 2 σ := by
+    asimp
+  rwa [← hup]
+
+lemma sigmaBranch_sn_upn2 {Δ : DCandCtx} {A B C n : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens) (hIA : IA.Weakens) (hIB : IB.Weakens)
+    (IC : TypeInterp (DCandCtx.extend (TypeInterp.ksig IA IB hΔ)) C) :
+    (TypeInterp.sigmaBranch IA IB hΔ hIA hIB IC).SemTm n ->
+    ∀ σ, Δ.valid σ -> SN Step n.[upn 2 σ] := by
+  intro hn σ hσ
+  let I := TypeInterp.sigmaBranch IA IB hΔ hIA hIB IC
+  have hvalid : (DCandCtx.extend IB).valid (upn 2 σ) :=
+    TypeInterp.extend_upn2_valid IA IB hΔ hIA hσ
+  exact (I.cand (upn 2 σ)).sn (hn (upn 2 σ) hvalid)
 
 noncomputable def piCandTotal {Δ : DCandCtx} {A B : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
@@ -2805,6 +3518,16 @@ lemma semAppKPiInterp {Δ : DCandCtx} {A B m n : Tm}
   rw [shiftSubst_zero σ] at happ
   simpa [SubstLemmas.shift0, Tm.subst_id] using happ
 
+lemma semAppKPiSubst1 {Δ : DCandCtx} {A B m n : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens)
+    (hIB : ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) -> Candidate.Expansive (IB.cand σ))
+    (hm : (TypeInterp.kpi IA IB hΔ hIB).SemTm m)
+    (hn : IA.SemTm n) :
+    (TypeInterp.subst1 IA IB hn).SemTm (.app m n) := by
+  intro σ hσ
+  exact TypeInterp.semAppKPiInterp IA IB hΔ hIB hm hn σ hσ
+
 lemma semTupSigma {Δ : DCandCtx} {A B m n : Tm}
     (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B) :
     IA.SemTm m ->
@@ -2866,7 +3589,1167 @@ lemma semTupKSigmaInterp {Δ : DCandCtx} {A B m n : Tm}
         exact Star.R
     exact ⟨ha, IB.stable_red_fwd (DCandCtx.extend_cons hσi hm_i) hred hb⟩
 
+lemma semIteBoolSubst1 {Δ : DCandCtx} {A m n1 n2 : Tm}
+    (IB : TypeInterp (DCandCtx.extend (TypeInterp.bool Δ)) A)
+    (hΔ : Δ.Weakens)
+    (hIB : IB.Expansive)
+    (hm : (TypeInterp.bool Δ).SemTm m)
+    (hn1 : (TypeInterp.subst1 (TypeInterp.bool Δ) IB TypeInterp.semTt).SemTm n1)
+    (hn2 : (TypeInterp.subst1 (TypeInterp.bool Δ) IB TypeInterp.semFf).SemTm n2) :
+    (TypeInterp.subst1 (TypeInterp.bool Δ) IB hm).SemTm (.ite A m n1 n2) := by
+  intro σ hσ
+  asimp
+  change (IB.cand (m.[σ] .: σ)).mem (.ite A.[up σ] m.[σ] n1.[σ] n2.[σ])
+  apply Candidate.bool_ite (B := TypeInterp.family (TypeInterp.bool Δ) IB σ hσ)
+  · exact TypeInterp.family_expansive (TypeInterp.bool Δ) IB hIB hσ
+  · exact IB.type_sn (up σ) (DCandCtx.extend_up_valid (I := TypeInterp.bool Δ) hΔ hσ)
+  · exact hm σ hσ
+  · simpa [TypeInterp.subst1] using hn1 σ hσ
+  · simpa [TypeInterp.subst1] using hn2 σ hσ
+
+lemma semExfBotSubst1 {Δ : DCandCtx} {A m : Tm}
+    (IB : TypeInterp (DCandCtx.extend (TypeInterp.bot Δ)) A)
+    (hΔ : Δ.Weakens)
+    (hIB : IB.Expansive)
+    (hm : (TypeInterp.bot Δ).SemTm m) :
+    (TypeInterp.subst1 (TypeInterp.bot Δ) IB hm).SemTm (.exf A m) := by
+  intro σ hσ
+  asimp
+  change (IB.cand (m.[σ] .: σ)).mem (.exf A.[up σ] m.[σ])
+  have hFam : (TypeInterp.family (TypeInterp.bot Δ) IB σ hσ).Expansive :=
+    TypeInterp.family_expansive (TypeInterp.bot Δ) IB hIB hσ
+  have go :
+      ∀ A0, SN Step A0 -> ∀ p, Candidate.bot.mem p ->
+        (IB.cand (p .: σ)).mem (.exf A0 p) := by
+    intro A0 snA
+    induction snA with
+    | intro stepA ihA =>
+      rename_i A0
+      intro p hp
+      have snp : SN Step p := Candidate.bot.sn hp
+      induction snp with
+      | intro stepP ihP =>
+        rename_i p0
+        apply Candidate.exf_dep (B := TypeInterp.family (TypeInterp.bot Δ) IB σ hσ)
+        · exact hFam
+        · exact hp
+        · intro A' stA
+          exact ihA stA p0 hp
+        · intro p' stP
+          have hp' : Candidate.bot.mem p' := Candidate.bot.closed_step hp stP
+          exact ihP stP hp'
+  exact go A.[up σ]
+    (IB.type_sn (up σ) (DCandCtx.extend_up_valid (I := TypeInterp.bot Δ) hΔ hσ))
+    m.[σ] (hm σ hσ)
+
+lemma semPrjKSigmaSubst1 {Δ : DCandCtx} {A B C m n : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens)
+    (IC : TypeInterp (DCandCtx.extend (TypeInterp.ksig IA IB hΔ)) C)
+    (hIC : IC.Expansive)
+    (hm : (TypeInterp.ksig IA IB hΔ).SemTm m)
+    (hnSN : ∀ σ, (hσ : Δ.valid σ) -> SN Step n.[upn 2 σ])
+    (hn : ∀ σ, (hσ : Δ.valid σ) -> ∀ a,
+      (ha : (IA.cand σ).mem a) -> ∀ b,
+      (hb : (IB.cand (a .: σ)).mem b) ->
+      (IC.cand (.tup a b .: σ)).mem n.[b .: a .: σ]) :
+    (TypeInterp.subst1 (TypeInterp.ksig IA IB hΔ) IC hm).SemTm (.prj C m n) := by
+  intro σ hσ
+  asimp
+  change (IC.cand (m.[σ] .: σ)).mem
+    (.prj C.[up σ] m.[σ] n.[upn 2 σ])
+  let K := TypeInterp.ksig IA IB hΔ
+  have go :
+      ∀ C0, SN Step C0 -> ∀ p, (K.cand σ).mem p ->
+        ∀ n0, SN Step n0 -> n.[upn 2 σ] ~>* n0 ->
+          (IC.cand (p .: σ)).mem (.prj C0 p n0) := by
+    intro C0 snC
+    induction snC with
+    | intro stepC ihC =>
+      rename_i C0
+      intro p hp
+      have snp : SN Step p := (K.cand σ).sn hp
+      induction snp with
+      | intro stepP ihP =>
+        rename_i p
+        intro n0 snN
+        induction snN with
+        | intro stepN ihN =>
+          rename_i n0
+          intro rdN
+          have hvalid_p : (DCandCtx.extend K).valid (p .: σ) :=
+            DCandCtx.extend_cons hσ hp
+          apply Candidate.expansive_of_steps (hIC (p .: σ) hvalid_p)
+          intro x st
+          cases st with
+          | prj_A p n stC =>
+            exact ihC stC p hp n0 (SN.intro stepN) rdN
+          | prj_M C n stP =>
+            rename_i p'
+            have hp' : (K.cand σ).mem p' :=
+              (K.cand σ).closed_step hp stP
+            have hred : SRed (p .: σ) (p' .: σ) := by
+              intro x
+              cases x with
+              | zero =>
+                asimp
+                exact Star.one stP
+              | succ x =>
+                asimp
+                exact Star.R
+            exact IC.stable_red hvalid_p hred
+              (ihP stP hp' n0 (SN.intro stepN) rdN)
+          | prj_N C p stN =>
+            exact ihN stN (Star.SE rdN stN)
+          | prj_elim C a b branch =>
+            have rd0 : (.tup a b).[shift 0] ~>* .tup a b := by
+              simpa [SubstLemmas.shift0, Tm.subst_id] using
+                (Star.R : (.tup a b) ~>* .tup a b)
+            have hpK : (TypeInterp.ksigCand IA IB σ).mem (.tup a b) := by
+              have hp0 := hp
+              change (TypeInterp.ksigCandTotal IA IB σ).mem (.tup a b) at hp0
+              rw [TypeInterp.ksigCandTotal_valid IA IB hσ] at hp0
+              exact hp0
+            have hcomp := hpK.2 0 a b rd0
+            have ha : (IA.cand σ).mem a := by
+              simpa [shiftSubst_zero] using hcomp.1
+            have hb : (IB.cand (a .: σ)).mem b := by
+              simpa [shiftSubst_zero] using hcomp.2
+            have hbranch := hn σ hσ a ha b hb
+            have rdBranch : n.[b .: a .: σ] ~>* n0.[b,a/] := by
+              have h := Red.subst (b .: a .: ids) rdN
+              rw [show n.[upn 2 σ].[b,a/] = n.[b .: a .: σ] by asimp] at h
+              exact h
+            exact (IC.cand (.tup a b .: σ)).closed_red hbranch rdBranch
+  exact go C.[up σ]
+    (IC.type_sn (up σ) (DCandCtx.extend_up_valid (I := K) hΔ hσ))
+    m.[σ] (hm σ hσ) n.[upn 2 σ] (hnSN σ hσ) Star.R
+
+lemma semPrjKSigmaSubst1_branch {Δ : DCandCtx} {A B C m n : Tm}
+    (IA : TypeInterp Δ A) (IB : TypeInterp (DCandCtx.extend IA) B)
+    (hΔ : Δ.Weakens) (hIA : IA.Weakens) (hIB : IB.Weakens)
+    (IC : TypeInterp (DCandCtx.extend (TypeInterp.ksig IA IB hΔ)) C)
+    (hIC : IC.Expansive)
+    (hm : (TypeInterp.ksig IA IB hΔ).SemTm m)
+    (hn : (TypeInterp.sigmaBranch IA IB hΔ hIA hIB IC).SemTm n) :
+    (TypeInterp.subst1 (TypeInterp.ksig IA IB hΔ) IC hm).SemTm (.prj C m n) := by
+  exact TypeInterp.semPrjKSigmaSubst1 IA IB hΔ IC hIC hm
+    (TypeInterp.sigmaBranch_sn_upn2 IA IB hΔ hIA hIB IC hn)
+    (TypeInterp.sigmaBranch_sem_pair IA IB hΔ hIA hIB IC hn)
+
+lemma semRwDep {Δ : DCandCtx} {I : Candidate} {a b A m n : Tm}
+    {D : CandidateFamily (Candidate.idn I a b)} :
+    D.Expansive ->
+    (hn : ∀ σ, Δ.valid σ -> (Candidate.idn I a b).mem n.[σ]) ->
+    (hA : ∀ σ, Δ.valid σ -> SN Step A.[upn 2 σ]) ->
+    (hm : ∀ σ, Δ.valid σ -> SN Step m.[σ]) ->
+    (hrfl : ∀ σ, Δ.valid σ -> ∀ c, (D.fiber (.rfl c)).mem m.[σ]) ->
+    ∀ σ, (hσ : Δ.valid σ) ->
+      (D.fiber n.[σ]).mem (.rw A m n).[σ] := by
+  intro hD hn hA hm hrfl σ hσ
+  asimp
+  have go :
+      ∀ A0, SN Step A0 -> ∀ m0, SN Step m0 -> m.[σ] ~>* m0 ->
+        ∀ p, (Candidate.idn I a b).mem p -> n.[σ] ~>* p ->
+          (D.fiber p).mem (.rw A0 m0 p) := by
+    intro A0 snA
+    induction snA with
+    | intro stepA ihA =>
+      rename_i A0
+      intro m0 snM
+      induction snM with
+      | intro stepM ihM =>
+        rename_i m0
+        intro rdM p hp rdP
+        have snP : SN Step p := (Candidate.idn I a b).sn hp
+        induction snP with
+        | intro stepP ihP =>
+          rename_i p
+          apply Candidate.rw_dep hD hp
+          · intro A' stA
+            exact ihA stA m0 (SN.intro stepM) rdM p hp rdP
+          · intro m' stM
+            exact ihM stM (Star.SE rdM stM) p hp rdP
+          · intro p' stP
+            have hp' : (Candidate.idn I a b).mem p' :=
+              (Candidate.idn I a b).closed_step hp stP
+            exact ihP stP hp' (Star.SE rdP stP)
+          · intro c
+            have hbase := hrfl σ hσ c
+            exact (D.fiber (.rfl c)).closed_red hbase rdM
+  exact go A.[upn 2 σ] (hA σ hσ) m.[σ] (hm σ hσ) Star.R
+    n.[σ] (hn σ hσ) Star.R
+
+lemma semRwIdCases {Δ : DCandCtx} {I : Candidate} {a b A m n : Tm}
+    {R : Tm -> Candidate} :
+    (∀ c, Candidate.Expansive (R c)) ->
+    (hn : ∀ σ, Δ.valid σ -> (Candidate.idn I a b).mem n.[σ]) ->
+    (hA : ∀ σ, Δ.valid σ -> SN Step A.[upn 2 σ]) ->
+    (hm : ∀ σ, Δ.valid σ -> SN Step m.[σ]) ->
+    (hrfl : ∀ σ, Δ.valid σ -> ∀ c,
+      ((CandidateFamily.idCases I a b R).fiber (.rfl c)).mem m.[σ]) ->
+    ∀ σ, (hσ : Δ.valid σ) ->
+      ((CandidateFamily.idCases I a b R).fiber n.[σ]).mem (.rw A m n).[σ] := by
+  intro hR
+  exact TypeInterp.semRwDep
+    (D := CandidateFamily.idCases I a b R)
+    (CandidateFamily.idCases_expansive hR)
+
+lemma semRwTarget {Δ : DCandCtx} {A B a b m n : Tm}
+    (IB : TypeInterp Δ B) (hΔ : Δ.Weakens) (hIB : IB.Weakens)
+    (ha : IB.SemTm a) (hb : IB.SemTm b)
+    (hn : (TypeInterp.idn IB ha hb).SemTm n)
+    (IA : TypeInterp (DCandCtx.extend (TypeInterp.idProof IB ha)) A)
+    (hIA : IA.Expansive)
+    (hrfl : ∀ σ, Δ.valid σ -> ∀ c,
+      (IA.cand (.rfl c .: b.[σ] .: σ)).mem m.[σ]) :
+    (TypeInterp.idTarget IB ha hb hn IA).SemTm (.rw A m n) := by
+  intro σ hσ
+  asimp
+  let b0 := b.[σ]
+  have hb0 : (IB.cand σ).mem b0 := hb σ hσ
+  let D := TypeInterp.rwFamily IB ha IA σ hσ b0 hb0
+  change (D.fiber n.[σ]).mem (.rw A.[upn 2 σ] m.[σ] n.[σ])
+  have hD : D.Expansive :=
+    TypeInterp.rwFamily_expansive IB ha IA hIA hσ hb0
+  have hIPW : (TypeInterp.idProof IB ha).Weakens :=
+    TypeInterp.idProof_weakens IB ha
+  have hAvalid : (DCandCtx.extend (TypeInterp.idProof IB ha)).valid (upn 2 σ) :=
+    TypeInterp.extend_upn2_valid IB (TypeInterp.idProof IB ha) hΔ hIB hσ
+  have snA : SN Step A.[upn 2 σ] := IA.type_sn (upn 2 σ) hAvalid
+  have hnσ : (Candidate.idn (IB.cand σ) a.[σ] b0).mem n.[σ] := by
+    exact hn σ hσ
+  have snM : SN Step m.[σ] := by
+    exact (D.fiber (.rfl b0)).sn (hrfl σ hσ b0)
+  have go :
+      ∀ A0, SN Step A0 -> ∀ m0, SN Step m0 -> m.[σ] ~>* m0 ->
+        ∀ p, (Candidate.idn (IB.cand σ) a.[σ] b0).mem p -> n.[σ] ~>* p ->
+          (D.fiber p).mem (.rw A0 m0 p) := by
+    intro A0 snA0
+    induction snA0 with
+    | intro stepA ihA =>
+      rename_i A0
+      intro m0 snM0
+      induction snM0 with
+      | intro stepM ihM =>
+        rename_i m0
+        intro rdM p hp rdP
+        have snP : SN Step p := (Candidate.idn (IB.cand σ) a.[σ] b0).sn hp
+        induction snP with
+        | intro stepP ihP =>
+          rename_i p
+          apply Candidate.rw_dep hD hp
+          · intro A' stA
+            exact ihA stA m0 (SN.intro stepM) rdM p hp rdP
+          · intro m' stM
+            exact ihM stM (Star.SE rdM stM) p hp rdP
+          · intro p' stP
+            have hp' : (Candidate.idn (IB.cand σ) a.[σ] b0).mem p' :=
+              (Candidate.idn (IB.cand σ) a.[σ] b0).closed_step hp stP
+            exact ihP stP hp' (Star.SE rdP stP)
+          · intro c
+            exact (D.fiber (.rfl c)).closed_red (hrfl σ hσ c) rdM
+  exact go A.[upn 2 σ] snA m.[σ] snM Star.R n.[σ] hnσ Star.R
+
+lemma semRwTargetSN {Δ : DCandCtx} {A B a b m n : Tm}
+    (IB : TypeInterp Δ B) (hΔ : Δ.Weakens) (hIB : IB.Weakens)
+    (ha : IB.SemTm a) (hb : IB.SemTm b)
+    (hn : (TypeInterp.idn IB ha hb).SemTm n)
+    (IA : TypeInterp (DCandCtx.extend (TypeInterp.idProof IB ha)) A)
+    (hm : (TypeInterp.idBranch IB ha IA).SemTm m) :
+    (TypeInterp.const Δ A.[n,b/] Candidate.snCandidate
+      (fun σ hσ => (TypeInterp.idTarget IB ha hb hn IA).type_sn σ hσ)).SemTm
+        (.rw A m n) := by
+  intro σ hσ
+  asimp
+  have hAvalid : (DCandCtx.extend (TypeInterp.idProof IB ha)).valid (upn 2 σ) :=
+    TypeInterp.extend_upn2_valid IB (TypeInterp.idProof IB ha) hΔ hIB hσ
+  exact sn_rw
+    (IA.type_sn (upn 2 σ) hAvalid)
+    (TypeInterp.semTm_sn (TypeInterp.idBranch IB ha IA) hm σ hσ)
+    (TypeInterp.semTm_sn (TypeInterp.idn IB ha hb) hn σ hσ)
+
 end TypeInterp
+
+inductive SemCtx : Ctx -> DCandCtx -> Prop where
+  | nil : SemCtx [] DCandCtx.empty
+  | cons {Γ Δ A} :
+    SemCtx Γ Δ ->
+    (I : TypeInterp Δ A) ->
+    I.Weakens ->
+    SemCtx (A :: Γ) (DCandCtx.extend I)
+
+namespace SemCtx
+
+lemma weakens {Γ : Ctx} {Δ : DCandCtx} :
+    SemCtx Γ Δ -> Δ.Weakens := by
+  intro hΓ
+  induction hΓ with
+  | nil =>
+    exact DCandCtx.empty_weakens
+  | cons hΓ I hI ih =>
+    exact DCandCtx.extend_weakens ih hI
+
+lemma var {Γ : Ctx} {Δ : DCandCtx} {x : Var} {A : Tm} :
+    SemCtx Γ Δ ->
+    Has Γ x A ->
+    ∃ I : TypeInterp Δ A, I.Weakens ∧ I.SemTm (.var x) := by
+  intro hΓ hs
+  induction hΓ generalizing x A with
+  | nil =>
+    cases hs
+  | cons hΓ J hJ ih =>
+    cases hs with
+    | zero Γ A =>
+      exact ⟨TypeInterp.weakenCtx J J,
+        TypeInterp.weakenCtx_weakens hJ,
+        TypeInterp.semVarZero J⟩
+    | succ Γ A B x hs =>
+      rcases ih hs with ⟨I, hI, hvar⟩
+      exact ⟨TypeInterp.weakenCtx I J,
+        TypeInterp.weakenCtx_weakens hI,
+        TypeInterp.semVarSucc I J hvar⟩
+
+lemma ids_valid {Γ : Ctx} {Δ : DCandCtx} :
+    SemCtx Γ Δ -> Δ.valid ids := by
+  intro hΓ
+  induction hΓ with
+  | nil =>
+    trivial
+  | cons hΓ I hI ih =>
+    constructor
+    · have h := (SemCtx.weakens hΓ) ih
+      have htail :
+          (fun x : Var => (ids : Var -> Tm) (x + 1)) =
+            (fun x => ((ids : Var -> Tm) x).[shift 1]) := by
+        funext x
+        asimp
+      simpa [htail]
+    · exact Candidate.var _ 0
+
+end SemCtx
+
+def SemType (Γ : Ctx) (A : Tm) : Prop :=
+  ∀ {Δ : DCandCtx}, SemCtx Γ Δ -> ∃ I : TypeInterp Δ A, I.Weakens
+
+def SemTyped (Γ : Ctx) (m A : Tm) : Prop :=
+  ∀ {Δ : DCandCtx}, SemCtx Γ Δ -> ∃ I : TypeInterp Δ A, I.Weakens ∧ I.SemTm m
+
+namespace SemTyped
+
+lemma var {Γ : Ctx} {x : Var} {A : Tm} :
+    Has Γ x A -> SemTyped Γ (.var x) A := by
+  intro hs Δ hΓ
+  exact SemCtx.var hΓ hs
+
+lemma srt {Γ : Ctx} (i : Nat) :
+    SemTyped Γ (.ty i) (.ty (i + 1)) := by
+  intro Δ hΓ
+  exact ⟨TypeInterp.univ Δ (i + 1),
+    TypeInterp.univ_weakens Δ (i + 1),
+    TypeInterp.semTy i (i + 1)⟩
+
+lemma bool {Γ : Ctx} :
+    SemTyped Γ .bool (.ty 0) := by
+  intro Δ hΓ
+  exact ⟨TypeInterp.univ Δ 0,
+    TypeInterp.univ_weakens Δ 0,
+    TypeInterp.semBoolType 0⟩
+
+lemma bot {Γ : Ctx} :
+    SemTyped Γ .bot (.ty 0) := by
+  intro Δ hΓ
+  exact ⟨TypeInterp.univ Δ 0,
+    TypeInterp.univ_weakens Δ 0,
+    TypeInterp.semBotType 0⟩
+
+lemma tt {Γ : Ctx} :
+    SemTyped Γ .tt .bool := by
+  intro Δ hΓ
+  exact ⟨TypeInterp.bool Δ,
+    TypeInterp.bool_weakens Δ,
+    TypeInterp.semTt⟩
+
+lemma ff {Γ : Ctx} :
+    SemTyped Γ .ff .bool := by
+  intro Δ hΓ
+  exact ⟨TypeInterp.bool Δ,
+    TypeInterp.bool_weakens Δ,
+    TypeInterp.semFf⟩
+
+lemma rfl {Γ : Ctx} {A m : Tm} :
+    SemTyped Γ m A ->
+    SemTyped Γ (.rfl m) (.idn A m m) := by
+  intro hm Δ hΓ
+  rcases hm hΓ with ⟨I, hI, hmI⟩
+  exact ⟨TypeInterp.idn I hmI hmI,
+    TypeInterp.idn_weakens,
+    TypeInterp.semRfl hmI⟩
+
+lemma sn_subst {Γ : Ctx} {m A : Tm} :
+    SemTyped Γ m A ->
+    ∀ {Δ : DCandCtx}, SemCtx Γ Δ ->
+    ∀ σ, Δ.valid σ -> SN Step m.[σ] := by
+  intro hm Δ hΓ σ hσ
+  rcases hm hΓ with ⟨I, _hI, hmI⟩
+  exact (I.cand σ).sn (hmI σ hσ)
+
+lemma sn {Γ : Ctx} {m A : Tm} {Δ : DCandCtx} :
+    SemCtx Γ Δ -> SemTyped Γ m A -> SN Step m := by
+  intro hΓ hm
+  have h := SemTyped.sn_subst hm hΓ ids (SemCtx.ids_valid hΓ)
+  simpa [Tm.subst_id] using h
+
+lemma semType_of_typed {Γ : Ctx} {A : Tm} {i : Nat} :
+    SemTyped Γ A (.ty i) -> SemType Γ A := by
+  intro hA Δ hΓ
+  rcases hA hΓ with ⟨I, _hI, hAI⟩
+  refine ⟨TypeInterp.const Δ A Candidate.snCandidate ?_, ?_⟩
+  · intro σ hσ
+    exact (I.cand σ).sn (hAI σ hσ)
+  · exact TypeInterp.const_weakens Candidate.snCandidate_weakens
+
+lemma pi {Γ : Ctx} {A B : Tm} {iA iB : Nat} :
+    SemTyped Γ A (.ty iA) ->
+    SemTyped (A :: Γ) B (.ty iB) ->
+    SemTyped Γ (.pi A B) (.ty (max iA iB)) := by
+  intro hA hB Δ hΓ
+  refine ⟨TypeInterp.univ Δ (max iA iB),
+    TypeInterp.univ_weakens Δ (max iA iB), ?_⟩
+  intro σ hσ
+  asimp
+  have hΔ : Δ.Weakens := SemCtx.weakens hΓ
+  let IA : TypeInterp Δ A :=
+    TypeInterp.const Δ A Candidate.snCandidate
+      (by
+        intro τ hτ
+        exact SemTyped.sn_subst hA hΓ τ hτ)
+  have hIA : IA.Weakens :=
+    TypeInterp.const_weakens Candidate.snCandidate_weakens
+  have hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ IA hIA
+  have hσup : (DCandCtx.extend IA).valid (up σ) :=
+    DCandCtx.extend_up_valid (I := IA) hΔ hσ
+  exact Candidate.pi_type
+    (SemTyped.sn_subst hA hΓ σ hσ)
+    (SemTyped.sn_subst hB hΓA (up σ) hσup)
+
+lemma sig {Γ : Ctx} {A B : Tm} {iA iB : Nat} :
+    SemTyped Γ A (.ty iA) ->
+    SemTyped (A :: Γ) B (.ty iB) ->
+    SemTyped Γ (.sig A B) (.ty (max iA iB)) := by
+  intro hA hB Δ hΓ
+  refine ⟨TypeInterp.univ Δ (max iA iB),
+    TypeInterp.univ_weakens Δ (max iA iB), ?_⟩
+  intro σ hσ
+  asimp
+  have hΔ : Δ.Weakens := SemCtx.weakens hΓ
+  let IA : TypeInterp Δ A :=
+    TypeInterp.const Δ A Candidate.snCandidate
+      (by
+        intro τ hτ
+        exact SemTyped.sn_subst hA hΓ τ hτ)
+  have hIA : IA.Weakens :=
+    TypeInterp.const_weakens Candidate.snCandidate_weakens
+  have hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ IA hIA
+  have hσup : (DCandCtx.extend IA).valid (up σ) :=
+    DCandCtx.extend_up_valid (I := IA) hΔ hσ
+  exact Candidate.sig_type
+    (SemTyped.sn_subst hA hΓ σ hσ)
+    (SemTyped.sn_subst hB hΓA (up σ) hσup)
+
+lemma idn {Γ : Ctx} {A m n : Tm} {i : Nat} :
+    SemTyped Γ A (.ty i) ->
+    SemTyped Γ m A ->
+    SemTyped Γ n A ->
+    SemTyped Γ (.idn A m n) (.ty i) := by
+  intro hA hm hn Δ hΓ
+  refine ⟨TypeInterp.univ Δ i, TypeInterp.univ_weakens Δ i, ?_⟩
+  intro σ hσ
+  asimp
+  exact Candidate.idn_type
+    (SemTyped.sn_subst hA hΓ σ hσ)
+    (SemTyped.sn_subst hm hΓ σ hσ)
+    (SemTyped.sn_subst hn hΓ σ hσ)
+
+lemma lam {Γ : Ctx} {A B m : Tm} {iA : Nat} :
+    SemTyped Γ A (.ty iA) ->
+    SemTyped (A :: Γ) m B ->
+    SemTyped Γ (.lam A m) (.pi A B) := by
+  intro hA hm Δ hΓ
+  have hΔ : Δ.Weakens := SemCtx.weakens hΓ
+  let IA : TypeInterp Δ A :=
+    TypeInterp.const Δ A Candidate.snCandidate
+      (by
+        intro σ hσ
+        exact SemTyped.sn_subst hA hΓ σ hσ)
+  have hIA : IA.Weakens :=
+    TypeInterp.const_weakens Candidate.snCandidate_weakens
+  have hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ IA hIA
+  rcases hm hΓA with ⟨IBody, _hIBodyW, _hmBody⟩
+  let IB : TypeInterp (DCandCtx.extend IA) B :=
+    TypeInterp.const (DCandCtx.extend IA) B Candidate.snCandidate
+      (by
+        intro σ hσ
+        exact IBody.type_sn σ hσ)
+  have hIBexp :
+      ∀ σ, (hσ : (DCandCtx.extend IA).valid σ) ->
+        Candidate.Expansive (IB.cand σ) := by
+    intro σ hσ
+    exact Candidate.snCandidate_expansive
+  refine ⟨TypeInterp.kpi IA IB hΔ hIBexp,
+    TypeInterp.kpi_weakens IA IB hΔ hIBexp, ?_⟩
+  apply TypeInterp.semLamKPiInterp IA IB hΔ hIBexp
+  · intro σ hσ
+    exact SemTyped.sn_subst hA hΓ σ hσ
+  · intro σ hσ
+    have hσup : (DCandCtx.extend IA).valid (up σ) :=
+      DCandCtx.extend_up_valid (I := IA) hΔ hσ
+    exact SemTyped.sn_subst hm hΓA (up σ) hσup
+  · intro σ hσ a ha
+    exact SemTyped.sn_subst hm hΓA (a .: σ)
+      (DCandCtx.extend_cons hσ ha)
+
+end SemTyped
+
+structure SemTypeData (Γ : Ctx) (A : Tm) where
+  interp : ∀ {Δ : DCandCtx}, SemCtx Γ Δ -> TypeInterp Δ A
+  weakens : ∀ {Δ : DCandCtx} (hΓ : SemCtx Γ Δ), (interp hΓ).Weakens
+
+namespace SemTypeData
+
+def Expansive {Γ : Ctx} {A : Tm} (TA : SemTypeData Γ A) : Prop :=
+  ∀ {Δ : DCandCtx} (hΓ : SemCtx Γ Δ), (TA.interp hΓ).Expansive
+
+def SemTm {Γ : Ctx} {A : Tm} (TA : SemTypeData Γ A) (m : Tm) : Prop :=
+  ∀ {Δ : DCandCtx} (hΓ : SemCtx Γ Δ), (TA.interp hΓ).SemTm m
+
+lemma toSemType {Γ : Ctx} {A : Tm} (TA : SemTypeData Γ A) :
+    SemType Γ A := by
+  intro Δ hΓ
+  exact ⟨TA.interp hΓ, TA.weakens hΓ⟩
+
+lemma toSemTyped {Γ : Ctx} {A m : Tm} (TA : SemTypeData Γ A) :
+    TA.SemTm m -> SemTyped Γ m A := by
+  intro hm Δ hΓ
+  exact ⟨TA.interp hΓ, TA.weakens hΓ, hm hΓ⟩
+
+lemma semTm_sn {Γ : Ctx} {A m : Tm} {TA : SemTypeData Γ A}
+    {Δ : DCandCtx} :
+    SemCtx Γ Δ -> TA.SemTm m -> SN Step m := by
+  intro hΓ hm
+  have hmem := hm hΓ ids (SemCtx.ids_valid hΓ)
+  have hsn := (TA.interp hΓ).cand ids |>.sn hmem
+  simpa [Tm.subst_id] using hsn
+
+lemma semTm_sn_subst {Γ : Ctx} {A m : Tm} {TA : SemTypeData Γ A}
+    {Δ : DCandCtx} :
+    SemCtx Γ Δ -> TA.SemTm m -> ∀ σ, Δ.valid σ -> SN Step m.[σ] := by
+  intro hΓ hm σ hσ
+  exact (TA.interp hΓ).semTm_sn (hm hΓ) σ hσ
+
+lemma semTm_closed_red {Γ : Ctx} {A m n : Tm} (TA : SemTypeData Γ A) :
+    TA.SemTm m ->
+    (∀ {Δ : DCandCtx} (_hΓ : SemCtx Γ Δ) σ,
+      Δ.valid σ -> m.[σ] ~>* n.[σ]) ->
+    TA.SemTm n := by
+  intro hm hred Δ hΓ
+  exact TypeInterp.semTm_closed_red (TA.interp hΓ) (hm hΓ)
+    (fun σ hσ => hred hΓ σ hσ)
+
+lemma semTm_conv {Γ : Ctx} {A m n : Tm} (TA : SemTypeData Γ A) :
+    TA.Expansive ->
+    (∀ {Δ : DCandCtx} (_hΓ : SemCtx Γ Δ) σ,
+      Δ.valid σ -> SN Step m.[σ]) ->
+    (∀ {Δ : DCandCtx} (_hΓ : SemCtx Γ Δ) σ,
+      Δ.valid σ -> m.[σ] === n.[σ]) ->
+    TA.SemTm n ->
+    TA.SemTm m := by
+  intro hTA hsn heq hn Δ hΓ
+  exact TypeInterp.semTm_conv (TA.interp hΓ) (hTA hΓ)
+    (fun σ hσ => hsn hΓ σ hσ)
+    (fun σ hσ => heq hΓ σ hσ)
+    (hn hΓ)
+
+lemma semTm_closed_red_syntactic {Γ : Ctx} {A m n : Tm}
+    (TA : SemTypeData Γ A) :
+    TA.SemTm m -> m ~>* n -> TA.SemTm n := by
+  intro hm rd
+  exact TA.semTm_closed_red hm (fun _hΓ σ _hσ => Red.subst σ rd)
+
+lemma semTm_conv_syntactic {Γ : Ctx} {A m n : Tm}
+    (TA : SemTypeData Γ A) :
+    TA.Expansive ->
+    (∀ {Δ : DCandCtx} (_hΓ : SemCtx Γ Δ) σ,
+      Δ.valid σ -> SN Step m.[σ]) ->
+    m === n ->
+    TA.SemTm n ->
+    TA.SemTm m := by
+  intro hTA hsn eq hn
+  exact TA.semTm_conv hTA hsn (fun _hΓ σ _hσ => Conv.subst σ eq) hn
+
+noncomputable def lookup {Γ : Ctx} {x : Var} {A : Tm}
+    (hs : Has Γ x A) : SemTypeData Γ A where
+  interp hΓ := Classical.choose (SemCtx.var hΓ hs)
+  weakens hΓ := (Classical.choose_spec (SemCtx.var hΓ hs)).1
+
+lemma var {Γ : Ctx} {x : Var} {A : Tm} (hs : Has Γ x A) :
+    (SemTypeData.lookup hs).SemTm (.var x) := by
+  intro Δ hΓ
+  exact (Classical.choose_spec (SemCtx.var hΓ hs)).2
+
+def univ (Γ : Ctx) (i : Nat) : SemTypeData Γ (.ty i) where
+  interp {Δ} _ := TypeInterp.univ Δ i
+  weakens {Δ} _ := TypeInterp.univ_weakens Δ i
+
+lemma univ_expansive (Γ : Ctx) (i : Nat) :
+    (SemTypeData.univ Γ i).Expansive := by
+  intro Δ hΓ
+  exact TypeInterp.univ_expansive Δ i
+
+lemma type {Γ : Ctx} {A : Tm} (TA : SemTypeData Γ A) (i : Nat) :
+    (SemTypeData.univ Γ i).SemTm A := by
+  intro Δ hΓ
+  exact TypeInterp.semUniv (TA.interp hΓ) i
+
+lemma ty {Γ : Ctx} (i : Nat) :
+    (SemTypeData.univ Γ (i + 1)).SemTm (.ty i) :=
+  SemTypeData.type (SemTypeData.univ Γ i) (i + 1)
+
+def bool (Γ : Ctx) : SemTypeData Γ .bool where
+  interp {Δ} _ := TypeInterp.bool Δ
+  weakens {Δ} _ := TypeInterp.bool_weakens Δ
+
+lemma bool_expansive (Γ : Ctx) :
+    (SemTypeData.bool Γ).Expansive := by
+  intro Δ hΓ
+  exact TypeInterp.bool_expansive Δ
+
+lemma bool_type {Γ : Ctx} :
+    (SemTypeData.univ Γ 0).SemTm .bool :=
+  SemTypeData.type (SemTypeData.bool Γ) 0
+
+lemma tt {Γ : Ctx} : (SemTypeData.bool Γ).SemTm .tt := by
+  intro Δ hΓ
+  exact TypeInterp.semTt
+
+lemma ff {Γ : Ctx} : (SemTypeData.bool Γ).SemTm .ff := by
+  intro Δ hΓ
+  exact TypeInterp.semFf
+
+def bot (Γ : Ctx) : SemTypeData Γ .bot where
+  interp {Δ} _ := TypeInterp.bot Δ
+  weakens {Δ} _ := TypeInterp.bot_weakens Δ
+
+lemma bot_expansive (Γ : Ctx) :
+    (SemTypeData.bot Γ).Expansive := by
+  intro Δ hΓ
+  exact TypeInterp.bot_expansive Δ
+
+lemma bot_type {Γ : Ctx} :
+    (SemTypeData.univ Γ 0).SemTm .bot :=
+  SemTypeData.type (SemTypeData.bot Γ) 0
+
+noncomputable def idn {Γ : Ctx} {A m n : Tm}
+    (TA : SemTypeData Γ A) (hm : TA.SemTm m) (hn : TA.SemTm n) :
+    SemTypeData Γ (.idn A m n) where
+  interp hΓ := TypeInterp.idn (TA.interp hΓ) (hm hΓ) (hn hΓ)
+  weakens hΓ :=
+    TypeInterp.idn_weakens (I := TA.interp hΓ)
+      (hm := hm hΓ) (hn := hn hΓ)
+
+lemma idn_expansive {Γ : Ctx} {A m n : Tm}
+    (TA : SemTypeData Γ A) (hm : TA.SemTm m) (hn : TA.SemTm n) :
+    (SemTypeData.idn TA hm hn).Expansive := by
+  intro Δ hΓ
+  change (TypeInterp.idn (TA.interp hΓ) (hm hΓ) (hn hΓ)).Expansive
+  exact TypeInterp.idn_expansive (I := TA.interp hΓ)
+    (hm := hm hΓ) (hn := hn hΓ)
+
+lemma rfl {Γ : Ctx} {A m : Tm}
+    (TA : SemTypeData Γ A) (hm : TA.SemTm m) :
+    (SemTypeData.idn TA hm hm).SemTm (.rfl m) := by
+  intro Δ hΓ
+  exact TypeInterp.semRfl (hm hΓ)
+
+lemma idn_type {Γ : Ctx} {A m n : Tm}
+    (TA : SemTypeData Γ A) (hm : TA.SemTm m) (hn : TA.SemTm n)
+    (i : Nat) :
+    (SemTypeData.univ Γ i).SemTm (.idn A m n) :=
+  SemTypeData.type (SemTypeData.idn TA hm hn) i
+
+noncomputable def idBranch {Γ : Ctx} {A B a : Tm}
+    (TB : SemTypeData Γ B) (ha : TB.SemTm a)
+    (TA : SemTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    SemTypeData Γ A.[.rfl a,a/] where
+  interp {Δ} hΓ :=
+    let IB := TB.interp hΓ
+    let hΓB : SemCtx (B :: Γ) (DCandCtx.extend IB) :=
+      SemCtx.cons hΓ IB (TB.weakens hΓ)
+    let IP := TypeInterp.idProof IB (ha hΓ)
+    let hΓP : SemCtx
+        (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+        (DCandCtx.extend IP) :=
+      SemCtx.cons hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+    TypeInterp.idBranch IB (ha hΓ) (TA.interp hΓP)
+  weakens {Δ} hΓ := by
+    let IB := TB.interp hΓ
+    let hΓB : SemCtx (B :: Γ) (DCandCtx.extend IB) :=
+      SemCtx.cons hΓ IB (TB.weakens hΓ)
+    let IP := TypeInterp.idProof IB (ha hΓ)
+    let hΓP : SemCtx
+        (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+        (DCandCtx.extend IP) :=
+      SemCtx.cons hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+    change (TypeInterp.idBranch IB (ha hΓ) (TA.interp hΓP)).Weakens
+    exact TypeInterp.idBranch_weakens IB (ha hΓ) (TA.interp hΓP)
+      (TA.weakens hΓP)
+
+lemma idBranch_expansive {Γ : Ctx} {A B a : Tm}
+    (TB : SemTypeData Γ B) (ha : TB.SemTm a)
+    (TA : SemTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    TA.Expansive -> (SemTypeData.idBranch TB ha TA).Expansive := by
+  intro hTA Δ hΓ
+  let IB := TB.interp hΓ
+  let hΓB : SemCtx (B :: Γ) (DCandCtx.extend IB) :=
+    SemCtx.cons hΓ IB (TB.weakens hΓ)
+  let IP := TypeInterp.idProof IB (ha hΓ)
+  let hΓP : SemCtx
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+      (DCandCtx.extend IP) :=
+    SemCtx.cons hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+  change (TypeInterp.idBranch IB (ha hΓ) (TA.interp hΓP)).Expansive
+  exact TypeInterp.idBranch_expansive IB (ha hΓ) (TA.interp hΓP) (hTA hΓP)
+
+noncomputable def idTarget {Γ : Ctx} {A B a b n : Tm}
+    (TB : SemTypeData Γ B) (ha : TB.SemTm a) (hb : TB.SemTm b)
+    (hn : (SemTypeData.idn TB ha hb).SemTm n)
+    (TA : SemTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    SemTypeData Γ A.[n,b/] where
+  interp {Δ} hΓ :=
+    let IB := TB.interp hΓ
+    let hΓB : SemCtx (B :: Γ) (DCandCtx.extend IB) :=
+      SemCtx.cons hΓ IB (TB.weakens hΓ)
+    let IP := TypeInterp.idProof IB (ha hΓ)
+    let hΓP : SemCtx
+        (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+        (DCandCtx.extend IP) :=
+      SemCtx.cons hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+    TypeInterp.idTarget IB (ha hΓ) (hb hΓ) (hn hΓ) (TA.interp hΓP)
+  weakens {Δ} hΓ := by
+    let IB := TB.interp hΓ
+    let hΓB : SemCtx (B :: Γ) (DCandCtx.extend IB) :=
+      SemCtx.cons hΓ IB (TB.weakens hΓ)
+    let IP := TypeInterp.idProof IB (ha hΓ)
+    let hΓP : SemCtx
+        (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+        (DCandCtx.extend IP) :=
+      SemCtx.cons hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+    change (TypeInterp.idTarget IB (ha hΓ) (hb hΓ) (hn hΓ)
+      (TA.interp hΓP)).Weakens
+    exact TypeInterp.idTarget_weakens IB (ha hΓ) (hb hΓ) (hn hΓ)
+      (TA.interp hΓP) (TA.weakens hΓP)
+
+lemma idTarget_expansive {Γ : Ctx} {A B a b n : Tm}
+    (TB : SemTypeData Γ B) (ha : TB.SemTm a) (hb : TB.SemTm b)
+    (hn : (SemTypeData.idn TB ha hb).SemTm n)
+    (TA : SemTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    TA.Expansive -> (SemTypeData.idTarget TB ha hb hn TA).Expansive := by
+  intro hTA Δ hΓ
+  let IB := TB.interp hΓ
+  let hΓB : SemCtx (B :: Γ) (DCandCtx.extend IB) :=
+    SemCtx.cons hΓ IB (TB.weakens hΓ)
+  let IP := TypeInterp.idProof IB (ha hΓ)
+  let hΓP : SemCtx
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+      (DCandCtx.extend IP) :=
+    SemCtx.cons hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+  change (TypeInterp.idTarget IB (ha hΓ) (hb hΓ) (hn hΓ)
+    (TA.interp hΓP)).Expansive
+  exact TypeInterp.idTarget_expansive IB (ha hΓ) (hb hΓ) (hn hΓ)
+    (TA.interp hΓP) (hTA hΓP)
+
+noncomputable def ofSemTypedType {Γ : Ctx} {A : Tm} {i : Nat}
+    (hA : SemTyped Γ A (.ty i)) : SemTypeData Γ A where
+  interp {Δ} hΓ :=
+    TypeInterp.const Δ A Candidate.snCandidate
+      (by
+        intro σ hσ
+        exact SemTyped.sn_subst hA hΓ σ hσ)
+  weakens {Δ} hΓ :=
+    TypeInterp.const_weakens Candidate.snCandidate_weakens
+
+lemma ofSemTypedType_expansive {Γ : Ctx} {A : Tm} {i : Nat}
+    (hA : SemTyped Γ A (.ty i)) :
+    (SemTypeData.ofSemTypedType hA).Expansive := by
+  intro Δ hΓ
+  exact TypeInterp.const_expansive Candidate.snCandidate_expansive
+
+noncomputable def kpi {Γ : Ctx} {A B : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive) : SemTypeData Γ (.pi A B) where
+  interp {Δ} hΓ :=
+    let IA := TA.interp hΓ
+    let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+      SemCtx.cons hΓ IA (TA.weakens hΓ)
+    TypeInterp.kpi IA (TB.interp hΓA) (SemCtx.weakens hΓ) (hTB hΓA)
+  weakens {Δ} hΓ := by
+    let IA := TA.interp hΓ
+    let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+      SemCtx.cons hΓ IA (TA.weakens hΓ)
+    change (TypeInterp.kpi IA (TB.interp hΓA)
+      (SemCtx.weakens hΓ) (hTB hΓA)).Weakens
+    exact TypeInterp.kpi_weakens IA (TB.interp hΓA)
+      (SemCtx.weakens hΓ) (hTB hΓA)
+
+lemma pi_type {Γ : Ctx} {A B : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive) (i : Nat) :
+    (SemTypeData.univ Γ i).SemTm (.pi A B) :=
+  SemTypeData.type (SemTypeData.kpi TA TB hTB) i
+
+noncomputable def ksig {Γ : Ctx} {A B : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B) :
+    SemTypeData Γ (.sig A B) where
+  interp {Δ} hΓ :=
+    let IA := TA.interp hΓ
+    let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+      SemCtx.cons hΓ IA (TA.weakens hΓ)
+    TypeInterp.ksig IA (TB.interp hΓA) (SemCtx.weakens hΓ)
+  weakens {Δ} hΓ := by
+    let IA := TA.interp hΓ
+    let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+      SemCtx.cons hΓ IA (TA.weakens hΓ)
+    change (TypeInterp.ksig IA (TB.interp hΓA) (SemCtx.weakens hΓ)).Weakens
+    exact TypeInterp.ksig_weakens IA (TB.interp hΓA) (SemCtx.weakens hΓ)
+
+noncomputable def ksigAt {Γ : Ctx} {A B : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    {Δ : DCandCtx} (hΓ : SemCtx Γ Δ) : TypeInterp Δ (.sig A B) :=
+  let IA := TA.interp hΓ
+  let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ IA (TA.weakens hΓ)
+  TypeInterp.ksig IA (TB.interp hΓA) (SemCtx.weakens hΓ)
+
+lemma ksigAt_weakens {Γ : Ctx} {A B : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    {Δ : DCandCtx} (hΓ : SemCtx Γ Δ) :
+    (SemTypeData.ksigAt TA TB hΓ).Weakens := by
+  let IA := TA.interp hΓ
+  let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ IA (TA.weakens hΓ)
+  change (TypeInterp.ksig IA (TB.interp hΓA) (SemCtx.weakens hΓ)).Weakens
+  exact TypeInterp.ksig_weakens IA (TB.interp hΓA) (SemCtx.weakens hΓ)
+
+noncomputable def ksigCtx {Γ : Ctx} {A B : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    {Δ : DCandCtx} (hΓ : SemCtx Γ Δ) :
+    SemCtx (.sig A B :: Γ) (DCandCtx.extend (SemTypeData.ksigAt TA TB hΓ)) :=
+  SemCtx.cons hΓ (SemTypeData.ksigAt TA TB hΓ)
+    (SemTypeData.ksigAt_weakens TA TB hΓ)
+
+lemma sigmaBranch_exists {Γ : Ctx} {A B C : Tm}
+    (TC : SemTypeData (.sig A B :: Γ) C) :
+    ∀ {Δ : DCandCtx}, SemCtx (B :: A :: Γ) Δ ->
+      ∃ I : TypeInterp Δ C.[.tup (.var 1) (.var 0) .: shift 2], I.Weakens := by
+  intro Δ hΓBA
+  cases hΓBA with
+  | cons hΓA IB hIB =>
+    cases hΓA with
+    | cons hΓ IA hIA =>
+      let K := TypeInterp.ksig IA IB (SemCtx.weakens hΓ)
+      let hΓS : SemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        SemCtx.cons hΓ K (TypeInterp.ksig_weakens IA IB (SemCtx.weakens hΓ))
+      refine ⟨TypeInterp.sigmaBranch IA IB (SemCtx.weakens hΓ) hIA hIB
+        (TC.interp hΓS), ?_⟩
+      exact TypeInterp.sigmaBranch_weakens IA IB (SemCtx.weakens hΓ) hIA hIB
+        (TC.interp hΓS) (TC.weakens hΓS)
+
+lemma sig_type {Γ : Ctx} {A B : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (i : Nat) :
+    (SemTypeData.univ Γ i).SemTm (.sig A B) :=
+  SemTypeData.type (SemTypeData.ksig TA TB) i
+
+noncomputable def subst1 {Γ : Ctx} {A B n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hn : TA.SemTm n) : SemTypeData Γ B.[n/] where
+  interp {Δ} hΓ :=
+    let IA := TA.interp hΓ
+    let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+      SemCtx.cons hΓ IA (TA.weakens hΓ)
+    TypeInterp.subst1 IA (TB.interp hΓA) (hn hΓ)
+  weakens {Δ} hΓ := by
+    let IA := TA.interp hΓ
+    let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+      SemCtx.cons hΓ IA (TA.weakens hΓ)
+    change (TypeInterp.subst1 IA (TB.interp hΓA) (hn hΓ)).Weakens
+    exact TypeInterp.subst1_weakens IA (TB.interp hΓA)
+      (TB.weakens hΓA)
+
+lemma subst1_expansive {Γ : Ctx} {A B n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hn : TA.SemTm n) :
+    TB.Expansive -> (SemTypeData.subst1 TA TB hn).Expansive := by
+  intro hTB Δ hΓ
+  let IA := TA.interp hΓ
+  let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ IA (TA.weakens hΓ)
+  change (TypeInterp.subst1 IA (TB.interp hΓA) (hn hΓ)).Expansive
+  exact TypeInterp.subst1_expansive IA (TB.interp hΓA)
+    (hn := hn hΓ) (hTB hΓA)
+
+lemma lam {Γ : Ctx} {A B m : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive) :
+    TB.SemTm m -> (SemTypeData.kpi TA TB hTB).SemTm (.lam A m) := by
+  intro hm Δ hΓ
+  let IA := TA.interp hΓ
+  let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ IA (TA.weakens hΓ)
+  let IB := TB.interp hΓA
+  change (TypeInterp.kpi IA IB (SemCtx.weakens hΓ) (hTB hΓA)).SemTm (.lam A m)
+  apply TypeInterp.semLamKPiInterp IA IB (SemCtx.weakens hΓ) (hTB hΓA)
+  · intro σ hσ
+    exact IA.type_sn σ hσ
+  · intro σ hσ
+    have hσup : (DCandCtx.extend IA).valid (up σ) :=
+      DCandCtx.extend_up_valid (I := IA) (SemCtx.weakens hΓ) hσ
+    exact (IB.cand (up σ)).sn (hm hΓA (up σ) hσup)
+  · exact TypeInterp.semBody_of_semTm IA IB (hm hΓA)
+
+lemma app {Γ : Ctx} {A B m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (hTB : TB.Expansive) :
+    (SemTypeData.kpi TA TB hTB).SemTm m ->
+    (hn : TA.SemTm n) ->
+    (SemTypeData.subst1 TA TB hn).SemTm (.app m n) := by
+  intro hm hn Δ hΓ
+  let IA := TA.interp hΓ
+  let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ IA (TA.weakens hΓ)
+  let IB := TB.interp hΓA
+  change (TypeInterp.subst1 IA IB (hn hΓ)).SemTm (.app m n)
+  exact TypeInterp.semAppKPiSubst1 IA IB (SemCtx.weakens hΓ)
+    (hTB hΓA) (hm hΓ) (hn hΓ)
+
+lemma tup {Γ : Ctx} {A B m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B) :
+    (hm : TA.SemTm m) ->
+    (SemTypeData.subst1 TA TB hm).SemTm n ->
+    (SemTypeData.ksig TA TB).SemTm (.tup m n) := by
+  intro hm hn Δ hΓ
+  let IA := TA.interp hΓ
+  let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ IA (TA.weakens hΓ)
+  let IB := TB.interp hΓA
+  change (TypeInterp.ksig IA IB (SemCtx.weakens hΓ)).SemTm (.tup m n)
+  apply TypeInterp.semTupKSigmaInterp IA IB (SemCtx.weakens hΓ)
+  · exact hm hΓ
+  · intro σ hσ
+    exact hn hΓ σ hσ
+
+lemma prj {Γ : Ctx} {A B C m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (TC : SemTypeData (.sig A B :: Γ) C)
+    (hTC : TC.Expansive)
+    (hm : (SemTypeData.ksig TA TB).SemTm m)
+    (hnSN : ∀ {Δ : DCandCtx} (_hΓ : SemCtx Γ Δ),
+      ∀ σ, Δ.valid σ -> SN Step n.[upn 2 σ])
+    (hn : ∀ {Δ : DCandCtx} (hΓ : SemCtx Γ Δ),
+      let IA := TA.interp hΓ
+      let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+        SemCtx.cons hΓ IA (TA.weakens hΓ)
+      let IB := TB.interp hΓA
+      ∀ σ, (hσ : Δ.valid σ) -> ∀ a, (ha : (IA.cand σ).mem a) ->
+        ∀ b, (hb : (IB.cand (a .: σ)).mem b) ->
+          ((TC.interp (SemTypeData.ksigCtx TA TB hΓ)).cand (.tup a b .: σ)).mem
+            n.[b .: a .: σ]) :
+    (SemTypeData.subst1 (SemTypeData.ksig TA TB) TC hm).SemTm (.prj C m n) := by
+  intro Δ hΓ
+  let IA := TA.interp hΓ
+  let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ IA (TA.weakens hΓ)
+  let IB := TB.interp hΓA
+  let K := TypeInterp.ksig IA IB (SemCtx.weakens hΓ)
+  let hΓS : SemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+    SemCtx.cons hΓ K (TypeInterp.ksig_weakens IA IB (SemCtx.weakens hΓ))
+  change (TypeInterp.subst1 K (TC.interp hΓS) (hm hΓ)).SemTm (.prj C m n)
+  exact TypeInterp.semPrjKSigmaSubst1 IA IB (SemCtx.weakens hΓ)
+    (TC.interp hΓS) (hTC hΓS) (hm hΓ) (hnSN hΓ)
+    (by
+      intro σ hσ a ha b hb
+      have h := hn hΓ σ hσ a ha b hb
+      simpa [SemTypeData.ksigCtx, SemTypeData.ksigAt] using h)
+
+lemma prj_branch {Γ : Ctx} {A B C m n : Tm}
+    (TA : SemTypeData Γ A) (TB : SemTypeData (A :: Γ) B)
+    (TC : SemTypeData (.sig A B :: Γ) C)
+    (hTC : TC.Expansive)
+    (hm : (SemTypeData.ksig TA TB).SemTm m)
+    (hn : ∀ {Δ : DCandCtx} (hΓ : SemCtx Γ Δ),
+      let IA := TA.interp hΓ
+      let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+        SemCtx.cons hΓ IA (TA.weakens hΓ)
+      let IB := TB.interp hΓA
+      let K := TypeInterp.ksig IA IB (SemCtx.weakens hΓ)
+      let hΓS : SemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        SemCtx.cons hΓ K (TypeInterp.ksig_weakens IA IB (SemCtx.weakens hΓ))
+      (TypeInterp.sigmaBranch IA IB (SemCtx.weakens hΓ) (TA.weakens hΓ)
+        (TB.weakens hΓA) (TC.interp hΓS)).SemTm n) :
+    (SemTypeData.subst1 (SemTypeData.ksig TA TB) TC hm).SemTm (.prj C m n) := by
+  intro Δ hΓ
+  let IA := TA.interp hΓ
+  let hΓA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+    SemCtx.cons hΓ IA (TA.weakens hΓ)
+  let IB := TB.interp hΓA
+  let K := TypeInterp.ksig IA IB (SemCtx.weakens hΓ)
+  let hΓS : SemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+    SemCtx.cons hΓ K (TypeInterp.ksig_weakens IA IB (SemCtx.weakens hΓ))
+  change (TypeInterp.subst1 K (TC.interp hΓS) (hm hΓ)).SemTm (.prj C m n)
+  exact TypeInterp.semPrjKSigmaSubst1_branch IA IB (SemCtx.weakens hΓ)
+    (TA.weakens hΓ) (TB.weakens hΓA) (TC.interp hΓS) (hTC hΓS)
+    (hm hΓ) (hn hΓ)
+
+lemma ite {Γ : Ctx} {A m n1 n2 : Tm}
+    (TB : SemTypeData (.bool :: Γ) A)
+    (hTB : TB.Expansive)
+    (hm : (SemTypeData.bool Γ).SemTm m)
+    (hn1 : (SemTypeData.subst1 (SemTypeData.bool Γ) TB SemTypeData.tt).SemTm n1)
+    (hn2 : (SemTypeData.subst1 (SemTypeData.bool Γ) TB SemTypeData.ff).SemTm n2) :
+    (SemTypeData.subst1 (SemTypeData.bool Γ) TB hm).SemTm (.ite A m n1 n2) := by
+  intro Δ hΓ
+  let hΓB : SemCtx (.bool :: Γ) (DCandCtx.extend (TypeInterp.bool Δ)) :=
+    SemCtx.cons hΓ (TypeInterp.bool Δ) (TypeInterp.bool_weakens Δ)
+  let IB := TB.interp hΓB
+  change (TypeInterp.subst1 (TypeInterp.bool Δ) IB (hm hΓ)).SemTm (.ite A m n1 n2)
+  exact TypeInterp.semIteBoolSubst1 IB (SemCtx.weakens hΓ) (hTB hΓB)
+    (hm hΓ) (hn1 hΓ) (hn2 hΓ)
+
+lemma exf {Γ : Ctx} {A m : Tm}
+    (TB : SemTypeData (.bot :: Γ) A)
+    (hTB : TB.Expansive)
+    (hm : (SemTypeData.bot Γ).SemTm m) :
+    (SemTypeData.subst1 (SemTypeData.bot Γ) TB hm).SemTm (.exf A m) := by
+  intro Δ hΓ
+  let hΓB : SemCtx (.bot :: Γ) (DCandCtx.extend (TypeInterp.bot Δ)) :=
+    SemCtx.cons hΓ (TypeInterp.bot Δ) (TypeInterp.bot_weakens Δ)
+  let IB := TB.interp hΓB
+  change (TypeInterp.subst1 (TypeInterp.bot Δ) IB (hm hΓ)).SemTm (.exf A m)
+  exact TypeInterp.semExfBotSubst1 IB (SemCtx.weakens hΓ) (hTB hΓB) (hm hΓ)
+
+lemma rw_target {Γ : Ctx} {A B m n a b : Tm}
+    (TB : SemTypeData Γ B)
+    (ha : TB.SemTm a) (hb : TB.SemTm b)
+    (hn : (SemTypeData.idn TB ha hb).SemTm n)
+    (TA : SemTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A)
+    (hTA : TA.Expansive)
+    (hrfl : ∀ {Δ : DCandCtx} (hΓ : SemCtx Γ Δ),
+      let IB := TB.interp hΓ
+      let hΓB : SemCtx (B :: Γ) (DCandCtx.extend IB) :=
+        SemCtx.cons hΓ IB (TB.weakens hΓ)
+      let IP := TypeInterp.idProof IB (ha hΓ)
+      let hΓP : SemCtx
+          (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+          (DCandCtx.extend IP) :=
+        SemCtx.cons hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+      let IA := TA.interp hΓP
+      ∀ σ, Δ.valid σ -> ∀ c,
+        (IA.cand (.rfl c .: b.[σ] .: σ)).mem m.[σ]) :
+    SemTyped Γ (.rw A m n) A.[n,b/] := by
+  intro Δ hΓ
+  let IB := TB.interp hΓ
+  let hΓB : SemCtx (B :: Γ) (DCandCtx.extend IB) :=
+    SemCtx.cons hΓ IB (TB.weakens hΓ)
+  let IP := TypeInterp.idProof IB (ha hΓ)
+  let hΓP : SemCtx
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+      (DCandCtx.extend IP) :=
+    SemCtx.cons hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+  let IA := TA.interp hΓP
+  refine ⟨TypeInterp.idTarget IB (ha hΓ) (hb hΓ) (hn hΓ) IA,
+    TypeInterp.idTarget_weakens IB (ha hΓ) (hb hΓ) (hn hΓ) IA
+      (TA.weakens hΓP), ?_⟩
+  exact TypeInterp.semRwTarget IB (SemCtx.weakens hΓ) (TB.weakens hΓ)
+    (ha hΓ) (hb hΓ) (hn hΓ) IA (hTA hΓP) (hrfl hΓ)
+
+lemma rw_sn {Γ : Ctx} {A B m n a b : Tm}
+    (TB : SemTypeData Γ B)
+    (ha : TB.SemTm a) (hb : TB.SemTm b)
+    (hn : (SemTypeData.idn TB ha hb).SemTm n)
+    (TA : SemTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A)
+    (hm : ∀ {Δ : DCandCtx} (hΓ : SemCtx Γ Δ),
+      let IB := TB.interp hΓ
+      let hΓB : SemCtx (B :: Γ) (DCandCtx.extend IB) :=
+        SemCtx.cons hΓ IB (TB.weakens hΓ)
+      let IP := TypeInterp.idProof IB (ha hΓ)
+      let hΓP : SemCtx
+          (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+          (DCandCtx.extend IP) :=
+        SemCtx.cons hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+      let IA := TA.interp hΓP
+      (TypeInterp.idBranch IB (ha hΓ) IA).SemTm m) :
+    SemTyped Γ (.rw A m n) A.[n,b/] := by
+  intro Δ hΓ
+  let IB := TB.interp hΓ
+  let hΓB : SemCtx (B :: Γ) (DCandCtx.extend IB) :=
+    SemCtx.cons hΓ IB (TB.weakens hΓ)
+  let IP := TypeInterp.idProof IB (ha hΓ)
+  let hΓP : SemCtx
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ)
+      (DCandCtx.extend IP) :=
+    SemCtx.cons hΓB IP (TypeInterp.idProof_weakens IB (ha hΓ))
+  let IA := TA.interp hΓP
+  refine ⟨TypeInterp.const Δ A.[n,b/] Candidate.snCandidate
+      (fun σ hσ => (TypeInterp.idTarget IB (ha hΓ) (hb hΓ) (hn hΓ) IA).type_sn σ hσ),
+    TypeInterp.const_weakens Candidate.snCandidate_weakens, ?_⟩
+  exact TypeInterp.semRwTargetSN IB (SemCtx.weakens hΓ) (TB.weakens hΓ)
+    (ha hΓ) (hb hΓ) (hn hΓ) IA (hm hΓ)
+
+lemma rw_sn_branch {Γ : Ctx} {A B m n a b : Tm}
+    (TB : SemTypeData Γ B)
+    (ha : TB.SemTm a) (hb : TB.SemTm b)
+    (hn : (SemTypeData.idn TB ha hb).SemTm n)
+    (TA : SemTypeData
+      (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A) :
+    (SemTypeData.idBranch TB ha TA).SemTm m ->
+    SemTyped Γ (.rw A m n) A.[n,b/] := by
+  intro hm
+  apply SemTypeData.rw_sn TB ha hb hn TA
+  intro Δ hΓ
+  exact hm hΓ
+
+end SemTypeData
+
+namespace Wf
+
+lemma semCtx_of_semantic
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> SemTyped Γ m A) :
+    ∀ {Γ : Ctx}, Γ ⊢ -> ∃ Δ : DCandCtx, SemCtx Γ Δ
+  | [], Wf.nil => ⟨DCandCtx.empty, SemCtx.nil⟩
+  | A :: Γ, Wf.cons tyA wf =>
+    by
+      rcases semCtx_of_semantic fund wf with ⟨Δ, hΓ⟩
+      rcases SemTyped.semType_of_typed (fund tyA) hΓ with ⟨I, hI⟩
+      exact ⟨DCandCtx.extend I, SemCtx.cons hΓ I hI⟩
+
+end Wf
+
+theorem Typed.normalize_of_semantic
+    {Γ : Ctx} {m A : Tm}
+    (fund : ∀ {Γ m A}, Γ ⊢ m : A -> SemTyped Γ m A) :
+    Γ ⊢ m : A -> SN Step m := by
+  intro ty
+  rcases ty.toWf.semCtx_of_semantic fund with ⟨Δ, hΓ⟩
+  exact SemTyped.sn hΓ (fund ty)
 
 def SemTm (Δ : CandCtx) (m : Tm) (C : Candidate) : Prop :=
   ∀ σ, CandSubst Δ σ -> C.mem m.[σ]
