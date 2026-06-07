@@ -8222,6 +8222,21 @@ lemma bot (Γ : Ctx) :
     CanTypeFundExp Γ .bot 0 :=
   CanTypeFundExp.ofCanFund CanFund.bot
 
+lemma tyExact (Γ : Ctx) (i : Nat) :
+    CanTypeFundExp Γ (.ty i) (i + 1) :=
+  CanTypeFundExp.ofTypeJudgment (CanTypeJudgment.ty Γ i)
+    (CanTypeData.univ_expansive Γ i)
+
+lemma boolExact (Γ : Ctx) :
+    CanTypeFundExp Γ .bool 0 :=
+  CanTypeFundExp.ofTypeJudgment (CanTypeJudgment.bool Γ)
+    (CanTypeData.bool_expansive Γ)
+
+lemma botExact (Γ : Ctx) :
+    CanTypeFundExp Γ .bot 0 :=
+  CanTypeFundExp.ofTypeJudgment (CanTypeJudgment.bot Γ)
+    (CanTypeData.bot_expansive Γ)
+
 lemma pi {Γ : Ctx} {A B : Tm} {iA iB : Nat}
     (TA : CanTypeFundExp Γ A iA)
     (TB : CanTypeFundExp (A :: Γ) B iB) :
@@ -8285,6 +8300,16 @@ noncomputable def idnJudgment {Γ : Ctx} {A m n : Tm} {i : Nat}
     CanTypeJudgment Γ (.idn A m n) i :=
   CanTypeJudgment.idnByEquiv
     (CanTypeFundExp.judgment TA) Jm Jn
+
+lemma idnByEquivExact {Γ : Ctx} {A m n : Tm} {i : Nat}
+    (TA : CanTypeFundExp Γ A i)
+    (Jm : CanTermDataAt Γ m A (CanTypeFundExp.typeData TA))
+    (Jn : CanTermDataAt Γ n A (CanTypeFundExp.typeData TA)) :
+    CanTypeFundExp Γ (.idn A m n) i :=
+  CanTypeFundExp.ofTypeJudgment
+    (CanTypeFundExp.idnJudgment TA Jm Jn)
+    (CanTypeData.idn_expansive (CanTypeFundExp.typeData TA)
+      Jm.canSemTm Jn.canSemTm)
 
 noncomputable def idBranchJudgment {Γ : Ctx} {A B a : Tm} {i iB : Nat}
     (TB : CanTypeFundExp Γ B iB)
