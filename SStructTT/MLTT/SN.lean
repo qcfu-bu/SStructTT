@@ -6210,6 +6210,120 @@ lemma ksig_equiv_of_codomain {Γ : Ctx} {A B : Tm}
         DCandCtx.extend_cons hσi ha
       exact ⟨ha, (hB hΓA (a .: shiftSubst σ i) hvalid b).2 hb⟩
 
+noncomputable def sigmaBranchInterp {Γ : Ctx} {A B C : Tm}
+    (TC : CanTypeData (.sig A B :: Γ) C)
+    {Δ : DCandCtx} (hΓBA : CanSemCtx (B :: A :: Γ) Δ) :
+    TypeInterp Δ C.[.tup (.var 1) (.var 0) .: shift 2] := by
+  rcases hΓBA with ⟨_hSemBA, hCanBA⟩
+  cases hCanBA with
+  | cons hΓA_core TB =>
+    cases hΓA_core with
+    | cons hΓ_core TA =>
+      let hΓ : CanSemCtx Γ _ := ⟨_, hΓ_core⟩
+      let IA := TA.interp hΓ.semCtx
+      let hSemA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+        SemCtx.cons hΓ.semCtx IA (TA.weakens hΓ.semCtx)
+      let IB := TB.interp hSemA
+      let K := TypeInterp.ksig IA IB (CanSemCtx.weakens hΓ)
+      let hΓS : CanSemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        CanSemCtx.consInterp hΓ K
+          (TypeInterp.ksig_weakens IA IB (CanSemCtx.weakens hΓ))
+      exact TypeInterp.sigmaBranch IA IB (CanSemCtx.weakens hΓ)
+        (TA.weakens hΓ.semCtx) (TB.weakens hSemA) (TC.interp hΓS)
+    | consInterp hΓ_core IA hIA =>
+      let hΓ : CanSemCtx Γ _ := ⟨_, hΓ_core⟩
+      let hSemA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+        SemCtx.cons hΓ.semCtx IA hIA
+      let IB := TB.interp hSemA
+      let K := TypeInterp.ksig IA IB (CanSemCtx.weakens hΓ)
+      let hΓS : CanSemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        CanSemCtx.consInterp hΓ K
+          (TypeInterp.ksig_weakens IA IB (CanSemCtx.weakens hΓ))
+      exact TypeInterp.sigmaBranch IA IB (CanSemCtx.weakens hΓ)
+        hIA (TB.weakens hSemA) (TC.interp hΓS)
+  | consInterp hΓA_core IB hIB =>
+    cases hΓA_core with
+    | cons hΓ_core TA =>
+      let hΓ : CanSemCtx Γ _ := ⟨_, hΓ_core⟩
+      let IA := TA.interp hΓ.semCtx
+      let K := TypeInterp.ksig IA IB (CanSemCtx.weakens hΓ)
+      let hΓS : CanSemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        CanSemCtx.consInterp hΓ K
+          (TypeInterp.ksig_weakens IA IB (CanSemCtx.weakens hΓ))
+      exact TypeInterp.sigmaBranch IA IB (CanSemCtx.weakens hΓ)
+        (TA.weakens hΓ.semCtx) hIB (TC.interp hΓS)
+    | consInterp hΓ_core IA hIA =>
+      let hΓ : CanSemCtx Γ _ := ⟨_, hΓ_core⟩
+      let K := TypeInterp.ksig IA IB (CanSemCtx.weakens hΓ)
+      let hΓS : CanSemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        CanSemCtx.consInterp hΓ K
+          (TypeInterp.ksig_weakens IA IB (CanSemCtx.weakens hΓ))
+      exact TypeInterp.sigmaBranch IA IB (CanSemCtx.weakens hΓ)
+        hIA hIB (TC.interp hΓS)
+
+lemma sigmaBranchInterp_weakens {Γ : Ctx} {A B C : Tm}
+    (TC : CanTypeData (.sig A B :: Γ) C)
+    {Δ : DCandCtx} (hΓBA : CanSemCtx (B :: A :: Γ) Δ) :
+    (CanTypeData.sigmaBranchInterp TC hΓBA).Weakens := by
+  intro σ m hσ hm
+  rcases hΓBA with ⟨_hSemBA, hCanBA⟩
+  cases hCanBA with
+  | cons hΓA_core TB =>
+    cases hΓA_core with
+    | cons hΓ_core TA =>
+      let hΓ : CanSemCtx Γ _ := ⟨_, hΓ_core⟩
+      let IA := TA.interp hΓ.semCtx
+      let hSemA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+        SemCtx.cons hΓ.semCtx IA (TA.weakens hΓ.semCtx)
+      let IB := TB.interp hSemA
+      let K := TypeInterp.ksig IA IB (CanSemCtx.weakens hΓ)
+      let hΓS : CanSemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        CanSemCtx.consInterp hΓ K
+          (TypeInterp.ksig_weakens IA IB (CanSemCtx.weakens hΓ))
+      dsimp [CanTypeData.sigmaBranchInterp] at hm ⊢
+      exact TypeInterp.sigmaBranch_weakens IA IB (CanSemCtx.weakens hΓ)
+        (TA.weakens hΓ.semCtx) (TB.weakens hSemA)
+        (TC.interp hΓS) (TC.weakens hΓS) hσ hm
+    | consInterp hΓ_core IA hIA =>
+      let hΓ : CanSemCtx Γ _ := ⟨_, hΓ_core⟩
+      let hSemA : SemCtx (A :: Γ) (DCandCtx.extend IA) :=
+        SemCtx.cons hΓ.semCtx IA hIA
+      let IB := TB.interp hSemA
+      let K := TypeInterp.ksig IA IB (CanSemCtx.weakens hΓ)
+      let hΓS : CanSemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        CanSemCtx.consInterp hΓ K
+          (TypeInterp.ksig_weakens IA IB (CanSemCtx.weakens hΓ))
+      dsimp [CanTypeData.sigmaBranchInterp] at hm ⊢
+      exact TypeInterp.sigmaBranch_weakens IA IB (CanSemCtx.weakens hΓ)
+        hIA (TB.weakens hSemA) (TC.interp hΓS) (TC.weakens hΓS) hσ hm
+  | consInterp hΓA_core IB hIB =>
+    cases hΓA_core with
+    | cons hΓ_core TA =>
+      let hΓ : CanSemCtx Γ _ := ⟨_, hΓ_core⟩
+      let IA := TA.interp hΓ.semCtx
+      let K := TypeInterp.ksig IA IB (CanSemCtx.weakens hΓ)
+      let hΓS : CanSemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        CanSemCtx.consInterp hΓ K
+          (TypeInterp.ksig_weakens IA IB (CanSemCtx.weakens hΓ))
+      dsimp [CanTypeData.sigmaBranchInterp] at hm ⊢
+      exact TypeInterp.sigmaBranch_weakens IA IB (CanSemCtx.weakens hΓ)
+        (TA.weakens hΓ.semCtx) hIB (TC.interp hΓS) (TC.weakens hΓS) hσ hm
+    | consInterp hΓ_core IA hIA =>
+      let hΓ : CanSemCtx Γ _ := ⟨_, hΓ_core⟩
+      let K := TypeInterp.ksig IA IB (CanSemCtx.weakens hΓ)
+      let hΓS : CanSemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        CanSemCtx.consInterp hΓ K
+          (TypeInterp.ksig_weakens IA IB (CanSemCtx.weakens hΓ))
+      dsimp [CanTypeData.sigmaBranchInterp] at hm ⊢
+      exact TypeInterp.sigmaBranch_weakens IA IB (CanSemCtx.weakens hΓ)
+        hIA hIB (TC.interp hΓS) (TC.weakens hΓS) hσ hm
+
+noncomputable def sigmaBranch {Γ : Ctx} {A B C : Tm}
+    (TC : CanTypeData (.sig A B :: Γ) C) :
+    CanTypeData (B :: A :: Γ) C.[.tup (.var 1) (.var 0) .: shift 2] where
+  interp hΓBA := CanTypeData.sigmaBranchInterp TC hΓBA
+  weakens hΓBA := CanTypeData.sigmaBranchInterp_weakens TC hΓBA
+
 lemma subst1_equiv_same {Γ : Ctx} {A B n : Tm}
     (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
     (hn hn' : TA.CanSemTm n) :
@@ -6718,6 +6832,33 @@ noncomputable def prjBranch {Γ : Ctx} {A B C m n : Tm}
     (CanTypeData.subst1 (CanTypeData.ksig TA TB) TC Jm.canSemTm)
     (CanTypeData.prj_branch TA TB TC hTC Jm.canSemTm hn)
 
+noncomputable def prjBranchExact {Γ : Ctx} {A B C m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (TC : CanTypeData (.sig A B :: Γ) C)
+    (hTC : TC.Expansive)
+    (Jm : CanTermDataAt Γ m (.sig A B) (CanTypeData.ksig TA TB))
+    (Jn : CanTermDataAt (B :: A :: Γ) n
+      C.[.tup (.var 1) (.var 0) .: shift 2]
+      (CanTypeData.sigmaBranch TC)) :
+    CanTermDataAt Γ (.prj C m n) C.[m/]
+      (CanTypeData.subst1 (CanTypeData.ksig TA TB) TC Jm.canSemTm) :=
+  CanTermDataAt.prjBranch TA TB TC hTC Jm
+    (by
+      intro Δ hΓ
+      let IA := TA.interp hΓ
+      let hΓA : CanSemCtx (A :: Γ) (DCandCtx.extend IA) :=
+        CanSemCtx.consInterp hΓ IA (TA.weakens hΓ)
+      let IB := TB.interp hΓA
+      let K := TypeInterp.ksig IA IB (CanSemCtx.weakens hΓ)
+      let hΓS : CanSemCtx (.sig A B :: Γ) (DCandCtx.extend K) :=
+        CanSemCtx.consInterp hΓ K
+          (TypeInterp.ksig_weakens IA IB (CanSemCtx.weakens hΓ))
+      let hΓBA : CanSemCtx (B :: A :: Γ) (DCandCtx.extend IB) :=
+        CanSemCtx.consInterp hΓA IB (TB.weakens hΓA)
+      change (TypeInterp.sigmaBranch IA IB (CanSemCtx.weakens hΓ)
+        (TA.weakens hΓ) (TB.weakens hΓA) (TC.interp hΓS)).SemTm n
+      exact Jn.canSemTm hΓBA)
+
 noncomputable def ite {Γ : Ctx} {A m n1 n2 : Tm}
     (TB : CanTypeData (.bool :: Γ) A)
     (hTB : TB.Expansive)
@@ -6905,6 +7046,12 @@ noncomputable def sigAt {Γ : Ctx} {A B : Tm} {i iA iB : Nat}
     (TB : CanTypeJudgment (A :: Γ) B iB) :
     CanTypeJudgment Γ (.sig A B) i :=
   CanTypeJudgment.ofTypeData (CanTypeData.ksig TA.typeData TB.typeData)
+
+noncomputable def sigmaBranch {Γ : Ctx} {A B C : Tm} {i : Nat}
+    (TC : CanTypeJudgment (.sig A B :: Γ) C i) :
+    CanTypeJudgment (B :: A :: Γ)
+      C.[.tup (.var 1) (.var 0) .: shift 2] i :=
+  CanTypeJudgment.ofTypeData (CanTypeData.sigmaBranch TC.typeData)
 
 noncomputable def idn {Γ : Ctx} {A m n : Tm} {i : Nat}
     (TA : CanTypeJudgment Γ A i)
@@ -7889,6 +8036,13 @@ lemma sigAt {Γ : Ctx} {A B : Tm} {i iA iB : Nat}
     (CanTypeJudgment.sigAt (i := i)
       (CanTypeFund.choose TA) (CanTypeFund.choose TB))
 
+lemma sigmaBranch {Γ : Ctx} {A B C : Tm} {i : Nat}
+    (TC : CanTypeFund (.sig A B :: Γ) C i) :
+    CanTypeFund (B :: A :: Γ)
+      C.[.tup (.var 1) (.var 0) .: shift 2] i :=
+  CanTypeFund.ofTypeJudgment
+    (CanTypeJudgment.sigmaBranch (CanTypeFund.choose TC))
+
 lemma idnByEquiv {Γ : Ctx} {A m n : Tm} {i : Nat}
     (TA : CanTypeFund Γ A i)
     (Jm : CanTermDataAt Γ m A (CanTypeFund.choose TA).typeData)
@@ -8014,6 +8168,12 @@ noncomputable def sigJudgmentAt {Γ : Ctx} {A B : Tm} {i iA iB : Nat}
     CanTypeJudgment Γ (.sig A B) i :=
   CanTypeJudgment.sigAt (i := i)
     (CanTypeFundExp.judgment TA) (CanTypeFundExp.judgment TB)
+
+noncomputable def sigmaBranchJudgment {Γ : Ctx} {A B C : Tm} {i : Nat}
+    (TC : CanTypeFundExp (.sig A B :: Γ) C i) :
+    CanTypeJudgment (B :: A :: Γ)
+      C.[.tup (.var 1) (.var 0) .: shift 2] i :=
+  CanTypeJudgment.sigmaBranch (CanTypeFundExp.judgment TC)
 
 lemma idnByEquiv {Γ : Ctx} {A m n : Tm} {i : Nat}
     (TA : CanTypeFundExp Γ A i)
@@ -8318,6 +8478,21 @@ lemma prjBranch {Γ : Ctx} {A B C m n : Tm}
         (CanFundAt.choose Jm).canSemTm) :=
   CanFundAt.ofTermDataAt
     (CanTermDataAt.prjBranch TA TB TC hTC (CanFundAt.choose Jm) hn)
+
+lemma prjBranchExact {Γ : Ctx} {A B C m n : Tm}
+    (TA : CanTypeData Γ A) (TB : CanTypeData (A :: Γ) B)
+    (TC : CanTypeData (.sig A B :: Γ) C)
+    (hTC : TC.Expansive)
+    (Jm : CanFundAt Γ m (.sig A B) (CanTypeData.ksig TA TB))
+    (Jn : CanFundAt (B :: A :: Γ) n
+      C.[.tup (.var 1) (.var 0) .: shift 2]
+      (CanTypeData.sigmaBranch TC)) :
+    CanFundAt Γ (.prj C m n) C.[m/]
+      (CanTypeData.subst1 (CanTypeData.ksig TA TB) TC
+        (CanFundAt.choose Jm).canSemTm) :=
+  CanFundAt.ofTermDataAt
+    (CanTermDataAt.prjBranchExact TA TB TC hTC
+      (CanFundAt.choose Jm) (CanFundAt.choose Jn))
 
 lemma ite {Γ : Ctx} {A m n1 n2 : Tm}
     (TB : CanTypeData (.bool :: Γ) A)
