@@ -15,7 +15,8 @@ rev = "v4.30.0"
 
 [[require]]
 name = "lean-autosubst"
-path = "../lean-autosubst"
+git = "https://github.com/qcfu-bu/lean-autosubst.git"
+rev = "main"
 
 [[lean_lib]]
 name = "SStructTT"
