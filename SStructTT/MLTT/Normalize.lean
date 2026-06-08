@@ -1,6 +1,8 @@
 import SStructTT.MLTT.Typed
 open ARS
 
+open Autosubst Autosubst.Notation
+
 namespace MLTT
 
 /-

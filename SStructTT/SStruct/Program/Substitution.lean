@@ -3,6 +3,7 @@ import SStructTT.SStruct.Program.Renaming
 open SStruct.Logical
 
 namespace SStruct.Program
+open Autosubst Autosubst.Notation
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 @[aesop safe (rule_sets := [subst]) [constructors]]
@@ -12,21 +13,21 @@ inductive AgreeSubst : (Var -> Tm Srt) -> Ctx Srt -> Ctx Srt -> Prop where
   | cons {Δ Δ' : Ctx Srt} {A s i σ} r :
     Δ.logical ⊢ A : .srt s i ->
     AgreeSubst σ Δ Δ' ->
-    AgreeSubst (up σ) (A :⟨r, s⟩ Δ) (A.[σ] :⟨r, s⟩ Δ')
+    AgreeSubst (⇑σ) (A :⟨r, s⟩ Δ) (A[σ] :⟨r, s⟩ Δ')
   | intro_im {Δ Δ' : Ctx Srt} {A m s σ} :
-    Δ'.logical ⊢ m : A.[σ] ->
+    Δ'.logical ⊢ m : A[σ] ->
     AgreeSubst σ Δ Δ' ->
     AgreeSubst (m .: σ) (A :⟨.im, s⟩ Δ) Δ'
   | intro_ex {Δ Δ' : Ctx Srt} {Δa Δb A m s σ} :
     Merge Δa Δb Δ' ->
     Lower Δa s ->
-    Δa ⊢ m :: A.[σ] ->
+    Δa ⊢ m :: A[σ] ->
     AgreeSubst σ Δ Δb ->
     AgreeSubst (m .: σ) (A :⟨.ex, s⟩ Δ) Δ'
   | conv {Δ Δ' : Ctx Srt} {A B r s i σ} :
     A === B ->
     Δ.logical ⊢ B : .srt s i ->
-    Δ'.logical ⊢ B.[shift 1].[σ] : .srt s i ->
+    Δ'.logical ⊢ B⟨↑⟩[σ] : .srt s i ->
     AgreeSubst σ (A :⟨r, s⟩ Δ) Δ' ->
     AgreeSubst σ (B :⟨r, s⟩ Δ) Δ'
 
@@ -44,7 +45,7 @@ lemma AgreeSubst.toLogical {Δ Δ' : Ctx Srt} {σ} :
   case conv => aesop (rule_sets := [subst])
 
 @[aesop safe (rule_sets := [subst])]
-lemma AgreeSubst.refl {Δ : Ctx Srt} : Δ ⊢ -> AgreeSubst ids Δ Δ := by
+lemma AgreeSubst.refl {Δ : Ctx Srt} : Δ ⊢ -> AgreeSubst Tm.var_Tm Δ Δ := by
   intro wf; induction wf
   all_goals try trivial
   case nil => constructor
@@ -74,7 +75,7 @@ lemma AgreeSubst.lower_image {Δ Δ' : Ctx Srt} {s σ} :
   case conv ih => cases lw <;> aesop
 
 lemma AgreeSubst.has {Δ Δ' : Ctx Srt} {A x s σ} :
-    AgreeSubst σ Δ Δ' -> Δ' ⊢ -> Has Δ x s A -> Δ' ⊢ (σ x) :: A.[σ] := by
+    AgreeSubst σ Δ Δ' -> Δ' ⊢ -> Has Δ x s A -> Δ' ⊢ (σ x) :: A[σ] := by
   intro agr wf hs; induction agr generalizing x A
   case nil => cases hs
   case cons A s i σ r tyA agr ih =>
@@ -83,12 +84,12 @@ lemma AgreeSubst.has {Δ Δ' : Ctx Srt} {A x s σ} :
       rcases hs with ⟨im⟩; asimp
       constructor
       . assumption
-      . rw[show A.[σ !> shift 1] = A.[σ].[shift 1] by asimp]
+      . rw[show A[σ >> ⟨↑⟩] = A[σ]⟨↑⟩ by asimp]
         constructor; apply agr.implicit_image im
     | im =>
       rcases wf with _ | ⟨_, wf⟩
       rcases hs with _ | @⟨_, A, x, s, hs⟩; asimp
-      rw[show A.[σ !> shift 1] = A.[σ].[shift 1] by asimp]
+      rw[show A[σ >> ⟨↑⟩] = A[σ]⟨↑⟩ by asimp]
       apply Typed.eweaken_im <;> try first | rfl | assumption
       apply ih <;> assumption
   case intro_im ih =>
@@ -108,7 +109,7 @@ lemma AgreeSubst.has {Δ Δ' : Ctx Srt} {A x s σ} :
     | ex =>
       rcases hs with ⟨h⟩
       apply Typed.conv
-      . apply Conv.subst _ (Conv.subst _ eq)
+      . apply Conv.subst _ (Conv.ren _ eq)
       . apply ih wf; constructor; assumption
       . assumption
 
@@ -126,25 +127,25 @@ lemma AgreeSubst.split {Δ Δ' Δa Δb : Ctx Srt} {σ} :
     cases mrg with
     | contra _ _ h mrg =>
       have ⟨Δa', Δb', _, agr1, agr2⟩ := ih mrg
-      existsi A.[σ] :⟨.ex, s⟩ Δa', A.[σ] :⟨.ex, s⟩ Δb'; and_intros
+      existsi A[σ] :⟨.ex, s⟩ Δa', A[σ] :⟨.ex, s⟩ Δb'; and_intros
       all_goals constructor <;> try assumption
       rw[<-mrg.logical]; assumption
       rw[<-mrg.sym.logical]; assumption
     | left _ _ mrg =>
       have ⟨Δa', Δb', _, agr1, agr2⟩ := ih mrg
-      existsi A.[σ] :⟨.ex, s⟩ Δa', A.[σ] :⟨.im, s⟩ Δb'; and_intros
+      existsi A[σ] :⟨.ex, s⟩ Δa', A[σ] :⟨.im, s⟩ Δb'; and_intros
       all_goals constructor <;> try assumption
       rw[<-mrg.logical]; assumption
       rw[<-mrg.sym.logical]; assumption
     | right _ _ mrg =>
       have ⟨Δa', Δb', _, agr1, agr2⟩ := ih mrg
-      existsi A.[σ] :⟨.im, s⟩ Δa', A.[σ] :⟨.ex, s⟩ Δb'; and_intros
+      existsi A[σ] :⟨.im, s⟩ Δa', A[σ] :⟨.ex, s⟩ Δb'; and_intros
       all_goals constructor <;> try assumption
       rw[<-mrg.logical]; assumption
       rw[<-mrg.sym.logical]; assumption
     | im _ _ mrg =>
       have ⟨Δa', Δb', _, agr1, agr2⟩ := ih mrg
-      existsi A.[σ] :⟨.im, s⟩ Δa', A.[σ] :⟨.im, s⟩ Δb'; and_intros
+      existsi A[σ] :⟨.im, s⟩ Δa', A[σ] :⟨.im, s⟩ Δb'; and_intros
       all_goals constructor <;> try assumption
       rw[<-mrg.logical]; assumption
       rw[<-mrg.sym.logical]; assumption
@@ -299,11 +300,11 @@ lemma AgreeSubst.wf {Δ Δ' : Ctx Srt} {σ} :
   case cons => apply agr.wf_cons <;> aesop
 
 lemma Typed.substitution {Δ Δ' : Ctx Srt} {A m σ} :
-    Δ ⊢ m :: A -> AgreeSubst σ Δ Δ' -> Δ' ⊢ m.[σ] :: A.[σ] := by
+    Δ ⊢ m :: A -> AgreeSubst σ Δ Δ' -> Δ' ⊢ m[σ] :: A[σ] := by
   intro ty agr; induction ty using
     @Typed.rec _ ord
       (motive_2 := fun Δ _ => ∀ {Δ' σ}, AgreeSubst σ Δ Δ' -> Δ' ⊢)
-  generalizing Δ' σ <;> asimp
+  generalizing Δ' σ <;> (try asimp)
   case var wf hs ih => apply agr.has (ih agr) hs
   case lam_im lw tyA tym ih =>
     apply Typed.lam_im
@@ -330,14 +331,14 @@ lemma Typed.substitution {Δ Δ' : Ctx Srt} {A m σ} :
     replace tyS := tyS.substitution agr.toLogical; asimp at tyS
     replace tym := tym.substitution agr.toLogical; asimp at tym
     replace tyn := ihm agr; asimp at tyn
-    rw[show B.[m.[σ] .: σ] = B.[up σ].[m.[σ]/] by asimp] at tyn
+    rw[show B[m[σ] .: σ] = B[⇑σ][m[σ]/] by asimp] at tyn
     have ty := Typed.tup_im tyS tym tyn; assumption
   case tup_ex B m n s i mrg tyS tym tyn ihm ihn =>
     have ⟨Δa, Δb, mrg, agr1, agr2⟩ := agr.split mrg
     replace tyS := tyS.substitution agr.toLogical; asimp at tyS
     replace tym := ihm agr1; asimp at tym
     replace tyn := ihn agr2; asimp at tyn
-    rw[show B.[m.[σ] .: σ] = B.[up σ].[m.[σ]/] by asimp] at tyn
+    rw[show B[m[σ] .: σ] = B[⇑σ][m[σ]/] by asimp] at tyn
     have ty := Typed.tup_ex mrg tyS tym tyn; assumption
   case prj_im A B C m n s sA sB sC iC mrg tyC tym tyn ihm ihn =>
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
@@ -346,8 +347,8 @@ lemma Typed.substitution {Δ Δ' : Ctx Srt} {A m σ} :
     replace tyC := tyC.substitution (agr.toLogical.cons tyS); asimp at tyC
     replace tym := ihm agr1; asimp at tym
     replace tyn := ihn ((agr2.cons .im tyA).cons .ex tyB); asimp at tyn
-    rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
-    apply Typed.prj_im <;> (asimp; assumption)
+    rw[show C[m[σ] .: σ] = C[⇑σ][m[σ]/] by asimp]
+    apply Typed.prj_im <;> (first | assumption | (asimp; renamify; assumption))
   case prj_ex C m n s sA sB sC i mrg tyC tym tyn ihm ihn =>
     have ⟨_, _, _, tyS⟩ := tyC.ctx_inv
     obtain ⟨_, _ | ⟨tyA, _⟩, tyB⟩ := tyn.ctx_inv
@@ -355,8 +356,8 @@ lemma Typed.substitution {Δ Δ' : Ctx Srt} {A m σ} :
     replace tyC := tyC.substitution (agr.toLogical.cons tyS); asimp at tyC
     replace tym := ihm agr1; asimp at tym
     replace tyn := ihn ((agr2.cons .ex tyA).cons .ex tyB); asimp at tyn
-    rw[show C.[m.[σ] .: σ] = C.[up σ].[m.[σ]/] by asimp]
-    apply Typed.prj_ex <;> (asimp; assumption)
+    rw[show C[m[σ] .: σ] = C[⇑σ][m[σ]/] by asimp]
+    apply Typed.prj_ex <;> (first | assumption | (asimp; renamify; assumption))
   case tt im ih =>
     constructor
     apply ih <;> try assumption
@@ -372,20 +373,20 @@ lemma Typed.substitution {Δ Δ' : Ctx Srt} {A m σ} :
     specialize ihn1 agr2; asimp at ihn1
     specialize ihn2 agr2; asimp at ihn2
     replace tyA := tyA.substitution (agr.toLogical.cons tyb); asimp at tyA
-    rw[show A.[.tt .: σ] = A.[up σ].[.tt/] by asimp] at ihn1
-    rw[show A.[.ff .: σ] = A.[up σ].[.ff/] by asimp] at ihn2
+    rw[show A[(Tm.tt : Tm Srt) .: σ] = (A[⇑σ])[(Tm.tt : Tm Srt)/] by asimp] at ihn1
+    rw[show A[(Tm.ff : Tm Srt) .: σ] = (A[⇑σ])[(Tm.ff : Tm Srt)/] by asimp] at ihn2
     have ty := Typed.ite mrg tyA ihm ihn1 ihn2; asimp at ty
     assumption
   case rw A B m n a b s i tyA tym tyn ih =>
     have ⟨_, _, _, tyI⟩ := tyA.ctx_inv
     have ⟨_, _, _, tyB⟩ := tyI.ctx_inv
-    replace tyA := tyA.substitution ((agr.toLogical.cons tyB).cons tyI); asimp at tyA
+    replace tyA := tyA.substitution ((agr.toLogical.cons tyB).cons tyI)
+    rw[show (Tm.idn B⟨↑⟩ a⟨↑⟩ (Tm.var_Tm 0))[⇑σ]
+          = Tm.idn ((B[σ])⟨↑⟩) ((a[σ])⟨↑⟩) (Tm.var_Tm 0) by asimp] at tyA
     replace tym := ih agr; asimp at tym
     replace tyn := tyn.substitution agr.toLogical; asimp at tyn
-    simp[<-SubstLemmas.subst_comp] at tyA
-    rw[show A.[a.[σ].rfl .: a.[σ] .: σ]
-          = A.[upn 2 σ].[.rfl a.[σ],a.[σ]/]
-         by asimp] at tym
+    rw[show A[a[σ].rfl .: a[σ] .: σ]
+          = (A[⇑⇑σ])[a[σ].rfl, a[σ]/] by asimp] at tym
     have := Typed.rw tyA tym tyn
     asimp at this; assumption
   case exf wf tyA tym ih =>
@@ -411,7 +412,7 @@ lemma Typed.substitution {Δ Δ' : Ctx Srt} {A m σ} :
   case cons agr => apply agr.wf_cons <;> aesop
 
 lemma Typed.subst_im {Δ : Ctx Srt} {A B m n s} :
-    A :⟨.im, s⟩ Δ ⊢ m :: B -> Δ.logical ⊢ n : A -> Δ ⊢ m.[n/] :: B.[n/] := by
+    A :⟨.im, s⟩ Δ ⊢ m :: B -> Δ.logical ⊢ n : A -> Δ ⊢ m[n/] :: B[n/] := by
   intro tym tyn
   obtain ⟨_, _, _⟩ := tym.ctx_inv
   apply tym.substitution
@@ -421,7 +422,7 @@ lemma Typed.subst_im {Δ : Ctx Srt} {A B m n s} :
 
 lemma Typed.subst_ex {Δ1 Δ2 Δ : Ctx Srt} {A B m n s} :
     Lower Δ2 s -> Merge Δ1 Δ2 Δ ->
-    A :⟨.ex, s⟩ Δ1 ⊢ m :: B -> Δ2 ⊢ n :: A -> Δ ⊢ m.[n/] :: B.[n/] := by
+    A :⟨.ex, s⟩ Δ1 ⊢ m :: B -> Δ2 ⊢ n :: A -> Δ ⊢ m[n/] :: B[n/] := by
   intro lw mrg tym tyn
   obtain ⟨_, _, _⟩ := tym.ctx_inv
   apply tym.substitution
@@ -432,16 +433,16 @@ lemma Typed.subst_ex {Δ1 Δ2 Δ : Ctx Srt} {A B m n s} :
   . apply AgreeSubst.refl; assumption
 
 lemma Typed.esubst_im {Δ : Ctx Srt} {A B B' m m' n s} :
-    m' = m.[n/] ->
-    B' = B.[n/] ->
+    m' = m[n/] ->
+    B' = B[n/] ->
     A :⟨.im, s⟩ Δ ⊢ m :: B ->
     Δ.logical ⊢ n : A ->
     Δ ⊢ m' :: B' := by
   intros; subst_vars; apply Typed.subst_im <;> assumption
 
 lemma Typed.esubst_ex {Δ1 Δ2 Δ : Ctx Srt} {A B B' m m' n s} :
-    m' = m.[n/] ->
-    B' = B.[n/] ->
+    m' = m[n/] ->
+    B' = B[n/] ->
     Lower Δ2 s -> Merge Δ1 Δ2 Δ ->
     A :⟨.ex, s⟩ Δ1 ⊢ m :: B -> Δ2 ⊢ n :: A -> Δ ⊢ m' :: B' := by
   intros; subst_vars; apply Typed.subst_ex <;> assumption
@@ -453,9 +454,9 @@ lemma Typed.conv_ctx {Δ : Ctx Srt} {A B C m r s i} :
     B :⟨r, s⟩ Δ ⊢ m :: C := by
   intro eq tyB tym
   obtain ⟨_, wf, tyA⟩ := tym.ctx_inv
-  replace tym : B :⟨r, s⟩ Δ ⊢ m.[ids] :: C.[ids] := by
+  replace tym : B :⟨r, s⟩ Δ ⊢ m[(Tm.var_Tm : Var -> Tm Srt)] :: C[(Tm.var_Tm : Var -> Tm Srt)] := by
     apply tym.substitution
     apply AgreeSubst.conv <;> try assumption
-    . asimp; apply tyA.weaken tyB
+    . asimp; renamify; apply tyA.weaken tyB
     . apply AgreeSubst.refl; constructor <;> assumption
   asimp at tym; assumption

@@ -2,6 +2,7 @@ import SStructTT.SStruct.Logical.Normalize
 import SStructTT.SStruct.Program.Step
 import SStructTT.SStruct.Program.Inversion
 open ARS SStruct.Logical
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Program
 variable {Srt : Type} [ord : SrtOrder Srt]
@@ -183,8 +184,8 @@ theorem Typed.preservation {A m m' : Tm Srt} :
       . apply tyC.subst tym.toLogical
     case prj_im_elim m1 m2 s vl =>
       have ⟨tym1, tym2, _⟩ := tym.tup_im_inv; subst_vars
-      rw[show C.[.tup m1 m2 .im s/]
-            = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[m2,m1/] by asimp]
+      rw[show C[m1.tup m2 .im s/]
+            = C[.tup (.var 1) (.var 0) .im s .: shift >> shift >> Tm.var_Tm][m2,m1/] by asimp]
       apply tyn.substitution
       apply AgreeSubst.intro_ex Merge.nil; constructor; assumption
       apply AgreeSubst.intro_im; asimp; assumption
@@ -206,8 +207,8 @@ theorem Typed.preservation {A m m' : Tm Srt} :
     case prj_ex_elim m1 m2 s vl =>
       have ⟨Δ1, Δ2, mrg, tym1, tym2, _⟩ := tym.tup_ex_inv; subst_vars
       cases mrg
-      rw[show C.[.tup m1 m2 .ex s/]
-            = C.[.tup (.var 1) (.var 0) .ex s .: shift 2].[m2,m1/] by asimp]
+      rw[show C[m1.tup m2 .ex s/]
+            = C[.tup (.var 1) (.var 0) .ex s .: shift >> shift >> Tm.var_Tm][m2,m1/] by asimp]
       apply tyn.substitution
       apply AgreeSubst.intro_ex Merge.nil; constructor; assumption
       apply AgreeSubst.intro_ex Merge.nil; constructor; asimp; assumption

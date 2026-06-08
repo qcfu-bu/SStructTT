@@ -2,12 +2,13 @@ import SStructTT.MLTT.Normalize
 import SStructTT.MLTT.Substitution
 import SStructTT.SStruct.Logical.Progress
 open ARS
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Logical
 variable {Srt : Type}
 
 @[simp]def interp : Tm Srt -> MLTT.Tm
-  | .var x => .var x
+  | .var x => .var_Tm x
   | .srt _ i => .ty i
   | .pi A B _ _ => .pi (interp A) (interp B)
   | .lam A m _ _ => .lam (interp A) (interp m)
@@ -32,72 +33,58 @@ variable {Srt : Type}
 notation "[| " m " |]" => interp m
 notation "[| " Γ " |]*" => interp_ctx Γ
 
-lemma interp_ren_com {m : Tm Srt} {ξ} :
-    [| m |].[ren ξ] = [| m.[ren ξ] |] := by
-  induction m generalizing ξ <;> asimp
-  case pi ihA ihB => rw[<-SubstLemmas.upren_up,ihA,ihB]; asimp
-  case lam ihA ihm => rw[<-SubstLemmas.upren_up,ihA,ihm]; asimp
-  case app ihm ihn => rw[ihm,ihn]; asimp
-  case sig ihA ihB => rw[<-SubstLemmas.upren_up,ihA,ihB]; asimp
-  case tup ihm ihn => rw[ihm,ihn]; asimp
-  case prj ihA ihm ihn =>
-    rw[show 2 = (1 + 1) by simp]
-    rw[<-SubstLemmas.upn_comp]
-    repeat rw[SubstLemmas.upn1_up]
-    repeat rw[<-SubstLemmas.upren_up]
-    rw[ihA,ihm,ihn]; asimp
-  case ite ihA ihm ihn1 ihn2 =>
-    rw[<-SubstLemmas.upren_up,ihA,ihm,ihn1,ihn2]; asimp
-  case idn ihA ihm ihn => rw[ihA,ihm,ihn]; asimp
-  case rfl ihm => rw[ihm]
-  case rw ihA ihm ihn =>
-    rw[show 2 = (1 + 1) by simp]
-    rw[<-SubstLemmas.upn_comp]
-    repeat rw[SubstLemmas.upn1_up]
-    repeat rw[<-SubstLemmas.upren_up]
-    rw[ihA,ihm,ihn]; asimp
-  case exf ihA ihm =>
-    simp only [<-SubstLemmas.upren_up]; exact ⟨ihA, ihm⟩
+lemma interp_ren_com {m : Tm Srt} {ξ : Var -> Var} :
+    [| m |]⟨ξ⟩ = [| m⟨ξ⟩ |] := by
+  induction m generalizing ξ <;>
+    (simp only [interp]; asimp; simp only [interp]) <;>
+    simp_all
 
 def InterpSubst
   (σ : Var -> Tm Srt)
   (τ : Var -> MLTT.Tm) : Prop := ∀ x, [| σ x |] = τ x
 
 lemma interp_subst_up {σ : Var -> Tm Srt} {τ} :
-    InterpSubst σ τ -> InterpSubst (up σ) (up τ) := by
-  intro h x; induction x generalizing σ τ <;> asimp
-  rw[<-h,interp_ren_com]
+    InterpSubst σ τ -> InterpSubst (⇑σ) (⇑τ) := by
+  intro h x; induction x generalizing σ τ
+  case zero => asimp; simp
+  case succ n _ =>
+    asimp
+    show [| (σ n)⟨↑⟩ |] = (τ n)⟨↑⟩
+    rw[<-interp_ren_com, h]
 
-lemma interp_subst_com {m : Tm Srt} {σ τ} :
-    InterpSubst σ τ -> [| m.[σ] |] = [| m |].[τ] := by
-  intro h; induction m generalizing σ τ <;> asimp
-  case var => aesop
-  case pi ihA ihB => rw[ihA h,ihB (interp_subst_up h)]; asimp
-  case lam ihA ihm => rw[ihA h,ihm (interp_subst_up h)]; asimp
-  case app ihm ihn => rw[ihm h,ihn h]; asimp
-  case sig ihA ihB => rw[ihA h,ihB (interp_subst_up h)]; asimp
-  case tup ihm ihn => rw[ihm h,ihn h]; asimp
+lemma interp_subst_com {m : Tm Srt} {σ : Var -> Tm Srt} {τ} :
+    InterpSubst σ τ -> [| m[σ] |] = [| m |][τ] := by
+  intro h; induction m generalizing σ τ <;>
+    (simp only [interp]; asimp; try simp only [interp])
+  case var_Tm => exact h _
+  case pi ihA ihB => congr 1; exacts [ihA h, ihB (interp_subst_up h)]
+  case lam ihA ihm => congr 1; exacts [ihA h, ihm (interp_subst_up h)]
+  case app ihm ihn => congr 1; exacts [ihm h, ihn h]
+  case sig ihA ihB => congr 1; exacts [ihA h, ihB (interp_subst_up h)]
+  case tup ihm ihn => congr 1; exacts [ihm h, ihn h]
   case prj ihA ihm ihn =>
-    rw[show 2 = (1 + 1) by simp]
-    rw[<-SubstLemmas.upn_comp]
-    repeat rw[SubstLemmas.upn1_up]
-    rw[ihm h,
-       ihA (interp_subst_up h),
-       ihn (interp_subst_up (interp_subst_up h))]
-    asimp
+    congr 1
+    · exact ihA (interp_subst_up h)
+    · exact ihm h
+    · apply ihn; intro x
+      match x with
+      | 0 => simp
+      | 1 => asimp; simp
+      | n+2 => asimp; rw[<-interp_ren_com, h]
   case ite ihA ihm ihn1 ihn2 =>
-    rw[ihA (interp_subst_up h),ihm h,ihn1 h,ihn2 h]; asimp
-  case idn ihA ihm ihn => rw[ihA h,ihm h,ihn h]; asimp
-  case rfl ihm => rw[ihm h]
+    congr 1; exacts [ihA (interp_subst_up h), ihm h, ihn1 h, ihn2 h]
+  case idn ihA ihm ihn => congr 1; exacts [ihA h, ihm h, ihn h]
+  case rfl ihm => congr 1; exact ihm h
   case rw ihA ihm ihn =>
-    rw[show 2 = (1 + 1) by simp]
-    rw[<-SubstLemmas.upn_comp]
-    repeat rw[SubstLemmas.upn1_up]
-    rw[ihm h, ihn h,
-       ihA (interp_subst_up (interp_subst_up h))]
-    asimp
-  case exf ihA ihm =>
-    exact ⟨ihA (interp_subst_up h), ihm h⟩
+    congr 1
+    · apply ihA; intro x
+      match x with
+      | 0 => simp
+      | 1 => asimp; simp
+      | n+2 => asimp; rw[<-interp_ren_com, h]
+    · exact ihm h
+    · exact ihn h
+  case exf ihA ihm => congr 1; exacts [ihA (interp_subst_up h), ihm h]
 
 lemma interp_step {m n : Tm Srt} :
     Step m n -> MLTT.Step [| m |] [| n |] := by
@@ -106,11 +93,11 @@ lemma interp_step {m n : Tm Srt} :
   case beta =>
     rw[interp_subst_com]
     . constructor
-    . intro x; cases x <;> asimp
+    . intro x; cases x <;> asimp; simp
   case prj_elim =>
     rw[interp_subst_com]
     . constructor
-    . intro x; rcases x with _ | ⟨_ | _⟩ <;> asimp
+    . intro x; rcases x with _ | ⟨_ | _⟩ <;> asimp; simp
 
 lemma interp_red {m n : Tm Srt} :
     Star Step m n -> Star MLTT.Step [| m |] [| n |] := by
@@ -138,13 +125,9 @@ lemma interp_has {Γ : Ctx Srt} {A x} :
     Has Γ x A -> MLTT.Has [| Γ |]* x [| A |] := by
   intro hs; induction hs
   case zero =>
-    simp; rw[interp_subst_com]
-    . constructor
-    . intro x; cases x <;> asimp
+    simp; rw[<-interp_ren_com]; constructor
   case succ hs ih =>
-    simp; rw[interp_subst_com]
-    . constructor; assumption
-    . intro x; cases x <;> asimp
+    simp; rw[<-interp_ren_com]; constructor; assumption
 
 lemma interp_sn' {m : MLTT.Tm} :
     SN MLTT.Step m ->
@@ -175,40 +158,38 @@ theorem Typed.toMLTT {Γ : Ctx Srt} {A m} :
   case app =>
     rw[interp_subst_com]
     . constructor <;> assumption
-    . intro x; cases x <;> asimp
+    . intro x; cases x <;> asimp; simp
   case tup =>
     constructor <;> try assumption
     rwa[<-interp_subst_com]
-    intro x; cases x <;> asimp
+    intro x; cases x <;> asimp; simp
   case prj =>
     rw[interp_subst_com]
     . constructor <;> try assumption
       rw[<-interp_subst_com]
       . assumption
-      . intro x; cases x <;> asimp
-    . intro x; cases x <;> asimp
+      . intro x; cases x <;> asimp <;> simp
+    . intro x; cases x <;> asimp; simp
   case ite =>
     rw[interp_subst_com]
     . constructor <;> try assumption
       . rwa[<-interp_subst_com]
-        intro x; cases x <;> asimp
+        intro x; cases x <;> asimp <;> simp
       . rwa[<-interp_subst_com]
-        intro x; cases x <;> asimp
-    . intro x; cases x <;> asimp
+        intro x; cases x <;> asimp <;> simp
+    . intro x; cases x <;> asimp; simp
   case exf =>
     rw[interp_subst_com]
     . constructor <;> assumption
-    . intro x; cases x <;> asimp
+    . intro x; cases x <;> asimp; simp
   case rw =>
     rw[interp_subst_com]
     . constructor <;> try assumption
-      repeat rw[<-interp_subst_com]
-      . assumption
-      . intro x; cases x <;> asimp
-      . intro x; cases x <;> asimp
-      . rwa[<-interp_subst_com]
-        intro x; rcases x with _ | ⟨_ | _⟩ <;> asimp
-    . intro x; rcases x with _ | ⟨_ | _⟩ <;> asimp
+      . simp only [interp_ren_com]; assumption
+      . rw[<-interp_subst_com]
+        . assumption
+        . intro x; rcases x with _ | ⟨_ | _⟩ <;> asimp <;> simp
+    . intro x; rcases x with _ | ⟨_ | _⟩ <;> asimp; simp
   case conv =>
     apply MLTT.Typed.conv
     . apply interp_conv; assumption
@@ -253,8 +234,8 @@ theorem Typed.bot_not_derivable {m : Tm Srt} : ¬ ([] ⊢ m : .bot) := by
 
 lemma Typed.closed_idn {A B m a b : Tm Srt} {s i} :
     [] ⊢ m : B.idn a b ->
-    [.idn B.[shift 1] a.[shift 1] (.var 0), B] ⊢ A : Tm.srt s i ->
-    A.[.rfl a,a/] === A.[m,b/] ∧ [] ⊢ A.[m, b/] : .srt s i := by
+    [.idn B⟨↑⟩ a⟨↑⟩ (.var 0), B] ⊢ A : Tm.srt s i ->
+    A[.rfl a,a/] === A[m,b/] ∧ [] ⊢ A[m, b/] : .srt s i := by
   intro tym tyA
   have ⟨m', vl, rd⟩ := Typed.red_value tym
   have tym' := tym.preservation' rd
@@ -263,7 +244,7 @@ lemma Typed.closed_idn {A B m a b : Tm Srt} {s i} :
   have ⟨_, tya, tyb, eq⟩ := tyI.idn_inv
   have ⟨_, _⟩ := Conv.srt_inj eq; subst_vars
   have ⟨tya', eq1, eq2⟩ := tym'.rfl_inv
-  have sc : SConv (.rfl a .: a .: ids) (m .: b .: ids) := by
+  have sc : SConv (.rfl a .: a .: Tm.var_Tm) (m .: b .: Tm.var_Tm) := by
     intro x; match x with
     | .zero =>
       asimp; apply Conv.trans;
@@ -271,8 +252,8 @@ lemma Typed.closed_idn {A B m a b : Tm Srt} {s i} :
       apply (Star.conv rd).sym
     | .succ .zero => asimp; apply Conv.trans eq1.sym eq2
     | .succ (.succ _) => asimp; constructor
-  have tyA : [] ⊢ A.[m, b/] : .srt s i := by
-    rw[show .srt s i = (.srt s i).[m,b/] by asimp]
+  have tyA : [] ⊢ A[m, b/] : .srt s i := by
+    rw[show Tm.srt s i = (Tm.srt s i)[m,b/] by asimp]
     apply Typed.substitution
     . assumption
     . apply AgreeSubst.intro; asimp; assumption

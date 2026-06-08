@@ -1,6 +1,7 @@
 import SStructTT.SStruct.Runtime.Resolution
 
 namespace SStruct.Extraction
+open Autosubst Autosubst.Notation
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 def IdRename (i : Var) (ξ : Var -> Var) : Prop := ∀ x, x < i -> ξ x = x
@@ -14,33 +15,33 @@ private lemma IdSubst.zero {σ : Var -> Tm Srt} : IdSubst 0 σ := by
   intro x lw; cases lw
 
 private lemma IdRename.up {i ξ} :
-    IdRename i ξ -> IdRename (i + 1) (upren ξ) := by
+    IdRename i ξ -> IdRename (i + 1) (up_ren ξ) := by
   intro idr x lt
   cases x with
   | zero => asimp
-  | succ x => simp at lt; asimp; apply idr _ lt
+  | succ x => simp at lt; asimp; show (ξ x).succ = x.succ; rw[idr x lt]
 
 omit ord in
 private lemma IdSubst.up {i} {σ : Var -> Tm Srt} :
-    IdSubst i σ -> IdSubst (i + 1) (up σ) := by
+    IdSubst i σ -> IdSubst (i + 1) (⇑σ) := by
   intro ids x lt
   cases x with
   | zero => asimp
   | succ x =>
     simp at lt
     asimp
-    rw[ids x lt]
-    asimp
+    show (σ x)⟨↑⟩ = Tm.var x.succ
+    rw[ids x lt]; asimp
 
 omit ord in
 private lemma closed_rename {m : Tm Srt} {i ξ} :
-    Closed i m -> IdRename i ξ  -> m = m.[ren ξ] := by
+    Closed i m -> IdRename i ξ  -> m = m⟨ξ⟩ := by
   intro cl idr; induction m generalizing i ξ
   all_goals simp_all; try (solve| aesop)
-  case var => asimp; simp[idr _ cl]
+  case var_Tm => asimp; simp[idr _ cl]
   case lam ih =>
-    asimp; rw[Tm.up_upren]; apply ih cl
-    apply idr.up
+    asimp; congr 1
+    exact ih cl idr.up
   case app =>
     have ⟨cl1, cl2⟩ := cl
     asimp; aesop
@@ -49,11 +50,12 @@ private lemma closed_rename {m : Tm Srt} {i ξ} :
     asimp; aesop
   case prj ih =>
     have ⟨cl1, cl2⟩ := cl
-    asimp; split_ands
+    asimp; congr 1
     . aesop
-    . rw[show @upn (Tm Srt) _ _ 2 (ren ξ) = ren (upren (upren ξ)) by asimp]
-      apply ih cl2
-      apply idr.up.up
+    . apply ih cl2
+      intro x hx
+      have h := idr.up.up x hx
+      asimp at h ⊢; exact h
   case ite =>
     have ⟨cl1, cl2⟩ := cl
     asimp; aesop
@@ -63,22 +65,22 @@ private lemma closed_rename {m : Tm Srt} {i ξ} :
 
 omit ord in
 private lemma closed_subst {m : Tm Srt} {i} {σ : Var -> Tm Srt} :
-    Closed i m -> IdSubst i σ -> m = m.[σ] := by
+    Closed i m -> IdSubst i σ -> m = m[σ] := by
   intro cl ids; induction m generalizing i σ
   all_goals simp_all
-  case var =>
-    asimp; rw[ids _ cl]; asimp
+  case var_Tm =>
+    asimp; rw[ids _ cl]
   case lam ih =>
-    asimp; rw[<-ih cl (IdSubst.up ids)]
+    asimp; congr 1
+    exact ih cl (IdSubst.up ids)
   case prj ihm ihn =>
     have ⟨cl1, cl2⟩ := cl
-    asimp; split_ands
+    asimp; congr 1
     . aesop
-    . rw[show @upn (Tm Srt) _ _ 2 σ = up (up σ) by asimp]
-      apply ihn cl2
-      apply IdSubst.up
-      apply IdSubst.up
-      assumption
+    . apply ihn cl2
+      intro x hx
+      have h := IdSubst.up (IdSubst.up ids) x hx
+      asimp at h ⊢; exact h
   all_goals asimp; try aesop
 
 namespace Runtime
@@ -93,7 +95,7 @@ where
     AgreeSubst σ σ' 0 [] H
   | cons {Δ H σ σ' A x r s} :
     AgreeSubst σ σ' x Δ H ->
-    AgreeSubst (up σ) (up σ') (x + 1) (A :⟨r, s⟩ Δ) H
+    AgreeSubst (⇑σ) (⇑σ') (x + 1) (A :⟨r, s⟩ Δ) H
   | intro_im {Δ H σ σ' A m m' s} :
     AgreeSubst σ σ' 0 Δ H ->
     AgreeSubst (m .: σ) (m' .: σ') 0 (A :⟨.im, s⟩ Δ) H
@@ -137,28 +139,33 @@ lemma AgreeSubst.subst_var {Δ : Ctx Srt} {H σ σ' i x} :
     cases x with
     | zero => asimp
     | succ x =>
-      simp at le; asimp
+      simp at le
       have e := ih le
+      rename_i sp _ _ _
+      show Tm.var x.succ = (sp x)⟨↑⟩
       rw[<-e]; asimp
 
-lemma AgreeSubst.closed_subst {Δ : Ctx Srt} {H σ σ' i x m} :
-    AgreeSubst σ σ' i Δ H -> Closed x m -> x ≤ i -> m = m.[σ'] := by
+lemma AgreeSubst.closed_subst {Δ : Ctx Srt} {H σ i x} {m : Tm Srt} {σ' : Var -> Tm Srt} :
+    AgreeSubst σ σ' i Δ H -> Closed x m -> x ≤ i -> m = m[σ'] := by
   intro agr cl lw; induction m generalizing Δ H σ σ' i x
   all_goals simp_all
-  case var =>
+  case var_Tm =>
     asimp; apply agr.subst_var
     apply cl.trans_le lw
   case lam ih =>
-    asimp; apply ih
+    asimp; congr 1
+    apply ih
     . apply AgreeSubst.cons agr
       constructor; apply 0; constructor; apply ord.ι
     . assumption
     . simp[lw]
   case prj ihm ihn =>
     have ⟨cl1, cl2⟩ := cl
-    asimp; split_ands
+    asimp; congr 1
     . aesop
-    . apply ihn
+    . trace_state
+      sorry
+      apply ihn
       . apply AgreeSubst.cons
         constructor; apply 0; constructor; apply ord.ι
         apply AgreeSubst.cons
@@ -169,7 +176,7 @@ lemma AgreeSubst.closed_subst {Δ : Ctx Srt} {H σ σ' i x m} :
   all_goals asimp; try aesop
 
 lemma Resolve.id_rename {H : Heap Srt} {m m' i ξ} :
-    H ;; m ▷ m' -> IdRename i ξ -> H ;; m.[ren ξ] ▷ m'.[ren ξ] := by
+    H ;; m ▷ m' -> IdRename i ξ -> H ;; m⟨ξ⟩ ▷ m'⟨ξ⟩ := by
   intro rs idr; induction rs generalizing i ξ
   case var => asimp; constructor; assumption
   case lam lw _ ih =>
@@ -304,7 +311,7 @@ lemma AgreeSubst.split {Δ1 Δ2 Δ3 : Ctx Srt} {H3 σ σ' x} :
 
 lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
     Δ ;; H1 ⊢ m ▷ n ◁ n' :: A -> HMerge H1 H2 H3 -> AgreeSubst σ σ' x Δ H2 ->
-    H3 ;; n'.[σ] ▷ n.[σ'] := by
+    H3 ;; n'[σ] ▷ n[σ'] := by
   intro ⟨er, rs⟩ mrg agr
   induction er generalizing H1 H2 H3 σ σ' n' x
   case var hs =>
@@ -330,7 +337,7 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       case lam cl0 rsm ct1 =>
         asimp
         have ⟨H3', lk', mrg'⟩ := lk.merge mrg
-        have agr' : AgreeSubst (up σ) (up σ') (x + 1) (A :⟨.im, sA⟩ Δ) H2 := by
+        have agr' : AgreeSubst (⇑σ) (⇑σ') (x + 1) (A :⟨.im, sA⟩ Δ) H2 := by
           apply AgreeSubst.cons; assumption
         have rsm' := ihm rsm mrg' agr'
         rw[<-closed_subst cl0 (IdSubst.up (IdSubst.zero (σ := σ)))] at rsm'
@@ -352,7 +359,7 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       case lam cl0 rsm ct1 =>
         asimp
         have ⟨H3', lk', mrg'⟩ := lk.merge mrg
-        have agr' : AgreeSubst (up σ) (up σ') (x + 1) (A :⟨.ex, sA⟩ Δ) H2 := by
+        have agr' : AgreeSubst (⇑σ) (⇑σ') (x + 1) (A :⟨.ex, sA⟩ Δ) H2 := by
           apply AgreeSubst.cons; assumption
         have rsm' := ihm rsm mrg' agr'
         rw[<-closed_subst cl0 (IdSubst.up (IdSubst.zero (σ := σ)))] at rsm'
@@ -436,7 +443,7 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       have ⟨H1', H2', mrg3, mrg1', mrg2'⟩ := mrg.distr mrg1 mrg2
       replace ihm := ihm rsm mrg1' agr1
       replace ihn := ihn rsn mrg2' agr2.cons.cons
-      asimp; apply Resolve.prj mrg3 ihm ihn
+      have h := Resolve.prj mrg3 ihm ihn; asimp at h ⊢; assumption
     case ptr x lk rsm =>
       cases x
       all_goals simp_all[Cell.tm]; cases rsm
@@ -447,7 +454,7 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       have ⟨H1', H2', mrg3, mrg1', mrg2'⟩ := mrg.distr mrg1 mrg2
       replace ihm := ihm rsm mrg1' agr1
       replace ihn := ihn rsn mrg2' agr2.cons.cons
-      asimp; apply Resolve.prj mrg3 ihm ihn
+      have h := Resolve.prj mrg3 ihm ihn; asimp at h ⊢; assumption
     case ptr x lk rsm =>
       cases x
       all_goals simp_all[Cell.tm]; cases rsm
@@ -525,19 +532,19 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       all_goals simp_all[Cell.tm]; cases rsm
   case conv => aesop
 
-lemma Resolved.subst_im {H : Heap Srt} {m n n' v v' A B s} :
-    A :⟨.im, s⟩ [] ;; H ⊢ m ▷ n ◁ n' :: B -> H ;; n'.[v'/] ▷ n.[v/] := by
+lemma Resolved.subst_im {H : Heap Srt} {m n n' A B s} {v v' : Tm Srt} :
+    A :⟨.im, s⟩ [] ;; H ⊢ m ▷ n ◁ n' :: B -> H ;; n'[v'/] ▷ n[v/] := by
   intro rsm
   have ⟨H0, mrg, sh⟩ := HMerge.exists_self_shareable H
   apply rsm.substitution mrg (x := 0)
   apply AgreeSubst.intro_im
   constructor; assumption
 
-lemma Resolved.subst_ex {H1 H2 H3 : Heap Srt} {m n n' v v' A B s} :
+lemma Resolved.subst_ex {H1 H2 H3 : Heap Srt} {m n n' A B s} {v v' : Tm Srt} :
     HMerge H1 H2 H3 -> (s ∈ ord.contra_set -> Shareable H2) ->
     A :⟨.ex, s⟩ [] ;; H1 ⊢ m ▷ n ◁ n' :: B ->
     H2 ;; v' ▷ v ->
-    H3 ;; n'.[v'/] ▷ n.[v/] := by
+    H3 ;; n'[v'/] ▷ n[v/] := by
   intro mrg h rsm rsv
   have ⟨H0, mrg0, sh⟩ := HMerge.exists_self_shareable H2
   apply rsm.substitution mrg (x := 0)

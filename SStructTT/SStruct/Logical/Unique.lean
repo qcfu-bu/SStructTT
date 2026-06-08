@@ -1,5 +1,6 @@
 import SStructTT.SStruct.Logical.Inversion
 open ARS
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Logical
 variable {Srt : Type}
@@ -46,7 +47,7 @@ lemma HeadSim.sym {m n : Tm Srt} : HeadSim m n -> HeadSim n m := by
   intro h; induction h
   all_goals aesop (rule_sets := [unique])
 
-lemma HeadSim.subst {m n : Tm Srt} σ : HeadSim m n -> HeadSim m.[σ] n.[σ] := by
+lemma HeadSim.subst {m n : Tm Srt} (σ : Var -> Tm Srt) : HeadSim m n -> HeadSim m[σ] n[σ] := by
   intro h; induction h generalizing σ
   all_goals try (asimp; aesop (rule_sets := [unique]))
 
@@ -74,7 +75,7 @@ lemma Sim.trans_right {x y z : Tm Srt} : Sim x y -> z === x -> Sim z y := by
   . assumption
   . assumption
 
-lemma Sim.subst {x y : Tm Srt} σ : Sim x y -> Sim x.[σ] y.[σ] := by
+lemma Sim.subst {x y : Tm Srt} (σ : Var -> Tm Srt) : Sim x y -> Sim x[σ] y[σ] := by
   intro sm; cases sm
   constructor
   . apply Conv.subst; assumption
@@ -236,7 +237,7 @@ lemma Typed.lam_unique {Γ : Ctx Srt} {A B C m r s} :
 
 lemma Typed.app_unique {Γ : Ctx Srt} {A B C m n r s} :
     Γ ⊢ .app m n : C ->
-    (∀ {C}, Γ ⊢ m : C -> Sim (.pi A B r s) C) -> Sim B.[n/] C := by
+    (∀ {C}, Γ ⊢ m : C -> Sim (.pi A B r s) C) -> Sim B[n/] C := by
   generalize e: Tm.app m n = x
   intro ty; induction ty generalizing m n
   all_goals try trivial
@@ -262,7 +263,7 @@ lemma Typed.sig_unique {Γ : Ctx Srt} {A B C r s i} :
 
 lemma Typed.tup_unique {Γ : Ctx Srt} {A B C m n r s} :
     Γ ⊢ .tup m n r s : C ->
-    (∀ {X Y}, Γ ⊢ m : X -> Γ ⊢ n : Y -> Sim A X ∧ Sim B.[m/] Y) ->
+    (∀ {X Y}, Γ ⊢ m : X -> Γ ⊢ n : Y -> Sim A X ∧ Sim B[m/] Y) ->
     Sim (.sig A B r s) C := by
   generalize e: Tm.tup m n r s = x
   intro ty; induction ty generalizing m n r s
@@ -276,7 +277,7 @@ lemma Typed.tup_unique {Γ : Ctx Srt} {A B C m n r s} :
 
 @[aesop safe (rule_sets := [unique])]
 lemma Typed.prj_unique {Γ : Ctx Srt} {A B m n} :
-    Γ ⊢ .prj A m n : B -> Sim A.[m/] B := by
+    Γ ⊢ .prj A m n : B -> Sim A[m/] B := by
   generalize e: Tm.prj A m n = x
   intro ty; induction ty generalizing A m n
   all_goals try trivial
@@ -320,7 +321,7 @@ lemma Typed.ff_unique {Γ : Ctx Srt} {A} :
     apply Sim.trans_left <;> assumption
 
 lemma Typed.ite_unique {Γ : Ctx Srt} {A B m n1 n2} :
-    Γ ⊢ .ite A m n1 n2 : B -> Sim A.[m/] B := by
+    Γ ⊢ .ite A m n1 n2 : B -> Sim A[m/] B := by
   generalize e: Tm.ite A m n1 n2 = x
   intro ty; induction ty generalizing A m n1 n2
   all_goals try trivial
@@ -361,14 +362,14 @@ lemma Typed.rfl_unique {Γ : Ctx Srt} {A B m} :
 
 lemma Typed.rw_unique {Γ : Ctx Srt} {A B C m n a b} :
     Γ ⊢ .rw A m n : C ->
-    (∀ {X}, Γ ⊢ n : X -> Sim (.idn B a b) X) -> Sim A.[n,b/] C := by
+    (∀ {X}, Γ ⊢ n : X -> Sim (.idn B a b) X) -> Sim A[n,b/] C := by
   generalize e: Tm.rw A m n = x
   intro ty; induction ty generalizing A m n
   all_goals try trivial
   case rw n _ b' _ _ _ _ tyn _ _ _ =>
     cases e; intro h
     have ⟨sm, eq1, eq2⟩ := (h tyn).idn_inj
-    have sc : SConv (n .: b .: ids) (n .: b' .: ids) := by
+    have sc : SConv (n .: b .: Tm.var_Tm) (n .: b' .: Tm.var_Tm) := by
       intro
       | .zero => asimp; constructor
       | .succ .zero => asimp; assumption
@@ -393,7 +394,7 @@ lemma Typed.bot_unique {Γ : Ctx Srt} {A} :
     apply Sim.trans_left <;> assumption
 
 lemma Typed.exf_unique {Γ : Ctx Srt} {A B m} :
-    Γ ⊢ .exf A m : B -> Sim A.[m/] B := by
+    Γ ⊢ .exf A m : B -> Sim A[m/] B := by
   generalize e: Tm.exf A m = x
   intro ty; induction ty generalizing A m
   all_goals try trivial

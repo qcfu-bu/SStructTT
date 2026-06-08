@@ -1,6 +1,7 @@
 import SStructTT.Basics.ARS
 import SStructTT.SStruct.Syntax
 open ARS
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Logical
 variable {Srt : Type}
@@ -43,7 +44,7 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
     Step n n' ->
     Step (.app m n) (.app m n')
   | beta A m n r s :
-    Step (.app (.lam A m r s) n) m.[n/]
+    Step (.app (.lam A m r s) n) m[n/]
   | sig_A {A A'} B r s :
     Step A A' ->
     Step (.sig A B r s) (.sig A' B r s)
@@ -66,7 +67,7 @@ inductive Step : Tm Srt -> Tm Srt -> Prop where
     Step n n' ->
     Step (.prj A m n) (.prj A m n')
   | prj_elim A m1 m2 n r s :
-    Step (.prj A (.tup m1 m2 r s) n) n.[m2,m1/]
+    Step (.prj A (.tup m1 m2 r s) n) n[m2,m1/]
   | ite_A {A A'} m n1 n2 :
     Step A A' ->
     Step (.ite A m n1 n2) (.ite A' m n1 n2)

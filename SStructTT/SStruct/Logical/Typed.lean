@@ -3,6 +3,8 @@ import SStructTT.SStruct.SrtOrder
 import SStructTT.SStruct.Logical.Context
 import SStructTT.SStruct.Logical.Confluence
 
+open Autosubst Autosubst.Notation
+
 namespace SStruct.Logical
 variable {Srt : Type} [ord : SrtOrder Srt]
 
@@ -30,7 +32,7 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
   | app {Γ A B m n r s} :
     Typed Γ m (.pi A B r s) ->
     Typed Γ n A ->
-    Typed Γ (.app m n) B.[n/]
+    Typed Γ (.app m n) B[n/]
 
   | sig {Γ A B r s sA sB iA iB} :
     (r = .ex -> sA ≤ s) ->
@@ -42,14 +44,14 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
   | tup {Γ A B m n r s i} :
     Typed Γ (.sig A B r s) (.srt s i) ->
     Typed Γ m A ->
-    Typed Γ n B.[m/] ->
+    Typed Γ n B[m/] ->
     Typed Γ (.tup m n r s) (.sig A B r s)
 
   | prj {Γ A B C m n r s sC iC} :
     Typed (.sig A B r s :: Γ) C (.srt sC iC) ->
     Typed Γ m (.sig A B r s) ->
-    Typed (B :: A :: Γ) n C.[.tup (.var 1) (.var 0) r s .: shift 2] ->
-    Typed Γ (.prj C m n) C.[m/]
+    Typed (B :: A :: Γ) n C[.tup (.var 1) (.var 0) r s .: shift >> shift >> Tm.var_Tm] ->
+    Typed Γ (.prj C m n) C[m/]
 
   | bool {Γ} :
     Wf Γ ->
@@ -66,9 +68,9 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
   | ite {Γ A m n1 n2 s i} :
     Typed (.bool :: Γ) A (.srt s i) ->
     Typed Γ m .bool ->
-    Typed Γ n1 A.[.tt/] ->
-    Typed Γ n2 A.[.ff/] ->
-    Typed Γ (.ite A m n1 n2) A.[m/]
+    Typed Γ n1 A[(Tm.tt : Tm Srt)/] ->
+    Typed Γ n2 A[(Tm.ff : Tm Srt)/] ->
+    Typed Γ (.ite A m n1 n2) A[m/]
 
   | idn {Γ A m n s i} :
     Typed Γ A (.srt s i) ->
@@ -81,10 +83,10 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
     Typed Γ (.rfl m) (.idn A m m)
 
   | rw {Γ A B m n a b s i} :
-    Typed (.idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Γ) A (.srt s i) ->
-    Typed Γ m A.[.rfl a,a/] ->
+    Typed (.idn B⟨↑⟩ a⟨↑⟩ (.var 0) :: B :: Γ) A (.srt s i) ->
+    Typed Γ m A[.rfl a,a/] ->
     Typed Γ n (.idn B a b) ->
-    Typed Γ (.rw A m n) A.[n,b/]
+    Typed Γ (.rw A m n) A[n,b/]
 
   | bot {Γ} :
     Wf Γ ->
@@ -93,7 +95,7 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
   | exf {Γ A m s i} :
     Typed (.bot :: Γ) A (.srt s i) ->
     Typed Γ m .bot ->
-    Typed Γ (.exf A m) A.[m/]
+    Typed Γ (.exf A m) A[m/]
 
   | conv {Γ A B m s i} :
     A === B ->

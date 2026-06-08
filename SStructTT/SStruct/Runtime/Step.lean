@@ -1,5 +1,6 @@
 import SStructTT.SStruct.Runtime.Heap
 open ARS
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Extraction
 namespace Runtime
@@ -132,7 +133,7 @@ inductive Step2 : State Srt -> State Srt -> Prop where
   | beta {H1 H2 m s lf p cl} :
     Nullable p ->
     HAccess H1 lf (.clo m s cl) H2 ->
-    Step2 (H1, .app (.ptr lf) p) (H2, m.[p/])
+    Step2 (H1, .app (.ptr lf) p) (H2, m[p/])
   | tup_M {H H' m m' n s} :
     Step2 (H, m) (H', m') ->
     Step2 (H, .tup m n s) (H', .tup m' n s)
@@ -144,10 +145,10 @@ inductive Step2 : State Srt -> State Srt -> Prop where
     Step2 (H, .prj m n) (H', .prj m' n)
   | prj_box {H1 H2 n s l l1} :
     HAccess H1 l (.box l1 s) H2 ->
-    Step2 (H1, .prj (.ptr l) n) (H2, n.[.ptr l1,.null/])
+    Step2 (H1, .prj (.ptr l) n) (H2, n[.ptr l1,(Extraction.Tm.null : Extraction.Tm Srt)/])
   | prj_tup {H1 H2 n s l l1 l2} :
     HAccess H1 l (.tup l1 l2 s) H2 ->
-    Step2 (H1, .prj (.ptr l) n) (H2, n.[.ptr l2,.ptr l1/])
+    Step2 (H1, .prj (.ptr l) n) (H2, n[(Extraction.Tm.ptr l2 : Extraction.Tm Srt),.ptr l1/])
   | ite_M {H H' m m' n1 n2} :
     Step2 (H, m) (H', m') ->
     Step2 (H, .ite m n1 n2) (H', .ite m' n1 n2)

@@ -1,5 +1,6 @@
 import SStructTT.SStruct.Logical.Substitution
 open ARS
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Logical
 variable {Srt : Type} [ord : SrtOrder Srt]
@@ -86,7 +87,7 @@ lemma Typed.lam_inv' {Γ : Ctx Srt} {A T m r s} :
 
 lemma Typed.tup_inv' {Γ : Ctx Srt} {T m n r s} :
     Γ ⊢ .tup m n r s : T ->
-    ∃ A B, Γ ⊢ m : A ∧ Γ ⊢ n : B.[m/] ∧ T === .sig A B r s := by
+    ∃ A B, Γ ⊢ m : A ∧ Γ ⊢ n : B[m/] ∧ T === .sig A B r s := by
   generalize e: Tm.tup m n r s = x
   intro ty; induction ty generalizing m n s
   all_goals try trivial
@@ -177,7 +178,7 @@ theorem Typed.validity {Γ : Ctx Srt} {A m} :
     have ⟨sI, iI, tyI⟩ := ihI
     have ⟨_, tya, tyb, _⟩ := tyI.idn_inv
     existsi s, i
-    rw[show Tm.srt s i = (Tm.srt s i).[n,b/] by asimp]
+    rw[show Tm.srt s i = (Tm.srt s i)[n,b/] by asimp]
     apply Typed.substitution
     . assumption
     . constructor
@@ -205,7 +206,7 @@ lemma Typed.lam_inv {Γ : Ctx Srt} {A A' B m r r' s s'} :
 
 lemma Typed.tup_inv {Γ : Ctx Srt} {A B m n r r' s s'} :
     Γ ⊢ .tup m n r s : .sig A B r' s' ->
-    Γ ⊢ m : A ∧ Γ ⊢ n : B.[m/] ∧ r = r' ∧ s = s' := by
+    Γ ⊢ m : A ∧ Γ ⊢ n : B[m/] ∧ r = r' ∧ s = s' := by
   intro ty
   have ⟨A', B', tym, tyn, eq⟩ := ty.tup_inv'
   have ⟨_, _, eqA, eqB⟩ := Conv.sig_inj eq

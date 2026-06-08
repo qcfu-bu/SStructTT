@@ -2,6 +2,8 @@ import SStructTT.SStruct.SrtOrder
 import SStructTT.SStruct.Syntax
 import SStructTT.SStruct.Logical.Context
 
+open Autosubst Autosubst.Notation
+
 namespace SStruct.Program
 variable {Srt : Type}
 
@@ -73,10 +75,10 @@ inductive Stack : Ctx Srt -> Nat -> Prop where
 inductive Has : Ctx Srt -> Var -> Srt -> Tm Srt -> Prop where
   | nil {Δ A s} :
     Implicit Δ ->
-    Has (A :⟨.ex, s⟩ Δ) 0 s A.[shift 1]
+    Has (A :⟨.ex, s⟩ Δ) 0 s A⟨↑⟩
   | cons {Δ A B x s s'} :
     Has Δ x s A ->
-    Has (B :⟨.im, s'⟩ Δ) (x + 1) s A.[shift 1]
+    Has (B :⟨.im, s'⟩ Δ) (x + 1) s A⟨↑⟩
 
 omit ord in
 lemma Implicit.toImplicit (Δ : Ctx Srt) : Implicit Δ.toImplicit := by

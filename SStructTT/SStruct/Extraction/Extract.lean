@@ -3,6 +3,7 @@ import SStructTT.SStruct.Extraction.Syntax
 
 namespace SStruct.Extraction
 open Program
+open Autosubst Autosubst.Notation
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 inductive Extract :
@@ -29,40 +30,40 @@ where
   | app_im {Δ A B m m' n s} :
     Extract Δ m m' (.pi A B .im s) ->
     Δ.logical ⊢ n : A ->
-    Extract Δ (.app m n) (.app m' .null) B.[n/]
+    Extract Δ (.app m n) (.app m' .null) B[n/]
 
   | app_ex {Δ1 Δ2 Δ3 A B m m' n n' s} :
     Merge Δ1 Δ2 Δ3 ->
     Extract Δ1 m m' (.pi A B .ex s) ->
     Extract Δ2 n n' A ->
-    Extract Δ3 (.app m n) (.app m' n') B.[n/]
+    Extract Δ3 (.app m n) (.app m' n') B[n/]
 
   | tup_im {Δ : Ctx Srt} {A B m n n' s i} :
     Δ.logical ⊢ .sig A B .im s : .srt s i ->
     Δ.logical ⊢ m : A ->
-    Extract Δ n n' B.[m/] ->
+    Extract Δ n n' B[m/] ->
     Extract Δ (.tup m n .im s) (.tup .null n' s) (.sig A B .im s)
 
   | tup_ex {Δ1 Δ2 Δ3 A B m m' n n' s i} :
     Merge Δ1 Δ2 Δ3 ->
     Δ3.logical ⊢ .sig A B .ex s : .srt s i ->
     Extract Δ1 m m' A ->
-    Extract Δ2 n n' B.[m/] ->
+    Extract Δ2 n n' B[m/] ->
     Extract Δ3 (.tup m n .ex s) (.tup m' n' s) (.sig A B .ex s)
 
   | prj_im {Δ1 Δ2 Δ3 A B C m m' n n' s sA sB sC iC} :
     Merge Δ1 Δ2 Δ3 ->
     .sig A B .im s :: Δ3.logical ⊢ C : .srt sC iC ->
     Extract Δ1 m m' (.sig A B .im s) ->
-    Extract (B :⟨.ex, sB⟩ A :⟨.im, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
-    Extract Δ3 (.prj C m n) (.prj m' n') C.[m/]
+    Extract (B :⟨.ex, sB⟩ A :⟨.im, sA⟩ Δ2) n n' C[.tup (.var 1) (.var 0) .im s .: shift >> shift >> SStruct.Tm.var_Tm] ->
+    Extract Δ3 (.prj C m n) (.prj m' n') C[m/]
 
   | prj_ex {Δ1 Δ2 Δ3 A B C m m' n n' s sA sB sC iC} :
     Merge Δ1 Δ2 Δ3 ->
     .sig A B .ex s :: Δ3.logical ⊢ C : .srt sC iC ->
     Extract Δ1 m m' (.sig A B .ex s) ->
-    Extract (B :⟨.ex, sB⟩ A :⟨.ex, sA⟩ Δ2) n n' C.[.tup (.var 1) (.var 0) .ex s .: shift 2] ->
-    Extract Δ3 (.prj C m n) (.prj m' n') C.[m/]
+    Extract (B :⟨.ex, sB⟩ A :⟨.ex, sA⟩ Δ2) n n' C[.tup (.var 1) (.var 0) .ex s .: shift >> shift >> SStruct.Tm.var_Tm] ->
+    Extract Δ3 (.prj C m n) (.prj m' n') C[m/]
 
   | tt {Δ} :
     Wf Δ ->
@@ -78,30 +79,30 @@ where
     Merge Δ1 Δ2 Δ3 ->
     .bool :: Δ3.logical ⊢ A : .srt s i ->
     Extract Δ1 m m' .bool ->
-    Extract Δ2 n1 n1' A.[.tt/] ->
-    Extract Δ2 n2 n2' A.[.ff/] ->
-    Extract Δ3 (.ite A m n1 n2) (.ite m' n1' n2') A.[m/]
+    Extract Δ2 n1 n1' A[(SStruct.Tm.tt : SStruct.Tm Srt)/] ->
+    Extract Δ2 n2 n2' A[(SStruct.Tm.ff : SStruct.Tm Srt)/] ->
+    Extract Δ3 (.ite A m n1 n2) (.ite m' n1' n2') A[m/]
 
   | rw {Δ A B m m' n a b s i} :
-    .idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Δ.logical ⊢ A : .srt s i ->
-    Extract Δ m m' A.[.rfl a,a/] ->
+    .idn B⟨↑⟩ a⟨↑⟩ (.var 0) :: B :: Δ.logical ⊢ A : .srt s i ->
+    Extract Δ m m' A[.rfl a,a/] ->
     Δ.logical ⊢ n : .idn B a b ->
-    Extract Δ (.rw A m n) m' A.[n,b/]
+    Extract Δ (.rw A m n) m' A[n,b/]
 
   | exf {Δ A m s i} :
     Wf Δ ->
     Implicit Δ ->
     .bot :: Δ.logical ⊢ A : .srt s i ->
     Δ.logical ⊢ m : .bot ->
-    Extract Δ (.exf A m) .dead A.[m/]
+    Extract Δ (.exf A m) .dead A[m/]
 
   | exf_drop {Δ1 Δ2 Δ3 A m n B s i} {n' b' : Extraction.Tm Srt} :
     Merge Δ1 Δ2 Δ3 ->
     .bot :: Δ3.logical ⊢ A : .srt s i ->
     Δ3.logical ⊢ m : .bot ->
     Extract Δ1 n n' B ->
-    Extract Δ2 (.exf A m) b' A.[m/] ->
-    Extract Δ3 (.exf A m) (.drop n' b') A.[m/]
+    Extract Δ2 (.exf A m) b' A[m/] ->
+    Extract Δ3 (.exf A m) (.drop n' b') A[m/]
 
   | drop {Δ1 Δ2 Δ3 m m' n n' A B s} :
     Merge Δ1 Δ2 Δ3 ->
@@ -362,17 +363,17 @@ lemma ExfSpine.toImplicit {Δ : Ctx Srt} :
       have mrg : Merge (A :⟨.im, s⟩ tl) (A :⟨.ex, s⟩ Ctx.toImplicit tl) (A :⟨.ex, s⟩ tl) := by
         constructor
         apply Merge.self
-      have hs : Has (A :⟨.ex, s⟩ Ctx.toImplicit tl) 0 s A.[shift 1] := by
+      have hs : Has (A :⟨.ex, s⟩ Ctx.toImplicit tl) 0 s A⟨↑⟩ := by
         constructor
         apply Implicit.toImplicit
       exact ExfSpine.cons mrg hs sp
 
 lemma Extract.exf_drop_spine {Δ1 Δ3 : Ctx Srt} {A m m' s i} :
     ExfSpine Δ1 Δ3 ->
-    Δ1 ⊢ .exf A m ▷ m' :: A.[m/] ->
+    Δ1 ⊢ .exf A m ▷ m' :: A[m/] ->
     .bot :: Δ3.logical ⊢ A : .srt s i ->
     Δ3.logical ⊢ m : .bot ->
-    ∃ m', Δ3 ⊢ .exf A m ▷ m' :: A.[m/] := by
+    ∃ m', Δ3 ⊢ .exf A m ▷ m' :: A[m/] := by
   intro sp er tyA tym
   induction sp
   case refl =>
@@ -393,6 +394,7 @@ end SStruct.Extraction
 
 namespace SStruct.Program
 open SStruct.Extraction
+open Autosubst Autosubst.Notation
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 theorem Typed.toExtract {Δ : Ctx Srt} {A m} :
@@ -448,7 +450,7 @@ theorem Typed.toExtract {Δ : Ctx Srt} {A m} :
     have ⟨m', erm⟩ := ihm
     existsi m'; constructor <;> aesop
   case exf Δ A m s i wf tyA tym _ =>
-    have er : Δ.toImplicit ⊢ .exf A m ▷ .dead :: A.[m/] := by
+    have er : Δ.toImplicit ⊢ .exf A m ▷ .dead :: A[m/] := by
       apply Extract.exf
       . apply wf.implicit
       . apply Implicit.toImplicit

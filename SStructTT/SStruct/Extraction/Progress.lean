@@ -1,6 +1,7 @@
 import SStructTT.SStruct.Program.Progress
 import SStructTT.SStruct.Extraction.Preservation
 open ARS SStruct.Program
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Extraction
 variable {Srt : Type} [ord : SrtOrder Srt]
@@ -82,7 +83,7 @@ theorem Extract.progress {A m} {m' : Tm Srt} :
     | .inr ⟨v, rd, vl⟩ =>
       replace erm := erm.preservation0' rd
       have ⟨m', e⟩ := erm.pi_canonical Conv.R vl
-      subst_vars; left; existsi m'.[.null/]
+      subst_vars; left; existsi m'[(Extraction.Tm.null : Extraction.Tm Srt)/]
       constructor; and_intros
       . apply Red0.app rd Star.R
       . aesop
@@ -101,7 +102,7 @@ theorem Extract.progress {A m} {m' : Tm Srt} :
       | .inr ⟨v2, rd2, vl2⟩ =>
         replace ern := ern.preservation0' rd2
         have ⟨m', e⟩ := erm.pi_canonical Conv.R vl1
-        subst_vars; left; existsi m'.[v2/]
+        subst_vars; left; existsi m'[v2/]
         constructor; and_intros
         . apply Red0.app rd1 rd2
         . aesop
@@ -139,7 +140,7 @@ theorem Extract.progress {A m} {m' : Tm Srt} :
     | .inr ⟨v, rd, vl⟩ =>
       replace erm := erm.preservation0' rd
       have ⟨m1', m2', _⟩ := erm.sig_canonical Conv.R vl
-      subst_vars; left; existsi n'.[m2',m1'/]
+      subst_vars; left; existsi n'[m2',m1'/]
       constructor; and_intros
       . apply Red0.prj rd
       . aesop
@@ -152,7 +153,7 @@ theorem Extract.progress {A m} {m' : Tm Srt} :
     | .inr ⟨v, rd, vl⟩ =>
       replace erm := erm.preservation0' rd
       have ⟨m1', m2', _⟩ := erm.sig_canonical Conv.R vl
-      subst_vars; left; existsi n'.[m2',m1'/]
+      subst_vars; left; existsi n'[m2',m1'/]
       constructor; and_intros
       . apply Red0.prj rd
       . aesop

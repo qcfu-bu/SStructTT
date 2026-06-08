@@ -1,6 +1,7 @@
 import SStructTT.Basics.ARS
 import SStructTT.SStruct.Extraction.Syntax
 open ARS
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Extraction
 variable {Srt : Type}
@@ -53,7 +54,7 @@ inductive Step1 : Tm Srt -> Tm Srt -> Prop where
     Step1 (.app m n) (.app m n')
   | beta m n s :
     Value n ->
-    Step1 (.app (.lam m s) n) m.[n/]
+    Step1 (.app (.lam m s) n) m[n/]
   | tup_M {m m'} n s :
     Step1 m m' ->
     Step1 (.tup m n s) (.tup m' n s)
@@ -65,7 +66,7 @@ inductive Step1 : Tm Srt -> Tm Srt -> Prop where
     Step1 (.prj m n) (.prj m' n)
   | prj_elim {m1 m2} n {s} :
     Value (.tup m1 m2 s) ->
-    Step1 (.prj (.tup m1 m2 s) n) n.[m2,m1/]
+    Step1 (.prj (.tup m1 m2 s) n) n[m2,m1/]
   | ite_M {m m'} n1 n2 :
     Step1 m m' ->
     Step1 (.ite m n1 n2) (.ite m' n1 n2)

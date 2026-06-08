@@ -1,5 +1,7 @@
 import SStructTT.SStruct.Logical.Typed
 
+open Autosubst Autosubst.Notation
+
 namespace SStruct.Logical
 variable {Srt : Type} [ord : SrtOrder Srt]
 
@@ -10,11 +12,11 @@ inductive AgreeRen : (Var -> Var) -> Ctx Srt -> Ctx Srt -> Prop where
   | cons {Γ Γ' A s i ξ} :
     Γ ⊢ A : .srt s i ->
     AgreeRen ξ Γ Γ' ->
-    AgreeRen (upren ξ) (A :: Γ) (A.[ren ξ] :: Γ')
+    AgreeRen (up_ren ξ) (A :: Γ) (A⟨ξ⟩ :: Γ')
   | wk {Γ Γ' A s i ξ} :
     Γ' ⊢ A : .srt s i ->
     AgreeRen ξ Γ Γ' ->
-    AgreeRen (ξ !>> (.+1)) Γ (A :: Γ')
+    AgreeRen (ξ >> shift) Γ (A :: Γ')
 
 @[aesop safe (rule_sets := [rename])]
 lemma AgreeRen.refl {Γ : Ctx Srt} : Γ ⊢ -> AgreeRen id Γ Γ := by
@@ -26,19 +28,19 @@ lemma AgreeRen.refl {Γ : Ctx Srt} : Γ ⊢ -> AgreeRen id Γ Γ := by
     assumption
 
 lemma AgreeRen.has {Γ Γ' : Ctx Srt} {A x ξ} :
-    AgreeRen ξ Γ Γ' -> Has Γ x A -> Has Γ' (ξ x) A.[ren ξ] := by
+    AgreeRen ξ Γ Γ' -> Has Γ x A -> Has Γ' (ξ x) A⟨ξ⟩ := by
   intro agr hs; induction agr generalizing x A
   case nil => cases hs
   case cons A _ _ ξ _ _ ih =>
-    cases hs <;> asimp
+    cases hs
     case zero =>
-      rw[show A.[ren ξ !> shift 1] = A.[ren ξ].[shift 1] by asimp]
+      rw[show (A⟨↑⟩)⟨up_ren ξ⟩ = (A⟨ξ⟩)⟨↑⟩ by asimp]
       constructor
-    case succ A x hs =>
-      rw[show A.[ren ξ !> shift 1] = A.[ren ξ].[shift 1] by asimp]
+    case succ A' x hs =>
+      rw[show (A'⟨↑⟩)⟨up_ren ξ⟩ = (A'⟨ξ⟩)⟨↑⟩ by asimp]
       constructor; apply ih; assumption
-  case wk A _ _ ξ _ _ ih =>
-    asimp; rw[show A.[ren (ξ !>> (.+1))] = A.[ren ξ].[shift 1] by asimp; rfl]
+  case wk A' i ξ _ _ ih =>
+    rw[show A⟨ξ >> shift⟩ = (A⟨ξ⟩)⟨↑⟩ by asimp]
     constructor; apply ih; assumption
 
 lemma AgreeRen.wf_nil {Γ' : Ctx Srt} {ξ} : AgreeRen ξ [] Γ' -> Γ' ⊢ := by
@@ -52,7 +54,7 @@ lemma AgreeRen.wf_nil {Γ' : Ctx Srt} {ξ} : AgreeRen ξ [] Γ' -> Γ' ⊢ := by
 lemma AgreeRen.wf_cons {Γ Γ' : Ctx Srt} {A ξ} :
     AgreeRen ξ (A :: Γ) Γ' -> Γ ⊢ ->
     (∀ Γ' ξ, AgreeRen ξ Γ Γ' → Γ' ⊢) ->
-    (∀ Γ' ξ, AgreeRen ξ Γ Γ' → ∃ s i, Γ' ⊢ A.[ren ξ] : .srt s i) ->
+    (∀ Γ' ξ, AgreeRen ξ Γ Γ' → ∃ s i, Γ' ⊢ A⟨ξ⟩ : .srt s i) ->
     Γ' ⊢ := by
   intro
   | cons ty agr =>
@@ -68,11 +70,11 @@ lemma AgreeRen.wf_cons {Γ Γ' : Ctx Srt} {A ξ} :
     . exact ty.toWf
 
 lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
-    Γ ⊢ m : A -> AgreeRen ξ Γ Γ' -> Γ' ⊢ m.[ren ξ] : A.[ren ξ] := by
+    Γ ⊢ m : A -> AgreeRen ξ Γ Γ' -> Γ' ⊢ m⟨ξ⟩ : A⟨ξ⟩ := by
   intro ty agr; induction ty using
     @Typed.rec _ ord
       (motive_2 := fun Γ _ => ∀ Γ' ξ, AgreeRen ξ Γ Γ' -> Γ' ⊢)
-  generalizing Γ' ξ <;> asimp
+  generalizing Γ' ξ <;> (try asimp)
   case srt ih =>
     constructor
     apply ih; assumption
@@ -114,19 +116,16 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     have ⟨_, _, _, tyA⟩ := tyB.ctx_inv
     replace ihC := ihC (agr.cons tyS)
     replace ihm := ihm agr
-    have agr' : AgreeRen (upren (upren ξ)) (B :: A :: Γ)
-      (B.[ren (upren ξ)] :: A.[ren ξ] :: Γ') := by
+    have agr' : AgreeRen (up_ren (up_ren ξ)) (B :: A :: Γ)
+      (B⟨(up_ren ξ)⟩ :: A⟨ξ⟩ :: Γ') := by
       aesop (rule_sets := [rename])
     replace ihn := ihn agr'
     asimp at ihC
     asimp at ihm
-    rw [show C.[.tup (.var 1) (.var 0) r s .: shift 2].[ren (upren $ upren ξ)]
-           = C.[up (ren ξ)].[.tup (.var 1) (.var 0) r s .: shift 2]
-          by asimp] at ihn
-    rw[SubstLemmas.upren_up] at ihn
-    replace := Typed.prj ihC ihm ihn
-    asimp at this
-    assumption
+    rw[show C[.tup (.var 1) (.var 0) r s .: shift >> shift >> Tm.var_Tm]⟨up_ren (up_ren ξ)⟩
+          = (C⟨up_ren ξ⟩)[.tup (.var 1) (.var 0) r s .: shift >> shift >> Tm.var_Tm] by asimp] at ihn
+    have := Typed.prj ihC ihm ihn
+    asimp at this; assumption
   case bool ih =>
     constructor;
     apply ih; assumption
@@ -142,8 +141,8 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     replace ihm := ihm agr; asimp at ihm
     replace ihn1 := ihn1 agr; asimp at ihn1
     replace ihn2 := ihn2 agr; asimp at ihn2
-    rw[show A.[.tt .: ren ξ] = A.[up (ren ξ)].[.tt/] by asimp] at ihn1
-    rw[show A.[.ff .: ren ξ] = A.[up (ren ξ)].[.ff/] by asimp] at ihn2
+    rw[show A[(Tm.tt : Tm Srt) .: ξ >> Tm.var_Tm] = (A⟨up_ren ξ⟩)[(Tm.tt : Tm Srt)/] by asimp] at ihn1
+    rw[show A[(Tm.ff : Tm Srt) .: ξ >> Tm.var_Tm] = (A⟨up_ren ξ⟩)[(Tm.ff : Tm Srt)/] by asimp] at ihn2
     have := Typed.ite ihA ihm ihn1 ihn2
     asimp at this; assumption
   case idn tyA tym tyn ihA ihm ihn =>
@@ -157,13 +156,13 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
   case rw A B _ _ a b _ _ tyA tym tyn ihA ihm ihn =>
     have ⟨_, _, _, tyI⟩ := tyA.ctx_inv
     have ⟨_, _, _, tyB⟩ := tyI.ctx_inv
-    replace ihA := ihA ((agr.cons tyB).cons tyI); asimp at ihA
+    replace ihA := ihA ((agr.cons tyB).cons tyI)
+    rw[show (Tm.idn B⟨↑⟩ a⟨↑⟩ (Tm.var_Tm 0))⟨up_ren ξ⟩
+          = Tm.idn ((B⟨ξ⟩)⟨↑⟩) ((a⟨ξ⟩)⟨↑⟩) (Tm.var_Tm 0) by asimp] at ihA
     replace ihm := ihm agr; asimp at ihm
     replace ihn := ihn agr; asimp at ihn
-    simp[<-SubstLemmas.subst_comp] at ihA
-    rw[show A.[a.[ren ξ].rfl .: a.[ren ξ] .: ren ξ]
-          = A.[upn 2 (ren ξ)].[.rfl a.[ren ξ],a.[ren ξ]/]
-         by asimp] at ihm
+    rw[show A[a⟨ξ⟩.rfl .: a⟨ξ⟩ .: ξ >> Tm.var_Tm]
+          = (A⟨up_ren (up_ren ξ)⟩)[a⟨ξ⟩.rfl, a⟨ξ⟩/] by asimp] at ihm
     have := Typed.rw ihA ihm ihn
     asimp at this; assumption
   case bot ih =>
@@ -179,7 +178,7 @@ lemma Typed.renaming {Γ Γ' : Ctx Srt} {A m ξ} :
     replace ihB := ihB agr
     replace ihm := ihm agr
     apply Typed.conv
-    . apply Conv.subst _ eq
+    . apply Conv.ren _ eq
     . assumption
     . assumption
   case nil Γ' ξ agr => exact agr.wf_nil
@@ -215,7 +214,7 @@ lemma Wf.has_typed {Γ : Ctx Srt} {A x} :
 lemma Typed.weaken {Γ : Ctx Srt} {A B m s i} :
     Γ ⊢ m : A ->
     Γ ⊢ B : .srt s i ->
-    B :: Γ ⊢ m.[shift 1] : A.[shift 1] := by
+    B :: Γ ⊢ m⟨↑⟩ : A⟨↑⟩ := by
   intro tym tyB
   apply tym.renaming
   constructor
@@ -224,8 +223,8 @@ lemma Typed.weaken {Γ : Ctx Srt} {A B m s i} :
 
 lemma Typed.eweaken {Γ Γ' : Ctx Srt} {A A' B m m' s i} :
     Γ' = B :: Γ ->
-    m' = m.[shift 1] ->
-    A' = A.[shift 1] ->
+    m' = m⟨↑⟩ ->
+    A' = A⟨↑⟩ ->
     Γ ⊢ m : A ->
     Γ ⊢ B : .srt s i ->
     Γ' ⊢ m' : A' := by

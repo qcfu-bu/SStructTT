@@ -3,6 +3,7 @@ import SStructTT.SStruct.Logical.Preservation
 import SStructTT.SStruct.Logical.Unique
 import SStructTT.SStruct.Program.Substitution
 open ARS
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Program
 variable {Srt : Type} [ord : SrtOrder Srt]
@@ -65,7 +66,7 @@ lemma Typed.tup_im_inv' {Δ : Ctx Srt} {T m n s} :
     Δ ⊢ .tup m n .im s :: T ->
     ∃ A B,
       Δ.logical ⊢ m : A ∧
-      Δ ⊢ n :: B.[m/] ∧
+      Δ ⊢ n :: B[m/] ∧
       T === .sig A B .im s := by
   generalize e: Tm.tup m n .im s = x
   intro ty; induction ty generalizing m n s
@@ -94,7 +95,7 @@ lemma Typed.tup_ex_inv' {Δ : Ctx Srt} {T m n s} :
     ∃ Δ1 Δ2 A B,
       Merge Δ1 Δ2 Δ ∧
       Δ1 ⊢ m :: A ∧
-      Δ2 ⊢ n :: B.[m/] ∧
+      Δ2 ⊢ n :: B[m/] ∧
       T === .sig A B .ex s := by
   generalize e: Tm.tup m n .ex s = x
   intro ty; induction ty generalizing m n s
@@ -160,7 +161,7 @@ lemma Typed.lam_ex_inv {Δ : Ctx Srt} {A A' B m s s'} :
 
 lemma Typed.tup_im_inv {Δ : Ctx Srt} {A B m n s s'} :
     Δ ⊢ .tup m n .im s :: .sig A B .im s' ->
-    Δ.logical ⊢ m : A ∧ Δ ⊢ n :: B.[m/] ∧ s = s' := by
+    Δ.logical ⊢ m : A ∧ Δ ⊢ n :: B[m/] ∧ s = s' := by
   intro ty
   have ⟨A', B', tym, tyn, eq⟩ := ty.tup_im_inv'
   have ⟨_, _, eqA, eqB⟩ := Logical.Conv.sig_inj eq
@@ -182,7 +183,7 @@ lemma Typed.tup_ex_inv {Δ : Ctx Srt} {A B m n s s'} :
     ∃ Δ1 Δ2,
       Merge Δ1 Δ2 Δ ∧
       Δ1 ⊢ m :: A ∧
-      Δ2 ⊢ n :: B.[m/] ∧ s = s' := by
+      Δ2 ⊢ n :: B[m/] ∧ s = s' := by
   intro ty
   have ⟨Δ1, Δ2, A', B', mrg, tym, tyn, eq⟩ := ty.tup_ex_inv'
   have ⟨_, _, eqA, eqB⟩ := Logical.Conv.sig_inj eq

@@ -2,6 +2,7 @@ import SStructTT.SStruct.Program.Preservation
 import SStructTT.SStruct.Extraction.Inversion
 import SStructTT.SStruct.Extraction.Step
 open ARS SStruct.Program
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Extraction
 variable {Srt : Type} [ord : SrtOrder Srt]
@@ -168,7 +169,7 @@ theorem Extract.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
       cases r with
       | im =>
         replace ⟨sA, erm⟩ := erm.lam_im_inv
-        existsi m.[n/]; and_intros
+        existsi m[n/]; and_intros
         . apply Star1.SE_join
           apply Red.app rd Star.R
           constructor
@@ -216,7 +217,7 @@ theorem Extract.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
         have st0 := Red.toLogical ern.toLogical st
         replace ⟨sA, erm⟩ := erm.lam_ex_inv
         have ⟨s, i, tyB⟩ := erm.validity
-        existsi m.[v/]; and_intros
+        existsi m[v/]; and_intros
         . apply Star1.SE_join
           apply Red.app rd st
           constructor; aesop
@@ -295,15 +296,15 @@ theorem Extract.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
           apply Star.conv
           apply Star.trans (Red.toLogical erm.toLogical rdm)
           apply Logical.Red.tup _ _ Star.R rdv0
-        existsi n.[v,m1/]; and_intros
+        existsi n[v,m1/]; and_intros
         . apply Star1.SE_join
           apply Star.trans (Red.prj rdm)
           apply Red.prj (Red.tup_im rdv)
           constructor; aesop
         . apply Extract.conv
           apply Logical.Conv.subst1 _ eq.sym
-          rw[show C.[.tup m1 v .im s/]
-                = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[v,m1/] by asimp]
+          rw[show C[m1.tup v .im s/]
+                = C[.tup (.var 1) (.var 0) .im s .: shift >> shift >> SStruct.Tm.var_Tm][v,m1/] by asimp]
           apply ern.substitution
           -- rw[<-Ctx.logical.eq_1] at erm2
           apply AgreeSubst.intro_ex Merge.nil; constructor; assumption
@@ -350,21 +351,21 @@ theorem Extract.preservation {A m1 : SStruct.Tm Srt} {m2 m2'} :
           apply Star.conv
           apply Star.trans (Red.toLogical erm.toLogical rdm)
           apply Logical.Red.tup _ _ rdv1' rdv2'
-        have erm2 : [] ⊢ v2 ▷ m2 :: B.[v1/] := by
+        have erm2 : [] ⊢ v2 ▷ m2 :: B[v1/] := by
           apply Extract.conv
           apply Logical.Conv.subst1
           apply Star.conv rdv1'
           apply erv2
           apply tyB.subst erv1.toLogical
-        existsi n.[v2,v1/]; and_intros
+        existsi n[v2,v1/]; and_intros
         . apply Star1.SE_join
           apply Star.trans (Red.prj rdm)
           apply Red.prj (Red.tup_ex rdv1 rdv2)
           constructor; aesop
         . apply Extract.conv
           apply Logical.Conv.subst1 _ eq.sym
-          rw[show C.[.tup v1 v2 .ex s/]
-                = C.[.tup (.var 1) (.var 0) .ex s .: shift 2].[v2,v1/] by asimp]
+          rw[show C[v1.tup v2 .ex s/]
+                = C[.tup (.var 1) (.var 0) .ex s .: shift >> shift >> SStruct.Tm.var_Tm][v2,v1/] by asimp]
           apply ern.substitution
           apply AgreeSubst.intro_ex Merge.nil (Lower.nil _) erm2
           apply AgreeSubst.intro_ex Merge.nil; constructor; asimp; assumption

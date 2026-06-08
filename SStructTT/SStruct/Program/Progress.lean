@@ -2,6 +2,7 @@ import SStructTT.SStruct.Logical.Normalize
 import SStructTT.SStruct.Program.Step
 import SStructTT.SStruct.Program.Inversion
 open ARS SStruct.Logical
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Program
 variable {Srt : Type} [ord : SrtOrder Srt]
@@ -79,7 +80,7 @@ theorem Typed.progress {m A : Tm Srt} :
       constructor; assumption
     | .inr vl =>
       have ⟨_, m, _⟩ := tym.pi_canonical Conv.R vl
-      subst_vars; left; existsi m.[n/]; constructor
+      subst_vars; left; existsi m[n/]; constructor
   case app_ex m n _ tym tyn ihm ihn mrg =>
     cases mrg; simp_all
     match ihm with
@@ -93,7 +94,7 @@ theorem Typed.progress {m A : Tm Srt} :
         constructor; assumption
       | .inr _ =>
         have ⟨_, m, _⟩ := tym.pi_canonical Conv.R vl
-        subst_vars; left; existsi m.[n/]
+        subst_vars; left; existsi m[n/]
         constructor; assumption
   case tup_im m n s _ _ _ _ ih =>
     match ih with
@@ -121,7 +122,7 @@ theorem Typed.progress {m A : Tm Srt} :
       constructor; assumption
     | .inr vl =>
       have ⟨m1, m2, _⟩ := tym.sig_canonical Conv.R vl
-      subst_vars; left; existsi n.[m2,m1/]
+      subst_vars; left; existsi n[m2,m1/]
       constructor; assumption
   case prj_ex C _ n _ _ _ _ _ tym ihn ihm mrg tyC =>
     cases mrg; simp_all
@@ -131,7 +132,7 @@ theorem Typed.progress {m A : Tm Srt} :
       constructor; assumption
     | .inr vl =>
       have ⟨m1, m2, _⟩ := tym.sig_canonical Conv.R vl
-      subst_vars; left; existsi n.[m2,m1/]
+      subst_vars; left; existsi n[m2,m1/]
       constructor; assumption
   case tt => right; constructor
   case ff => right; constructor

@@ -1,5 +1,6 @@
 import SStructTT.SStruct.Logical.Preservation
 open ARS
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Logical
 variable {Srt : Type} [ord : SrtOrder Srt]
@@ -75,7 +76,7 @@ theorem Typed.progress {m A : Tm Srt} :
       constructor; assumption
     | .inr vl =>
       have ⟨A, m, _⟩ := tym.pi_canonical Conv.R vl
-      subst_vars; left; existsi m.[n/]; constructor
+      subst_vars; left; existsi m[n/]; constructor
   case sig => right; constructor
   case tup m n r s _ _ _ _ _ ihm ihn =>
     match ihm with
@@ -98,7 +99,7 @@ theorem Typed.progress {m A : Tm Srt} :
       constructor; assumption
     | .inr vl =>
       have ⟨m1, m2, _⟩ := tym.sig_canonical Conv.R vl
-      subst_vars; left; existsi n.[m2,m1/]; constructor
+      subst_vars; left; existsi n[m2,m1/]; constructor
   case bool => right; constructor
   case tt => right; constructor
   case ff => right; constructor

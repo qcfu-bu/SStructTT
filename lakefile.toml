@@ -13,5 +13,9 @@ name = "mathlib"
 scope = "leanprover-community"
 rev = "v4.30.0"
 
+[[require]]
+name = "lean-autosubst"
+path = "../lean-autosubst"
+
 [[lean_lib]]
 name = "SStructTT"

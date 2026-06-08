@@ -3,6 +3,7 @@ import SStructTT.SStruct.Program.Context
 
 namespace SStruct.Program
 open Logical
+open Autosubst Autosubst.Notation
 variable {Srt : Type} [ord : SrtOrder Srt]
 
 mutual
@@ -27,40 +28,40 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
   | app_im {Δ A B m n s} :
     Typed Δ m (.pi A B .im s) ->
     Δ.logical ⊢ n : A ->
-    Typed Δ (.app m n) B.[n/]
+    Typed Δ (.app m n) B[n/]
 
   | app_ex {Δ1 Δ2 Δ3 A B m n s} :
     Merge Δ1 Δ2 Δ3 ->
     Typed Δ1 m (.pi A B .ex s) ->
     Typed Δ2 n A ->
-    Typed Δ3 (.app m n) B.[n/]
+    Typed Δ3 (.app m n) B[n/]
 
   | tup_im {Δ A B m n s i} :
     Δ.logical ⊢ .sig A B .im s : .srt s i ->
     Δ.logical ⊢ m : A ->
-    Typed Δ n B.[m/] ->
+    Typed Δ n B[m/] ->
     Typed Δ (.tup m n .im s) (.sig A B .im s)
 
   | tup_ex {Δ1 Δ2 Δ3 A B m n s i} :
     Merge Δ1 Δ2 Δ3 ->
     Δ3.logical ⊢ .sig A B .ex s : .srt s i ->
     Typed Δ1 m A ->
-    Typed Δ2 n B.[m/] ->
+    Typed Δ2 n B[m/] ->
     Typed Δ3 (.tup m n .ex s) (.sig A B .ex s)
 
   | prj_im {Δ1 Δ2 Δ3 A B C m n s sA sB sC iC} :
     Merge Δ1 Δ2 Δ3 ->
     .sig A B .im s :: Δ3.logical ⊢ C : .srt sC iC ->
     Typed Δ1 m (.sig A B .im s) ->
-    Typed (B :⟨.ex, sB⟩ A :⟨.im, sA⟩ Δ2) n C.[.tup (.var 1) (.var 0) .im s .: shift 2] ->
-    Typed Δ3 (.prj C m n) C.[m/]
+    Typed (B :⟨.ex, sB⟩ A :⟨.im, sA⟩ Δ2) n C[.tup (.var 1) (.var 0) .im s .: shift >> shift >> Tm.var_Tm] ->
+    Typed Δ3 (.prj C m n) C[m/]
 
   | prj_ex {Δ1 Δ2 Δ3 A B C m n s sA sB sC iC} :
     Merge Δ1 Δ2 Δ3 ->
     .sig A B .ex s :: Δ3.logical ⊢ C : .srt sC iC ->
     Typed Δ1 m (.sig A B .ex s) ->
-    Typed (B :⟨.ex, sB⟩ A :⟨.ex, sA⟩ Δ2) n C.[.tup (.var 1) (.var 0) .ex s .: shift 2] ->
-    Typed Δ3 (.prj C m n) C.[m/]
+    Typed (B :⟨.ex, sB⟩ A :⟨.ex, sA⟩ Δ2) n C[.tup (.var 1) (.var 0) .ex s .: shift >> shift >> Tm.var_Tm] ->
+    Typed Δ3 (.prj C m n) C[m/]
 
   | tt {Δ} :
     Wf Δ ->
@@ -76,21 +77,21 @@ inductive Typed : Ctx Srt -> Tm Srt -> Tm Srt -> Prop where
     Merge Δ1 Δ2 Δ3 ->
     .bool :: Δ3.logical ⊢ A : .srt s i ->
     Typed Δ1 m .bool ->
-    Typed Δ2 n1 A.[.tt/] ->
-    Typed Δ2 n2 A.[.ff/] ->
-    Typed Δ3 (.ite A m n1 n2) A.[m/]
+    Typed Δ2 n1 A[(Tm.tt : Tm Srt)/] ->
+    Typed Δ2 n2 A[(Tm.ff : Tm Srt)/] ->
+    Typed Δ3 (.ite A m n1 n2) A[m/]
 
   | rw {Δ A B m n a b s i} :
-    .idn B.[shift 1] a.[shift 1] (.var 0) :: B :: Δ.logical ⊢ A : .srt s i ->
-    Typed Δ m A.[.rfl a,a/] ->
+    .idn B⟨↑⟩ a⟨↑⟩ (.var 0) :: B :: Δ.logical ⊢ A : .srt s i ->
+    Typed Δ m A[.rfl a,a/] ->
     Δ.logical ⊢ n : .idn B a b ->
-    Typed Δ (.rw A m n) A.[n,b/]
+    Typed Δ (.rw A m n) A[n,b/]
 
   | exf {Δ A m s i} :
     Wf Δ ->
     .bot :: Δ.logical ⊢ A : .srt s i ->
     Δ.logical ⊢ m : .bot ->
-    Typed Δ (.exf A m) A.[m/]
+    Typed Δ (.exf A m) A[m/]
 
   | drop {Δ1 Δ2 Δ3 n A s} :
     Merge Δ1 Δ2 Δ3 ->

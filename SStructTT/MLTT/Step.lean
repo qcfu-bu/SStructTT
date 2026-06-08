@@ -2,6 +2,8 @@ import SStructTT.Basics.ARS
 import SStructTT.MLTT.Syntax
 open ARS
 
+open Autosubst Autosubst.Notation
+
 namespace MLTT
 
 @[scoped aesop safe [constructors]]
@@ -25,7 +27,7 @@ inductive Step : Tm -> Tm -> Prop where
     Step n n' ->
     Step (.app m n) (.app m n')
   | beta A m n :
-    Step (.app (.lam A m) n) m.[n/]
+    Step (.app (.lam A m) n) m[n/]
   | sig_A {A A'} B :
     Step A A' ->
     Step (.sig A B) (.sig A' B)
@@ -48,7 +50,7 @@ inductive Step : Tm -> Tm -> Prop where
     Step n n' ->
     Step (.prj A m n) (.prj A m n')
   | prj_elim A m1 m2 n :
-    Step (.prj A (.tup m1 m2) n) n.[m2,m1/]
+    Step (.prj A (.tup m1 m2) n) n[m2,m1/]
   | ite_A {A A'} m n1 n2 :
     Step A A' ->
     Step (.ite A m n1 n2) (.ite A' m n1 n2)

@@ -1,5 +1,6 @@
 import SStructTT.SStruct.Logical.Inversion
 open ARS
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Logical
 variable {Srt : Type} [ord : SrtOrder Srt]
@@ -104,21 +105,24 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
     case prj_A C' st =>
       replace ihC := ihC st
       have wf := tyn.toWf
-      have tyC' : (.sig A B r s).[shift 2] :: B :: A :: Γ ⊢ C'.[ren (upren (.+2))] :
-                  (.srt sC iC).[ren (upren (.+2))] := by
+      have tyC' : (Tm.sig A B r s)⟨↑ >> ↑⟩ :: B :: A :: Γ ⊢ C'⟨up_ren (↑ >> ↑)⟩ :
+                  (Tm.srt sC iC)⟨up_ren (↑ >> ↑)⟩ := by
         apply Typed.renaming
         . assumption
         . apply AgreeRen.cons
           assumption
-          rw[show (.+2) = (id !>> (.+1)) !>> (.+1) by funext; rfl]
+          rw[show (↑ >> ↑ : Var -> Var) = (id >> shift) >> shift by funext x; rfl]
           aesop (rule_sets := [rename])
-      have typ : B :: A :: Γ ⊢ .tup (.var 1) (.var 0) r s : (.sig A B r s).[shift 2] := by
+      have typ : B :: A :: Γ ⊢ .tup (.var 1) (.var 0) r s : (Tm.sig A B r s)⟨↑ >> ↑⟩ := by
         asimp; apply Typed.tup
         . have ty := (tyS.weaken tyA).weaken tyB
           asimp at ty; assumption
-        . rw[show A.[shift 2] = A.[shift 1].[shift 1] by asimp]
+        . rw[show A⟨↑ >> ↑⟩ = (A⟨↑⟩)⟨↑⟩ by asimp]
           constructor <;> aesop
-        . asimp; constructor <;> aesop
+        . asimp
+          rw[show (Tm.var 1 .: ↑ >> ↑ >> Tm.var_Tm : Var -> Tm Srt)
+                = (↑ >> Tm.var_Tm : Var -> Tm Srt) by funext x; cases x <;> asimp]
+          renamify; constructor <;> aesop
       replace tyC' := tyC'.subst typ; asimp at tyC'; clear typ
       apply Typed.conv
       . apply Conv.subst
@@ -139,8 +143,8 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
     case prj_N => apply Typed.prj <;> aesop
     case prj_elim m1 m2 r s =>
       have ⟨tym1, tym2, _, _⟩ := tym.tup_inv; subst_vars
-      rw[show C.[.tup m1 m2 r s/]
-            = C.[.tup (.var 1) (.var 0) r s .: shift 2].[m2,m1/] by asimp]
+      rw[show C[m1.tup m2 r s/]
+            = C[.tup (.var 1) (.var 0) r s .: shift >> shift >> Tm.var_Tm][m2,m1/] by asimp]
       apply tyn.substitution
       apply AgreeSubst.intro tym2
       constructor; asimp; assumption
@@ -210,8 +214,8 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
     have ⟨_, _, _⟩ := tya.validity
     cases st
     case rw_A A' st =>
-      have : Γ ⊢ A'.[.rfl a, a/] : .srt s i := by
-        rw[show .srt s i = (.srt s i).[.rfl a,a/] by asimp]
+      have : Γ ⊢ A'[.rfl a, a/] : .srt s i := by
+        rw[show Tm.srt s i = (Tm.srt s i)[.rfl a,a/] by asimp]
         apply Typed.substitution
         . apply ihA st
         . apply AgreeSubst.intro
@@ -219,8 +223,8 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
           apply AgreeSubst.intro
           asimp; assumption
           apply AgreeSubst.refl; assumption
-      have : Γ ⊢ A.[n,b/] : .srt s i := by
-        rw[show .srt s i = (.srt s i).[n,b/] by asimp]
+      have : Γ ⊢ A[n,b/] : .srt s i := by
+        rw[show Tm.srt s i = (Tm.srt s i)[n,b/] by asimp]
         apply Typed.substitution
         . assumption
         . apply AgreeSubst.intro
@@ -242,12 +246,12 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
       . assumption
     case rw_M st => constructor <;> aesop
     case rw_N n' st =>
-      have : SConv (n' .: b .: ids) (n .: b .: ids) := by
+      have : SConv (n' .: b .: Tm.var_Tm) (n .: b .: Tm.var_Tm) := by
         intro x; cases x with
         | zero => asimp; apply Conv.onei st
         | succ => asimp; constructor
-      have : Γ ⊢ A.[n,b/] : .srt s i := by
-        rw[show .srt s i = (.srt s i).[n,b/] by asimp]
+      have : Γ ⊢ A[n,b/] : .srt s i := by
+        rw[show Tm.srt s i = (Tm.srt s i)[n,b/] by asimp]
         apply Typed.substitution
         . assumption
         . apply AgreeSubst.intro
@@ -263,13 +267,13 @@ theorem Typed.preservation {Γ : Ctx Srt} {A m m'} :
       . assumption
     case rw_elim c =>
       have ⟨_, eq1, eq2⟩ := tyn.rfl_inv
-      have : SConv (.rfl a .: a .: ids) (.rfl c .: b .: ids) := by
+      have : SConv (.rfl a .: a .: Tm.var_Tm) (.rfl c .: b .: Tm.var_Tm) := by
         intro x; match x with
         | .zero => asimp; apply Conv.rfl (eq1.sym)
         | .succ .zero => asimp; apply Conv.trans (eq1.sym) eq2
         | .succ (.succ _) => asimp; constructor
-      have : Γ ⊢ A.[.rfl c,b/] : .srt s i := by
-        rw[show .srt s i = (.srt s i).[.rfl c,b/] by asimp]
+      have : Γ ⊢ A[.rfl c,b/] : .srt s i := by
+        rw[show Tm.srt s i = (Tm.srt s i)[.rfl c,b/] by asimp]
         apply Typed.substitution
         . assumption
         . apply AgreeSubst.intro

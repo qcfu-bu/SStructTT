@@ -3,6 +3,7 @@ import SStructTT.SStruct.Program.Inversion
 import SStructTT.SStruct.Extraction.Substitution
 import SStructTT.SStruct.Program.Step
 open ARS
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Extraction
 open Program
@@ -60,7 +61,7 @@ lemma Extract.tup_im_inv' {Δ : Ctx Srt} {T m m' n n' s} :
     Δ ⊢ .tup m n .im s ▷ .tup m' n' s :: T ->
     ∃ A B,
       Δ.logical ⊢ m : A ∧
-      Δ ⊢ n ▷ n' :: B.[m/] ∧ m' = .null ∧
+      Δ ⊢ n ▷ n' :: B[m/] ∧ m' = .null ∧
       T === .sig A B .im s := by
   generalize e1: SStruct.Tm.tup m n .im s = x
   generalize e2: Tm.tup m' n' s = y
@@ -85,7 +86,7 @@ lemma Extract.tup_ex_inv' {Δ : Ctx Srt} {T m m' n n' s} :
     ∃ Δ1 Δ2 A B,
       Merge Δ1 Δ2 Δ ∧
       Δ1 ⊢ m ▷ m' :: A ∧
-      Δ2 ⊢ n ▷ n' :: B.[m/] ∧
+      Δ2 ⊢ n ▷ n' :: B[m/] ∧
       T === .sig A B .ex s := by
   generalize e1: SStruct.Tm.tup m n .ex s = x
   generalize e2: Tm.tup m' n' s = y
@@ -145,7 +146,7 @@ lemma Extract.lam_ex_inv {Δ : Ctx Srt} {A A' B m m' s s'} :
 
 lemma Extract.tup_im_inv {Δ : Ctx Srt} {A B m m' n n' s s'} :
     Δ ⊢ .tup m n .im s ▷ .tup m' n' s :: .sig A B .im s' ->
-    Δ.logical ⊢ m : A ∧ Δ ⊢ n ▷ n' :: B.[m/] ∧ m' = .null ∧ s = s' := by
+    Δ.logical ⊢ m : A ∧ Δ ⊢ n ▷ n' :: B[m/] ∧ m' = .null ∧ s = s' := by
   intro er
   have ⟨A', B', tym, ern, e, eq⟩ := er.tup_im_inv'
   have ⟨_, _, eqA, eqB⟩ := Logical.Conv.sig_inj eq
@@ -167,7 +168,7 @@ lemma Extract.tup_ex_inv {Δ : Ctx Srt} {A B m m' n n' s s'} :
     ∃ Δ1 Δ2,
       Merge Δ1 Δ2 Δ ∧
       Δ1 ⊢ m ▷ m' :: A ∧
-      Δ2 ⊢ n ▷ n' :: B.[m/] ∧ s = s' := by
+      Δ2 ⊢ n ▷ n' :: B[m/] ∧ s = s' := by
   intro er
   have ⟨Δ1, Δ2, A', B', mrg, erm, ern, eq⟩ := er.tup_ex_inv'
   have ⟨_, _, eqA, eqB⟩ := Logical.Conv.sig_inj eq
