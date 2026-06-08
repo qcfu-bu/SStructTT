@@ -66,22 +66,52 @@ private lemma closed_rename {m : Tm Srt} {i ξ} :
 omit ord in
 private lemma closed_subst {m : Tm Srt} {i} {σ : Var -> Tm Srt} :
     Closed i m -> IdSubst i σ -> m = m[σ] := by
-  intro cl ids; induction m generalizing i σ
-  all_goals simp_all
-  case var_Tm =>
-    asimp; rw[ids _ cl]
-  case lam ih =>
-    asimp; congr 1
+  intro cl ids
+  induction m generalizing i σ with
+  | var_Tm x =>
+    asimp
+    exact (ids x cl).symm
+  | lam m s ih =>
+    simp at cl
+    asimp
+    congr 1
     exact ih cl (IdSubst.up ids)
-  case prj ihm ihn =>
-    have ⟨cl1, cl2⟩ := cl
-    asimp; congr 1
-    . aesop
-    . apply ihn cl2
-      intro x hx
-      have h := IdSubst.up (IdSubst.up ids) x hx
-      asimp at h ⊢; exact h
-  all_goals asimp; try aesop
+  | app m n ihm ihn =>
+    simp at cl
+    rcases cl with ⟨clm, cln⟩
+    asimp
+    rw [<-ihm clm ids, <-ihn cln ids]
+  | tup m n s ihm ihn =>
+    simp at cl
+    rcases cl with ⟨clm, cln⟩
+    asimp
+    rw [<-ihm clm ids, <-ihn cln ids]
+  | prj m n ihm ihn =>
+    simp at cl
+    rcases cl with ⟨clm, cln⟩
+    asimp
+    rw [<-ihm clm ids]
+    congr 1
+    apply ihn cln
+    intro y hy
+    have h := IdSubst.up (IdSubst.up ids) y (by simpa [Nat.add_assoc] using hy)
+    asimp at h ⊢
+    exact h
+  | tt => asimp
+  | ff => asimp
+  | ite m n1 n2 ihm ihn1 ihn2 =>
+    simp at cl
+    rcases cl with ⟨clm, cln1, cln2⟩
+    asimp
+    rw [<-ihm clm ids, <-ihn1 cln1 ids, <-ihn2 cln2 ids]
+  | drop m n ihm ihn =>
+    simp at cl
+    rcases cl with ⟨clm, cln⟩
+    asimp
+    rw [<-ihm clm ids, <-ihn cln ids]
+  | ptr _ => asimp
+  | null => asimp
+  | dead => asimp
 
 namespace Runtime
 open Program
@@ -147,33 +177,62 @@ lemma AgreeSubst.subst_var {Δ : Ctx Srt} {H σ σ' i x} :
 
 lemma AgreeSubst.closed_subst {Δ : Ctx Srt} {H σ i x} {m : Tm Srt} {σ' : Var -> Tm Srt} :
     AgreeSubst σ σ' i Δ H -> Closed x m -> x ≤ i -> m = m[σ'] := by
-  intro agr cl lw; induction m generalizing Δ H σ σ' i x
-  all_goals simp_all
-  case var_Tm =>
-    asimp; apply agr.subst_var
-    apply cl.trans_le lw
-  case lam ih =>
-    asimp; congr 1
+  intro agr cl lw
+  induction m generalizing Δ H σ σ' i x with
+  | var_Tm y =>
+    asimp
+    exact agr.subst_var (cl.trans_le lw)
+  | lam m s ih =>
+    simp at cl
+    asimp
+    congr 1
     apply ih
-    . apply AgreeSubst.cons agr
-      constructor; apply 0; constructor; apply ord.ι
-    . assumption
-    . simp[lw]
-  case prj ihm ihn =>
-    have ⟨cl1, cl2⟩ := cl
-    asimp; congr 1
-    . aesop
-    . trace_state
-      sorry
-      apply ihn
-      . apply AgreeSubst.cons
-        constructor; apply 0; constructor; apply ord.ι
-        apply AgreeSubst.cons
-        constructor; apply 0; constructor; apply ord.ι
-        apply agr
-      . aesop
-      . simp[lw]
-  all_goals asimp; try aesop
+    . apply AgreeSubst.cons (A := SStruct.Tm.srt ord.ι 0) (r := .im) (s := ord.ι) agr
+    . exact cl
+    . omega
+  | app m n ihm ihn =>
+    simp at cl
+    rcases cl with ⟨clm, cln⟩
+    asimp
+    rw [<-ihm agr clm lw, <-ihn agr cln lw]
+  | tup m n s ihm ihn =>
+    simp at cl
+    rcases cl with ⟨clm, cln⟩
+    asimp
+    rw [<-ihm agr clm lw, <-ihn agr cln lw]
+  | prj m n ihm ihn =>
+    simp at cl
+    rcases cl with ⟨clm, cln⟩
+    asimp
+    rw [<-ihm agr clm lw]
+    congr 1
+    let A : SStruct.Tm Srt := SStruct.Tm.srt ord.ι 0
+    have agr2 :
+        AgreeSubst (⇑⇑σ) (⇑⇑σ') (i + 2)
+          (A :⟨.im, ord.ι⟩ A :⟨.im, ord.ι⟩ Δ) H := by
+      apply AgreeSubst.cons
+      apply AgreeSubst.cons
+      exact agr
+    have h := ihn (Δ := A :⟨.im, ord.ι⟩ A :⟨.im, ord.ι⟩ Δ)
+      (H := H) (σ := ⇑⇑σ) (σ' := ⇑⇑σ') (i := i + 2) (x := x + 2)
+      agr2 cln (by omega)
+    asimp at h
+    exact h
+  | tt => asimp
+  | ff => asimp
+  | ite m n1 n2 ihm ihn1 ihn2 =>
+    simp at cl
+    rcases cl with ⟨clm, cln1, cln2⟩
+    asimp
+    rw [<-ihm agr clm lw, <-ihn1 agr cln1 lw, <-ihn2 agr cln2 lw]
+  | drop m n ihm ihn =>
+    simp at cl
+    rcases cl with ⟨clm, cln⟩
+    asimp
+    rw [<-ihm agr clm lw, <-ihn agr cln lw]
+  | ptr _ => asimp
+  | null => asimp
+  | dead => asimp
 
 lemma Resolve.id_rename {H : Heap Srt} {m m' i ξ} :
     H ;; m ▷ m' -> IdRename i ξ -> H ;; m⟨ξ⟩ ▷ m'⟨ξ⟩ := by
@@ -322,7 +381,8 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       apply agr.has hs
     case ptr l m h rsm =>
       cases m
-      all_goals simp_all[Cell.tm]; cases rsm
+      all_goals simp [Cell.tm] at rsm
+      all_goals cases rsm
   case lam_im Δ A B m m' s sA iA lw tyA erm ihm =>
     have ct2 := agr.shareable_image lw
     asimp; cases rs
@@ -333,7 +393,8 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       apply Resolve.lam ct3 ihm
     case ptr l x lk rsm =>
       cases x
-      all_goals simp_all[Cell.tm]; cases rsm
+      all_goals simp [Cell.tm] at rsm
+      all_goals cases rsm
       case lam cl0 rsm ct1 =>
         asimp
         have ⟨H3', lk', mrg'⟩ := lk.merge mrg
@@ -355,7 +416,8 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       apply Resolve.lam ct3 ihm
     case ptr l x lk rsm =>
       cases x
-      all_goals simp_all[Cell.tm]; cases rsm
+      all_goals simp [Cell.tm] at rsm
+      all_goals cases rsm
       case lam cl0 rsm ct1 =>
         asimp
         have ⟨H3', lk', mrg'⟩ := lk.merge mrg
@@ -377,7 +439,8 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       . assumption
     case ptr x lk rsm =>
       cases x
-      all_goals simp_all[Cell.tm]; cases rsm
+      all_goals simp [Cell.tm] at rsm
+      all_goals cases rsm
   case app_ex mrg0 erm ern ihm ihn =>
     asimp; cases rs
     case app mrg1 rsm rsn =>
@@ -388,7 +451,8 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       asimp; apply Resolve.app mrg3 ihm ihn
     case ptr x lk rsm =>
       cases x
-      all_goals simp_all[Cell.tm]; cases rsm
+      all_goals simp [Cell.tm] at rsm
+      all_goals cases rsm
   case tup_im ty tym ern ihn =>
     asimp; cases rs
     case tup mrg1 rsm rsn =>
@@ -399,7 +463,8 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       . apply ihn rsn mrg2 agr
     case ptr l x lk rsm =>
       cases x
-      all_goals simp_all[Cell.tm]; cases rsm
+      all_goals simp [Cell.tm] at rsm
+      all_goals cases rsm
       case box mrg0 rsm rsn =>
         asimp
         have ⟨H3', lk', mrg'⟩ := lk.merge mrg
@@ -422,7 +487,8 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       asimp; apply Resolve.tup mrg3 ihm ihn
     case ptr l x lk rsm =>
       cases x
-      all_goals simp_all[Cell.tm]; cases rsm
+      all_goals simp [Cell.tm] at rsm
+      all_goals cases rsm
       case box rs _ =>
         cases rs
         exfalso; apply erm.null_preimage
@@ -446,7 +512,8 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       have h := Resolve.prj mrg3 ihm ihn; asimp at h ⊢; assumption
     case ptr x lk rsm =>
       cases x
-      all_goals simp_all[Cell.tm]; cases rsm
+      all_goals simp [Cell.tm] at rsm
+      all_goals cases rsm
   case prj_ex mrg0 tyC erm ern ihm ihn =>
     asimp; cases rs
     case prj mrg1 rsm rsn =>
@@ -457,7 +524,8 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       have h := Resolve.prj mrg3 ihm ihn; asimp at h ⊢; assumption
     case ptr x lk rsm =>
       cases x
-      all_goals simp_all[Cell.tm]; cases rsm
+      all_goals simp [Cell.tm] at rsm
+      all_goals cases rsm
   case tt im =>
     have ct2 := agr.implicit_image im
     asimp; cases rs
@@ -465,7 +533,8 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       asimp; apply Resolve.tt (mrg.shareable_image ct1 ct2)
     case ptr x lk rsm =>
       cases x
-      all_goals simp_all[Cell.tm]; cases rsm
+      all_goals simp [Cell.tm] at rsm
+      all_goals cases rsm
       case tt =>
         asimp
         apply Resolve.merge_shareable mrg ct2
@@ -478,7 +547,8 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       asimp; apply Resolve.ff (mrg.shareable_image ct1 ct2)
     case ptr x lk rsm =>
       cases x
-      all_goals simp_all[Cell.tm]; cases rsm
+      all_goals simp [Cell.tm] at rsm
+      all_goals cases rsm
       case ff =>
         asimp
         apply Resolve.merge_shareable mrg ct2
@@ -495,7 +565,8 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       asimp; apply Resolve.ite mrg3 ihm ihn1 ihn2
     case ptr x lk rsm =>
       cases x
-      all_goals simp_all[Cell.tm]; cases rsm
+      all_goals simp [Cell.tm] at rsm
+      all_goals cases rsm
   case rw ih => aesop
   case exf Δ A m s i wf im tyA tym =>
     asimp
@@ -506,7 +577,8 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       apply mrg.shareable_image ct1 ct2
     case ptr x lk rsm =>
       cases x
-      all_goals simp_all[Cell.tm]; cases rsm
+      all_goals simp [Cell.tm] at rsm
+      all_goals cases rsm
   case exf_drop mrg0 tyA tym ern erb ihn ihb =>
     asimp; cases rs
     case drop mrg1 rsm rsn =>
@@ -517,7 +589,8 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       asimp; apply Resolve.drop mrg3 ihn ihb
     case ptr x lk rsm =>
       cases x
-      all_goals simp_all[Cell.tm]; cases rsm
+      all_goals simp [Cell.tm] at rsm
+      all_goals cases rsm
   case drop mrg0 lw0 h0 _ _ ihm ihn =>
     asimp; cases rs
     case drop mrg1 rsm rsn =>
@@ -529,7 +602,8 @@ lemma Resolved.substitution {H1 H2 H3 : Heap Srt} {Δ m n n' A σ σ' x} :
       asimp; apply Resolve.drop mrg3 ihm ihn
     case ptr x lk rsm =>
       cases x
-      all_goals simp_all[Cell.tm]; cases rsm
+      all_goals simp [Cell.tm] at rsm
+      all_goals cases rsm
   case conv => aesop
 
 lemma Resolved.subst_im {H : Heap Srt} {m n n' A B s} {v v' : Tm Srt} :

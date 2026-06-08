@@ -1,6 +1,7 @@
 import SStructTT.SStruct.Extraction.Progress
 import SStructTT.SStruct.Runtime.Preservation
 open ARS
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Extraction
 namespace Runtime
@@ -27,7 +28,7 @@ lemma measure_decrease {H1 H2 : Heap Srt} {m1 m2} :
     Step01 (H1, m1) (H2, m2) -> measure m2 < measure m1 := by
   intro st; induction m1 generalizing H1 H2 m2
   all_goals simp_all[Step01]
-  case var =>
+  case var_Tm =>
     cases st with
     | inl st => cases st
     | inr st => cases st
@@ -109,9 +110,8 @@ lemma Step01.wf : WellFounded (flip (@Step01 Srt ord)) := by
   apply Nat.lt_wfRel.wf
 
 lemma Step01.sn (m : State Srt) : SN Step01 m := by
-  have ⟨acc⟩ := @Step01.wf Srt ord
   apply SN.ofAcc
-  apply acc
+  apply (@Step01.wf Srt ord).apply
 
 lemma Drop.merge {H1 H1' H2 H3 : Heap Srt} {m} :
     Drop H1 m H1' -> HMerge H1 H2 H3 ->
@@ -301,7 +301,7 @@ lemma Step2.merge {H1 H1' H2 H3 : Heap Srt} {m n} :
   case beta Hx Hy m _ _ p _ np lk =>
     cases e1; cases e2
     have ⟨Hz, lk, mrg⟩ := lk.merge mrg
-    existsi Hz, m.[p/]
+    existsi Hz, m[p/]
     constructor <;> assumption
   case tup_M m m' n s st ih =>
     cases e1; cases e2
@@ -321,12 +321,12 @@ lemma Step2.merge {H1 H1' H2 H3 : Heap Srt} {m n} :
   case prj_box n _ _ l lk =>
     cases e1; cases e2
     have ⟨Hx, lk, mrg⟩ := lk.merge mrg
-    existsi Hx, n.[.ptr l,.null/]
+    existsi Hx, n[(.ptr l : Tm Srt), (.null : Tm Srt)/]
     constructor <;> assumption
   case prj_tup n _ _ l1 l2 lk =>
     cases e1; cases e2
     have ⟨Hx, lk, mrg⟩ := lk.merge mrg
-    exists Hx, n.[.ptr l2,.ptr l1/]
+    exists Hx, n[(.ptr l2 : Tm Srt), (.ptr l1 : Tm Srt)/]
     constructor; assumption
   case ite_M m m' n1 n2 st ih =>
     cases e1; cases e2
@@ -538,7 +538,9 @@ lemma Resolved.normal_poisedX {H1 H2 H3 : Heap Srt} {a b c A} :
                 assumption
             case neg =>
               apply Poised.tup_N
-              asimp at h4; assumption
+              intro l e
+              apply h4
+              exists l
               assumption
               assumption
           case neg =>

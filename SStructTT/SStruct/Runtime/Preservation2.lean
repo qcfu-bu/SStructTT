@@ -3,6 +3,7 @@ import SStructTT.SStruct.Runtime.Step
 import SStructTT.SStruct.Runtime.Resolution
 import SStructTT.SStruct.Runtime.Substitution
 open ARS
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Extraction
 namespace Runtime
@@ -70,13 +71,13 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
         have ⟨sA, erm⟩ := rs1.lam_im_inv
         have ⟨H0, mrg0, ct0⟩ := HMerge.exists_self_shareable Hy
         have rsm := Resolved.intro erm rs0
-        have rsm : Hy ;; mx.[.null/] ▷ m0.[.null/] := by
+        have rsm : Hy ;; mx[(.null : Tm Srt)/] ▷ m0[(.null : Tm Srt)/] := by
           apply rsm.substitution
           . apply mrg0
           . constructor
             constructor
             assumption
-        existsi Hz, m1.[n/], m0.[.null/]; and_intros
+        existsi Hz, m1[n/], m0[(.null : Tm Srt)/]; and_intros
         . assumption
         . constructor
           . apply erm.subst_im tyn
@@ -145,7 +146,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           have ⟨n2, rd2, vl2, ern1⟩ := ern.value_preimage vl1
           have hyp := (Resolved.intro ern rsn).resolution tyA vl1
           have ⟨H0, mrg, ct⟩ := HMerge.exists_self_shareable H2'
-          have rsm : Hz ;; mx.[.ptr lp/] ▷ m0.[n1/] := by
+          have rsm : Hz ;; mx[(.ptr lp : Tm Srt)/] ▷ m0[n1/] := by
             apply rsm.substitution
             . apply mrg4.sym
             . constructor
@@ -155,7 +156,7 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
               apply mrg.sym
               constructor
               assumption
-          existsi Hz, m1.[n2/], m0.[n1/]; and_intros
+          existsi Hz, m1[n2/], m0[n1/]; and_intros
           . assumption
           . constructor
             . apply Extract.conv
@@ -282,13 +283,14 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           apply Star.conv
           apply Star.trans (Red.toLogical erm.toLogical rd1)
           apply Logical.Red.tup _ _ Star.R rdv0
-        existsi Hx, n0.[v0,mx1/], n1.[nx0,.null/]; and_intros
+        existsi Hx, n0[v0,mx1/], n1[nx0, (.null : Tm Srt)/]; and_intros
         . assumption
         . constructor
           . apply Extract.conv
             apply Logical.Conv.subst1 _ eq.sym
-            rw[show C.[.tup mx1 v0 .im s/]
-                  = C.[.tup (.var 1) (.var 0) .im s .: shift 2].[v0,mx1/] by asimp]
+            rw[show C[SStruct.Tm.tup mx1 v0 .im s/]
+                  = C[SStruct.Tm.tup (SStruct.Tm.var 1) (SStruct.Tm.var 0) .im s .:
+                      (↑ >> ↑ >> SStruct.Tm.var_Tm)][v0,mx1/] by asimp]
             apply ern.substitution
             apply Extraction.AgreeSubst.intro_ex Merge.nil (Lower.nil _) erv0
             apply Extraction.AgreeSubst.intro_im; asimp; assumption
@@ -381,19 +383,20 @@ lemma Resolved.preservation2X {H1 H2 H3 H3' : Heap Srt} {a b c c' A} :
           apply Star.conv
           apply Star.trans (Red.toLogical erm.toLogical rd1)
           apply Logical.Red.tup _ _ rdv1' rdv2'
-        have erv2 : [] ⊢ v2 ▷ nx0 :: B.[v1/] := by
+        have erv2 : [] ⊢ v2 ▷ nx0 :: B[v1/] := by
           apply Extract.conv
           apply Logical.Conv.subst1
           apply Star.conv rdv1'
           apply erv2
           apply tyB.subst erv1.toLogical
-        existsi Hx, n0.[v2,v1/], n1.[nx0,mx0/]; and_intros
+        existsi Hx, n0[v2,v1/], n1[nx0,mx0/]; and_intros
         . assumption
         . constructor
           . apply Extract.conv
             apply Logical.Conv.subst1 _ eq.sym
-            rw[show C.[.tup v1 v2 .ex s/]
-                  = C.[.tup (.var 1) (.var 0) .ex s .: shift 2].[v2,v1/] by asimp]
+            rw[show C[SStruct.Tm.tup v1 v2 .ex s/]
+                  = C[SStruct.Tm.tup (SStruct.Tm.var 1) (SStruct.Tm.var 0) .ex s .:
+                      (↑ >> ↑ >> SStruct.Tm.var_Tm)][v2,v1/] by asimp]
             apply ern.substitution
             apply Extraction.AgreeSubst.intro_ex Merge.nil (Lower.nil _) erv2
             apply Extraction.AgreeSubst.intro_ex Merge.nil (Lower.nil _)

@@ -1,5 +1,6 @@
 import SStructTT.SStruct.Runtime.Poised
 open ARS
+open Autosubst Autosubst.Notation
 
 namespace SStruct.Extraction
 namespace Runtime
@@ -42,14 +43,28 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
         have vl := rsm.ptr_value
         have ⟨m0, e⟩ := erm.pi_canonical Conv.R vl; subst e
         cases rsm; case ptr H0 m1 lk rsm =>
-        cases m1
-        all_goals simp_all[Cell.tm]; cases rsm
-        case lam m1 _ _ _ _ =>
-          have ⟨Hx, lk, _⟩ := lk.merge mrg
-          existsi Hx, m1.[.null/]
-          constructor
-          constructor
-          assumption
+        cases m1 with
+        | clo body s cl =>
+          simp [Cell.tm] at rsm
+          cases rsm
+          case lam =>
+            have ⟨Hx, lk, _⟩ := lk.merge mrg
+            existsi Hx, body[(.null : Tm Srt)/]
+            constructor
+            constructor
+            assumption
+        | box =>
+          simp [Cell.tm] at rsm
+          cases rsm
+        | tup =>
+          simp [Cell.tm] at rsm
+          cases rsm
+        | tt =>
+          simp [Cell.tm] at rsm
+          cases rsm
+        | ff =>
+          simp [Cell.tm] at rsm
+          cases rsm
     case ptr => right; aesop
   case app_ex mrg erm ern ihm ihn =>
     subst_vars; cases mrg; cases rs
@@ -72,14 +87,28 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
           have vl1 := rsm.ptr_value
           have ⟨m, e⟩ := erm.pi_canonical Conv.R vl1; subst e
           cases rsm; case ptr H m1 lk rsm =>
-          cases m1
-          all_goals simp_all[Cell.tm]; cases rsm
-          case lam m1 _ _ _ =>
-            have ⟨Hx, lk, _⟩ := lk.merge mrg
-            existsi Hx, m1.[.ptr l2/]
-            constructor
-            constructor
-            assumption
+          cases m1 with
+          | clo body s cl =>
+            simp [Cell.tm] at rsm
+            cases rsm
+            case lam =>
+              have ⟨Hx, lk, _⟩ := lk.merge mrg
+              existsi Hx, body[(.ptr l2 : Tm Srt)/]
+              constructor
+              constructor
+              assumption
+          | box =>
+            simp [Cell.tm] at rsm
+            cases rsm
+          | tup =>
+            simp [Cell.tm] at rsm
+            cases rsm
+          | tt =>
+            simp [Cell.tm] at rsm
+            cases rsm
+          | ff =>
+            simp [Cell.tm] at rsm
+            cases rsm
     case ptr => right; aesop
   case tup_im s _ _ _ ern ihn =>
     subst_vars; cases rs
@@ -132,17 +161,31 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
         have vl := rsm.ptr_value
         have ⟨m1, m2, e⟩ := erm.sig_canonical Conv.R vl; subst e
         cases rsm; case ptr H m0 lk rsm =>
-        cases m0
-        all_goals simp_all[Cell.tm]; cases rsm
-        case box.tup l _ _ _ _ _ rsm rsn =>
-          have ⟨Hx, lk, mrg⟩ := lk.merge mrg
-          existsi Hx, n.[.ptr l,.null/]
-          constructor; assumption
-        case tup.tup rsm rsn =>
-          have ⟨_, _, _, _, erm⟩ := erm.tup_preimage
-          have ⟨_, _, _, _⟩ := erm.toLogical.tup_inv; subst_vars
-          have ⟨_, _, _, _⟩ := erm.tup_im_inv; subst_vars
-          exfalso; have ⟨_, e⟩ := rsm.null_inv; cases e
+        cases m0 with
+        | clo =>
+          simp [Cell.tm] at rsm
+          cases rsm
+        | box l1 s =>
+          simp [Cell.tm] at rsm
+          cases rsm
+          case tup =>
+            have ⟨Hx, lk, mrg⟩ := lk.merge mrg
+            existsi Hx, n[(.ptr l1 : Tm Srt), (.null : Tm Srt)/]
+            constructor; assumption
+        | tup l1 l2 s =>
+          simp [Cell.tm] at rsm
+          cases rsm
+          case tup rsm rsn =>
+            have ⟨_, _, _, _, erm⟩ := erm.tup_preimage
+            have ⟨_, _, _, _⟩ := erm.toLogical.tup_inv; subst_vars
+            have ⟨_, _, _, _⟩ := erm.tup_im_inv; subst_vars
+            exfalso; have ⟨_, e⟩ := rsm.null_inv; cases e
+        | tt =>
+          simp [Cell.tm] at rsm
+          cases rsm
+        | ff =>
+          simp [Cell.tm] at rsm
+          cases rsm
     case ptr => right; aesop
   case prj_ex mrg _ erm _ ihm _ =>
     subst_vars; cases mrg; cases rs
@@ -158,17 +201,31 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
         have vl := rsm.ptr_value
         have ⟨m1, m2, e⟩ := erm.sig_canonical Conv.R vl; subst e
         cases rsm; case ptr H m0 lk rsm =>
-        cases m0
-        all_goals simp_all[Cell.tm]; cases rsm
-        case tup.tup l1 l2 _ _ _ _ _ rsm rsn =>
-          have ⟨Hx, lk, mrg⟩ := lk.merge mrg
-          existsi Hx, n.[.ptr l2,.ptr l1/]
-          constructor; assumption
-        case box.tup rsm rsn =>
-          have ⟨_, _, _, _, erm⟩ := erm.tup_preimage
-          have ⟨_, _, _, _⟩ := erm.toLogical.tup_inv; subst_vars
-          have ⟨_, _, _, er, _, _⟩ := erm.tup_ex_inv
-          cases rsm; exfalso; apply er.null_preimage
+        cases m0 with
+        | clo =>
+          simp [Cell.tm] at rsm
+          cases rsm
+        | box l1 s =>
+          simp [Cell.tm] at rsm
+          cases rsm
+          case tup rsm rsn =>
+            have ⟨_, _, _, _, erm⟩ := erm.tup_preimage
+            have ⟨_, _, _, _⟩ := erm.toLogical.tup_inv; subst_vars
+            have ⟨_, _, _, er, _, _⟩ := erm.tup_ex_inv
+            cases rsm; exfalso; apply er.null_preimage
+        | tup l1 l2 s =>
+          simp [Cell.tm] at rsm
+          cases rsm
+          case tup =>
+            have ⟨Hx, lk, mrg⟩ := lk.merge mrg
+            existsi Hx, n[(.ptr l2 : Tm Srt), (.ptr l1 : Tm Srt)/]
+            constructor; assumption
+        | tt =>
+          simp [Cell.tm] at rsm
+          cases rsm
+        | ff =>
+          simp [Cell.tm] at rsm
+          cases rsm
     case ptr => right; aesop
   case tt =>
     subst_vars; cases rs
@@ -195,15 +252,18 @@ lemma Resolved.progressX {H : Heap Srt} {a b c A} :
           subst e
           cases rsm; case ptr m0 lk rsm =>
           cases m0
-          all_goals simp_all[Cell.tm]; cases rsm
+          all_goals simp [Cell.tm] at rsm
+          all_goals cases rsm
           case tt =>
             have ⟨Hx, lk, _⟩ := lk.merge mrg
             existsi Hx, n1
             constructor; assumption
         | inr e =>
+          subst e
           cases rsm; case ptr m0 lk rsm =>
           cases m0
-          all_goals simp_all[Cell.tm]; cases rsm
+          all_goals simp [Cell.tm] at rsm
+          all_goals cases rsm
           case ff =>
             have ⟨Hx, lk, _⟩ := lk.merge mrg
             existsi Hx, n2
