@@ -5,7 +5,7 @@
    "type": "git",
    "subDir": null,
    "scope": "",
-   "rev": "1e203d2acd8090cec20dfcfb9ea3dd09828002d3",
+   "rev": "196c87d1b1548a9e7a4c2e9592c53bc60036bc37",
    "name": "«lean-autosubst»",
    "manifestFile": "lake-manifest.json",
    "inputRev": "main",
