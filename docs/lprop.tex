@@ -908,14 +908,6 @@ propositions: affine for assertions that may be forgotten but not duplicated,
 relevant for obligations that may be duplicated but must be met. We recommend the
 family.
 
-\paragraph{The frozen rules in the implementation.}
-The design folds equality and falsity into $\Prop{\mathsf{U}}$
-(\S\ref{sec:examples}), so their proofs erase through the universe-directed pass.
-The existing implementation need not follow at once. Its ex-falso rule is frozen,
-and that rule is already the empty-proposition instance, so the code may keep its
-per-construct erasure of equality and ex-falso as a frozen realization of the
-general rule. Collapsing the two into the single pass is an independent step.
-
 \paragraph{Definitional proof irrelevance.}
 Orthogonally, $\Prop{s}$ could be made definitionally proof-irrelevant, as Lean's
 \texttt{SProp} is. This strengthens conversion but is in tension with linear
