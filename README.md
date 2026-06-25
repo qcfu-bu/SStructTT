@@ -1,4 +1,7 @@
 # Substructural Dependent Type Theory
+
+[![Lean](https://img.shields.io/badge/Lean-v4.30.0-blue)](lean-toolchain)
+
 This repository contains the formalization of 
 Substructural Dependent Type Theory (SStruct) in [Lean 4](https://lean-lang.org/).
 
